@@ -5,11 +5,7 @@ package adn.model;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.Stack;
 import java.util.function.Consumer;
-
-import adn.application.ApplicationContextProvider;
-import adn.utilities.ClassReflector;
 
 /**
  * @author Ngoc Huy
@@ -23,8 +19,6 @@ public class EntityTree {
 
 	private Set<EntityTree> childrens;
 
-	private ClassReflector reflector = ApplicationContextProvider.getApplicationContext().getBean(ClassReflector.class);
-
 	public EntityTree(EntityTree parent, Class<? extends Model> node, Set<EntityTree> childrens) {
 		super();
 		this.parent = parent;
@@ -33,7 +27,11 @@ public class EntityTree {
 	}
 
 	public void add(Class<? extends Model> clazz) {
-		if (clazz == null || clazz == this.node) {
+		if (clazz == null || clazz == Model.class) {
+			return;
+		}
+		
+		if (this.contains(clazz)) {
 			return;
 		}
 
@@ -43,23 +41,19 @@ public class EntityTree {
 			return;
 		}
 
-		Stack<Class<? extends Model>> stack = reflector.getModelClassStack(clazz);
-
-		while (!stack.isEmpty()) {
-			this.childrens.forEach(tree -> tree.add(stack.pop()));
-		}
+		this.childrens.forEach(tree -> tree.add(clazz));
 	}
 
 	public boolean contains(Class<? extends Model> clazz) {
 		if (clazz == null) {
 			return false;
 		}
-		
+
 		if (clazz == this.node) {
 			return true;
 		}
-		
-		for (EntityTree tree: this.childrens) {
+
+		for (EntityTree tree : this.childrens) {
 			if (tree.contains(clazz)) {
 				return true;
 			}
@@ -67,7 +61,7 @@ public class EntityTree {
 
 		return false;
 	}
-	
+
 	public void forEach(Consumer<EntityTree> consumer) {
 		consumer.accept(this);
 

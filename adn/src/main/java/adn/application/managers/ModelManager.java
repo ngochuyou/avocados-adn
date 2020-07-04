@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import java.util.stream.Collectors;
 
 import javax.persistence.Entity;
@@ -20,6 +21,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
 import adn.application.ApplicationManager;
@@ -57,10 +59,16 @@ public class ModelManager implements ApplicationManager {
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
 		scanner.addIncludeFilter(new AnnotationTypeFilter(Entity.class));
+		scanner.addIncludeFilter(new AssignableTypeFilter(Model.class));
 		scanner.findCandidateComponents(Constants.entityPackage)
 			.forEach(bean -> {
 				try {
-					this.entityTree.add((Class<? extends Model>) Class.forName(bean.getBeanClassName()));
+					Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(bean.getBeanClassName()); 
+					Stack<Class<? extends Model>> stack = reflector.getModelClassStack(clazz);
+					
+					while (!stack.isEmpty()) {
+						this.entityTree.add(stack.pop());
+					}
 				} catch (Exception e) {
 					e.printStackTrace();
 					SpringApplication.exit(context);
@@ -136,16 +144,32 @@ public class ModelManager implements ApplicationManager {
 				this.modelMap.put(relatedClass, Set.of(clazz));
 			} else {
 				Set<Class<? extends Model>> set = this.modelMap.get(relatedClass)
-						.stream().map(clz -> clz).collect(Collectors.toSet());
+						.stream()
+						.collect(Collectors.toSet());
 				
 				set.add(clazz);
-				
 				this.modelMap.put(relatedClass, set);
 			}
 		});
 		this.modelMap.forEach((key, val) -> val.forEach(clazz -> logger.info("Putting " + key.getName() + " and " + clazz.getName() + " as a EM relation")));
 		// @formatter:on
 		logger.info("Finished initializing ModelMap");
+	}
+
+	public EntityTree getEntityTree() {
+		return entityTree;
+	}
+
+	public void setEntityTree(EntityTree entityTree) {
+		this.entityTree = entityTree;
+	}
+
+	public Map<Class<? extends Model>, Set<Class<? extends Model>>> getModelMap() {
+		return modelMap;
+	}
+
+	public void setModelMap(Map<Class<? extends Model>, Set<Class<? extends Model>>> modelMap) {
+		this.modelMap = modelMap;
 	}
 
 }

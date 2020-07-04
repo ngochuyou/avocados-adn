@@ -19,8 +19,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 /**
  * @author Ngoc Huy
  *
@@ -83,9 +81,4 @@ public class WebConfig implements WebMvcConfigurer {
 		return dataSource;
 	}
 
-	@Bean
-	public ObjectMapper objectMapper() {
-
-		return new ObjectMapper();
-	}
 }

@@ -21,7 +21,7 @@ public class ClassReflector {
 		Stack<Class<? extends Model>> stack = new Stack<>();
 		Class<? extends Model> superClass = clazz;
 
-		while (superClass != null && !superClass.getSuperclass().equals(Object.class)) {
+		while (superClass != null && !superClass.equals(Object.class)) {
 			stack.add(superClass);
 			superClass = (Class<? extends Model>) superClass.getSuperclass();
 		}

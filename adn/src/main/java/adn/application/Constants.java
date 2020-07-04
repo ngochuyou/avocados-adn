@@ -15,7 +15,7 @@ public class Constants {
 
 	public static final String modelPackage = "adn.model.models";
 
-	public static final String specificationPackage = "adn.model.entity.specifications";
+	public static final String specificationPackage = "adn.model.specification.specifications";
 
 	public static final String factoryPackage = "adn.model.factory";
 

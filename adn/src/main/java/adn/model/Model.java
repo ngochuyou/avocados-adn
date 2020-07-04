@@ -3,6 +3,7 @@
  */
 package adn.model;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import javax.persistence.Column;
@@ -34,7 +35,7 @@ public abstract class Model {
 	@Column(name = "is_active", nullable = false)
 	protected boolean isActive;
 
-	public abstract Object getId();
+	public abstract Serializable getId();
 
 	public Date getCreatedDate() {
 		return createdDate;
