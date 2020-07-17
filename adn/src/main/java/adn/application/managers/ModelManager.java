@@ -17,6 +17,7 @@ import javax.persistence.Entity;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.annotation.Order;
@@ -60,20 +61,20 @@ public class ModelManager implements ApplicationManager {
 		// @formatter:off
 		scanner.addIncludeFilter(new AnnotationTypeFilter(Entity.class));
 		scanner.addIncludeFilter(new AssignableTypeFilter(Model.class));
-		scanner.findCandidateComponents(Constants.entityPackage)
-			.forEach(bean -> {
-				try {
-					Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(bean.getBeanClassName()); 
-					Stack<Class<? extends Model>> stack = reflector.getModelClassStack(clazz);
-					
-					while (!stack.isEmpty()) {
-						this.entityTree.add(stack.pop());
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-					SpringApplication.exit(context);
+
+		try {
+			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.entityPackage)) {
+				Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(beanDef.getBeanClassName()); 
+				Stack<Class<? extends Model>> stack = reflector.getModelClassStack(clazz);
+				
+				while (!stack.isEmpty()) {
+					this.entityTree.add(stack.pop());
 				}
-			});
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			SpringApplication.exit(context);
+		}
 		this.entityTree.forEach(tree -> {
 			logger.info(tree.getNode().getName() + " added to " +
 					this.entityTree.getClass().getName() +

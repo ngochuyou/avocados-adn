@@ -3,6 +3,8 @@
  */
 package adn.utilities;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Stack;
 
 import org.springframework.stereotype.Component;
@@ -47,6 +49,11 @@ public class ClassReflector {
 		}
 
 		return false;
+	}
+
+	public Type getGenericType(Class<?> clazz) {
+
+		return ((ParameterizedType) clazz.getGenericSuperclass()).getActualTypeArguments()[0];
 	}
 
 }

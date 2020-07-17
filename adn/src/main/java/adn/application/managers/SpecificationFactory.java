@@ -3,7 +3,6 @@
  */
 package adn.application.managers;
 
-import java.lang.reflect.ParameterizedType;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,6 +32,9 @@ public class SpecificationFactory implements ApplicationManager {
 
 	private Logger logger = LoggerFactory.getLogger(SpecificationFactory.class);
 
+	private Specification<?> defaultSpecification = new Specification<Model>() {
+	};
+
 	@Autowired
 	private ModelManager modelManager;
 
@@ -60,9 +62,9 @@ public class SpecificationFactory implements ApplicationManager {
 			})
 			.forEach(clazz -> {
 				try {
-					Class<? extends Model> modelClass =  (Class<? extends Model>) ((ParameterizedType) clazz.getGenericSuperclass()).getActualTypeArguments()[0];
+					Class<? extends Model> modelClass = (Class<? extends Model>) reflector.getGenericType(clazz);
 
-					this.specificationMap.put(modelClass, context.getBean(clazz));					
+					this.specificationMap.put(modelClass, context.getBean(clazz));
 				} catch (Exception e) {
 					e.printStackTrace();
 					SpringApplication.exit(context);
@@ -79,11 +81,13 @@ public class SpecificationFactory implements ApplicationManager {
 				Specification<?> childrenSpec = this.specificationMap.get(tree.getNode());
 				Specification<?> spec = null;
 				
-				if (childrenSpec != null) {
-					spec = parentSpec == null ? childrenSpec : parentSpec.and(childrenSpec);
+				if (parentSpec != null && childrenSpec != null) {
+					spec = parentSpec.and(childrenSpec);
+				} else {
+					spec = parentSpec != null ? parentSpec : childrenSpec;
 				}
-				
-				this.specificationMap.put(tree.getNode(), spec == null ? new Specification<Model>() {} : spec);
+
+				this.specificationMap.put(tree.getNode(), spec == null ? defaultSpecification : spec);
 			});
 		this.specificationMap.forEach((k, v) -> logger.info(v.getName() + " is applied on " + k.getName()));
 		// @formatter:on

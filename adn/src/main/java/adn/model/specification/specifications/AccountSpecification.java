@@ -31,49 +31,49 @@ public class AccountSpecification extends CompositeSpecification<Account> {
 		Map<String, String> messageSet = new HashMap<>();
 
 		if (instance.getId() == null || instance.getId().length() < 8 || instance.getId().length() > 255) {
-			status.add(400);
+			status.add(ModelResult.BAD);
 			messageSet.put("id", "Id length must be between 8 and 255");
 			flag = false;
 		}
 
 		if (!Strings.isEmail(instance.getEmail())) {
-			status.add(400);
+			status.add(ModelResult.BAD);
 			messageSet.put("email", "Invalid email");
 			flag = false;
 		}
 
 		if (!Strings.isDigits(instance.getPhone())) {
-			status.add(400);
+			status.add(ModelResult.BAD);
 			messageSet.put("phone", "Invalid phone number");
 			flag = false;
 		}
 
 		if (StringUtils.isEmpty(instance.getLastName())) {
-			status.add(400);
+			status.add(ModelResult.BAD);
 			messageSet.put("lastName", "Lastname can not be empty");
 			flag = false;
 		}
 
 		if (StringUtils.isEmpty(instance.getFirstName())) {
-			status.add(400);
+			status.add(ModelResult.BAD);
 			messageSet.put("firstName", "Firstname can not be empty");
 			flag = false;
 		}
 
 		if (Strings.isBCrypt(instance.getPassword())) {
-			status.add(400);
+			status.add(ModelResult.BAD);
 			messageSet.put("password", "Invalid password");
 			flag = false;
 		}
 
 		if (instance.getRole() == null) {
-			status.add(400);
+			status.add(ModelResult.BAD);
 			messageSet.put("role", "Role can not be empty");
 			flag = false;
 		}
 
 		if (instance.getGender() == null) {
-			status.add(400);
+			status.add(ModelResult.BAD);
 			messageSet.put("gender", "Gender can not be empty");
 			flag = false;
 		}

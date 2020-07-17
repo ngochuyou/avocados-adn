@@ -24,7 +24,7 @@ public interface Specification<T extends Model> {
 	}
 
 	default String getName() {
-
+		
 		return this.getClass().getSimpleName().length() == 0 ? this.getClass().getName()
 				: this.getClass().getSimpleName();
 	}

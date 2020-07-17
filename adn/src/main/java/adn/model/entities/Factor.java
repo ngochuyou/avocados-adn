@@ -20,15 +20,18 @@ import adn.model.Model;
 public class Factor extends Model {
 
 	@Id
-	@GeneratedValue
+	@GeneratedValue(generator = "uuid")
 	@GenericGenerator(name = "uuid", strategy = "uuid2")
 	protected String id;
 
 	@Column(nullable = false)
 	protected String name;
 
-	@Column(nullable = false)
+	@Column(name = "created_by")
 	protected String createdBy;
+
+	@Column(name = "updated_by")
+	protected String updatedBy;
 
 	@Override
 	public String getId() {
@@ -53,6 +56,14 @@ public class Factor extends Model {
 
 	public void setCreatedBy(String createdBy) {
 		this.createdBy = createdBy;
+	}
+
+	public String getUpdatedBy() {
+		return updatedBy;
+	}
+
+	public void setUpdatedBy(String updatedBy) {
+		this.updatedBy = updatedBy;
 	}
 
 }

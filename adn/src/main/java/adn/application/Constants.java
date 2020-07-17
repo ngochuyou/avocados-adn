@@ -3,14 +3,16 @@
  */
 package adn.application;
 
+import adn.utilities.Strings;
+
 /**
  * @author Ngoc Huy
  *
  */
 public class Constants {
-	
+
 	public static final String managerPackage = "adn.application.managers";
-	
+
 	public static final String entityPackage = "adn.model.entities";
 
 	public static final String modelPackage = "adn.model.models";
@@ -18,12 +20,16 @@ public class Constants {
 	public static final String specificationPackage = "adn.model.specification.specifications";
 
 	public static final String factoryPackage = "adn.model.factory";
+	
+	public static final String servicePackage = "adn.service.services";
 
 	public static final String basePackage = "adn";
 
 	public static final String IMAGE_FILE_PATH = "D:\\adn-upload\\images\\";
 
-	public static final String[] publicEndPoints = { };
+	public static final String DEFAULT_IMAGE_NAME = Strings.hash("default_image") + ".jpg";
+
+	public static final String[] publicEndPoints = {};
 
 	public static final String resourceId = "adn-base";
 
