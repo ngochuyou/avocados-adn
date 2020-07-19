@@ -14,10 +14,10 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import adn.model.ModelResult;
+import adn.model.Result;
 import adn.model.entities.Account;
 import adn.model.entities.Personnel;
-import adn.model.specification.CompositeSpecification;
+import adn.model.specification.GenericSpecification;
 import adn.model.specification.TransactionalSpecification;
 
 /**
@@ -25,12 +25,12 @@ import adn.model.specification.TransactionalSpecification;
  *
  */
 @Component
-public class PersonnelSpecification extends CompositeSpecification<Personnel>
-		implements TransactionalSpecification<Personnel> {
+@GenericSpecification(target = Personnel.class)
+public class PersonnelSpecification implements TransactionalSpecification<Personnel> {
 
 	@Transactional
 	@Override
-	public ModelResult<Personnel> isSatisfiedBy(Personnel instance) {
+	public Result<Personnel> isSatisfiedBy(Personnel instance) {
 		// TODO Auto-generated method stub
 		Session session = sessionFactory.getCurrentSession();
 		CriteriaBuilder builder = session.getCriteriaBuilder();
@@ -40,10 +40,10 @@ public class PersonnelSpecification extends CompositeSpecification<Personnel>
 		query.select(builder.count(root)).where(builder.equal(root.get("id"), instance.getCreatedBy()));
 
 		if (session.createQuery(query).getResultStream().findFirst().orElse(0L) == 0) {
-			return ModelResult.error(Set.of(400), instance, Map.of("createdBy", "Created by can not be empty"));
+			return Result.error(Set.of(400), instance, Map.of("createdBy", "Created by can not be empty"));
 		}
 
-		return ModelResult.success(instance);
+		return Result.success(instance);
 	}
 
 }

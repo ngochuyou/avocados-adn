@@ -15,22 +15,22 @@ public class EntityTree {
 
 	private EntityTree parent;
 
-	private Class<? extends Model> node;
+	private Class<? extends Entity> node;
 
 	private Set<EntityTree> childrens;
 
-	public EntityTree(EntityTree parent, Class<? extends Model> node, Set<EntityTree> childrens) {
+	public EntityTree(EntityTree parent, Class<? extends Entity> node, Set<EntityTree> childrens) {
 		super();
 		this.parent = parent;
-		this.node = node == null ? Model.class : node;
+		this.node = node == null ? Entity.class : node;
 		this.childrens = childrens == null ? new HashSet<>() : childrens;
 	}
 
-	public void add(Class<? extends Model> clazz) {
-		if (clazz == null || clazz == Model.class) {
+	public void add(Class<? extends Entity> clazz) {
+		if (clazz == null || clazz == Entity.class) {
 			return;
 		}
-		
+
 		if (this.contains(clazz)) {
 			return;
 		}
@@ -44,7 +44,7 @@ public class EntityTree {
 		this.childrens.forEach(tree -> tree.add(clazz));
 	}
 
-	public boolean contains(Class<? extends Model> clazz) {
+	public boolean contains(Class<? extends AbstractModel> clazz) {
 		if (clazz == null) {
 			return false;
 		}
@@ -76,11 +76,11 @@ public class EntityTree {
 		this.parent = parent;
 	}
 
-	public Class<? extends Model> getNode() {
+	public Class<? extends Entity> getNode() {
 		return node;
 	}
 
-	public void setNode(Class<? extends Model> node) {
+	public void setNode(Class<? extends Entity> node) {
 		this.node = node;
 	}
 

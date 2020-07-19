@@ -3,13 +3,13 @@
  */
 package adn.service;
 
-import adn.model.Model;
+import adn.model.Entity;
 
 /**
  * @author Ngoc Huy
  *
  */
-public interface ApplicationService<T extends Model> {
+public interface ApplicationService<T extends Entity> {
 
 	default T doProcedure(T model) {
 		return model;

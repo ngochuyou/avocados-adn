@@ -10,19 +10,21 @@ import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
-import adn.model.Model;
-import adn.model.ModelResult;
-import adn.model.specification.CompositeSpecification;
+import adn.model.Entity;
+import adn.model.Result;
+import adn.model.specification.GenericSpecification;
+import adn.model.specification.Specification;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Component
-public class ModelSpecification extends CompositeSpecification<Model> {
+@GenericSpecification(target = Entity.class)
+public class EntitySpecification implements Specification<Entity> {
 
 	@Override
-	public ModelResult<Model> isSatisfiedBy(Model instance) {
+	public Result<Entity> isSatisfiedBy(Entity instance) {
 		// TODO Auto-generated method stub
 		boolean flag = true;
 		Set<Integer> status = new HashSet<>();
@@ -34,7 +36,7 @@ public class ModelSpecification extends CompositeSpecification<Model> {
 			flag = false;
 		}
 
-		return flag ? ModelResult.success(instance) : ModelResult.error(status, instance, messageSet);
+		return flag ? Result.success(instance) : Result.error(status, instance, messageSet);
 	}
 
 }

@@ -12,7 +12,6 @@ import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.Table;
 
-import adn.model.Model;
 import adn.utilities.Gender;
 import adn.utilities.Role;
 
@@ -23,7 +22,7 @@ import adn.utilities.Role;
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @Table(name = "accounts")
-public class Account extends Model {
+public class Account extends adn.model.Entity {
 
 	@Id
 	protected String id;

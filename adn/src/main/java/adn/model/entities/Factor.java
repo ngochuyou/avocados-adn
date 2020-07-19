@@ -10,14 +10,14 @@ import javax.persistence.MappedSuperclass;
 
 import org.hibernate.annotations.GenericGenerator;
 
-import adn.model.Model;
+import adn.model.Entity;
 
 /**
  * @author Ngoc Huy
  *
  */
 @MappedSuperclass
-public class Factor extends Model {
+public class Factor extends Entity {
 
 	@Id
 	@GeneratedValue(generator = "uuid")

@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 
 import adn.application.ApplicationManager;
 import adn.application.Constants;
-import adn.model.Model;
+import adn.model.Entity;
 import adn.service.ApplicationService;
 import adn.service.GenericService;
 
@@ -33,9 +33,9 @@ public class ServiceManager implements ApplicationManager {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private Map<Class<? extends Model>, ApplicationService<? extends Model>> serviceMap;
+	private Map<Class<? extends Entity>, ApplicationService<? extends Entity>> serviceMap;
 
-	private ApplicationService<?> defaultService = new ApplicationService<Model>() {
+	private ApplicationService<?> defaultService = new ApplicationService<Entity>() {
 	};
 
 	@Autowired
@@ -63,7 +63,7 @@ public class ServiceManager implements ApplicationManager {
 				if (anno == null)
 					continue;
 
-				Class<? extends Model> modelClass = anno.target();
+				Class<? extends Entity> modelClass = anno.target();
 
 				serviceMap.put(modelClass, context.getBean(clazz));
 			}
@@ -85,7 +85,7 @@ public class ServiceManager implements ApplicationManager {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Model> ApplicationService<T> getService(Class<T> clazz) {
+	public <T extends Entity> ApplicationService<T> getService(Class<T> clazz) {
 
 		return (ApplicationService<T>) this.serviceMap.get(clazz);
 	}

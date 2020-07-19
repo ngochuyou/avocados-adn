@@ -17,8 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import adn.application.managers.SpecificationFactory;
-import adn.model.Model;
-import adn.model.ModelResult;
+import adn.model.Entity;
+import adn.model.Result;
 import adn.model.specification.Specification;
 
 /**
@@ -38,39 +38,39 @@ public class BaseDAO {
 
 	private static final String NOT_FOUND = "Resource not found";
 
-	public <T extends Model> T findById(Serializable id, Class<T> clazz) {
+	public <T extends Entity> T findById(Serializable id, Class<T> clazz) {
 		Session session = sessionFactory.getCurrentSession();
 
 		return session.get(clazz, id);
 	}
 
-	public <T extends Model> T findOne(CriteriaQuery<T> query, Class<T> clazz) {
+	public <T extends Entity> T findOne(CriteriaQuery<T> query, Class<T> clazz) {
 		Session session = sessionFactory.getCurrentSession();
 		Query<T> hql = session.createQuery(query);
 
 		return hql.getResultStream().findFirst().orElse(null);
 	}
 
-	public <T extends Model> List<T> find(CriteriaQuery<T> query, Class<T> clazz) {
+	public <T extends Entity> List<T> find(CriteriaQuery<T> query, Class<T> clazz) {
 		Session session = sessionFactory.getCurrentSession();
 		Query<T> hql = session.createQuery(query);
 
 		return hql.getResultList();
 	}
 
-	public <T extends Model> ModelResult<T> insert(T instance, Class<T> clazz) {
+	public <T extends Entity> Result<T> insert(T instance, Class<T> clazz) {
 		if (instance == null || clazz == null) {
 
-			return ModelResult.error(Set.of(ModelResult.NULL), instance, null);
+			return Result.error(Set.of(Result.NULL), instance, null);
 		}
 
 		if (this.findById(instance.getId(), clazz) != null) {
 
-			return ModelResult.error(Set.of(ModelResult.CONFLICT), instance, Map.of("id", EXISTED));
+			return Result.error(Set.of(Result.CONFLICT), instance, Map.of("id", EXISTED));
 		}
 
 		Specification<T> specification = specificationFactory.getSpecification(clazz);
-		ModelResult<T> result = specification.isSatisfiedBy(instance);
+		Result<T> result = specification.isSatisfiedBy(instance);
 		Session session = sessionFactory.getCurrentSession();
 
 		if (result.isOk()) {
@@ -82,20 +82,20 @@ public class BaseDAO {
 		return result;
 	}
 
-	public <T extends Model> ModelResult<T> update(T instance, Class<T> clazz) {
+	public <T extends Entity> Result<T> update(T instance, Class<T> clazz) {
 		if (instance == null || clazz == null) {
 
-			return ModelResult.error(Set.of(ModelResult.NULL), instance, Map.of());
+			return Result.error(Set.of(Result.NULL), instance, Map.of());
 		}
 
 		if (this.findById(instance.getId(), clazz) == null) {
 
-			return ModelResult.error(Set.of(ModelResult.CONFLICT), instance, Map.of("id", NOT_FOUND));
+			return Result.error(Set.of(Result.CONFLICT), instance, Map.of("id", NOT_FOUND));
 		}
 
 		Specification<T> specification = specificationFactory.getSpecification(clazz);
 		Session session = sessionFactory.getCurrentSession();
-		ModelResult<T> result = specification.isSatisfiedBy(instance);
+		Result<T> result = specification.isSatisfiedBy(instance);
 
 		if (result.isOk()) {
 			session.update(instance);
@@ -106,15 +106,15 @@ public class BaseDAO {
 		return result;
 	}
 
-	public <T extends Model> ModelResult<T> remove(T instance, Class<T> clazz) {
+	public <T extends Entity> Result<T> remove(T instance, Class<T> clazz) {
 		if (instance == null || clazz == null) {
 
-			return ModelResult.error(Set.of(ModelResult.NULL), instance, Map.of());
+			return Result.error(Set.of(Result.NULL), instance, Map.of());
 		}
 
 		if (this.findById(instance.getId(), clazz) == null) {
 
-			return ModelResult.error(Set.of(ModelResult.CONFLICT), instance, Map.of("id", NOT_FOUND));
+			return Result.error(Set.of(Result.CONFLICT), instance, Map.of("id", NOT_FOUND));
 		}
 
 		Session session = sessionFactory.getCurrentSession();
@@ -122,7 +122,7 @@ public class BaseDAO {
 		instance.setActive(false);
 		session.update(instance);
 
-		return ModelResult.success(instance);
+		return Result.success(instance);
 	}
 
 }

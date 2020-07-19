@@ -17,7 +17,8 @@ import org.springframework.stereotype.Component;
 
 import adn.application.ApplicationManager;
 import adn.application.Constants;
-import adn.model.Model;
+import adn.model.Entity;
+import adn.model.specification.GenericSpecification;
 import adn.model.specification.Specification;
 
 /**
@@ -28,11 +29,11 @@ import adn.model.specification.Specification;
 @Order(2)
 public class SpecificationFactory implements ApplicationManager {
 
-	private Map<Class<? extends Model>, Specification<?>> specificationMap;
+	private Map<Class<? extends Entity>, Specification<?>> specificationMap;
 
 	private Logger logger = LoggerFactory.getLogger(SpecificationFactory.class);
 
-	private Specification<?> defaultSpecification = new Specification<Model>() {
+	private Specification<?> defaultSpecification = new Specification<Entity>() {
 	};
 
 	@Autowired
@@ -62,8 +63,14 @@ public class SpecificationFactory implements ApplicationManager {
 			})
 			.forEach(clazz -> {
 				try {
-					Class<? extends Model> modelClass = (Class<? extends Model>) reflector.getGenericType(clazz);
-
+					GenericSpecification anno = clazz.getDeclaredAnnotation(GenericSpecification.class);
+					
+					if (anno == null) {
+						throw new Exception(GenericSpecification.class.getName() + " is not found on " + clazz.getName());
+					}
+					
+					Class<? extends Entity> modelClass = anno.target();
+					
 					this.specificationMap.put(modelClass, context.getBean(clazz));
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -95,7 +102,7 @@ public class SpecificationFactory implements ApplicationManager {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Model> Specification<T> getSpecification(Class<T> clazz) {
+	public <T extends Entity> Specification<T> getSpecification(Class<T> clazz) {
 
 		return (Specification<T>) this.specificationMap.get(clazz);
 	}

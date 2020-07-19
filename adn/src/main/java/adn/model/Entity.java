@@ -7,6 +7,6 @@ package adn.model;
  * @author Ngoc Huy
  *
  */
-public abstract class Model extends AbstractModel {
+public abstract class Entity extends AbstractModel {
 
 }

@@ -8,22 +8,24 @@ import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
-import adn.model.ModelResult;
+import adn.model.Result;
 import adn.model.entities.Customer;
-import adn.model.specification.CompositeSpecification;
+import adn.model.specification.GenericSpecification;
+import adn.model.specification.Specification;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Component
-public class CustomerSpecification extends CompositeSpecification<Customer> {
+@GenericSpecification(target = Customer.class)
+public class CustomerSpecification implements Specification<Customer> {
 
 	@Override
-	public ModelResult<Customer> isSatisfiedBy(Customer instance) {
+	public Result<Customer> isSatisfiedBy(Customer instance) {
 		// TODO Auto-generated method stub
-		return instance.getPrestigePoint() < 0 ? ModelResult.error(Set.of(400), instance,
-				Map.of("prestigePoint", "Prestige point can not be negative")) : ModelResult.success(instance);
+		return instance.getPrestigePoint() < 0 ? Result.error(Set.of(400), instance,
+				Map.of("prestigePoint", "Prestige point can not be negative")) : Result.success(instance);
 	}
 
 }

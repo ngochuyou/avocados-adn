@@ -9,7 +9,7 @@ import java.util.Stack;
 
 import org.springframework.stereotype.Component;
 
-import adn.model.Model;
+import adn.model.Entity;
 
 /**
  * @author Ngoc Huy
@@ -19,13 +19,13 @@ import adn.model.Model;
 public class ClassReflector {
 
 	@SuppressWarnings("unchecked")
-	public Stack<Class<? extends Model>> getModelClassStack(Class<? extends Model> clazz) {
-		Stack<Class<? extends Model>> stack = new Stack<>();
-		Class<? extends Model> superClass = clazz;
+	public Stack<Class<? extends Entity>> getEntityClassStack(Class<? extends Entity> clazz) {
+		Stack<Class<? extends Entity>> stack = new Stack<>();
+		Class<? extends Entity> superClass = clazz;
 
 		while (superClass != null && !superClass.equals(Object.class)) {
 			stack.add(superClass);
-			superClass = (Class<? extends Model>) superClass.getSuperclass();
+			superClass = (Class<? extends Entity>) superClass.getSuperclass();
 		}
 
 		return stack;

@@ -16,9 +16,9 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import adn.model.ModelResult;
+import adn.model.Result;
 import adn.model.entities.Factor;
-import adn.model.specification.CompositeSpecification;
+import adn.model.specification.GenericSpecification;
 import adn.model.specification.TransactionalSpecification;
 
 /**
@@ -26,18 +26,19 @@ import adn.model.specification.TransactionalSpecification;
  *
  */
 @Component
-public class FactorSpecification extends CompositeSpecification<Factor> implements TransactionalSpecification<Factor> {
+@GenericSpecification(target = Factor.class)
+public class FactorSpecification implements TransactionalSpecification<Factor> {
 
 	@Transactional
 	@Override
-	public ModelResult<Factor> isSatisfiedBy(Factor instance) {
+	public Result<Factor> isSatisfiedBy(Factor instance) {
 		// TODO Auto-generated method stub
 		boolean flag = true;
 		Set<Integer> status = new HashSet<>();
 		Map<String, String> messageSet = new HashMap<>();
 
 		if (instance.getName() == null || instance.getName().length() == 0) {
-			status.add(ModelResult.BAD);
+			status.add(Result.BAD);
 			messageSet.put("name", "Name mustn't be empty");
 			flag = false;
 		}
@@ -51,12 +52,12 @@ public class FactorSpecification extends CompositeSpecification<Factor> implemen
 				builder.notEqual(root.get("id"), instance.getId())));
 
 		if (session.createQuery(query).getResultStream().findFirst().orElse(0L) != 0) {
-			status.add(ModelResult.CONFLICT);
+			status.add(Result.CONFLICT);
 			messageSet.put("name", "Name must be unique");
 			flag = false;
 		}
 
-		return flag ? ModelResult.success(instance) : ModelResult.error(status, instance, messageSet);
+		return flag ? Result.success(instance) : Result.error(status, instance, messageSet);
 	}
 
 }

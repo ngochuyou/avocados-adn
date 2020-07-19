@@ -8,7 +8,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import adn.model.Model;
+import adn.model.Entity;
 
 /**
  * @author Ngoc Huy
@@ -18,6 +18,6 @@ import adn.model.Model;
 @Target({ ElementType.TYPE })
 public @interface GenericService {
 
-	public Class<? extends Model> target() default Model.class;
+	public Class<? extends Entity> target() default Entity.class;
 
 }

@@ -7,7 +7,7 @@ import java.util.Date;
 
 import org.springframework.stereotype.Service;
 
-import adn.model.Model;
+import adn.model.Entity;
 import adn.service.ApplicationService;
 import adn.service.GenericService;
 
@@ -16,11 +16,11 @@ import adn.service.GenericService;
  *
  */
 @Service
-@GenericService(target = Model.class)
-public class ModelService implements ApplicationService<Model> {
+@GenericService(target = Entity.class)
+public class EntityService implements ApplicationService<Entity> {
 
 	@Override
-	public Model doDeactivationProcedure(Model model) {
+	public Entity doDeactivationProcedure(Entity model) {
 		// TODO Auto-generated method stub
 		model.setDeactivatedDate(new Date());
 

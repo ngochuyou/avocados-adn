@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 
 import adn.application.ApplicationManager;
 import adn.application.Constants;
+import adn.model.AbstractModel;
 import adn.model.EntityTree;
 import adn.model.Model;
 import adn.model.Modelized;
@@ -43,7 +44,7 @@ public class ModelManager implements ApplicationManager {
 
 	private EntityTree entityTree;
 
-	private Map<Class<? extends Model>, Set<Class<? extends Model>>> modelMap;
+	private Map<Class<? extends adn.model.Entity>, Set<Class<? extends Model>>> modelMap;
 
 	@Override
 	public void initialize() {
@@ -54,18 +55,18 @@ public class ModelManager implements ApplicationManager {
 
 	@SuppressWarnings("unchecked")
 	private void initializeEntityTree() {
-		this.entityTree = new EntityTree(null, Model.class, null);
+		this.entityTree = new EntityTree(null, adn.model.Entity.class, null);
 		logger.info("Initializing " + this.entityTree.getClass().getName());
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
 		scanner.addIncludeFilter(new AnnotationTypeFilter(Entity.class));
-		scanner.addIncludeFilter(new AssignableTypeFilter(Model.class));
+		scanner.addIncludeFilter(new AssignableTypeFilter(adn.model.Entity.class));
 
 		try {
 			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.entityPackage)) {
-				Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(beanDef.getBeanClassName()); 
-				Stack<Class<? extends Model>> stack = reflector.getModelClassStack(clazz);
+				Class<? extends adn.model.Entity> clazz = (Class<? extends adn.model.Entity>) Class.forName(beanDef.getBeanClassName()); 
+				Stack<Class<? extends adn.model.Entity>> stack = reflector.getEntityClassStack(clazz);
 				
 				while (!stack.isEmpty()) {
 					this.entityTree.add(stack.pop());
@@ -119,7 +120,7 @@ public class ModelManager implements ApplicationManager {
 					Field[] fields = clazz.getDeclaredFields();
 					
 					for (Field f: fields) {
-						if (reflector.isExtendedFrom(f.getType(), Model.class) && models.contains(clazz) && this.entityTree.contains((Class<? extends Model>) f.getType())) {
+						if (reflector.isExtendedFrom(f.getType(), AbstractModel.class) && models.contains(clazz) && this.entityTree.contains((Class<? extends Model>) f.getType())) {
 							throw new Exception(clazz.getName() + " is a Non-standard Model. " + f.getType().getName() + " was modelized into a Model. Use the modelized type instead");
 						}
 						
@@ -139,7 +140,7 @@ public class ModelManager implements ApplicationManager {
 			});
 		models.forEach(clazz -> {
 			Modelized annotaion = clazz.getDeclaredAnnotation(Modelized.class);
-			Class<? extends Model> relatedClass = annotaion.relation();
+			Class<? extends adn.model.Entity> relatedClass = annotaion.relation();
 
 			if (this.modelMap.get(relatedClass) == null) {
 				this.modelMap.put(relatedClass, Set.of(clazz));
@@ -165,12 +166,21 @@ public class ModelManager implements ApplicationManager {
 		this.entityTree = entityTree;
 	}
 
-	public Map<Class<? extends Model>, Set<Class<? extends Model>>> getModelMap() {
+	public Logger getLogger() {
+		return logger;
+	}
+
+	public void setLogger(Logger logger) {
+		this.logger = logger;
+	}
+
+	public Map<Class<? extends adn.model.Entity>, Set<Class<? extends Model>>> getModelMap() {
 		return modelMap;
 	}
 
-	public void setModelMap(Map<Class<? extends Model>, Set<Class<? extends Model>>> modelMap) {
+	public void setModelMap(Map<Class<? extends adn.model.Entity>, Set<Class<? extends Model>>> modelMap) {
 		this.modelMap = modelMap;
 	}
 
+	
 }

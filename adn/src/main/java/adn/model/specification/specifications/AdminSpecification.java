@@ -8,23 +8,25 @@ import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
-import adn.model.ModelResult;
+import adn.model.Result;
 import adn.model.entities.Admin;
-import adn.model.specification.CompositeSpecification;
+import adn.model.specification.GenericSpecification;
+import adn.model.specification.Specification;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Component
-public class AdminSpecification extends CompositeSpecification<Admin> {
+@GenericSpecification(target = Admin.class)
+public class AdminSpecification implements Specification<Admin> {
 
 	@Override
-	public ModelResult<Admin> isSatisfiedBy(Admin instance) {
+	public Result<Admin> isSatisfiedBy(Admin instance) {
 		// TODO Auto-generated method stub
 		return instance.getContractDate() == null
-				? ModelResult.error(Set.of(400), instance, Map.of("contractDate", "Contract date can not be empty"))
-				: ModelResult.success(instance);
+				? Result.error(Set.of(400), instance, Map.of("contractDate", "Contract date can not be empty"))
+				: Result.success(instance);
 	}
 
 }

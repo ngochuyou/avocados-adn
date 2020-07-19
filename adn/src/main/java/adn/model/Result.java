@@ -11,7 +11,7 @@ import java.util.Set;
  * @author Ngoc Huy
  *
  */
-public class ModelResult<T extends Model> {
+public class Result<T extends AbstractModel> {
 
 	protected Set<Integer> status;
 
@@ -29,7 +29,7 @@ public class ModelResult<T extends Model> {
 
 	public static final int NULL = -400;
 	
-	public ModelResult(Set<Integer> status, T instance, Map<String, String> messageSet) {
+	public Result(Set<Integer> status, T instance, Map<String, String> messageSet) {
 		super();
 		this.status = status;
 		this.instance = instance;
@@ -65,15 +65,15 @@ public class ModelResult<T extends Model> {
 		return this.status.stream().filter(status -> status != 200).count() == 0;
 	}
 
-	public static <T extends Model> ModelResult<T> success(T instance) {
+	public static <T extends AbstractModel> Result<T> success(T instance) {
 
-		return new ModelResult<T>(Set.of(ModelResult.OK), instance, new HashMap<>());
+		return new Result<T>(Set.of(Result.OK), instance, new HashMap<>());
 	}
 
-	public static <T extends Model> ModelResult<T> error(Set<Integer> status, T instance,
+	public static <T extends AbstractModel> Result<T> error(Set<Integer> status, T instance,
 			Map<String, String> messageSet) {
 
-		return new ModelResult<T>(status, instance, messageSet);
+		return new Result<T>(status, instance, messageSet);
 	}
 
 }

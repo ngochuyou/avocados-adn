@@ -3,8 +3,8 @@
  */
 package adn.model.models;
 
-import adn.model.Model;
 import adn.model.Modelized;
+import adn.model.Model;
 import adn.model.entities.Account;
 
 /**
