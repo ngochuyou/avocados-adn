@@ -3,6 +3,8 @@
  */
 package adn.model.entities;
 
+import java.io.Serializable;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -120,6 +122,12 @@ public class Account extends adn.model.Entity {
 
 	public void setGender(Gender gender) {
 		this.gender = gender;
+	}
+
+	@Override
+	public void setId(Serializable id) {
+		// TODO Auto-generated method stub
+		this.id = (String) id;
 	}
 
 }

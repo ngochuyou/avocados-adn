@@ -3,6 +3,8 @@
  */
 package adn.model.entities;
 
+import java.io.Serializable;
+
 import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -64,6 +66,12 @@ public class Factor extends Entity {
 
 	public void setUpdatedBy(String updatedBy) {
 		this.updatedBy = updatedBy;
+	}
+
+	@Override
+	public void setId(Serializable id) {
+		// TODO Auto-generated method stub
+		this.id = (String) id;
 	}
 
 }
