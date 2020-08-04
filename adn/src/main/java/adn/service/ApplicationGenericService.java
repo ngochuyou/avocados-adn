@@ -9,7 +9,7 @@ import adn.model.Entity;
  * @author Ngoc Huy
  *
  */
-public interface ApplicationService<T extends Entity> {
+public interface ApplicationGenericService<T extends Entity> {
 
 	default T doProcedure(T model) {
 		return model;

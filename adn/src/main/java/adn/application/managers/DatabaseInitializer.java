@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +31,9 @@ public class DatabaseInitializer implements ApplicationManager {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+	@Autowired
+	private PasswordEncoder passwordEncoder;
+	
 	@Transactional
 	@Override
 	public void initialize() {
@@ -39,7 +42,6 @@ public class DatabaseInitializer implements ApplicationManager {
 
 		Session session = sessionFactory.getCurrentSession();
 		Admin admin = new Admin();
-		BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
 		admin.setId("ngochuy.ou");
 		admin.setPassword(passwordEncoder.encode("password"));

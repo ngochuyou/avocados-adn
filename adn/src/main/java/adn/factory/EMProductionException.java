@@ -24,7 +24,7 @@ public class EMProductionException extends RuntimeException {
 	}
 
 	@Override
-	public String toString() {
+	public String getMessage() {
 		// TODO Auto-generated method stub
 		return "Production of " + factoryClass.getName() + " caused exception.";
 	}

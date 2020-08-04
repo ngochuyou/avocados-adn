@@ -6,7 +6,7 @@ package adn.service.services;
 import org.springframework.stereotype.Service;
 
 import adn.model.entities.Customer;
-import adn.service.ApplicationService;
+import adn.service.ApplicationGenericService;
 import adn.service.GenericService;
 import adn.utilities.Strings;
 
@@ -16,7 +16,7 @@ import adn.utilities.Strings;
  */
 @Service
 @GenericService(target = Customer.class)
-public class CustomerService implements ApplicationService<Customer> {
+public class CustomerService implements ApplicationGenericService<Customer> {
 
 	@Override
 	public Customer doProcedure(Customer model) {

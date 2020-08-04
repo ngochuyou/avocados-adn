@@ -9,7 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import adn.model.entities.Factor;
-import adn.service.ApplicationService;
+import adn.service.ApplicationGenericService;
 import adn.service.GenericService;
 import adn.utilities.Strings;
 
@@ -19,7 +19,7 @@ import adn.utilities.Strings;
  */
 @Service
 @GenericService(target = Factor.class)
-public class FactorService implements ApplicationService<Factor> {
+public class FactorService implements ApplicationGenericService<Factor> {
 
 	@Override
 	public Factor doProcedure(Factor model) {

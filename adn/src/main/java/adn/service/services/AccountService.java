@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import adn.application.Constants;
 import adn.model.entities.Account;
-import adn.service.ApplicationService;
+import adn.service.ApplicationGenericService;
 import adn.service.GenericService;
 import adn.utilities.Gender;
 import adn.utilities.Role;
@@ -20,7 +20,7 @@ import adn.utilities.Strings;
  */
 @Service
 @GenericService(target = Account.class)
-public class AccountService implements ApplicationService<Account> {
+public class AccountService implements ApplicationGenericService<Account> {
 
 	@Override
 	public Account doProcedure(Account model) {
