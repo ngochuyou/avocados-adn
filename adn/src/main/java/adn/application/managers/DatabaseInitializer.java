@@ -7,11 +7,8 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import adn.application.ApplicationManager;
 import adn.model.entities.Admin;
@@ -22,27 +19,24 @@ import adn.utilities.Role;
  * @author Ngoc Huy
  *
  */
-@Component
 @Order(1)
 public class DatabaseInitializer implements ApplicationManager {
 
-	@Autowired
-	private SessionFactory sessionFactory;
+	private SessionFactory sessionFactory = context.getBean(SessionFactory.class);
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	@Autowired
-	private PasswordEncoder passwordEncoder;
-	
-	@Transactional
+	private PasswordEncoder passwordEncoder = context.getBean(PasswordEncoder.class);
+
 	@Override
 	public void initialize() {
 		// TODO Auto-generated method stub
 		logger.info("Initializing " + this.getClass().getName());
 
-		Session session = sessionFactory.getCurrentSession();
+		Session session = sessionFactory.openSession();
 		Admin admin = new Admin();
 
+		session.beginTransaction();
 		admin.setId("ngochuy.ou");
 		admin.setPassword(passwordEncoder.encode("password"));
 		admin.setActive(true);
@@ -59,6 +53,8 @@ public class DatabaseInitializer implements ApplicationManager {
 			logger.info("Inserting ADMIN: " + admin.getId());
 		}
 
+		session.flush();
+		session.close();
 		logger.info("Finished initializing " + this.getClass().getName());
 	}
 

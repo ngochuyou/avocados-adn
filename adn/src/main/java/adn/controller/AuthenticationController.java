@@ -16,12 +16,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import adn.application.managers.ConfigurationsManager;
 import adn.security.JwtUtils;
 import adn.utilities.Strings;
 
@@ -43,13 +43,7 @@ public class AuthenticationController extends BaseController {
 	public @ResponseBody ResponseEntity<?> authenticate(
 			@RequestParam(name = "username", required = true) String username,
 			@RequestParam(name = "password", required = true) String password, HttpServletRequest request,
-			HttpServletResponse response, @CookieValue(name = "JWT", required = false) Cookie c) {
-		if (c == null) {
-			System.err.println("Cookie not found.");
-		} else {
-			System.out.println("Found a cookie with value: " + c.getValue());
-		}
-
+			HttpServletResponse response) {
 		if (Strings.isEmpty(username) || Strings.isEmpty(password)) {
 			return ResponseEntity.badRequest().body("Credentials required");
 		}
@@ -66,10 +60,10 @@ public class AuthenticationController extends BaseController {
 
 		String jwt = jwtUtils.generateToken(userDetails);
 		// create a cookie
-		Cookie cookie = new Cookie("JWT", jwt);
+		Cookie cookie = new Cookie(ConfigurationsManager.securityResource.jwtCookieName, jwt);
 
 		cookie.setPath("/");
-		cookie.setMaxAge(7 * 24 * 60 * 60); // expires in 7 days
+		cookie.setMaxAge(7 * 24 * 60 * 60);// days
 		cookie.setSecure(false);
 		cookie.setHttpOnly(true);
 		// add cookie to response

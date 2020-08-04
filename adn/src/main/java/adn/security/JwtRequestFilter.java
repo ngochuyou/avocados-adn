@@ -21,14 +21,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.WebUtils;
 
+import adn.application.managers.ConfigurationsManager;
+
 /**
  * @author Ngoc Huy
  *
  */
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
-
-	private final String authHeaderPrefix = "JWTBearer";
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -44,10 +44,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 		// TODO Auto-generated method stub
 		final String authHeader = request.getHeader("Authorization");
 
-		if (authHeader != null && authHeader.startsWith(authHeaderPrefix)) {
+		if (authHeader != null && authHeader.startsWith(ConfigurationsManager.securityResource.jwtAuthHeaderValue)) {
 			logger.debug("JWT filtering request");
-
-			String jwt = WebUtils.getCookie(request, "JWT").getValue();
+			System.out
+					.println(WebUtils.getCookie(request, ConfigurationsManager.securityResource.jwtCookieName) == null);
+			String jwt = WebUtils.getCookie(request, ConfigurationsManager.securityResource.jwtCookieName).getValue();
 			String username = jwtUtils.extractUsername(jwt);
 
 			if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {

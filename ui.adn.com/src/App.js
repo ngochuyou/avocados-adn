@@ -13,13 +13,12 @@ class App extends React.Component {
 		});
 
 		console.log(res);
-		// res = await fetch(`http://localhost:8080/t/greet`, {
-		// 	method: 'GET',
-		// 	mode: 'cors',
-		// 	headers: {
-		// 		'Authorization' : 'JWTBearer'
-		// 	}
-		// });
+
+		res = await fetch(`http://localhost:8080/t/greet`, {
+			method: 'GET',
+			mode: 'cors',
+			credentials: 'include'
+		});
 	}
 
 	render() {

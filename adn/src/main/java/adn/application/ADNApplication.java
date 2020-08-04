@@ -3,6 +3,7 @@
  */
 package adn.application;
 
+import org.springframework.beans.BeansException;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -32,7 +33,6 @@ public class ADNApplication {
 	@SuppressWarnings("unchecked")
 	@EventListener(ApplicationReadyEvent.class)
 	private void doAfterStartup() {
-
 		ApplicationContext context = ApplicationContextProvider.getApplicationContext();
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
@@ -70,7 +70,20 @@ public class ADNApplication {
 					return 0;
 				}
 			})
-			.forEach(clazz -> context.getBean(clazz).initialize());
+			.forEach(clazz -> {
+				try {
+					ApplicationManager manager = context.getBean(clazz);
+					
+					manager.initialize();
+				} catch (BeansException be) {
+					try {	
+						clazz.getConstructor().newInstance().initialize();;
+					} catch (Exception e) {
+						e.printStackTrace();
+						SpringApplication.exit(context);
+					}
+				}
+			});
 		// @formatter:on
 	}
 

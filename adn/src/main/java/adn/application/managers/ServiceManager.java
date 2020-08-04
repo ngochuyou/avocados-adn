@@ -9,7 +9,6 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
@@ -38,8 +37,7 @@ public class ServiceManager implements ApplicationManager {
 	private ApplicationGenericService<?> defaultService = new ApplicationGenericService<Entity>() {
 	};
 
-	@Autowired
-	private ModelManager modelManager;
+	private ModelManager modelManager = context.getBean(ModelManager.class);
 
 	@SuppressWarnings("unchecked")
 	@Override

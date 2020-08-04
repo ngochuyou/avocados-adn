@@ -182,5 +182,4 @@ public class ModelManager implements ApplicationManager {
 		this.modelMap = modelMap;
 	}
 
-	
 }
