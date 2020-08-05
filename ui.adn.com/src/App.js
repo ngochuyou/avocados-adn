@@ -3,22 +3,29 @@ import React from 'react';
 class App extends React.Component {
 
 	async componentDidMount() {
-		let res = await fetch(`http://localhost:8080/auth/token?username=${encodeURIComponent("ngochuy.ou")}&password=password`, {
+		let form = new FormData();
+
+		form.append('username', "ngochuy.ou");
+		form.append('password', "password");
+
+		let res = await fetch(`http://localhost:8080/auth/token`, {
 			credentials: 'include',
 			method: 'POST',
-			headers: {
-				"Content-Type": "application/x-www-form-urlencoded"
-			},
-			redirect: 'follow'
+			body: form
 		});
 
+		res = await res.text();
 		console.log(res);
 
-		res = await fetch(`http://localhost:8080/t/greet`, {
-			method: 'GET',
-			mode: 'cors',
-			credentials: 'include'
-		});
+		// let res = await fetch(`http://localhost:8080/public/greet`, {
+		// 	method: 'GET',
+		// 	mode: 'cors',
+		// 	credentials: 'include',
+		// 	headers: {
+		// 		"Authorization": "JWTBearer"
+		// 	},
+		// });
+		//210
 	}
 
 	render() {

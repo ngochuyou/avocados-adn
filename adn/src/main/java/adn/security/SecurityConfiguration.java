@@ -17,10 +17,13 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import adn.service.AuthenticationService;
 
 /**
  * @author Ngoc Huy
@@ -29,6 +32,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
+
+	@Autowired
+	private AuthenticationService authService;
 
 	@Autowired
 	private ApplicationUserDetailsService userDetailsService;
@@ -53,8 +59,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 			.and()
 				.csrf().disable()
 			.authorizeRequests()
-				.antMatchers("/t/**").permitAll()
-				.antMatchers(HttpMethod.POST, "/auth/token/**").permitAll()
+				.antMatchers(HttpMethod.POST, "/auth/token").permitAll()
 				.anyRequest().authenticated()
 			.and()
 				.sessionManagement()
@@ -81,17 +86,26 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
 
+		configuration.setAllowCredentials(true);
 		configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
 		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(
 				Arrays.asList("authorization", "content-type", "x-auth-token", "Access-Control-Allow-Credentials"));
-		configuration.setExposedHeaders(Arrays.asList("x-auth-token"));
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
 		source.registerCorsConfiguration("/**", configuration);
 
 		return source;
+	}
+
+	@Bean
+	public AbstractAuthenticationProcessingFilter jwtUsernamePasswordAuthenticationFilter() throws Exception {
+		AbstractAuthenticationProcessingFilter jwtAuthFilter = new JwtUsernamePasswordAuthenticationFilter(authService);
+
+		jwtAuthFilter.setAuthenticationManager(authenticationManager());
+
+		return jwtAuthFilter;
 	}
 
 }

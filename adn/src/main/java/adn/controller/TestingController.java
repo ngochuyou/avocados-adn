@@ -17,15 +17,13 @@ import org.springframework.web.bind.annotation.RestController;
  *
  */
 @RestController
-@RequestMapping("/t")
+@RequestMapping("/public")
 public class TestingController extends BaseController {
 
 	@GetMapping("/greet")
 	public ResponseEntity<?> greet(@CookieValue(name = "_sie9t", required = false) Cookie c,
 			HttpServletResponse response) {
 		System.out.println(c == null);
-
-		response.setHeader("Access-Control-Allow-Credentials", "true");
 
 		return handleSuccess("Hello");
 	}
