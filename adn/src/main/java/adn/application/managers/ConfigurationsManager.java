@@ -15,7 +15,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.util.ResourceUtils;
 
 import adn.application.ApplicationManager;
-import adn.security.ApplicationSecurityResource;
+import adn.security.SecurityResource;
 
 /**
  * @author Ngoc Huy
@@ -24,7 +24,7 @@ import adn.security.ApplicationSecurityResource;
 @Order(value = Ordered.HIGHEST_PRECEDENCE)
 public class ConfigurationsManager implements ApplicationManager {
 
-	public static ApplicationSecurityResource securityResource;
+	public static SecurityResource securityResource;
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -37,7 +37,7 @@ public class ConfigurationsManager implements ApplicationManager {
 	}
 
 	private void readSecurityProperties() {
-		ConfigurationsManager.securityResource = new ApplicationSecurityResource();
+		ConfigurationsManager.securityResource = new SecurityResource();
 
 		try {
 			File file = ResourceUtils.getFile(

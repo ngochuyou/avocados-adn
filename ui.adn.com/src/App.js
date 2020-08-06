@@ -3,15 +3,15 @@ import React from 'react';
 class App extends React.Component {
 
 	async componentDidMount() {
-		let form = new FormData();
+		// let form = new FormData();
 
-		form.append('username', "ngochuy.ou");
-		form.append('password', "password");
+		// form.append('username', "ngochuy.ou");
+		// form.append('password', "password");
 
-		let res = await fetch(`http://localhost:8080/auth/token`, {
+		let res = await fetch(`http://localhost:8080/auth/logout`, {
 			credentials: 'include',
 			method: 'POST',
-			body: form
+			// body: form
 		});
 
 		res = await res.text();

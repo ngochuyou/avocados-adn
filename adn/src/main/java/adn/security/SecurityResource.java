@@ -7,7 +7,7 @@ package adn.security;
  * @author Ngoc Huy
  *
  */
-public class ApplicationSecurityResource {
+public class SecurityResource {
 
 	public String jwtAuthEndpoint;
 

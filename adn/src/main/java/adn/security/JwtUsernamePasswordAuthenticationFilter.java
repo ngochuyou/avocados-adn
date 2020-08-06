@@ -71,7 +71,6 @@ public class JwtUsernamePasswordAuthenticationFilter extends AbstractAuthenticat
 
 		cookie.setMaxAge(7 * 24 * 60 * 60);// days
 		response.addCookie(cookie);
-		response.setHeader("Access-Control-Allow-Credentials", "true");
 		response.getWriter().print("LOGGED_IN");
 		response.getWriter().flush();
 		response.setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE);
