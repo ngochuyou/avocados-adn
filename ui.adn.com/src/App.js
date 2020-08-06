@@ -8,9 +8,12 @@ class App extends React.Component {
 		// form.append('username', "ngochuy.ou");
 		// form.append('password', "password");
 
-		let res = await fetch(`http://localhost:8080/auth/logout`, {
+		let res = await fetch(`http://localhost:8080/rest/account/admin`, {
 			credentials: 'include',
 			method: 'POST',
+			headers: {
+				Authorization: "JWTBearer"
+			}
 			// body: form
 		});
 
