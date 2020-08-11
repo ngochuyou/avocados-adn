@@ -10,7 +10,8 @@ import org.springframework.stereotype.Component;
 
 import adn.application.managers.FactoryProvider;
 import adn.application.managers.ModelManager;
-import adn.application.managers.ServiceProvider;
+import adn.service.BaseService;
+import adn.application.managers.GenericServiceProvider;
 
 /**
  * @author Ngoc Huy
@@ -26,8 +27,11 @@ public class BaseController {
 	protected FactoryProvider factoryManager;
 
 	@Autowired
-	protected ServiceProvider serviceManager;
+	protected GenericServiceProvider serviceManager;
 
+	@Autowired
+	protected BaseService baseService;
+	
 	protected final String HASROLE_ADMIN = "hasRole('ADMIN')";
 
 	public <T> ResponseEntity<T> handleSuccess(T body) {

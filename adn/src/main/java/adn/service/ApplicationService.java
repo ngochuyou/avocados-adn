@@ -9,8 +9,12 @@ import adn.model.Entity;
  * @author Ngoc Huy
  *
  */
-public interface ApplicationGenericService<T extends Entity> {
+public interface ApplicationService<T extends Entity> {
 
+	enum ServiceStrategy {
+		GENERIC
+	}
+	
 	default T doProcedure(T model) {
 		return model;
 	};
