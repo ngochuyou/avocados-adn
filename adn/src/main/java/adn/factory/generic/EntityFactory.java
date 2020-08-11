@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.factory.factories;
+package adn.factory.generic;
 
 import org.springframework.stereotype.Component;
 
@@ -17,7 +17,7 @@ import adn.model.Model;
  */
 @Component
 @EMFactory
-public class AbstractFactory<E extends Entity, M extends Model> implements Factory<E, M> {
+public class EntityFactory<E extends Entity, M extends Model> implements Factory<E, M> {
 
 	@Override
 	public E produceEntity(M model, Class<E> clazz) throws EMProductionException {

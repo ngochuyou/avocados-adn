@@ -28,7 +28,7 @@ import adn.model.Model;
  */
 @Component
 @Order(4)
-public class FactoryManager implements ApplicationManager {
+public class FactoryProvider implements ApplicationManager {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 

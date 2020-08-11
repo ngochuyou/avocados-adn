@@ -8,9 +8,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import adn.application.managers.FactoryManager;
+import adn.application.managers.FactoryProvider;
 import adn.application.managers.ModelManager;
-import adn.application.managers.ServiceManager;
+import adn.application.managers.ServiceProvider;
 
 /**
  * @author Ngoc Huy
@@ -23,10 +23,10 @@ public class BaseController {
 	protected ModelManager modelManager;
 
 	@Autowired
-	protected FactoryManager factoryManager;
+	protected FactoryProvider factoryManager;
 
 	@Autowired
-	protected ServiceManager serviceManager;
+	protected ServiceProvider serviceManager;
 
 	protected final String HASROLE_ADMIN = "hasRole('ADMIN')";
 

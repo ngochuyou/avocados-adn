@@ -28,7 +28,7 @@ import adn.service.GenericService;
  */
 @Component
 @Order(3)
-public class ServiceManager implements ApplicationManager {
+public class ServiceProvider implements ApplicationManager {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 

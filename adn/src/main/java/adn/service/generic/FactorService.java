@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.services;
+package adn.service.generic;
 
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;

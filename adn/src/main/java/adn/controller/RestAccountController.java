@@ -18,7 +18,7 @@ import adn.model.models.AdminModel;
  */
 @RestController
 @RequestMapping("/rest/account")
-public class RESTAccountController extends BaseController {
+public class RestAccountController extends BaseController {
 	
 	@PreAuthorize(HASROLE_ADMIN)
 	@PostMapping("/admin")

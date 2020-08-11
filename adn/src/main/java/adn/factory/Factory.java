@@ -6,7 +6,7 @@ package adn.factory;
 import java.lang.reflect.InvocationTargetException;
 
 import adn.application.ApplicationContextProvider;
-import adn.application.managers.ServiceManager;
+import adn.application.managers.ServiceProvider;
 import adn.model.Entity;
 import adn.model.Model;
 
@@ -16,8 +16,8 @@ import adn.model.Model;
  */
 public interface Factory<E extends Entity, M extends Model> {
 
-	final ServiceManager serviceManager = ApplicationContextProvider.getApplicationContext()
-			.getBean(ServiceManager.class);
+	final ServiceProvider serviceManager = ApplicationContextProvider.getApplicationContext()
+			.getBean(ServiceProvider.class);
 
 	default E produceEntity(M model, Class<E> clazz) throws EMProductionException {
 		try {

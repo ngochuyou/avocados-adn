@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.model.specification.specifications;
+package adn.model.specification.generic;
 
 import java.util.Map;
 import java.util.Set;

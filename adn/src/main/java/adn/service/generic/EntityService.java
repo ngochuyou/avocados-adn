@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.services;
+package adn.service.generic;
 
 import java.util.Date;
 

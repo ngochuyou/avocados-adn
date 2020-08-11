@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.services;
+package adn.service.generic;
 
 import org.springframework.stereotype.Service;
 

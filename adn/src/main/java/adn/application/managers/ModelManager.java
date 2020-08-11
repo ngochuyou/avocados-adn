@@ -65,9 +65,10 @@ public class ModelManager implements ApplicationManager {
 
 		try {
 			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.entityPackage)) {
-				Class<? extends adn.model.Entity> clazz = (Class<? extends adn.model.Entity>) Class.forName(beanDef.getBeanClassName()); 
+				Class<? extends adn.model.Entity> clazz = (Class<? extends adn.model.Entity>) Class
+						.forName(beanDef.getBeanClassName());
 				Stack<Class<? extends adn.model.Entity>> stack = reflector.getEntityClassStack(clazz);
-				
+
 				while (!stack.isEmpty()) {
 					this.entityTree.add(stack.pop());
 				}
@@ -77,10 +78,9 @@ public class ModelManager implements ApplicationManager {
 			SpringApplication.exit(context);
 		}
 		this.entityTree.forEach(tree -> {
-			logger.info(tree.getNode().getName() + " added to " +
-					this.entityTree.getClass().getName() +
-						(tree.getParent() == null ? " as super root"
-								: " with root " + tree.getParent().getNode().getName()));
+			logger.info(tree.getNode().getName() + " added to " + this.entityTree.getClass().getName()
+					+ (tree.getParent() == null ? " as super root"
+							: " with root " + tree.getParent().getNode().getName()));
 		});
 		// @formatter:on
 		logger.info("Finished initializing " + this.entityTree.getClass().getName());

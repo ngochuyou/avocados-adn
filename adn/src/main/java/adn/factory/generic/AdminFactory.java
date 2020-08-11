@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.factory.factories;
+package adn.factory.generic;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

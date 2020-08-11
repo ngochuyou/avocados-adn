@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.factory.factories;
+package adn.factory.generic;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,7 +24,7 @@ public class AccountFactory<A extends Account, AM extends AccountModel> implemen
 
 	@SuppressWarnings("rawtypes")
 	@Autowired
-	private AbstractFactory abstractFactory;
+	private EntityFactory abstractFactory;
 
 	@SuppressWarnings("unchecked")
 	@Override
