@@ -41,7 +41,7 @@ public class ConfigurationsManager implements ApplicationManager {
 
 		try {
 			File file = ResourceUtils.getFile(
-					"C:\\Users\\Ngoc Huy\\Documents\\workspace-spring-tool-suite-4-4.4.0.RELEASE\\avocados-adn\\config\\SpevIDMKW.txt.txt");
+					"C:\\Users\\Ngoc Huy\\Documents\\workspace\\avocados-adn\\config\\SpevIDMKW.txt.txt");
 			List<String> lines = Files.readAllLines(file.toPath());
 			String nameValSeperator = lines.get(0);
 

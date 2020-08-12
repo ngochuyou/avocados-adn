@@ -8,9 +8,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import adn.model.Genetized;
 import adn.model.entities.Personnel;
 import adn.service.ApplicationService;
-import adn.service.GenericService;
 import adn.utilities.Strings;
 
 /**
@@ -18,7 +18,7 @@ import adn.utilities.Strings;
  *
  */
 @Service
-@GenericService(target = Personnel.class)
+@Genetized(gene = Personnel.class)
 public class PersonnelService implements ApplicationService<Personnel> {
 
 	@Override

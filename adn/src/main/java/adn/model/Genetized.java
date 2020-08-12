@@ -14,8 +14,8 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface Modelized {
+public @interface Genetized {
 
-	public Class<? extends Entity> relation() default Entity.class;
+	public Class<? extends Entity> gene() default Entity.class;
 
 }

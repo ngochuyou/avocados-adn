@@ -5,14 +5,14 @@ package adn.model.models;
 
 import java.util.Date;
 
-import adn.model.Modelized;
+import adn.model.Genetized;
 import adn.model.entities.Admin;
 
 /**
  * @author Ngoc Huy
  *
  */
-@Modelized(relation = Admin.class)
+@Genetized(gene = Admin.class)
 public class AdminModel extends AccountModel {
 
 	protected Date contractDate;

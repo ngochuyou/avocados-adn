@@ -8,15 +8,15 @@ import java.util.Date;
 import org.springframework.stereotype.Service;
 
 import adn.model.Entity;
+import adn.model.Genetized;
 import adn.service.ApplicationService;
-import adn.service.GenericService;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Service
-@GenericService(target = Entity.class)
+@Genetized(gene = Entity.class)
 public class EntityService implements ApplicationService<Entity> {
 
 	@Override

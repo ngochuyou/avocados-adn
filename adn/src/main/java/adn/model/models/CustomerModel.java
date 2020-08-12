@@ -3,14 +3,14 @@
  */
 package adn.model.models;
 
-import adn.model.Modelized;
+import adn.model.Genetized;
 import adn.model.entities.Customer;
 
 /**
  * @author Ngoc Huy
  *
  */
-@Modelized(relation = Customer.class)
+@Genetized(gene = Customer.class)
 public class CustomerModel extends AccountModel {
 
 	protected String address;

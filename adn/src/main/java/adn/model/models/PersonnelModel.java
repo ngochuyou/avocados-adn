@@ -3,7 +3,7 @@
  */
 package adn.model.models;
 
-import adn.model.Modelized;
+import adn.model.Genetized;
 import adn.model.entities.Account;
 import adn.model.entities.Personnel;
 
@@ -13,7 +13,7 @@ import java.util.Collection;
  * @author Ngoc Huy
  *
  */
-@Modelized(relation = Personnel.class)
+@Genetized(gene = Personnel.class)
 public class PersonnelModel extends AccountModel {
 
 	protected String createdBy;

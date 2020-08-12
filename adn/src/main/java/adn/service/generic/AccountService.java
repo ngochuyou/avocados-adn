@@ -7,9 +7,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import adn.application.Constants;
+import adn.model.Genetized;
 import adn.model.entities.Account;
 import adn.service.ApplicationService;
-import adn.service.GenericService;
 import adn.utilities.Gender;
 import adn.utilities.Role;
 import adn.utilities.Strings;
@@ -19,7 +19,7 @@ import adn.utilities.Strings;
  *
  */
 @Service
-@GenericService(target = Account.class)
+@Genetized(gene = Account.class)
 public class AccountService implements ApplicationService<Account> {
 
 	@Override

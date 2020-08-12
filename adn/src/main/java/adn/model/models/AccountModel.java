@@ -3,7 +3,7 @@
  */
 package adn.model.models;
 
-import adn.model.Modelized;
+import adn.model.Genetized;
 import adn.model.Model;
 import adn.model.entities.Account;
 
@@ -11,7 +11,7 @@ import adn.model.entities.Account;
  * @author Ngoc Huy
  *
  */
-@Modelized(relation = Account.class)
+@Genetized(gene = Account.class)
 public class AccountModel extends Model {
 
 	protected String username;

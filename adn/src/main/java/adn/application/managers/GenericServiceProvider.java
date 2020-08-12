@@ -19,8 +19,8 @@ import org.springframework.stereotype.Component;
 import adn.application.ApplicationManager;
 import adn.application.Constants;
 import adn.model.Entity;
+import adn.model.Genetized;
 import adn.service.ApplicationService;
-import adn.service.GenericService;
 
 /**
  * @author Ngoc Huy
@@ -56,12 +56,12 @@ public class GenericServiceProvider implements ApplicationManager {
 			for (BeanDefinition beanDef : beanDefs) {
 				Class<? extends ApplicationService<?>> clazz = (Class<? extends ApplicationService<?>>) Class
 						.forName(beanDef.getBeanClassName());
-				GenericService anno = clazz.getDeclaredAnnotation(GenericService.class);
+				Genetized anno = clazz.getDeclaredAnnotation(Genetized.class);
 
 				if (anno == null)
 					continue;
 
-				Class<? extends Entity> modelClass = anno.target();
+				Class<? extends Entity> modelClass = anno.gene();
 
 				serviceMap.put(modelClass, context.getBean(clazz));
 			}

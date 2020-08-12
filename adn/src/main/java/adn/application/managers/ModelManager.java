@@ -30,7 +30,7 @@ import adn.application.Constants;
 import adn.model.AbstractModel;
 import adn.model.EntityTree;
 import adn.model.Model;
-import adn.model.Modelized;
+import adn.model.Genetized;
 
 /**
  * @author Ngoc Huy
@@ -94,7 +94,7 @@ public class ModelManager implements ApplicationManager {
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		HashSet<Class<? extends Model>> models = new HashSet<>();
 		// @formatter:off
-		scanner.addIncludeFilter(new AnnotationTypeFilter(Modelized.class));
+		scanner.addIncludeFilter(new AnnotationTypeFilter(Genetized.class));
 		scanner.findCandidateComponents(Constants.modelPackage)
 			.stream()
 			.map(bean -> {
@@ -139,8 +139,8 @@ public class ModelManager implements ApplicationManager {
 				}
 			});
 		models.forEach(clazz -> {
-			Modelized annotaion = clazz.getDeclaredAnnotation(Modelized.class);
-			Class<? extends adn.model.Entity> relatedClass = annotaion.relation();
+			Genetized annotaion = clazz.getDeclaredAnnotation(Genetized.class);
+			Class<? extends adn.model.Entity> relatedClass = annotaion.gene();
 
 			if (this.modelMap.get(relatedClass) == null) {
 				this.modelMap.put(relatedClass, Set.of(clazz));
