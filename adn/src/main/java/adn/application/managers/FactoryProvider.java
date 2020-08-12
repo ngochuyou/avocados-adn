@@ -45,7 +45,7 @@ public class FactoryProvider implements ApplicationManager {
 
 		scanner.addIncludeFilter(new AssignableTypeFilter(Factory.class));
 
-		for (BeanDefinition def : scanner.findCandidateComponents(Constants.factoryPackage)) {
+		for (BeanDefinition def : scanner.findCandidateComponents(Constants.genericFactoryPackage)) {
 			try {
 				Class<? extends Factory> factoryClass = (Class<? extends Factory>) Class
 						.forName(def.getBeanClassName());

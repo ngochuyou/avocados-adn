@@ -17,11 +17,11 @@ public class Constants {
 
 	public static final String modelPackage = "adn.model.models";
 
-	public static final String specificationPackage = "adn.model.specification.generic";
+	public static final String genericSpecificationPackage = "adn.model.specification.generic";
 
-	public static final String factoryPackage = "adn.factory.generic";
+	public static final String genericFactoryPackage = "adn.factory.generic";
 
-	public static final String servicePackage = "adn.service.generic";
+	public static final String genericServicePackage = "adn.service.generic";
 
 	public static final String basePackage = "adn";
 

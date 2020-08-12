@@ -49,7 +49,7 @@ public class SpecificationFactory implements ApplicationManager {
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
 		scanner.addIncludeFilter(new AssignableTypeFilter(Specification.class));
-		scanner.findCandidateComponents(Constants.specificationPackage)
+		scanner.findCandidateComponents(Constants.genericSpecificationPackage)
 			.stream()
 			.map(bean -> {
 				try {

@@ -49,7 +49,7 @@ public class GenericServiceProvider implements ApplicationManager {
 		scanner.addIncludeFilter(new AssignableTypeFilter(GenericService.class));
 		serviceMap = new HashMap<>();
 
-		Set<BeanDefinition> beanDefs = scanner.findCandidateComponents(Constants.servicePackage);
+		Set<BeanDefinition> beanDefs = scanner.findCandidateComponents(Constants.genericServicePackage);
 
 		try {
 			for (BeanDefinition beanDef : beanDefs) {
