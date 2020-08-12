@@ -82,6 +82,10 @@ public class ADNApplication {
 						e.printStackTrace();
 						SpringApplication.exit(context);
 					}
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					SpringApplication.exit(context);
 				}
 			});
 		// @formatter:on

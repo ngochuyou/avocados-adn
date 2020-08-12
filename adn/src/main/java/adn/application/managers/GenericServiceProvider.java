@@ -34,8 +34,7 @@ public class GenericServiceProvider implements ApplicationManager {
 
 	private Map<Class<? extends Entity>, GenericService<? extends Entity>> serviceMap;
 
-	private GenericService<?> defaultService = new GenericService<Entity>() {
-	};
+	private GenericService<?> defaultService = new GenericService<Entity>() {};
 
 	private ModelManager modelManager = context.getBean(ModelManager.class);
 
@@ -67,11 +66,25 @@ public class GenericServiceProvider implements ApplicationManager {
 			}
 
 			modelManager.getEntityTree().forEach(treeNode -> {
-				if (serviceMap.get(treeNode.getNode()) == null) {
-					serviceMap.put(treeNode.getNode(), defaultService);
+				if (treeNode.getParent() == null) {
+					return;
 				}
 
-				logger.info("Assigning " + serviceMap.get(treeNode.getNode()).getClass().getName() + " for "
+				GenericService<?> compositeService;
+				GenericService<?> parentService = serviceMap.get(treeNode.getParent().getNode());
+				GenericService<?> childService = serviceMap.get(treeNode.getNode());
+
+				if (parentService != null && childService != null) {
+					compositeService = parentService.and(childService);
+				} else {
+					compositeService = parentService != null ? parentService : childService;
+				}
+
+				serviceMap.put(treeNode.getNode(), compositeService == null ? defaultService : compositeService);
+			});
+
+			modelManager.getEntityTree().forEach(treeNode -> {
+				logger.info("Assigning " + serviceMap.get(treeNode.getNode()).getName() + " for "
 						+ treeNode.getNode().getName());
 			});
 		} catch (Exception e) {

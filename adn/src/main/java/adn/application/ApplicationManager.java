@@ -17,6 +17,6 @@ public interface ApplicationManager {
 
 	final ClassReflector reflector = ApplicationContextProvider.getApplicationContext().getBean(ClassReflector.class);
 
-	void initialize();
+	void initialize() throws Exception;
 
 }

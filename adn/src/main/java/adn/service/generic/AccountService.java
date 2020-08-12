@@ -38,7 +38,7 @@ public class AccountService implements GenericService<Account> {
 		// TODO Auto-generated method stub
 		model.setRole(model.getRole() == null ? Role.ANONYMOUS : model.getRole());
 		model.setGender(model.getGender() == null ? Gender.UNKNOWN : model.getGender());
-		model.setPassword(new BCryptPasswordEncoder().encode(model.getPassword()));
+		model.setPassword(model.getPassword() == null ? "" : new BCryptPasswordEncoder().encode(model.getPassword()));
 
 		return model;
 	}

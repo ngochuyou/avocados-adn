@@ -34,6 +34,10 @@ public class PersonnelService implements GenericService<Personnel> {
 		// TODO Auto-generated method stub
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
+		if (authentication == null) {
+			return model;
+		}
+
 		model.setCreatedBy(authentication instanceof AnonymousAuthenticationToken ? null : authentication.getName());
 
 		return model;

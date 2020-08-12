@@ -17,15 +17,15 @@ public class Constants {
 
 	public static final String modelPackage = "adn.model.models";
 
-	public static final String specificationPackage = "adn.model.specification.specifications";
+	public static final String specificationPackage = "adn.model.specification.generic";
 
-	public static final String factoryPackage = "adn.factory.factories";
-	
-	public static final String servicePackage = "adn.service.services";
+	public static final String factoryPackage = "adn.factory.generic";
+
+	public static final String servicePackage = "adn.service.generic";
 
 	public static final String basePackage = "adn";
 
-	public static final String IMAGE_FILE_PATH = "D:\\adn-upload\\images\\";
+	public static final String IMAGE_FILE_PATH = "C:\\Users\\Ngoc Huy\\Pictures\\Saved Pictures";
 
 	public static final String DEFAULT_IMAGE_NAME = Strings.hash("default_image") + ".jpg";
 

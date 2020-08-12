@@ -106,23 +106,4 @@ public class BaseDAO {
 		return result;
 	}
 
-	public <T extends Entity> Result<T> remove(T instance, Class<T> clazz) {
-		if (instance == null || clazz == null) {
-
-			return Result.error(HttpStatus.BAD_REQUEST.ordinal(), instance, Map.of());
-		}
-
-		if (this.findById(instance.getId(), clazz) == null) {
-
-			return Result.error(HttpStatus.CONFLICT.ordinal(), instance, Map.of("id", NOT_FOUND));
-		}
-
-		Session session = sessionFactory.getCurrentSession();
-
-		instance.setActive(false);
-		session.update(instance);
-
-		return Result.success(instance);
-	}
-
 }
