@@ -23,7 +23,7 @@ import adn.utilities.Strings;
 public class AccountService implements GenericService<Account> {
 
 	@Override
-	public Account doProcedure(Account model) {
+	public Account executeDefaultProcedure(Account model) {
 		// TODO Auto-generated method stub
 		model.setId(Strings.removeSpaces(model.getId()));
 		model.setFirstName(Strings.normalizeString(model.getFirstName()));
@@ -34,7 +34,7 @@ public class AccountService implements GenericService<Account> {
 	}
 
 	@Override
-	public Account doInsertionProcedure(Account model) {
+	public Account executeInsertionProcedure(Account model) {
 		// TODO Auto-generated method stub
 		model.setRole(model.getRole() == null ? Role.ANONYMOUS : model.getRole());
 		model.setGender(model.getGender() == null ? Gender.UNKNOWN : model.getGender());
@@ -44,7 +44,7 @@ public class AccountService implements GenericService<Account> {
 	}
 
 	@Override
-	public Account doUpdateProcedure(Account model) {
+	public Account executeUpdateProcedure(Account model) {
 		// TODO Auto-generated method stub
 		if (model.getPassword() != null) {
 			model.setPassword(new BCryptPasswordEncoder().encode(model.getPassword()));

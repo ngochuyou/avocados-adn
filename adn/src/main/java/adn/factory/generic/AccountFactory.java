@@ -52,7 +52,7 @@ public class AccountFactory<A extends Account, AM extends AccountModel> implemen
 			account.setGender(null);
 		}
 
-		return serviceManager.getService(clazz).doProcedure(account);
+		return serviceManager.getService(clazz).executeDefaultProcedure(account);
 	}
 
 	@SuppressWarnings("unchecked")

@@ -22,7 +22,7 @@ import adn.utilities.Strings;
 public class PersonnelService implements GenericService<Personnel> {
 
 	@Override
-	public Personnel doProcedure(Personnel model) {
+	public Personnel executeDefaultProcedure(Personnel model) {
 		// TODO Auto-generated method stub
 		model.setCreatedBy(Strings.removeSpaces(model.getCreatedBy()));
 
@@ -30,13 +30,9 @@ public class PersonnelService implements GenericService<Personnel> {
 	}
 
 	@Override
-	public Personnel doInsertionProcedure(Personnel model) {
+	public Personnel executeInsertionProcedure(Personnel model) {
 		// TODO Auto-generated method stub
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-		if (authentication == null) {
-			return model;
-		}
 
 		model.setCreatedBy(authentication instanceof AnonymousAuthenticationToken ? null : authentication.getName());
 

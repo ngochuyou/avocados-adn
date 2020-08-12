@@ -20,7 +20,7 @@ import adn.service.GenericService;
 public class EntityService implements GenericService<Entity> {
 
 	@Override
-	public Entity doDeactivationProcedure(Entity model) {
+	public Entity executeDeactivationProcedure(Entity model) {
 		// TODO Auto-generated method stub
 		model.setDeactivatedDate(new Date());
 

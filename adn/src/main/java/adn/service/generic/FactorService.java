@@ -22,7 +22,7 @@ import adn.utilities.Strings;
 public class FactorService implements GenericService<Factor> {
 
 	@Override
-	public Factor doProcedure(Factor model) {
+	public Factor executeDefaultProcedure(Factor model) {
 		// TODO Auto-generated method stub
 		model.setName(Strings.normalizeString(model.getName()));
 		model.setCreatedBy(Strings.removeSpaces(model.getCreatedBy()));
@@ -32,7 +32,7 @@ public class FactorService implements GenericService<Factor> {
 	}
 
 	@Override
-	public Factor doInsertionProcedure(Factor model) {
+	public Factor executeInsertionProcedure(Factor model) {
 		// TODO Auto-generated method stub
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -42,7 +42,7 @@ public class FactorService implements GenericService<Factor> {
 	}
 
 	@Override
-	public Factor doUpdateProcedure(Factor model) {
+	public Factor executeUpdateProcedure(Factor model) {
 		// TODO Auto-generated method stub
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 

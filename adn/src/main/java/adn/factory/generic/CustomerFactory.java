@@ -33,7 +33,7 @@ public class CustomerFactory implements Factory<Customer, CustomerModel> {
 		customer.setAddress(model.getAddress());
 		customer.setPrestigePoint(model.getPrestigePoint());
 
-		return serviceManager.getService(clazz).doProcedure(customer);
+		return serviceManager.getService(clazz).executeDefaultProcedure(customer);
 	}
 
 	@SuppressWarnings("unchecked")

@@ -32,7 +32,7 @@ public class AdminFactory implements Factory<Admin, AdminModel> {
 
 		admin.setContractDate(model.getContractDate());
 
-		return serviceManager.getService(clazz).doProcedure(admin);
+		return serviceManager.getService(clazz).executeDefaultProcedure(admin);
 	}
 
 	@SuppressWarnings("unchecked")

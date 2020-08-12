@@ -19,7 +19,7 @@ import adn.utilities.Strings;
 public class CustomerService implements GenericService<Customer> {
 
 	@Override
-	public Customer doProcedure(Customer model) {
+	public Customer executeDefaultProcedure(Customer model) {
 		// TODO Auto-generated method stub
 		model.setAddress(Strings.normalizeString(model.getAddress()));
 

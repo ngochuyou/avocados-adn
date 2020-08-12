@@ -9,22 +9,21 @@ import adn.model.Entity;
  * @author Ngoc Huy
  *
  */
-public interface GenericService<T extends Entity> {
+public interface GenericService<T extends Entity> extends ApplicationService {
 
-	default T doProcedure(T model) {
-
+	default T executeDefaultProcedure(T model) {
 		return model;
 	};
 
-	default T doInsertionProcedure(T model) {
+	default T executeInsertionProcedure(T model) {
 		return model;
 	};
 
-	default T doUpdateProcedure(T model) {
+	default T executeUpdateProcedure(T model) {
 		return model;
 	};
 
-	default T doDeactivationProcedure(T model) {
+	default T executeDeactivationProcedure(T model) {
 		return model;
 	};
 
@@ -70,27 +69,27 @@ class And<T extends Entity> implements GenericService<T> {
 	}
 
 	@Override
-	public T doProcedure(T model) {
+	public T executeDefaultProcedure(T model) {
 		// TODO Auto-generated method stub
-		return right.doProcedure(left.doProcedure(model));
+		return right.executeDefaultProcedure(left.executeDefaultProcedure(model));
 	}
 
 	@Override
-	public T doInsertionProcedure(T model) {
+	public T executeInsertionProcedure(T model) {
 		// TODO Auto-generated method stub
-		return right.doInsertionProcedure(left.doInsertionProcedure(model));
+		return right.executeInsertionProcedure(left.executeInsertionProcedure(model));
 	}
 
 	@Override
-	public T doDeactivationProcedure(T model) {
+	public T executeDeactivationProcedure(T model) {
 		// TODO Auto-generated method stub
-		return right.doDeactivationProcedure(left.doDeactivationProcedure(model));
+		return right.executeDeactivationProcedure(left.executeDeactivationProcedure(model));
 	}
 
 	@Override
-	public T doUpdateProcedure(T model) {
+	public T executeUpdateProcedure(T model) {
 		// TODO Auto-generated method stub
-		return right.doUpdateProcedure(left.doUpdateProcedure(model));
+		return right.executeUpdateProcedure(left.executeUpdateProcedure(model));
 	}
 
 	@Override
