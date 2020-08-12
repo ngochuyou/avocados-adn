@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 import adn.model.Genetized;
 import adn.model.entities.Personnel;
-import adn.service.ApplicationService;
+import adn.service.GenericService;
 import adn.utilities.Strings;
 
 /**
@@ -19,7 +19,7 @@ import adn.utilities.Strings;
  */
 @Service
 @Genetized(gene = Personnel.class)
-public class PersonnelService implements ApplicationService<Personnel> {
+public class PersonnelService implements GenericService<Personnel> {
 
 	@Override
 	public Personnel doProcedure(Personnel model) {

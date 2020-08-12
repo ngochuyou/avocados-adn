@@ -5,7 +5,8 @@ package adn.model;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+
+import org.springframework.http.HttpStatus;
 
 /**
  * @author Ngoc Huy
@@ -13,34 +14,24 @@ import java.util.Set;
  */
 public class Result<T extends AbstractModel> {
 
-	protected Set<Integer> status;
+	protected int status;
 
 	protected T instance;
 
 	protected Map<String, String> messageSet;
 
-	public static final int OK = 200;
-
-	public static final int CONFLICT = 409;
-
-	public static final int BAD = 400;
-
-	public static final int FAILED = 500;
-
-	public static final int NULL = -400;
-	
-	public Result(Set<Integer> status, T instance, Map<String, String> messageSet) {
+	public Result(int status, T instance, Map<String, String> messageSet) {
 		super();
 		this.status = status;
 		this.instance = instance;
 		this.messageSet = messageSet;
 	}
 
-	public Set<Integer> getStatus() {
+	public int getStatus() {
 		return status;
 	}
 
-	public void setStatus(Set<Integer> status) {
+	public void setStatus(int status) {
 		this.status = status;
 	}
 
@@ -62,16 +53,15 @@ public class Result<T extends AbstractModel> {
 
 	public boolean isOk() {
 
-		return this.status.stream().filter(status -> status != 200).count() == 0;
+		return this.status == 200;
 	}
 
 	public static <T extends AbstractModel> Result<T> success(T instance) {
 
-		return new Result<T>(Set.of(Result.OK), instance, new HashMap<>());
+		return new Result<T>(HttpStatus.OK.ordinal(), instance, new HashMap<>());
 	}
 
-	public static <T extends AbstractModel> Result<T> error(Set<Integer> status, T instance,
-			Map<String, String> messageSet) {
+	public static <T extends AbstractModel> Result<T> error(int status, T instance, Map<String, String> messageSet) {
 
 		return new Result<T>(status, instance, messageSet);
 	}

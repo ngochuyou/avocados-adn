@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 import adn.model.Entity;
 import adn.model.Genetized;
-import adn.service.ApplicationService;
+import adn.service.GenericService;
 
 /**
  * @author Ngoc Huy
@@ -17,7 +17,7 @@ import adn.service.ApplicationService;
  */
 @Service
 @Genetized(gene = Entity.class)
-public class EntityService implements ApplicationService<Entity> {
+public class EntityService implements GenericService<Entity> {
 
 	@Override
 	public Entity doDeactivationProcedure(Entity model) {

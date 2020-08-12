@@ -6,7 +6,6 @@ package adn.dao;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.persistence.criteria.CriteriaQuery;
 
@@ -14,6 +13,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Repository;
 
 import adn.application.managers.SpecificationFactory;
@@ -61,12 +61,12 @@ public class BaseDAO {
 	public <T extends Entity> Result<T> insert(T instance, Class<T> clazz) {
 		if (instance == null || clazz == null) {
 
-			return Result.error(Set.of(Result.NULL), instance, null);
+			return Result.error(HttpStatus.BAD_REQUEST.ordinal(), instance, null);
 		}
 
 		if (this.findById(instance.getId(), clazz) != null) {
 
-			return Result.error(Set.of(Result.CONFLICT), instance, Map.of("id", EXISTED));
+			return Result.error(HttpStatus.CONFLICT.ordinal(), instance, Map.of("id", EXISTED));
 		}
 
 		Specification<T> specification = specificationFactory.getSpecification(clazz);
@@ -85,12 +85,12 @@ public class BaseDAO {
 	public <T extends Entity> Result<T> update(T instance, Class<T> clazz) {
 		if (instance == null || clazz == null) {
 
-			return Result.error(Set.of(Result.NULL), instance, Map.of());
+			return Result.error(HttpStatus.BAD_REQUEST.ordinal(), instance, Map.of());
 		}
 
 		if (this.findById(instance.getId(), clazz) == null) {
 
-			return Result.error(Set.of(Result.CONFLICT), instance, Map.of("id", NOT_FOUND));
+			return Result.error(HttpStatus.CONFLICT.ordinal(), instance, Map.of("id", NOT_FOUND));
 		}
 
 		Specification<T> specification = specificationFactory.getSpecification(clazz);
@@ -109,12 +109,12 @@ public class BaseDAO {
 	public <T extends Entity> Result<T> remove(T instance, Class<T> clazz) {
 		if (instance == null || clazz == null) {
 
-			return Result.error(Set.of(Result.NULL), instance, Map.of());
+			return Result.error(HttpStatus.BAD_REQUEST.ordinal(), instance, Map.of());
 		}
 
 		if (this.findById(instance.getId(), clazz) == null) {
 
-			return Result.error(Set.of(Result.CONFLICT), instance, Map.of("id", NOT_FOUND));
+			return Result.error(HttpStatus.CONFLICT.ordinal(), instance, Map.of("id", NOT_FOUND));
 		}
 
 		Session session = sessionFactory.getCurrentSession();

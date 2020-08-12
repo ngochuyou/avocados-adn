@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import adn.application.Constants;
 import adn.model.Genetized;
 import adn.model.entities.Account;
-import adn.service.ApplicationService;
+import adn.service.GenericService;
 import adn.utilities.Gender;
 import adn.utilities.Role;
 import adn.utilities.Strings;
@@ -20,7 +20,7 @@ import adn.utilities.Strings;
  */
 @Service
 @Genetized(gene = Account.class)
-public class AccountService implements ApplicationService<Account> {
+public class AccountService implements GenericService<Account> {
 
 	@Override
 	public Account doProcedure(Account model) {

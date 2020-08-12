@@ -4,8 +4,8 @@
 package adn.model.specification.generic;
 
 import java.util.Map;
-import java.util.Set;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import adn.model.Result;
@@ -24,9 +24,8 @@ public class AdminSpecification implements Specification<Admin> {
 	@Override
 	public Result<Admin> isSatisfiedBy(Admin instance) {
 		// TODO Auto-generated method stub
-		return instance.getContractDate() == null
-				? Result.error(Set.of(400), instance, Map.of("contractDate", "Contract date can not be empty"))
-				: Result.success(instance);
+		return instance.getContractDate() == null ? Result.error(HttpStatus.BAD_GATEWAY.ordinal(), instance,
+				Map.of("contractDate", "Contract date can not be empty")) : Result.success(instance);
 	}
 
 }

@@ -29,7 +29,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
  *
  */
 @Service
-public class AuthenticationService {
+public class AuthenticationService implements ApplicationService {
 
 	// TODO JWT Authenticate Services below
 	public static final String JWT_USERDETAILS_CLAIM_KEY = "userDetails";

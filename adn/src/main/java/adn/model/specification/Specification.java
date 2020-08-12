@@ -5,7 +5,6 @@ package adn.model.specification;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import adn.model.Entity;
 import adn.model.Result;
@@ -59,13 +58,11 @@ class And<T extends Entity> implements Specification<T> {
 		}
 
 		Map<String, String> messageSet = new HashMap<>();
-		Set<Integer> status = left.getStatus();
 
 		messageSet.putAll(left.getMessageSet());
 		messageSet.putAll(right.getMessageSet());
-		status.addAll(right.getStatus());
 
-		return Result.error(status, instance, messageSet);
+		return Result.error(left.isOk() ? right.getStatus() : left.getStatus(), instance, messageSet);
 	}
 
 	@Override

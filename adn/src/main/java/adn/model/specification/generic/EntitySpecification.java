@@ -4,10 +4,9 @@
 package adn.model.specification.generic;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import adn.model.Entity;
@@ -27,16 +26,14 @@ public class EntitySpecification implements Specification<Entity> {
 	public Result<Entity> isSatisfiedBy(Entity instance) {
 		// TODO Auto-generated method stub
 		boolean flag = true;
-		Set<Integer> status = new HashSet<>();
 		Map<String, String> messageSet = new HashMap<>();
 
 		if (instance.getId() == null) {
-			status.add(400);
 			messageSet.put("id", "Id can not be empty");
 			flag = false;
 		}
 
-		return flag ? Result.success(instance) : Result.error(status, instance, messageSet);
+		return flag ? Result.success(instance) : Result.error(HttpStatus.BAD_GATEWAY.ordinal(), instance, messageSet);
 	}
 
 }

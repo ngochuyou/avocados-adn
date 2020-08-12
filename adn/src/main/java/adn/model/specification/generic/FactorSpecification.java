@@ -4,15 +4,14 @@
 package adn.model.specification.generic;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
 import org.hibernate.Session;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,11 +33,9 @@ public class FactorSpecification implements TransactionalSpecification<Factor> {
 	public Result<Factor> isSatisfiedBy(Factor instance) {
 		// TODO Auto-generated method stub
 		boolean flag = true;
-		Set<Integer> status = new HashSet<>();
 		Map<String, String> messageSet = new HashMap<>();
 
 		if (instance.getName() == null || instance.getName().length() == 0) {
-			status.add(Result.BAD);
 			messageSet.put("name", "Name mustn't be empty");
 			flag = false;
 		}
@@ -52,12 +49,11 @@ public class FactorSpecification implements TransactionalSpecification<Factor> {
 				builder.notEqual(root.get("id"), instance.getId())));
 
 		if (session.createQuery(query).getResultStream().findFirst().orElse(0L) != 0) {
-			status.add(Result.CONFLICT);
 			messageSet.put("name", "Name must be unique");
 			flag = false;
 		}
 
-		return flag ? Result.success(instance) : Result.error(status, instance, messageSet);
+		return flag ? Result.success(instance) : Result.error(HttpStatus.BAD_GATEWAY.ordinal(), instance, messageSet);
 	}
 
 }

@@ -20,7 +20,7 @@ import adn.application.ApplicationManager;
 import adn.application.Constants;
 import adn.model.Entity;
 import adn.model.Genetized;
-import adn.service.ApplicationService;
+import adn.service.GenericService;
 
 /**
  * @author Ngoc Huy
@@ -32,9 +32,9 @@ public class GenericServiceProvider implements ApplicationManager {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private Map<Class<? extends Entity>, ApplicationService<? extends Entity>> serviceMap;
+	private Map<Class<? extends Entity>, GenericService<? extends Entity>> serviceMap;
 
-	private ApplicationService<?> defaultService = new ApplicationService<Entity>() {
+	private GenericService<?> defaultService = new GenericService<Entity>() {
 	};
 
 	private ModelManager modelManager = context.getBean(ModelManager.class);
@@ -47,14 +47,14 @@ public class GenericServiceProvider implements ApplicationManager {
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
-		scanner.addIncludeFilter(new AssignableTypeFilter(ApplicationService.class));
+		scanner.addIncludeFilter(new AssignableTypeFilter(GenericService.class));
 		serviceMap = new HashMap<>();
 
 		Set<BeanDefinition> beanDefs = scanner.findCandidateComponents(Constants.servicePackage);
 
 		try {
 			for (BeanDefinition beanDef : beanDefs) {
-				Class<? extends ApplicationService<?>> clazz = (Class<? extends ApplicationService<?>>) Class
+				Class<? extends GenericService<?>> clazz = (Class<? extends GenericService<?>>) Class
 						.forName(beanDef.getBeanClassName());
 				Genetized anno = clazz.getDeclaredAnnotation(Genetized.class);
 
@@ -83,9 +83,9 @@ public class GenericServiceProvider implements ApplicationManager {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Entity> ApplicationService<T> getService(Class<T> clazz) {
+	public <T extends Entity> GenericService<T> getService(Class<T> clazz) {
 
-		return (ApplicationService<T>) this.serviceMap.get(clazz);
+		return (GenericService<T>) this.serviceMap.get(clazz);
 	}
 
 }
