@@ -32,7 +32,7 @@ public class PersonnelFactory implements Factory<Personnel, PersonnelModel> {
 
 		personnel.setCreatedBy(model.getCreatedBy());
 
-		return serviceManager.getService(clazz).executeDefaultProcedure(personnel);
+		return personnel;
 	}
 
 	@SuppressWarnings("unchecked")

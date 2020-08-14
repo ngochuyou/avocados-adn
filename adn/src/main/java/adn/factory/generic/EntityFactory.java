@@ -26,7 +26,7 @@ public class EntityFactory<E extends Entity, M extends Model> implements Factory
 
 		entity.setId(model.getId());
 
-		return serviceManager.getService(clazz).executeDefaultProcedure(entity);
+		return entity;
 	}
 
 }
