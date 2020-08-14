@@ -5,19 +5,25 @@ package adn.application.managers;
 
 import java.util.Arrays;
 
+import org.hibernate.FlushMode;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 
+import adn.application.ApplicationContextProvider;
 import adn.application.ApplicationManager;
 
 /**
  * @author Ngoc Huy
  *
  */
+@Component
 @Order(value = Ordered.LOWEST_PRECEDENCE)
 public class ApplicationTester implements ApplicationManager {
 
@@ -26,13 +32,32 @@ public class ApplicationTester implements ApplicationManager {
 		// TODO Auto-generated method stub
 	}
 
-	public void injectPrincipal() {
-		SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken("n", "password"));
+	protected void injectPrincipal() {
+		SecurityContextHolder.getContext()
+				.setAuthentication(new UsernamePasswordAuthenticationToken("ngochuy.ou", "password"));
 	}
 
-	public void ejectPrincipal() {
+	protected void ejectPrincipal() {
 		SecurityContextHolder.getContext().setAuthentication(new AnonymousAuthenticationToken("ANONYMOUS_USER",
 				"ANONYMOUS_USER", Arrays.asList(new SimpleGrantedAuthority("ROLE_ANONYMOUS"))));
+	}
+
+	protected void openSession(FlushMode mode) {
+		ApplicationContextProvider.getApplicationContext().getBean(SessionFactory.class).getCurrentSession()
+				.setHibernateFlushMode(mode);
+	}
+
+	protected void cleanUpSession(boolean flush) {
+		Session session = ApplicationContextProvider.getApplicationContext().getBean(SessionFactory.class)
+				.getCurrentSession();
+
+		if (flush) {
+			session.flush(); 
+
+			return;
+		}
+
+		session.clear();
 	}
 
 }

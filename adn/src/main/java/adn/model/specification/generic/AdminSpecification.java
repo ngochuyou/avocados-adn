@@ -24,7 +24,7 @@ public class AdminSpecification implements Specification<Admin> {
 	@Override
 	public Result<Admin> isSatisfiedBy(Admin instance) {
 		// TODO Auto-generated method stub
-		return instance.getContractDate() == null ? Result.error(HttpStatus.BAD_GATEWAY.ordinal(), instance,
+		return instance.getContractDate() == null ? Result.error(HttpStatus.BAD_REQUEST.value(), instance,
 				Map.of("contractDate", "Contract date can not be empty")) : Result.success(instance);
 	}
 

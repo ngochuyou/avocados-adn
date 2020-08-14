@@ -58,7 +58,7 @@ public class Result<T extends AbstractModel> {
 
 	public static <T extends AbstractModel> Result<T> success(T instance) {
 
-		return new Result<T>(HttpStatus.OK.ordinal(), instance, new HashMap<>());
+		return new Result<T>(HttpStatus.OK.value(), instance, new HashMap<>());
 	}
 
 	public static <T extends AbstractModel> Result<T> error(int status, T instance, Map<String, String> messageSet) {

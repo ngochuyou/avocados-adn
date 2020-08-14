@@ -22,12 +22,18 @@ import adn.utilities.Strings;
 @Genetized(gene = Account.class)
 public class AccountService implements GenericService<Account> {
 
+	private final String UNKNOWN_USER_FIRSTNAME = "ADN";
+
+	private final String UNKNOWN_USER_LASTNAME = "USER";
+
 	@Override
 	public Account executeDefaultProcedure(Account model) {
 		// TODO Auto-generated method stub
 		model.setId(Strings.removeSpaces(model.getId()));
-		model.setFirstName(Strings.normalizeString(model.getFirstName()));
-		model.setLastName(Strings.normalizeString(model.getLastName()));
+		model.setFirstName(Strings.isEmpty(model.getFirstName()) ? UNKNOWN_USER_FIRSTNAME
+				: Strings.normalizeString(model.getFirstName()));
+		model.setLastName(Strings.isEmpty(model.getLastName()) ? UNKNOWN_USER_LASTNAME
+				: Strings.normalizeString(model.getLastName()));
 		model.setPhoto(Strings.isEmpty(model.getPhoto()) ? Constants.DEFAULT_IMAGE_NAME : model.getPhoto());
 
 		return model;
@@ -46,7 +52,7 @@ public class AccountService implements GenericService<Account> {
 	@Override
 	public Account executeUpdateProcedure(Account model) {
 		// TODO Auto-generated method stub
-		if (model.getPassword() != null) {
+		if (!Strings.isEmpty(model.getPassword())) {
 			model.setPassword(new BCryptPasswordEncoder().encode(model.getPassword()));
 		}
 

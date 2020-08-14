@@ -53,7 +53,6 @@ class And<T extends Entity> implements Specification<T> {
 		Result<T> right = this.right.isSatisfiedBy(instance);
 
 		if (left.isOk() && right.isOk()) {
-
 			return Result.success(instance);
 		}
 

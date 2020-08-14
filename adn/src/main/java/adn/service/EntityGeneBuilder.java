@@ -38,7 +38,7 @@ public class EntityGeneBuilder<T extends Entity> {
 		return this;
 	}
 
-	public T genetize(T instance) {
+	public T build(T instance) {
 
 		return this.procedure.execute(instance);
 	}

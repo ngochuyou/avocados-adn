@@ -61,12 +61,12 @@ public class BaseDAO {
 	public <T extends Entity> Result<T> insert(T instance, Class<T> clazz) {
 		if (instance == null || clazz == null) {
 
-			return Result.error(HttpStatus.BAD_REQUEST.ordinal(), instance, null);
+			return Result.error(HttpStatus.BAD_REQUEST.value(), instance, null);
 		}
 
 		if (this.findById(instance.getId(), clazz) != null) {
 
-			return Result.error(HttpStatus.CONFLICT.ordinal(), instance, Map.of("id", EXISTED));
+			return Result.error(HttpStatus.CONFLICT.value(), instance, Map.of("id", EXISTED));
 		}
 
 		Specification<T> specification = specificationFactory.getSpecification(clazz);
@@ -85,12 +85,12 @@ public class BaseDAO {
 	public <T extends Entity> Result<T> update(T instance, Class<T> clazz) {
 		if (instance == null || clazz == null) {
 
-			return Result.error(HttpStatus.BAD_REQUEST.ordinal(), instance, Map.of());
+			return Result.error(HttpStatus.BAD_REQUEST.value(), instance, Map.of());
 		}
 
 		if (this.findById(instance.getId(), clazz) == null) {
 
-			return Result.error(HttpStatus.CONFLICT.ordinal(), instance, Map.of("id", NOT_FOUND));
+			return Result.error(HttpStatus.CONFLICT.value(), instance, Map.of("id", NOT_FOUND));
 		}
 
 		Specification<T> specification = specificationFactory.getSpecification(clazz);

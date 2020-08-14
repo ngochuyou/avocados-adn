@@ -40,7 +40,8 @@ public class PersonnelSpecification implements TransactionalSpecification<Person
 		query.select(builder.count(root)).where(builder.equal(root.get("id"), instance.getCreatedBy()));
 
 		if (session.createQuery(query).getResultStream().findFirst().orElse(0L) == 0) {
-			return Result.error(HttpStatus.BAD_GATEWAY.ordinal(), instance, Map.of("createdBy", "Created by can not be empty"));
+			return Result.error(HttpStatus.BAD_REQUEST.value(), instance,
+					Map.of("createdBy", "Invalid creator informations"));
 		}
 
 		return Result.success(instance);

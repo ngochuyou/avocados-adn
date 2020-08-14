@@ -53,7 +53,7 @@ public class FactorSpecification implements TransactionalSpecification<Factor> {
 			flag = false;
 		}
 
-		return flag ? Result.success(instance) : Result.error(HttpStatus.BAD_GATEWAY.ordinal(), instance, messageSet);
+		return flag ? Result.success(instance) : Result.error(HttpStatus.BAD_REQUEST.value(), instance, messageSet);
 	}
 
 }

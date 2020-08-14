@@ -24,7 +24,7 @@ public class CustomerSpecification implements Specification<Customer> {
 	@Override
 	public Result<Customer> isSatisfiedBy(Customer instance) {
 		// TODO Auto-generated method stub
-		return instance.getPrestigePoint() < 0 ? Result.error(HttpStatus.BAD_GATEWAY.ordinal(), instance,
+		return instance.getPrestigePoint() < 0 ? Result.error(HttpStatus.BAD_REQUEST.value(), instance,
 				Map.of("prestigePoint", "Prestige point can not be negative")) : Result.success(instance);
 	}
 
