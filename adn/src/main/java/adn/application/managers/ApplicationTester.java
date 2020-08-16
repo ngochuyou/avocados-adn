@@ -52,7 +52,7 @@ public class ApplicationTester implements ApplicationManager {
 				.getCurrentSession();
 
 		if (flush) {
-			session.flush(); 
+			session.flush();
 
 			return;
 		}

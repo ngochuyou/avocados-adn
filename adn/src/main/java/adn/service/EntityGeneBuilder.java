@@ -38,6 +38,12 @@ public class EntityGeneBuilder<T extends Entity> {
 		return this;
 	}
 
+	public EntityGeneBuilder<T> then(Function<T, T> procedure) {
+		this.procedure.and(new Strategy<T>(procedure));
+
+		return this;
+	}
+
 	public T build(T instance) {
 
 		return this.procedure.execute(instance);

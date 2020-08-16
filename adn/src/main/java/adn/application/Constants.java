@@ -19,7 +19,7 @@ public class Constants {
 
 	public static final String genericSpecificationPackage = "adn.model.specification.generic";
 
-	public static final String genericFactoryPackage = "adn.factory.generic";
+	public static final String genericFactoryPackage = "adn.model.factory.generic";
 
 	public static final String genericServicePackage = "adn.service.generic";
 
