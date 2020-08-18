@@ -9,8 +9,6 @@ import java.util.Stack;
 
 import org.springframework.stereotype.Component;
 
-import adn.model.Entity;
-
 /**
  * @author Ngoc Huy
  *
@@ -18,20 +16,23 @@ import adn.model.Entity;
 @Component
 public class ClassReflector {
 
-	@SuppressWarnings("unchecked")
-	public Stack<Class<? extends Entity>> getEntityClassStack(Class<? extends Entity> clazz) {
-		Stack<Class<? extends Entity>> stack = new Stack<>();
-		Class<? extends Entity> superClass = clazz;
+	public Stack<Class<?>> getClassStack(Class<?> clazz) {
+		Stack<Class<?>> stack = new Stack<>();
+		Class<?> superClass = clazz;
 
 		while (superClass != null && !superClass.equals(Object.class)) {
 			stack.add(superClass);
-			superClass = (Class<? extends Entity>) superClass.getSuperclass();
+			superClass = (Class<?>) superClass.getSuperclass();
 		}
 
 		return stack;
 	}
 
 	public boolean isExtendedFrom(Class<?> clazz, Class<?> superClass) {
+		if (clazz.equals(superClass)) {
+			return true;
+		}
+
 		while ((clazz = clazz.getSuperclass()) != null) {
 			if (clazz.equals(superClass)) {
 				return true;

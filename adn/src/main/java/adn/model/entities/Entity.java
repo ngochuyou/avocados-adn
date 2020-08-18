@@ -1,9 +1,11 @@
 /**
  * 
  */
-package adn.model;
+package adn.model.entities;
 
 import java.io.Serializable;
+
+import adn.model.AbstractModel;
 
 /**
  * @author Ngoc Huy

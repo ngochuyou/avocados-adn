@@ -1,7 +1,7 @@
 package adn.model.factory;
 
-import adn.model.Entity;
-import adn.model.Model;
+import adn.model.entities.Entity;
+import adn.model.models.Model;
 
 public interface Factory {
 

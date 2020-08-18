@@ -17,8 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Repository;
 
 import adn.application.managers.SpecificationFactory;
-import adn.model.Entity;
 import adn.model.Result;
+import adn.model.entities.Entity;
 import adn.model.specification.Specification;
 
 /**

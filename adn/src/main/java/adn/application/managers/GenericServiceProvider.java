@@ -18,8 +18,8 @@ import org.springframework.stereotype.Component;
 
 import adn.application.ApplicationManager;
 import adn.application.Constants;
-import adn.model.Entity;
 import adn.model.Genetized;
+import adn.model.entities.Entity;
 import adn.service.GenericService;
 
 /**
@@ -60,7 +60,7 @@ public class GenericServiceProvider implements ApplicationManager {
 				if (anno == null)
 					continue;
 
-				Class<? extends Entity> modelClass = anno.gene();
+				Class<? extends Entity> modelClass = anno.entityGene();
 
 				serviceMap.put(modelClass, context.getBean(clazz));
 			}

@@ -1,10 +1,12 @@
 package adn.model.factory.extraction;
 
-import adn.model.Entity;
-import adn.model.Model;
+import adn.model.Genetized;
+import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractor;
+import adn.model.models.Model;
 
-public class EntityModelExtractor<E extends Entity, M extends Model> implements EntityExtractor<E, M> {
+@Genetized(entityGene = Entity.class)
+public class ModelEntityExtractor<E extends Entity, M extends Model> implements EntityExtractor<E, M> {
 
 	@Override
 	public E extract(M model, E entity) {

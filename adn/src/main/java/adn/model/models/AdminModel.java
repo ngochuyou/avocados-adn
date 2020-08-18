@@ -12,7 +12,7 @@ import adn.model.entities.Admin;
  * @author Ngoc Huy
  *
  */
-@Genetized(gene = Admin.class)
+@Genetized(entityGene = Admin.class)
 public class AdminModel extends AccountModel {
 
 	protected Date contractDate;

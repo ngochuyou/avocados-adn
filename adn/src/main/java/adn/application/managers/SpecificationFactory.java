@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 
 import adn.application.ApplicationManager;
 import adn.application.Constants;
-import adn.model.Entity;
+import adn.model.entities.Entity;
 import adn.model.specification.GenericSpecification;
 import adn.model.specification.Specification;
 

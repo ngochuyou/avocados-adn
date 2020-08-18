@@ -1,11 +1,13 @@
 package adn.model.factory.extraction;
 
+import adn.model.Genetized;
 import adn.model.entities.Account;
 import adn.model.factory.EntityExtractor;
 import adn.model.models.AccountModel;
 import adn.utilities.Gender;
 import adn.utilities.Role;
 
+@Genetized(entityGene = Account.class)
 public class AccountExtractor<A extends Account, AM extends AccountModel> implements EntityExtractor<A, AM> {
 
 	@Override

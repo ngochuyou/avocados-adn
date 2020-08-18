@@ -4,7 +4,7 @@ import java.util.function.Function;
 
 import adn.application.ApplicationContextProvider;
 import adn.application.managers.GenericServiceProvider;
-import adn.model.Entity;
+import adn.model.entities.Entity;
 
 public class EntityGeneBuilder<T extends Entity> {
 

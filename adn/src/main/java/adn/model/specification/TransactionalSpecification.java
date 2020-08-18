@@ -6,7 +6,7 @@ package adn.model.specification;
 import org.hibernate.SessionFactory;
 
 import adn.application.ApplicationContextProvider;
-import adn.model.Entity;
+import adn.model.entities.Entity;
 
 /**
  * @author Ngoc Huy

@@ -10,7 +10,7 @@ import adn.model.entities.Personnel;
  * @author Ngoc Huy
  *
  */
-@Genetized(gene = Personnel.class)
+@Genetized(entityGene = Personnel.class)
 public class PersonnelModel extends AccountModel {
 
 	protected String createdBy;

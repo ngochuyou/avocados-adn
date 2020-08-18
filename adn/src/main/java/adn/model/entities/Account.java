@@ -24,7 +24,7 @@ import adn.utilities.Role;
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @Table(name = "accounts")
-public class Account extends adn.model.Entity {
+public class Account extends adn.model.entities.Entity {
 
 	@Id
 	protected String id;

@@ -6,8 +6,8 @@ package adn.model.specification;
 import java.util.HashMap;
 import java.util.Map;
 
-import adn.model.Entity;
 import adn.model.Result;
+import adn.model.entities.Entity;
 
 /**
  * @author Ngoc Huy

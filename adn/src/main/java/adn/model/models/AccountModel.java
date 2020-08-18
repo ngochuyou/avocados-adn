@@ -4,14 +4,13 @@
 package adn.model.models;
 
 import adn.model.Genetized;
-import adn.model.Model;
 import adn.model.entities.Account;
 
 /**
  * @author Ngoc Huy
  *
  */
-@Genetized(gene = Account.class)
+@Genetized(entityGene = Account.class)
 public class AccountModel extends Model {
 
 	protected String username;
@@ -32,6 +31,7 @@ public class AccountModel extends Model {
 
 	protected String gender;
 
+	@Override
 	public String getId() {
 		return username;
 	}

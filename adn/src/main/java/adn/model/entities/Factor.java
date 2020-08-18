@@ -12,8 +12,6 @@ import javax.persistence.MappedSuperclass;
 
 import org.hibernate.annotations.GenericGenerator;
 
-import adn.model.Entity;
-
 /**
  * @author Ngoc Huy
  *

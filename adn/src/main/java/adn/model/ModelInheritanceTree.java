@@ -7,26 +7,28 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import adn.model.entities.Entity;
+
 /**
  * @author Ngoc Huy
  *
  */
-public class EntityTree {
+public class ModelInheritanceTree<T extends AbstractModel> {
 
-	private EntityTree parent;
+	private ModelInheritanceTree<T> parent;
 
-	private Class<? extends Entity> node;
+	private Class<T> node;
 
-	private Set<EntityTree> childrens;
+	private Set<ModelInheritanceTree<T>> childrens;
 
-	public EntityTree(EntityTree parent, Class<? extends Entity> node, Set<EntityTree> childrens) {
+	public ModelInheritanceTree(ModelInheritanceTree<T> parent, Class<T> node, Set<ModelInheritanceTree<T>> childrens) {
 		super();
 		this.parent = parent;
-		this.node = node == null ? Entity.class : node;
+		this.node = node;
 		this.childrens = childrens == null ? new HashSet<>() : childrens;
 	}
 
-	public void add(Class<? extends Entity> clazz) {
+	public void add(Class<T> clazz) {
 		if (clazz == null || clazz == Entity.class) {
 			return;
 		}
@@ -36,7 +38,7 @@ public class EntityTree {
 		}
 
 		if (this.node.equals(clazz.getSuperclass())) {
-			this.childrens.add(new EntityTree(this, clazz, null));
+			this.childrens.add(new ModelInheritanceTree<>(this, clazz, null));
 
 			return;
 		}
@@ -53,7 +55,7 @@ public class EntityTree {
 			return true;
 		}
 
-		for (EntityTree tree : this.childrens) {
+		for (ModelInheritanceTree<T> tree : this.childrens) {
 			if (tree.contains(clazz)) {
 				return true;
 			}
@@ -62,33 +64,33 @@ public class EntityTree {
 		return false;
 	}
 
-	public void forEach(Consumer<EntityTree> consumer) {
+	public void forEach(Consumer<ModelInheritanceTree<T>> consumer) {
 		consumer.accept(this);
 
 		this.childrens.forEach(tree -> tree.forEach(consumer));
 	}
 
-	public EntityTree getParent() {
+	public ModelInheritanceTree<T> getParent() {
 		return parent;
 	}
 
-	public void setParent(EntityTree parent) {
+	public void setParent(ModelInheritanceTree<T> parent) {
 		this.parent = parent;
 	}
 
-	public Class<? extends Entity> getNode() {
+	public Class<T> getNode() {
 		return node;
 	}
 
-	public void setNode(Class<? extends Entity> node) {
+	public void setNode(Class<T> node) {
 		this.node = node;
 	}
 
-	public Set<EntityTree> getChildrens() {
+	public Set<ModelInheritanceTree<T>> getChildrens() {
 		return childrens;
 	}
 
-	public void setChildrens(Set<EntityTree> childrens) {
+	public void setChildrens(Set<ModelInheritanceTree<T>> childrens) {
 		this.childrens = childrens;
 	}
 

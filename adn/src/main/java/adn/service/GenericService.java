@@ -3,7 +3,7 @@
  */
 package adn.service;
 
-import adn.model.Entity;
+import adn.model.entities.Entity;
 
 /**
  * @author Ngoc Huy

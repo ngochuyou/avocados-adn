@@ -9,8 +9,8 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-import adn.model.Entity;
 import adn.model.Result;
+import adn.model.entities.Entity;
 import adn.model.specification.GenericSpecification;
 import adn.model.specification.Specification;
 

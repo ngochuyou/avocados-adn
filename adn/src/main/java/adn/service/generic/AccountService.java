@@ -19,7 +19,7 @@ import adn.utilities.Strings;
  *
  */
 @Service
-@Genetized(gene = Account.class)
+@Genetized(entityGene = Account.class)
 public class AccountService implements GenericService<Account> {
 
 	private final String UNKNOWN_USER_FIRSTNAME = "ADN";

@@ -10,7 +10,7 @@ import adn.model.entities.Customer;
  * @author Ngoc Huy
  *
  */
-@Genetized(gene = Customer.class)
+@Genetized(entityGene = Customer.class)
 public class CustomerModel extends AccountModel {
 
 	protected String address;

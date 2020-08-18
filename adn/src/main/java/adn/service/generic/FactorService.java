@@ -18,7 +18,7 @@ import adn.utilities.Strings;
  *
  */
 @Service
-@Genetized(gene = Factor.class)
+@Genetized(entityGene = Factor.class)
 public class FactorService implements GenericService<Factor> {
 
 	@Override

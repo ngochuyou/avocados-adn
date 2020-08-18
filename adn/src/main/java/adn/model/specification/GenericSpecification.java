@@ -8,7 +8,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import adn.model.Entity;
+import adn.model.entities.Entity;
 
 /**
  * @author Ngoc Huy
