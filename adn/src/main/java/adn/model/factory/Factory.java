@@ -5,8 +5,8 @@ import adn.model.models.Model;
 
 public interface Factory {
 
-	<E extends Entity, M extends Model> E produce(M model, Class<E> clazz);
+	<T extends Entity, M extends Model> T produce(M model, Class<T> clazz);
 
-	<E extends Entity, M extends Model> M produce(E entity, Class<M> clazz);
+	<T extends Entity, M extends Model> M produce(T entity, Class<M> clazz);
 
 }

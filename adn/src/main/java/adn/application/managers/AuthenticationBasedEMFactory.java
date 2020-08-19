@@ -3,198 +3,84 @@
  */
 package adn.application.managers;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringApplication;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.type.filter.AnnotationTypeFilter;
-import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
 import adn.application.ApplicationManager;
-import adn.model.Genetized;
 import adn.model.entities.Entity;
-import adn.model.factory.EntityExtractor;
+import adn.model.factory.EntityExtractorFactory;
 import adn.model.factory.Factory;
-import adn.model.factory.production.security.AuthenticationBasedModelProducer;
+import adn.model.factory.production.security.AuthenticationBasedModelProducerFactory;
 import adn.model.models.Model;
+import adn.utilities.ClassReflector;
+import adn.utilities.Role;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Component
-@Order(4)
+@Order(6)
 public class AuthenticationBasedEMFactory implements ApplicationManager, Factory {
 
-	private Logger logger = LoggerFactory.getLogger(this.getClass());
-
-	private final String ENTITY_EXTRACTOR_PACKAGE = "adn.model.factory.extraction";
-
-	private final String MODEL_PRODUCER_PACKAGE = "adn.model.factory.production.security";
-
-	private Map<Class<? extends Entity>, EntityExtractor<?, ?>> extractorMap;
-
-	private EntityExtractor<?, ?> defaultExtractor = new EntityExtractor<Entity, Model>() {};
-
-	private Map<Class<? extends Model>, AuthenticationBasedModelProducer<?, ?>> producerMap;
-
-	private AuthenticationBasedModelProducer<Model, Entity> defaultProducer = new AuthenticationBasedModelProducer<Model, Entity>() {};
+	@Autowired
+	private EntityExtractorFactory extractorFactory;
 
 	@Autowired
-	private ModelManager modelManager;
+	private AuthenticationBasedModelProducerFactory producerFactory;
+
+	private Map<Role, BiFunction<Entity, Class<Model>, ? extends Model>> functionMap;
+
+	@Autowired
+	private ClassReflector reflector;
 
 	@Override
-	public void initialize() {
+	public void initialize() throws Exception {
 		// TODO Auto-generated method stub
-		logger.info("Initializing " + this.getClass().getName());
-		this.initializeEntityExtractors();
-		this.initializeAuthenticationBasedModelProducers();
-		logger.info("Finished initializing " + this.getClass().getName());
-	}
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private void initializeEntityExtractors() {
-		logger.info("Initializing Entity Extractors");
-		this.extractorMap = new HashMap<>();
-
-		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
-
-		scanner.addIncludeFilter(new AssignableTypeFilter(EntityExtractor.class));
-		scanner.findCandidateComponents(ENTITY_EXTRACTOR_PACKAGE).forEach(bean -> {
-			try {
-				Class<? extends EntityExtractor> clazz = (Class<? extends EntityExtractor>) Class
-						.forName(bean.getBeanClassName());
-				Genetized anno = clazz.getDeclaredAnnotation(Genetized.class);
-
-				if (anno == null) {
-					throw new Exception(Genetized.class.getName() + " is not found on " + clazz.getName());
-				}
-
-				this.extractorMap.put(anno.entityGene(), clazz.getConstructor().newInstance());
-			} catch (Exception e) {
-				e.printStackTrace();
-				SpringApplication.exit(context);
-			}
-		});
-		modelManager.getEntityTree().forEach(node -> {
-			if (node.getParent() == null) {
-				return;
-			}
-
-			EntityExtractor<?, ?> compositeExtractor = null;
-			EntityExtractor<?, ?> childrenExtractor = this.extractorMap.get(node.getNode());
-			EntityExtractor<?, ?> parentExtractor = this.extractorMap.get(node.getParent().getNode());
-
-			if (parentExtractor != null && childrenExtractor != null) {
-				compositeExtractor = parentExtractor.and(childrenExtractor);
-			} else {
-				compositeExtractor = parentExtractor == null ? childrenExtractor : childrenExtractor;
-			}
-
-			this.extractorMap.put(node.getNode(), compositeExtractor == null ? defaultExtractor : compositeExtractor);
-		});
-		this.extractorMap
-				.forEach((k, v) -> logger.info("Assigning " + v.getName() + " for " + k.getName() + " extraction"));
-		logger.info("Finished initializing Entity Extractors");
-	}
-
-	@SuppressWarnings("unchecked")
-	private void initializeAuthenticationBasedModelProducers() {
-		logger.info("Initializing Model Producers");
-		this.producerMap = new HashMap<>();
-		// @formatter:off
-		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
-
-		scanner.addIncludeFilter(new AnnotationTypeFilter(Genetized.class));
-		scanner.findCandidateComponents(MODEL_PRODUCER_PACKAGE).forEach(bean -> {
-			try {
-				Class<? extends AuthenticationBasedModelProducer<?, ?>> clazz = (Class<? extends AuthenticationBasedModelProducer<?, ?>>) Class
-						.forName(bean.getBeanClassName());
-				Genetized anno = clazz.getDeclaredAnnotation(Genetized.class);
-
-				this.producerMap.put(anno.modelGene(), context.getBean(clazz));
-			} catch (Exception e) {
-				e.printStackTrace();
-				SpringApplication.exit(context);
-			}
-		});
-		modelManager.getRelationMap().values().forEach(set -> set.forEach(clazz -> {
-			if (this.producerMap.get(clazz) == null) {
-				this.producerMap.put(clazz, defaultProducer);
-			}
-		}));
-		modelManager.getModelTree().forEach(node -> {
-			if (node.getParent() == null) {
-				return;
-			}
-
-			AuthenticationBasedModelProducer<?, ?> comp = null;
-			AuthenticationBasedModelProducer<?, ?> parent = this.producerMap.get(node.getParent().getNode());
-			AuthenticationBasedModelProducer<?, ?> child = this.producerMap.get(node.getNode());
-
-			if (parent != null && child != null) {
-				if (!parent.equals(defaultProducer) && !child.equals(defaultProducer)) {
-					comp = parent.and(child);
-				} else {
-					comp = !parent.equals(defaultProducer) ? parent : child;
-				}
-			} else {
-				comp = parent != null ? parent : child;
-			}
-
-			this.producerMap.put(node.getNode(), comp == null ? defaultProducer : comp);
-		});
-		this.producerMap.forEach((k, v) -> {
-			logger.info(v.getName() + " has been built for production of " + k.getName());
-		});
-		// @formatter:on
-		logger.info("Finished initializing Model Producers");
+		this.functionMap = new HashMap<>();
+		this.functionMap.put(Role.ADMIN, this::produceForAdmin);
+		this.functionMap.put(Role.CUSTOMER, this::produceForCustomer);
+		this.functionMap.put(Role.PERSONNEL, this::produceForPersonnel);
+		this.functionMap.put(Role.ANONYMOUS, this::produce);
+		this.functionMap.put(null, this::produce);
 	}
 
 	@Override
-	public <E extends Entity, M extends Model> E produce(M model, Class<E> clazz) {
+	public <T extends Entity, M extends Model> T produce(M model, Class<T> clazz) {
 		// TODO Auto-generated method stub
-		try {
-			return this.getEntityExtractor(clazz).extract(model, clazz.getConstructor().newInstance());
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-				| NoSuchMethodException | SecurityException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
-		}
+		return this.extractorFactory.getExtractor(clazz).extract(model, reflector.newInstanceOrNull(clazz));
 	}
 
 	@Override
-	public <E extends Entity, M extends Model> M produce(E entity, Class<M> clazz) {
+	public <T extends Entity, M extends Model> M produce(T entity, Class<M> clazz) {
 		// TODO Auto-generated method stub
-		try {
-			return this.getModelProducer(clazz).produce(entity, clazz.getConstructor().newInstance());
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-				| NoSuchMethodException | SecurityException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
-		}
+		return this.producerFactory.getProducer(clazz).produce(entity, reflector.newInstanceOrNull(clazz));
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T extends Entity, M extends Model> EntityExtractor<T, M> getEntityExtractor(Class<T> clazz) {
-
-		return (EntityExtractor<T, M>) this.extractorMap.get(clazz);
+	public <T extends Entity, M extends Model> M produce(T entity, Class<M> clazz, Role role) {
+		// TODO Auto-generated method stub
+		return (M) this.functionMap.get(role).apply(entity, (Class<Model>) clazz);
 	}
 
-	@SuppressWarnings("unchecked")
-	private <T extends Entity, M extends Model> AuthenticationBasedModelProducer<M, T> getModelProducer(
-			Class<M> clazz) {
+	public <T extends Entity, M extends Model> M produceForAdmin(T entity, Class<M> clazz) {
+		return this.producerFactory.getProducer(clazz).produceForAdminAuthentication(entity,
+				reflector.newInstanceOrNull(clazz));
+	}
 
-		return (AuthenticationBasedModelProducer<M, T>) this.producerMap.get(clazz);
+	public <T extends Entity, M extends Model> M produceForCustomer(T entity, Class<M> clazz) {
+		return this.producerFactory.getProducer(clazz).produceForCustomerAuthentication(entity,
+				reflector.newInstanceOrNull(clazz));
+	}
+
+	public <T extends Entity, M extends Model> M produceForPersonnel(T entity, Class<M> clazz) {
+		return this.producerFactory.getProducer(clazz).produceForPersonnelAuthentication(entity,
+				reflector.newInstanceOrNull(clazz));
 	}
 
 }

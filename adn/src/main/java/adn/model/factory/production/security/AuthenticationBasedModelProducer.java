@@ -10,35 +10,35 @@ import adn.model.models.Model;
  * @param <M>
  * @param <E>
  */
-public interface AuthenticationBasedModelProducer<M extends Model, E extends Entity> extends ModelProducer<M, E> {
+public interface AuthenticationBasedModelProducer<T extends Entity, M extends Model> extends ModelProducer<T, M> {
 
 	/**
-	 * {@link Entity} -> {@link Model} for <code>ANONYMOUS</code> Authentication
+	 * {@link Entity} -> {@link Entity} for <code>ANONYMOUS</code> Authentication
 	 */
 	@Override
-	default M produce(E entity, M model) {
+	default M produce(T entity, M model) {
 		// TODO Auto-generated method stub
 		return model;
 	}
 
 	/**
-	 * {@link Entity} -> {@link Model} for <code>ADMIN</code> Authentication
+	 * {@link Entity} -> {@link Entity} for <code>ADMIN</code> Authentication
 	 */
-	default M produceForAdminAuthentication(E entity, M model) {
+	default M produceForAdminAuthentication(T entity, M model) {
 		return model;
 	};
 
 	/**
-	 * {@link Entity} -> {@link Model} for <code>PERSONNEL</code> Authentication
+	 * {@link Entity} -> {@link Entity} for <code>PERSONNEL</code> Authentication
 	 */
-	default M produceForPersonnelAuthentication(E entity, M model) {
+	default M produceForPersonnelAuthentication(T entity, M model) {
 		return model;
 	};
 
 	/**
-	 * {@link Entity} -> {@link Model} for <code>CUSTOMER</code> Authentication
+	 * {@link Entity} -> {@link Entity} for <code>CUSTOMER</code> Authentication
 	 */
-	default M produceForCustomerAuthentication(E entity, M model) {
+	default M produceForCustomerAuthentication(T entity, M model) {
 		return model;
 	};
 
@@ -51,14 +51,14 @@ public interface AuthenticationBasedModelProducer<M extends Model, E extends Ent
 }
 
 class CompositeAuthenticationBasedProducer<T extends Entity, M extends Model>
-		implements AuthenticationBasedModelProducer<M, T> {
+		implements AuthenticationBasedModelProducer<T, M> {
 
-	protected AuthenticationBasedModelProducer<M, T> left;
+	protected AuthenticationBasedModelProducer<T, M> left;
 
-	protected AuthenticationBasedModelProducer<M, T> right;
+	protected AuthenticationBasedModelProducer<T, M> right;
 
-	public CompositeAuthenticationBasedProducer(AuthenticationBasedModelProducer<M, T> left,
-			AuthenticationBasedModelProducer<M, T> right) {
+	public CompositeAuthenticationBasedProducer(AuthenticationBasedModelProducer<T, M> left,
+			AuthenticationBasedModelProducer<T, M> right) {
 		super();
 		this.left = left;
 		this.right = right;

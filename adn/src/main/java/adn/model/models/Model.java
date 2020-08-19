@@ -17,5 +17,5 @@ public abstract class Model extends AbstractModel {
 	protected String id;
 
 	abstract public String getId();
-	
+
 }

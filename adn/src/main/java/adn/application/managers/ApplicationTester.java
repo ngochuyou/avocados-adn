@@ -41,12 +41,15 @@ public class ApplicationTester implements ApplicationManager {
 		// TODO Auto-generated method stub
 		Admin admin = new Admin();
 
+		admin.setId("ngohuyou");
 		admin.setRole(Role.ADMIN);
 		admin.setGender(Gender.MALE);
 		admin.setContractDate(new Date());
 
-		AdminModel model = factory.produce(admin, AdminModel.class);
+		long t = System.currentTimeMillis();
+		AdminModel model = factory.produce(admin, AdminModel.class, null);
 
+		System.out.println(System.currentTimeMillis() - t);
 		System.out.println(model.getContractDate());
 	}
 

@@ -135,8 +135,8 @@ public class ModelManager implements ApplicationManager {
 				Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(bean.getBeanClassName());
 
 				if (!reflector.isExtendedFrom(clazz, Model.class)) {
-					throw new Exception(
-							clazz.getName() + " is a Non-standard Model. A Model must be extended from " + Model.class);
+					throw new Exception(clazz.getName() + " is a Non-standard Model. A Model must be extended from "
+							+ Entity.class);
 				}
 
 				models.add(clazz);
@@ -196,14 +196,6 @@ public class ModelManager implements ApplicationManager {
 		logger.info("Finished initializing ModelMap");
 	}
 
-	public ModelInheritanceTree<Model> getModelTree() {
-		return modelTree;
-	}
-
-	public void setModelTree(ModelInheritanceTree<Model> modelTree) {
-		this.modelTree = modelTree;
-	}
-
 	public ModelInheritanceTree<adn.model.entities.Entity> getEntityTree() {
 		return entityTree;
 	}
@@ -218,6 +210,14 @@ public class ModelManager implements ApplicationManager {
 
 	public void setLogger(Logger logger) {
 		this.logger = logger;
+	}
+
+	public ModelInheritanceTree<Model> getModelTree() {
+		return modelTree;
+	}
+
+	public void setModelTree(ModelInheritanceTree<Model> modelTree) {
+		this.modelTree = modelTree;
 	}
 
 	public Map<Class<? extends adn.model.entities.Entity>, Set<Class<? extends Model>>> getRelationMap() {

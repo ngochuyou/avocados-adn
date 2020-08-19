@@ -10,9 +10,9 @@ import adn.model.models.Model;
  * @author Ngoc Huy
  *
  */
-public interface EntityExtractor<E extends Entity, M extends Model> {
+public interface EntityExtractor<T extends Entity, M extends Model> {
 
-	default E extract(M model, E entity) {
+	default T extract(M model, T entity) {
 		return entity;
 	};
 
@@ -28,20 +28,20 @@ public interface EntityExtractor<E extends Entity, M extends Model> {
 
 }
 
-class And<E extends Entity, M extends Model> implements EntityExtractor<E, M> {
+class And<T extends Entity, M extends Model> implements EntityExtractor<T, M> {
 
-	EntityExtractor<E, M> left;
+	EntityExtractor<T, M> left;
 
-	EntityExtractor<E, M> right;
+	EntityExtractor<T, M> right;
 
-	public And(EntityExtractor<E, M> left, EntityExtractor<E, M> right) {
+	public And(EntityExtractor<T, M> left, EntityExtractor<T, M> right) {
 		super();
 		this.left = left;
 		this.right = right;
 	}
 
 	@Override
-	public E extract(M model, E entity) {
+	public T extract(M model, T entity) {
 		// TODO Auto-generated method stub
 		return this.right.extract(model, this.left.extract(model, entity));
 	}

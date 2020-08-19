@@ -7,7 +7,6 @@ import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -33,8 +32,8 @@ public class ApplicationUserDetailsService implements UserDetailsService {
 		// TODO Auto-generated method stub
 		Account account = dao.findById(username, Account.class);
 
-		return new User(username, account.getPassword(),
-				Set.of(new SimpleGrantedAuthority("ROLE_" + account.getRole())));
+		return new ApplicationUserDetails(username, account.getPassword(),
+				Set.of(new SimpleGrantedAuthority("ROLE_" + account.getRole())), account.getRole());
 	}
 
 }

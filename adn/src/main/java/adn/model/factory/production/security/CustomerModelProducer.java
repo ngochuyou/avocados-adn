@@ -10,7 +10,7 @@ import adn.utilities.Role;
 
 @Component
 @Genetized(modelGene = CustomerModel.class)
-public class CustomerModelProducer implements AuthenticationBasedModelProducer<CustomerModel, Customer> {
+public class CustomerModelProducer implements AuthenticationBasedModelProducer<Customer, CustomerModel> {
 
 	@Override
 	@SecuredFor(role = Role.ADMIN)

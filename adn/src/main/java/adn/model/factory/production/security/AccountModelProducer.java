@@ -10,15 +10,15 @@ import adn.utilities.Role;
 
 @Component
 @Genetized(modelGene = AccountModel.class)
-public class AccountModelProducer<AM extends AccountModel, A extends Account>
-		implements AuthenticationBasedModelProducer<AM, A> {
+public class AccountModelProducer<T extends Account, M extends AccountModel>
+		implements AuthenticationBasedModelProducer<T, M> {
 
 	/**
 	 * {@link Account} -> {@link AccountModel} for ANONYMOUS Authentication
 	 */
 	@Override
 	@SecuredFor
-	public AM produce(A entity, AM model) {
+	public M produce(T entity, M model) {
 		// TODO Auto-generated method stub
 		model.setUsername(entity.getId());
 		model.setFirstName(entity.getFirstName());
@@ -33,7 +33,7 @@ public class AccountModelProducer<AM extends AccountModel, A extends Account>
 
 	@Override
 	@SecuredFor(role = Role.ADMIN)
-	public AM produceForAdminAuthentication(A entity, AM model) {
+	public M produceForAdminAuthentication(T entity, M model) {
 		// TODO Auto-generated method stub
 		model = this.produce(entity, model);
 		model.setEmail(entity.getEmail());
@@ -44,14 +44,14 @@ public class AccountModelProducer<AM extends AccountModel, A extends Account>
 
 	@Override
 	@SecuredFor(role = Role.CUSTOMER)
-	public AM produceForCustomerAuthentication(A entity, AM model) {
+	public M produceForCustomerAuthentication(T entity, M model) {
 		// TODO Auto-generated method stub
 		return this.produceForAdminAuthentication(entity, model);
 	}
 
 	@Override
 	@SecuredFor(role = Role.PERSONNEL)
-	public AM produceForPersonnelAuthentication(A entity, AM model) {
+	public M produceForPersonnelAuthentication(T entity, M model) {
 		// TODO Auto-generated method stub
 		return this.produceForAdminAuthentication(entity, model);
 	}

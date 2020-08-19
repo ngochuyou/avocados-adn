@@ -57,4 +57,13 @@ public class ClassReflector {
 		return ((ParameterizedType) clazz.getGenericSuperclass()).getActualTypeArguments()[0];
 	}
 
+	public <M> M newInstanceOrNull(Class<M> clazz) {
+		try {
+			return clazz.getConstructor().newInstance();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
 }
