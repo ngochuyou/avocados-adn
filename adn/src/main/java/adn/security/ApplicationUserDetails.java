@@ -18,9 +18,10 @@ public class ApplicationUserDetails extends User {
 
 	public ApplicationUserDetails(String username, String password, boolean enabled, boolean accountNonExpired,
 			boolean credentialsNonExpired, boolean accountNonLocked,
-			Collection<? extends GrantedAuthority> authorities) {
+			Collection<? extends GrantedAuthority> authorities, Role role) {
 		super(username, password, enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
 		// TODO Auto-generated constructor stub
+		this.role = role;
 	}
 
 	public ApplicationUserDetails(String username, String password, Collection<? extends GrantedAuthority> authorities,

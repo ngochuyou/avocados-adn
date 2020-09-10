@@ -15,11 +15,12 @@ import javax.servlet.http.Cookie;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import adn.application.managers.ConfigurationsManager;
+import adn.security.ApplicationUserDetails;
+import adn.utilities.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -51,12 +52,13 @@ public class AuthenticationService {
 		UserDetails userDetails = null;
 
 		try {
-			userDetails = new User(o.get("username").toString(), "", (boolean) o.get("enabled"),
+			userDetails = new ApplicationUserDetails(o.get("username").toString(), "", (boolean) o.get("enabled"),
 					(boolean) o.get("accountNonExpired"), (boolean) o.get("credentialsNonExpired"),
 					(boolean) o.get("accountNonLocked"),
 					(Collection<? extends GrantedAuthority>) ((List<?>) o.get("authorities")).stream()
 							.map(v -> new SimpleGrantedAuthority(((Map) v).get("authority").toString()))
-							.collect(Collectors.toSet()));
+							.collect(Collectors.toSet()),
+					Role.valueOf(o.get("role").toString()));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

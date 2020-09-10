@@ -76,7 +76,11 @@ public class AuthenticationBasedModelProducerFactory implements ApplicationManag
 					comp = !parent.equals(defaultProducer) ? parent : child;
 				}
 			} else {
-				comp = parent != null ? parent : child;
+				if (parent != null) {
+					comp = !parent.equals(defaultProducer) ? parent : null;
+				} else {
+					comp = !child.equals(defaultProducer) ? child : null;
+				}
 			}
 
 			this.producerMap.put(node.getNode(), comp == null ? defaultProducer : comp);

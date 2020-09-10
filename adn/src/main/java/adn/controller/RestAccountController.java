@@ -19,13 +19,12 @@ import adn.model.models.AdminModel;
 @RestController
 @RequestMapping("/rest/account")
 public class RestAccountController extends BaseController {
-	
-	@PreAuthorize(HASROLE_ADMIN)
+
+	@PreAuthorize(hasRoleAdmin)
 	@PostMapping("/admin")
 	public ResponseEntity<?> registerAdmin(@RequestBody AdminModel model) {
-		System.out.println("you've reached admin creation api");
-		
-		return null;
+
+		return ResponseEntity.ok(null);
 	}
-	
+
 }
