@@ -3,6 +3,9 @@
  */
 package adn.model.models;
 
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+
 import adn.model.Genetized;
 import adn.model.entities.Account;
 
@@ -10,6 +13,7 @@ import adn.model.entities.Account;
  * @author Ngoc Huy
  *
  */
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @Genetized(entityGene = Account.class)
 public class AccountModel extends Model {
 

@@ -25,7 +25,7 @@ public class TestingController extends BaseController {
 			HttpServletResponse response) {
 		System.out.println(c == null);
 
-		return handleSuccess("Hello");
+		return ResponseEntity.ok("hello");
 	}
 
 }

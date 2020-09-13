@@ -14,7 +14,7 @@ public class AccountModelProducer<T extends Account, M extends AccountModel>
 		implements AuthenticationBasedModelProducer<T, M> {
 
 	/**
-	 * {@link Account} -> {@link AccountModel} for ANONYMOUS Authentication
+	 * {@link AccountModel} -> {@link AccountModel} for ANONYMOUS Authentication
 	 */
 	@Override
 	@SecuredFor

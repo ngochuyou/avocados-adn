@@ -16,7 +16,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import adn.application.ApplicationContextProvider;
+import adn.application.ContextProvider;
 import adn.application.ApplicationManager;
 
 /**
@@ -43,12 +43,12 @@ public class ApplicationTester implements ApplicationManager {
 	}
 
 	protected void openSession(FlushMode mode) {
-		ApplicationContextProvider.getApplicationContext().getBean(SessionFactory.class).getCurrentSession()
+		ContextProvider.getApplicationContext().getBean(SessionFactory.class).getCurrentSession()
 				.setHibernateFlushMode(mode);
 	}
 
 	protected void cleanUpSession(boolean flush) {
-		Session session = ApplicationContextProvider.getApplicationContext().getBean(SessionFactory.class)
+		Session session = ContextProvider.getApplicationContext().getBean(SessionFactory.class)
 				.getCurrentSession();
 
 		if (flush) {

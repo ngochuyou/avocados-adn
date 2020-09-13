@@ -15,6 +15,7 @@ import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactor
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
@@ -23,6 +24,10 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import adn.utilities.Role;
 
 /**
  * @author Ngoc Huy
@@ -85,6 +90,12 @@ public class WebConfig implements WebMvcConfigurer {
 
 		return dataSource;
 	}
+	
+	@Bean
+	ObjectMapper objectMapper() {
+		
+		return new ObjectMapper();
+	}
 
 	@Bean
 	WebServerFactoryCustomizer<TomcatServletWebServerFactory> cookieProcessorCustomizer() {
@@ -99,6 +110,23 @@ public class WebConfig implements WebMvcConfigurer {
 					}
 				});
 			}
+		};
+	}
+
+	@Bean
+	Converter<String, Role> roleStringConverter() {
+		return new Converter<String, Role>() {
+
+			@Override
+			public Role convert(String source) {
+				// TODO Auto-generated method stub
+				try {
+					return Role.valueOf(source);
+				} catch (Exception e) {
+					throw new EnumConstantNotPresentException(Role.class, source);
+				}
+			}
+
 		};
 	}
 

@@ -2,7 +2,7 @@ package adn.service;
 
 import java.util.function.Function;
 
-import adn.application.ApplicationContextProvider;
+import adn.application.ContextProvider;
 import adn.application.managers.GenericServiceProvider;
 import adn.model.entities.Entity;
 
@@ -15,7 +15,7 @@ public class EntityGeneBuilder<T extends Entity> {
 	public EntityGeneBuilder(Class<T> clazz) {
 		super();
 		// TODO Auto-generated constructor stub
-		this.service = ApplicationContextProvider.getApplicationContext().getBean(GenericServiceProvider.class)
+		this.service = ContextProvider.getApplicationContext().getBean(GenericServiceProvider.class)
 				.getService(clazz);
 		this.procedure = new Strategy<T>(service::executeDefaultProcedure);
 	}

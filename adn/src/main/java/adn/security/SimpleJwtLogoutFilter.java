@@ -64,7 +64,8 @@ public class SimpleJwtLogoutFilter extends GenericFilterBean {
 
 			return;
 		}
-		// validate token if required
+		// begin-validate token if required
+		// end-validate token if required
 		c.setHttpOnly(true);
 		c.setSecure(false);
 		c.setPath("/");

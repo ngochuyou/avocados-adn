@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.core.type.filter.AssignableTypeFilter;
@@ -48,12 +49,15 @@ public class ModelManager implements ApplicationManager {
 
 	private Map<Class<? extends adn.model.entities.Entity>, Set<Class<? extends Model>>> relationMap;
 
+	private Map<Class<? extends adn.model.entities.Entity>, Class<? extends Model>> defaultModelMap;
+
 	@Override
 	public void initialize() {
 		// TODO Auto-generated method stub
 		this.initializeEntityTree();
 		this.initializeModelTree();
 		this.initializeRelationMap();
+		this.initializeDefaultModelMap();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -196,37 +200,55 @@ public class ModelManager implements ApplicationManager {
 		logger.info("Finished initializing ModelMap");
 	}
 
-	public ModelInheritanceTree<adn.model.entities.Entity> getEntityTree() {
-		return entityTree;
+	@SuppressWarnings("unchecked")
+	private void initializeDefaultModelMap() {
+		this.defaultModelMap = new HashMap<>();
+		logger.info("Initializing DefaultModelMap");
+
+		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+		// @formatter:off
+		scanner.addIncludeFilter(new AssignableTypeFilter(Model.class));
+		scanner.findCandidateComponents(Constants.modelPackage)
+			.forEach(bean -> {
+				try {
+					Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(bean.getBeanClassName());
+					Order order = clazz.getDeclaredAnnotation(Order.class);
+	
+					if (order == null || order.value() != Ordered.HIGHEST_PRECEDENCE) {
+						return;
+					}
+	
+					this.defaultModelMap.put(clazz.getDeclaredAnnotation(Genetized.class).entityGene(), clazz);
+				} catch (Exception e) {
+					e.printStackTrace();
+					SpringApplication.exit(context);
+				}
+			});
+		this.defaultModelMap.forEach((k, v) -> logger.info(v.getName() + " assigned to be default model of " + k.getName()));
+		// @formatter:on
+		logger.info("Finished initializing DefaultModelMap");
 	}
 
-	public void setEntityTree(ModelInheritanceTree<adn.model.entities.Entity> entityTree) {
-		this.entityTree = entityTree;
+	public ModelInheritanceTree<adn.model.entities.Entity> getEntityTree() {
+		return entityTree;
 	}
 
 	public Logger getLogger() {
 		return logger;
 	}
 
-	public void setLogger(Logger logger) {
-		this.logger = logger;
-	}
-
 	public ModelInheritanceTree<Model> getModelTree() {
 		return modelTree;
 	}
 
-	public void setModelTree(ModelInheritanceTree<Model> modelTree) {
-		this.modelTree = modelTree;
-	}
-
 	public Map<Class<? extends adn.model.entities.Entity>, Set<Class<? extends Model>>> getRelationMap() {
+
 		return relationMap;
 	}
 
-	public void setRelationMap(
-			Map<Class<? extends adn.model.entities.Entity>, Set<Class<? extends Model>>> relationMap) {
-		this.relationMap = relationMap;
+	public Class<? extends Model> getModelClass(Class<? extends adn.model.entities.Entity> entityClass) {
+
+		return this.defaultModelMap.get(entityClass);
 	}
 
 }

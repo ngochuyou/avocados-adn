@@ -22,6 +22,7 @@ import org.springframework.web.util.WebUtils;
 
 import adn.application.managers.ConfigurationsManager;
 import adn.service.AuthenticationService;
+import io.jsonwebtoken.ExpiredJwtException;
 
 /**
  * @author Ngoc Huy
@@ -44,7 +45,15 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
 			if (c != null) {
 				String jwt = c.getValue();
-				String username = authService.extractUsername(jwt);
+				String username = null;
+				
+				try {
+					username = authService.extractUsername(jwt);
+				} catch (ExpiredJwtException e) {
+					filterChain.doFilter(request, response);
+					
+					return;
+				}
 
 				if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 					UserDetails userDetails = authService.extractUserDetails(jwt);

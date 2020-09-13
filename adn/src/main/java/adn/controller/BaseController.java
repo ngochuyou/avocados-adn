@@ -8,19 +8,14 @@ import javax.transaction.Transactional;
 import org.hibernate.FlushMode;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import adn.application.ContextProvider;
 import adn.application.managers.AuthenticationBasedEMFactory;
 import adn.application.managers.ModelManager;
 import adn.dao.BaseDAO;
 import adn.model.entities.Entity;
 import adn.model.models.Model;
-import adn.security.ApplicationUserDetails;
 import adn.utilities.Role;
 
 /**
@@ -45,16 +40,12 @@ public class BaseController {
 
 	protected final String hasRoleAdmin = "hasRole('ADMIN')";
 
-	protected <T> ResponseEntity<T> handleSuccess(T body) {
+	protected final String notFound = "NOT FOUND";
 
-		return new ResponseEntity<T>(body, null, HttpStatus.OK);
-	}
-
-	protected <T> ResponseEntity<T> handleFailure(T body, int status) {
-
-		return new ResponseEntity<T>(body, HttpStatus.valueOf(status));
-	}
-
+	protected final String locked = "RESOURCE IS DEACTIVATED";
+	
+	protected final String invalidModel = "INVALID MODEL";
+	
 	protected void openSession(FlushMode mode) {
 		sessionFactory.getCurrentSession().setHibernateFlushMode(mode != null ? mode : FlushMode.MANUAL);
 	}
@@ -75,17 +66,12 @@ public class BaseController {
 
 	protected <T extends Entity, M extends Model> M produceModel(T entity, Class<M> modelClass) {
 
-		return authBasedEMFactory.produce(entity, modelClass, BaseController.getAuthenticationRole());
+		return authBasedEMFactory.produce(entity, modelClass, ContextProvider.getPrincipalRole());
 	}
 
-	public static Role getAuthenticationRole() {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+	protected <T extends Entity, M extends Model> M produceModel(T entity, Class<M> modelClass, Role role) {
 
-		if (auth instanceof AnonymousAuthenticationToken) {
-			return Role.ANONYMOUS;
-		}
-
-		return ((ApplicationUserDetails) auth.getPrincipal()).getRole();
+		return authBasedEMFactory.produce(entity, modelClass, role);
 	}
 
 }

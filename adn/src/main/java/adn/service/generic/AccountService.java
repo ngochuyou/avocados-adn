@@ -3,12 +3,17 @@
  */
 package adn.service.generic;
 
+import java.util.Map;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import adn.application.Constants;
 import adn.model.Genetized;
 import adn.model.entities.Account;
+import adn.model.entities.Admin;
+import adn.model.entities.Customer;
+import adn.model.entities.Personnel;
 import adn.service.GenericService;
 import adn.utilities.Gender;
 import adn.utilities.Role;
@@ -25,6 +30,9 @@ public class AccountService implements GenericService<Account> {
 	private final String UNKNOWN_USER_FIRSTNAME = "ADN";
 
 	private final String UNKNOWN_USER_LASTNAME = "USER";
+
+	private final Map<Role, Class<? extends Account>> roleClassMap = Map.of(Role.ADMIN, Admin.class, Role.CUSTOMER,
+			Customer.class, Role.PERSONNEL, Personnel.class);
 
 	@Override
 	public Account executeDefaultProcedure(Account model) {
@@ -57,6 +65,18 @@ public class AccountService implements GenericService<Account> {
 		}
 
 		return model;
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T extends Account> Class<T> getClassFromRole(Role role) {
+
+		return (Class<T>) this.roleClassMap.get(role);
+	}
+
+	public <T extends Account> Role getRoleFromClass(Class<T> clazz) {
+
+		return this.roleClassMap.keySet().stream().filter(key -> this.roleClassMap.get(key).equals(clazz)).findFirst()
+				.orElse(null);
 	}
 
 }

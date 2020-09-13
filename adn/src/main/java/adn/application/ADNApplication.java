@@ -33,7 +33,7 @@ public class ADNApplication {
 	@SuppressWarnings("unchecked")
 	@EventListener(ApplicationReadyEvent.class)
 	private void doAfterStartup() {
-		ApplicationContext context = ApplicationContextProvider.getApplicationContext();
+		ApplicationContext context = ContextProvider.getApplicationContext();
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
 		scanner.addIncludeFilter(new AssignableTypeFilter(ApplicationManager.class));

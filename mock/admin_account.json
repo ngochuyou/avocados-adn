@@ -1,0 +1,18 @@
+{
+    "createdDate": 1597136873602,
+    "updatedDate": 1599723425392,
+    "isActive": true,
+    "deactivatedDate": null,
+    "id": "mock_admin",
+    "username": "mock_admin",
+    "email": "ngochuy.ou@gmail.com",
+    "phone": "0974032706",
+    "firstName": "Tran",
+    "lastName": "Vu Ngoc Huy",
+    "photo": "default.jpg",
+    "password": null,
+    "role": "ADMIN",
+    "gender": "MALE",
+    "contractDate": 1577836800000,
+    "active": true
+}

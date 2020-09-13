@@ -13,9 +13,9 @@ import adn.utilities.ClassReflector;
  */
 public interface ApplicationManager {
 
-	final ApplicationContext context = ApplicationContextProvider.getApplicationContext();
+	final ApplicationContext context = ContextProvider.getApplicationContext();
 
-	final ClassReflector reflector = ApplicationContextProvider.getApplicationContext().getBean(ClassReflector.class);
+	final ClassReflector reflector = ContextProvider.getApplicationContext().getBean(ClassReflector.class);
 
 	void initialize() throws Exception;
 
