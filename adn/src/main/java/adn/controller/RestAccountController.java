@@ -24,7 +24,7 @@ import adn.utilities.Strings;
  */
 @RestController
 @RequestMapping("/rest/account")
-public class RestAccountController extends BaseController {
+public class RestAccountController extends AccountController {
 
 	@Autowired
 	private AccountService accountService;

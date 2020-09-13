@@ -29,7 +29,7 @@ public class AccountController extends BaseController {
 	@Autowired
 	protected ObjectMapper mapper;
 
-	protected static final String missingRole = "ACCOUNT ROLE IS MISSING";
+	protected final String missingRole = "ACCOUNT ROLE IS MISSING";
 
 	@SuppressWarnings("unchecked")
 	@PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
@@ -53,11 +53,11 @@ public class AccountController extends BaseController {
 		}
 
 		Role principalRole = ContextProvider.getPrincipalRole();
-		
+
 		if (model.getRole().equals(Role.ADMIN.name()) && !principalRole.equals(principalRole)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("ACCESS DENIED");
 		}
-		
+
 		Account account = authBasedEMFactory.produce(model, entityClass);
 
 		return null;
