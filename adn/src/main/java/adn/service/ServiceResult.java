@@ -26,8 +26,27 @@ public class ServiceResult {
 		return body;
 	}
 
-	public void setBody(Object body) {
+	public ServiceResult setBody(Object body) {
 		this.body = body;
+		
+		return this;
 	}
-
+	
+	public boolean isOk() {
+		
+		return this.status == ServiceStatus.OK;
+	}
+	
+	public static ServiceResult status(ServiceStatus status) {
+		return new ServiceResult(status, null);
+	}
+	
+	public static ServiceResult bad() {
+		return new ServiceResult(ServiceStatus.BAD, "BAD INVOKE");
+	}
+	
+	public static ServiceResult ok(Object body) {
+		return new ServiceResult(ServiceStatus.BAD, body);
+	}
+	
 }

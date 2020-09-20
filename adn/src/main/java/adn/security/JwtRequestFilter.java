@@ -20,13 +20,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.WebUtils;
 
-import adn.application.managers.ConfigurationsManager;
+import adn.application.context.ConfigurationsBuilder;
 import adn.service.AuthenticationService;
 import io.jsonwebtoken.ExpiredJwtException;
 
 /**
- * @author Ngoc Huy
- *
+ * @author Ngoc Huy ConfigurationsBuilder
  */
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
@@ -40,18 +39,18 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 		// TODO Auto-generated method stub
 		String authHeader = request.getHeader("Authorization");
 
-		if (authHeader != null && authHeader.startsWith(ConfigurationsManager.securityResource.jwtAuthHeaderValue)) {
-			Cookie c = WebUtils.getCookie(request, ConfigurationsManager.securityResource.jwtCookieName);
+		if (authHeader != null && authHeader.startsWith(ConfigurationsBuilder.securityResource.jwtAuthHeaderValue)) {
+			Cookie c = WebUtils.getCookie(request, ConfigurationsBuilder.securityResource.jwtCookieName);
 
 			if (c != null) {
 				String jwt = c.getValue();
 				String username = null;
-				
+
 				try {
 					username = authService.extractUsername(jwt);
 				} catch (ExpiredJwtException e) {
 					filterChain.doFilter(request, response);
-					
+
 					return;
 				}
 

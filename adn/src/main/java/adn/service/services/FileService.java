@@ -19,9 +19,13 @@ import adn.utilities.Strings;
 @Service
 public class FileService implements ApplicationService {
 
+	protected final String nameNotEmpty = "FILENAME CAN NOT BE EMPTY";
+	
+	protected final String fileNotFound = "FILE NOT FOUND";
+	
 	public ServiceResult uploadFile(MultipartFile file) {
 		if (file == null || file.isEmpty()) {
-			return new ServiceResult(ServiceStatus.BAD, null);
+			return ServiceResult.bad();
 		}
 
 		String filename = new Date().getTime() + '-' + Strings.hash(file.getOriginalFilename()) + '.'
@@ -32,25 +36,45 @@ public class FileService implements ApplicationService {
 			Path path = Paths.get(Constants.IMAGE_FILE_PATH + filename);
 
 			Files.write(path, bytes);
+
+			return ServiceResult.ok(filename);
 		} catch (IOException e) {
 			e.printStackTrace();
 
-			return new ServiceResult(ServiceStatus.FAILED, null);
+			return ServiceResult.status(ServiceStatus.FAILED);
 		}
-
-		return new ServiceResult(ServiceStatus.OK, filename);
+	}
+	
+	public ServiceResult removeFile(String filename) {
+		if (Strings.isEmpty(filename)) {
+			return ServiceResult.bad().setBody(nameNotEmpty);
+		}
+		
+		File file = new File(Constants.IMAGE_FILE_PATH + filename);
+		
+		if (!file.exists()) {
+			return ServiceResult.bad().setBody(fileNotFound);
+		}
+		
+		file.delete();
+		
+		return ServiceResult.ok("The file " + filename + " successfully deleted");
 	}
 
-	public byte[] getImageBytes(String filename) throws IOException {
-		File file = new File(Constants.IMAGE_FILE_PATH + filename);
+	public byte[] getImageBytes(String filename) {
+		try {
+			File file = new File(Constants.IMAGE_FILE_PATH + filename);
 
-		if (!file.exists()) {
+			if (!file.exists()) {
+				return null;
+			}
+
+			byte[] data = Files.readAllBytes(file.toPath());
+
+			return data;
+		} catch (Exception e) {
 			return null;
 		}
-
-		byte[] data = Files.readAllBytes(file.toPath());
-
-		return data;
 	}
 
 }

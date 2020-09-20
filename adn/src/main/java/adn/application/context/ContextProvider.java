@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.application;
+package adn.application.context;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;

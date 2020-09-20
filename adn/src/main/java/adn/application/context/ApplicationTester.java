@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.application.managers;
+package adn.application.context;
 
 import java.util.Arrays;
 
@@ -16,16 +16,13 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import adn.application.ContextProvider;
-import adn.application.ApplicationManager;
-
 /**
  * @author Ngoc Huy
  *
  */
 @Component
 @Order(value = Ordered.LOWEST_PRECEDENCE)
-public class ApplicationTester implements ApplicationManager {
+public class ApplicationTester implements ContextBuilder {
 
 	@Override
 	public void initialize() throws Exception {

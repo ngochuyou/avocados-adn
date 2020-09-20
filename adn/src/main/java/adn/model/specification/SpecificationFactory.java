@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.application.managers;
+package adn.model.specification;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,11 +15,10 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
-import adn.application.ApplicationManager;
 import adn.application.Constants;
+import adn.application.context.ContextBuilder;
+import adn.model.ModelManager;
 import adn.model.entities.Entity;
-import adn.model.specification.GenericSpecification;
-import adn.model.specification.Specification;
 
 /**
  * @author Ngoc Huy
@@ -27,7 +26,7 @@ import adn.model.specification.Specification;
  */
 @Component
 @Order(2)
-public class SpecificationFactory implements ApplicationManager {
+public class SpecificationFactory implements ContextBuilder {
 
 	private Map<Class<? extends Entity>, Specification<?>> specificationMap;
 

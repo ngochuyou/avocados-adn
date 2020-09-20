@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.application.managers;
+package adn.service.generic;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,9 +16,10 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
-import adn.application.ApplicationManager;
 import adn.application.Constants;
+import adn.application.context.ContextBuilder;
 import adn.model.Genetized;
+import adn.model.ModelManager;
 import adn.model.entities.Entity;
 import adn.service.GenericService;
 
@@ -28,7 +29,7 @@ import adn.service.GenericService;
  */
 @Component
 @Order(3)
-public class GenericServiceProvider implements ApplicationManager {
+public class GenericServiceProvider implements ContextBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 

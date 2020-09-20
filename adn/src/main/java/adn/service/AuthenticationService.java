@@ -18,7 +18,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import adn.application.managers.ConfigurationsManager;
+import adn.application.context.ConfigurationsBuilder;
 import adn.security.ApplicationUserDetails;
 import adn.utilities.Role;
 import io.jsonwebtoken.Claims;
@@ -73,7 +73,7 @@ public class AuthenticationService {
 
 	private Claims extractAllClaims(String token) {
 
-		return Jwts.parser().setSigningKey(ConfigurationsManager.securityResource.jwtSecretKey).parseClaimsJws(token)
+		return Jwts.parser().setSigningKey(ConfigurationsBuilder.securityResource.jwtSecretKey).parseClaimsJws(token)
 				.getBody();
 	}
 
@@ -93,7 +93,7 @@ public class AuthenticationService {
 	private String createToken(Map<String, Object> claims, String subject) {
 		return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
 				.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
-				.signWith(SignatureAlgorithm.HS256, ConfigurationsManager.securityResource.jwtSecretKey).compact();
+				.signWith(SignatureAlgorithm.HS256, ConfigurationsBuilder.securityResource.jwtSecretKey).compact();
 	}
 
 	public Boolean validateToken(String token, String username) {

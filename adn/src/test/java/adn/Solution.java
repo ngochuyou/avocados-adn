@@ -14,6 +14,9 @@ public class Solution {
 	 */
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
+		byte[] b = new byte[2];
+		
+		System.out.println(b instanceof Object);
 	}
 
 	public static void quickSort(int[] nums, int left, int right) {

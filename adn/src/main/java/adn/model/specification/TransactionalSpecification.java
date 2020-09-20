@@ -5,7 +5,7 @@ package adn.model.specification;
 
 import org.hibernate.SessionFactory;
 
-import adn.application.ContextProvider;
+import adn.application.context.ContextProvider;
 import adn.model.entities.Entity;
 
 /**

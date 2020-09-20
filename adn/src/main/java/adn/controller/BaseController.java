@@ -8,15 +8,19 @@ import javax.transaction.Transactional;
 import org.hibernate.FlushMode;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import adn.application.ContextProvider;
-import adn.application.managers.AuthenticationBasedEMFactory;
-import adn.application.managers.ModelManager;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import adn.application.Constants;
 import adn.dao.BaseDAO;
+import adn.model.ModelManager;
 import adn.model.entities.Entity;
+import adn.model.factory.EntityExtractorProvider;
+import adn.model.factory.ModelProducerProvider;
 import adn.model.models.Model;
-import adn.utilities.Role;
+import adn.utilities.ClassReflector;
 
 /**
  * @author Ngoc Huy
@@ -30,7 +34,12 @@ public class BaseController {
 	protected ModelManager modelManager;
 
 	@Autowired
-	protected AuthenticationBasedEMFactory authBasedEMFactory;
+	@Qualifier(Constants.defaultModelProducerProdiverName)
+	protected ModelProducerProvider producerProvider;
+
+	@Autowired
+	@Qualifier(Constants.defaultEntityExtractorProdiverName)
+	protected EntityExtractorProvider extractorProvider;
 
 	@Autowired
 	protected BaseDAO dao;
@@ -38,14 +47,22 @@ public class BaseController {
 	@Autowired
 	protected SessionFactory sessionFactory;
 
+	@Autowired
+	protected ClassReflector reflector;
+
+	@Autowired
+	protected ObjectMapper mapper;
+
 	protected final String hasRoleAdmin = "hasRole('ADMIN')";
 
 	protected final String notFound = "NOT FOUND";
 
 	protected final String locked = "RESOURCE IS DEACTIVATED";
-	
+
 	protected final String invalidModel = "INVALID MODEL";
-	
+
+	protected final String accessDenied = "ACCESS DENIDED";
+
 	protected void openSession(FlushMode mode) {
 		sessionFactory.getCurrentSession().setHibernateFlushMode(mode != null ? mode : FlushMode.MANUAL);
 	}
@@ -54,24 +71,22 @@ public class BaseController {
 		this.openSession(null);
 	}
 
-	protected void closeSession(boolean isFlushed) {
+	protected void clearSession(boolean isFlushed) {
 		if (isFlushed) {
 			sessionFactory.getCurrentSession().flush();
 
 			return;
 		}
 
-		sessionFactory.getCurrentSession().close();
+		sessionFactory.getCurrentSession().clear();
 	}
 
-	protected <T extends Entity, M extends Model> M produceModel(T entity, Class<M> modelClass) {
-
-		return authBasedEMFactory.produce(entity, modelClass, ContextProvider.getPrincipalRole());
+	protected <T extends Entity, M extends Model> T extract(M model, Class<T> entityClass) {
+		return extractorProvider.getExtractor(entityClass).extract(model, reflector.newInstanceOrAbstract(entityClass));
 	}
 
-	protected <T extends Entity, M extends Model> M produceModel(T entity, Class<M> modelClass, Role role) {
-
-		return authBasedEMFactory.produce(entity, modelClass, role);
+	protected <T extends Entity, M extends Model> M produce(T entity, Class<M> modelClass) {
+		return producerProvider.getProducer(modelClass).produce(entity, reflector.newInstanceOrAbstract(modelClass));
 	}
 
 }

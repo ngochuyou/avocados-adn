@@ -23,6 +23,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import adn.application.Constants;
 import adn.service.AuthenticationService;
 
 /**
@@ -57,20 +58,49 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	protected void configure(HttpSecurity http) throws Exception {
 		// TODO Auto-generated method stub
 		// @formatter:off
-		http.cors()
-			.and()
-				.csrf().disable()
+		http
+			.csrf().disable()
+			.cors();
+		
+		for (String endpoint: Constants.publicEndPoints) {
+			String[] parts = endpoint.split("\\\\");
+			
+			if (parts.length == 0) {
+				continue;
+			}
+
+			if (parts.length == 1) {
+				http.authorizeRequests()
+					.antMatchers(parts[0]).permitAll();
+				continue;
+			}
+
+			String[] methods = parts[1].split('[' + Constants.WHITESPACE_CHARS + ']');
+			
+			for (String method: methods) {
+				HttpMethod httpMethod = HttpMethod.resolve(method);
+				
+				if (httpMethod == null) {
+					continue;
+				}
+
+				http.authorizeRequests()
+					.antMatchers(httpMethod, parts[0]).permitAll();
+			}
+		}
+		
+		http
 			.authorizeRequests()
-				.antMatchers(HttpMethod.POST, "/auth/token").permitAll()
-				.anyRequest().authenticated()
-			.and()
-				.sessionManagement()
-					.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-			.and()
-				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-				.addFilterAfter(jwtLogoutFilter, JwtRequestFilter.class)
-				.exceptionHandling()
-					.authenticationEntryPoint(new AuthenticationFailureHandler());
+			.antMatchers(HttpMethod.POST, "/auth/token").permitAll()
+			.anyRequest().authenticated()
+		.and()
+			.sessionManagement()
+				.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+		.and()
+			.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+			.addFilterAfter(jwtLogoutFilter, JwtRequestFilter.class)
+			.exceptionHandling()
+				.authenticationEntryPoint(new AuthenticationFailureHandler());
 		// @formatter:on
 	}
 

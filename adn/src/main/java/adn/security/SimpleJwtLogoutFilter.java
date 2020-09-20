@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.GenericFilterBean;
 import org.springframework.web.util.WebUtils;
 
-import adn.application.managers.ConfigurationsManager;
+import adn.application.context.ConfigurationsBuilder;
 
 /**
  * @author Ngoc Huy
@@ -55,7 +55,7 @@ public class SimpleJwtLogoutFilter extends GenericFilterBean {
 	}
 
 	protected void logout(HttpServletRequest request, HttpServletResponse response) throws IOException {
-		Cookie c = WebUtils.getCookie(request, ConfigurationsManager.securityResource.jwtCookieName);
+		Cookie c = WebUtils.getCookie(request, ConfigurationsBuilder.securityResource.jwtCookieName);
 
 		if (c == null) {
 			response.getWriter().print(HttpStatus.NOT_MODIFIED.name());

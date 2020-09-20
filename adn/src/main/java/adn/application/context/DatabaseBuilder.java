@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.application.managers;
+package adn.application.context;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -13,7 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import adn.application.ApplicationManager;
+import adn.application.Constants;
 import adn.model.entities.Admin;
 import adn.model.entities.Customer;
 import adn.model.entities.Personnel;
@@ -26,7 +26,7 @@ import adn.utilities.Role;
  */
 @Component
 @Order(1)
-public class DatabaseInitializer implements ApplicationManager {
+public class DatabaseBuilder implements ContextBuilder {
 
 	@Autowired
 	private SessionFactory sessionFactory;
@@ -62,7 +62,7 @@ public class DatabaseInitializer implements ApplicationManager {
 			admin.setGender(Gender.MALE);
 			admin.setLastName("Vu Ngoc Huy");
 			admin.setPhone("0974032706");
-			admin.setPhoto("default.jpg");
+			admin.setPhoto(Constants.DEFAULT_USER_PHOTO_NAME);
 			admin.setRole(Role.ADMIN);
 
 			session.save(admin);
@@ -80,12 +80,12 @@ public class DatabaseInitializer implements ApplicationManager {
 			customer.setId("adn.customer.0");
 			customer.setPassword(passwordEncoder.encode("password"));
 			customer.setActive(true);
-			customer.setEmail("ngochuy.ou@gmail.com");
+			customer.setEmail("adn.customer.0@gmail.com");
 			customer.setFirstName("Tran");
 			customer.setGender(Gender.FEMALE);
 			customer.setLastName("Vu Ngoc Huy");
 			customer.setPhone("0974032706");
-			customer.setPhoto("default.jpg");
+			customer.setPhoto(Constants.DEFAULT_USER_PHOTO_NAME);
 			customer.setRole(Role.CUSTOMER);
 
 			session.save(customer);
@@ -103,12 +103,12 @@ public class DatabaseInitializer implements ApplicationManager {
 			manager.setId("adn.personnel.manager.0");
 			manager.setPassword(passwordEncoder.encode("password"));
 			manager.setActive(true);
-			manager.setEmail("ngochuy.ou@gmail.com");
+			manager.setEmail("adn.personnel.manager.0@gmail.com");
 			manager.setFirstName("Tran");
 			manager.setGender(Gender.UNKNOWN);
 			manager.setLastName("Vu Ngoc Huy");
 			manager.setPhone("0974032706");
-			manager.setPhoto("default.jpg");
+			manager.setPhoto(Constants.DEFAULT_USER_PHOTO_NAME);
 			manager.setRole(Role.PERSONNEL);
 
 			session.save(manager);
@@ -126,12 +126,12 @@ public class DatabaseInitializer implements ApplicationManager {
 			manager.setId("adn.personnel.employee.0");
 			manager.setPassword(passwordEncoder.encode("password"));
 			manager.setActive(true);
-			manager.setEmail("ngochuy.ou@gmail.com");
+			manager.setEmail("adn.personnel.employee.0@gmail.com");
 			manager.setFirstName("Tran");
 			manager.setGender(Gender.UNKNOWN);
 			manager.setLastName("Vu Ngoc Huy");
 			manager.setPhone("0974032706");
-			manager.setPhoto("default.jpg");
+			manager.setPhoto(Constants.DEFAULT_USER_PHOTO_NAME);
 			manager.setRole(Role.PERSONNEL);
 
 			session.save(manager);

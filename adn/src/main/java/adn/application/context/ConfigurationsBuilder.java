@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.application.managers;
+package adn.application.context;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +14,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.util.ResourceUtils;
 
-import adn.application.ApplicationManager;
+import adn.application.Constants;
 import adn.security.SecurityResource;
 
 /**
@@ -22,7 +22,7 @@ import adn.security.SecurityResource;
  *
  */
 @Order(value = Ordered.HIGHEST_PRECEDENCE)
-public class ConfigurationsManager implements ApplicationManager {
+public class ConfigurationsBuilder implements ContextBuilder {
 
 	public static SecurityResource securityResource;
 
@@ -37,11 +37,10 @@ public class ConfigurationsManager implements ApplicationManager {
 	}
 
 	private void readSecurityProperties() {
-		ConfigurationsManager.securityResource = new SecurityResource();
+		ConfigurationsBuilder.securityResource = new SecurityResource();
 
 		try {
-			File file = ResourceUtils.getFile(
-					"C:\\Users\\Ngoc Huy\\Documents\\workspace\\avocados-adn\\config\\SpevIDMKW.txt.txt");
+			File file = ResourceUtils.getFile(Constants.CONFIG_PATH + "SpevIDMKW.txt");
 			List<String> lines = Files.readAllLines(file.toPath());
 			String nameValSeperator = lines.get(0);
 
@@ -49,8 +48,8 @@ public class ConfigurationsManager implements ApplicationManager {
 				String[] pair = lines.get(i).split(nameValSeperator);
 				String name = pair[0], val = pair[1];
 
-				ConfigurationsManager.securityResource.getClass().getDeclaredField(name)
-						.set(ConfigurationsManager.securityResource, val);
+				ConfigurationsBuilder.securityResource.getClass().getDeclaredField(name)
+						.set(ConfigurationsBuilder.securityResource, val);
 			}
 		} catch (IOException | IllegalArgumentException | IllegalAccessException | NoSuchFieldException
 				| SecurityException e) {

@@ -22,7 +22,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import adn.application.managers.ConfigurationsManager;
+import adn.application.context.ConfigurationsBuilder;
 import adn.service.AuthenticationService;
 import io.jsonwebtoken.lang.Assert;
 
@@ -66,7 +66,7 @@ public class JwtUsernamePasswordAuthenticationFilter extends AbstractAuthenticat
 		// TODO Auto-generated method stub
 		UserDetails userDetails = (UserDetails) authResult.getPrincipal();
 		String jwt = authService.generateToken(userDetails);
-		Cookie cookie = authService.createSessionCookie(ConfigurationsManager.securityResource.jwtCookieName, jwt, "/",
+		Cookie cookie = authService.createSessionCookie(ConfigurationsBuilder.securityResource.jwtCookieName, jwt, "/",
 				false);
 
 		cookie.setMaxAge(7 * 24 * 60 * 60);// days

@@ -2,9 +2,9 @@ package adn.service;
 
 import java.util.function.Function;
 
-import adn.application.ContextProvider;
-import adn.application.managers.GenericServiceProvider;
+import adn.application.context.ContextProvider;
 import adn.model.entities.Entity;
+import adn.service.generic.GenericServiceProvider;
 
 public class EntityGeneBuilder<T extends Entity> {
 
@@ -12,10 +12,11 @@ public class EntityGeneBuilder<T extends Entity> {
 
 	private Strategy<T> procedure;
 
-	public EntityGeneBuilder(Class<T> clazz) {
+	@SuppressWarnings("unchecked")
+	public EntityGeneBuilder(Class<? extends T> clazz) {
 		super();
 		// TODO Auto-generated constructor stub
-		this.service = ContextProvider.getApplicationContext().getBean(GenericServiceProvider.class)
+		this.service = (GenericService<T>) ContextProvider.getApplicationContext().getBean(GenericServiceProvider.class)
 				.getService(clazz);
 		this.procedure = new Strategy<T>(service::executeDefaultProcedure);
 	}
@@ -45,7 +46,6 @@ public class EntityGeneBuilder<T extends Entity> {
 	}
 
 	public T build(T instance) {
-
 		return this.procedure.execute(instance);
 	}
 }

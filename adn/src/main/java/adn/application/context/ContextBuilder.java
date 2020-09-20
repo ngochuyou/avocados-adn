@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.application;
+package adn.application.context;
 
 import org.springframework.context.ApplicationContext;
 
@@ -11,7 +11,7 @@ import adn.utilities.ClassReflector;
  * @author Ngoc Huy
  *
  */
-public interface ApplicationManager {
+public interface ContextBuilder {
 
 	final ApplicationContext context = ContextProvider.getApplicationContext();
 

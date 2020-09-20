@@ -5,14 +5,14 @@
     "deactivatedDate": null,
     "id": "mock_admin",
     "username": "mock_admin",
-    "email": "ngochuy.ou@gmail.com",
+    "email": "mock.admin.updated@gmail.com",
     "phone": "0974032706",
     "firstName": "Tran",
     "lastName": "Vu Ngoc Huy",
     "photo": "default.jpg",
-    "password": null,
-    "role": "ADMIN",
-    "gender": "MALE",
+    "password": "password",
+    "role": "PERSONNEL",
+    "gender": "FEMALE",
     "contractDate": 1577836800000,
     "active": true
 }

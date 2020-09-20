@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import adn.application.ContextProvider;
+import adn.application.context.ContextProvider;
 import adn.model.entities.Account;
 import adn.service.generic.AccountService;
 import adn.utilities.Role;
@@ -46,7 +46,7 @@ public class RestAccountController extends AccountController {
 				return ResponseEntity.status(HttpStatus.LOCKED).body(locked);
 			}
 
-			return ResponseEntity.ok(produceModel(account, modelManager.getModelClass(clazz)));
+			return ResponseEntity.ok(produce(account, modelManager.getModelClass(clazz)));
 		}
 
 		account = dao.findById(username, Account.class);
@@ -56,8 +56,8 @@ public class RestAccountController extends AccountController {
 		}
 
 		if (principalRole.equals(Role.ADMIN) || account.isActive()) {
-			return ResponseEntity.ok(produceModel(account,
-					modelManager.getModelClass(accountService.getClassFromRole(account.getRole()))));
+			return ResponseEntity.ok(
+					produce(account, modelManager.getModelClass(accountService.getClassFromRole(account.getRole()))));
 		}
 
 		return ResponseEntity.status(HttpStatus.LOCKED).body(locked);

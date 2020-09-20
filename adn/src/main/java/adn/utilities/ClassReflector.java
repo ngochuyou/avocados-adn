@@ -3,11 +3,16 @@
  */
 package adn.utilities;
 
+import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Stack;
+import java.util.function.BiConsumer;
 
 import org.springframework.stereotype.Component;
+
+import adn.model.AbstractModel;
 
 /**
  * @author Ngoc Huy
@@ -57,13 +62,44 @@ public class ClassReflector {
 		return ((ParameterizedType) clazz.getGenericSuperclass()).getActualTypeArguments()[0];
 	}
 
-	public <M> M newInstanceOrNull(Class<M> clazz) {
+	@SuppressWarnings("unchecked")
+	public <M> M newInstanceOrAbstract(Class<M> clazz) {
 		try {
 			return clazz.getConstructor().newInstance();
 		} catch (Exception e) {
 			e.printStackTrace();
-			return null;
+			return (M) new AbstractModel() {
+				
+				@Override
+				public Serializable getId() {
+					// TODO Auto-generated method stub
+					return null;
+				}
+			};
 		}
+	}
+
+	public void consumeFields(Object o, BiConsumer<Field, Object> consumer, boolean superClassIncluded) {
+		Stack<Class<?>> classStack = new Stack<>();
+
+		classStack.add(o.getClass());
+
+		if (superClassIncluded) {
+			classStack.addAll(getClassStack(o.getClass().getSuperclass()));
+		}
+
+		while (!classStack.isEmpty()) {
+			for (Field f : classStack.pop().getDeclaredFields()) {
+				f.setAccessible(true);
+				consumer.accept(f, o);
+			}
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T, M extends T> M genericallyCast(T target) {
+
+		return (M) target;
 	}
 
 }

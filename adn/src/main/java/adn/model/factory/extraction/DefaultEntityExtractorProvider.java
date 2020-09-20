@@ -1,4 +1,4 @@
-package adn.model.factory;
+package adn.model.factory.extraction;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,15 +12,17 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
-import adn.application.ApplicationManager;
-import adn.application.managers.ModelManager;
+import adn.application.Constants;
 import adn.model.Genetized;
+import adn.model.ModelManager;
 import adn.model.entities.Entity;
+import adn.model.factory.EntityExtractor;
+import adn.model.factory.EntityExtractorProvider;
 import adn.model.models.Model;
 
-@Component
+@Component(Constants.defaultEntityExtractorProdiverName)
 @Order(value = 4)
-public class EntityExtractorFactory implements ApplicationManager {
+public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 

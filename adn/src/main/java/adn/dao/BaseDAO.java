@@ -16,10 +16,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Repository;
 
-import adn.application.managers.SpecificationFactory;
 import adn.model.Result;
 import adn.model.entities.Entity;
 import adn.model.specification.Specification;
+import adn.model.specification.SpecificationFactory;
 
 /**
  * @author Ngoc Huy
@@ -60,12 +60,10 @@ public class BaseDAO {
 
 	public <T extends Entity> Result<T> insert(T instance, Class<T> clazz) {
 		if (instance == null || clazz == null) {
-
 			return Result.error(HttpStatus.BAD_REQUEST.value(), instance, null);
 		}
 
 		if (this.findById(instance.getId(), clazz) != null) {
-
 			return Result.error(HttpStatus.CONFLICT.value(), instance, Map.of("id", EXISTED));
 		}
 
@@ -84,12 +82,10 @@ public class BaseDAO {
 
 	public <T extends Entity> Result<T> update(T instance, Class<T> clazz) {
 		if (instance == null || clazz == null) {
-
 			return Result.error(HttpStatus.BAD_REQUEST.value(), instance, Map.of());
 		}
-
+		
 		if (this.findById(instance.getId(), clazz) == null) {
-
 			return Result.error(HttpStatus.CONFLICT.value(), instance, Map.of("id", NOT_FOUND));
 		}
 
@@ -98,6 +94,7 @@ public class BaseDAO {
 		Result<T> result = specification.isSatisfiedBy(instance);
 
 		if (result.isOk()) {
+			session.detach(instance);
 			session.update(instance);
 		} else {
 			session.evict(instance);

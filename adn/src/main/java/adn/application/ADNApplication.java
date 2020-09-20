@@ -16,6 +16,9 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 
+import adn.application.context.ContextBuilder;
+import adn.application.context.ContextProvider;
+
 /**
  * @author Ngoc Huy
  *
@@ -36,12 +39,12 @@ public class ADNApplication {
 		ApplicationContext context = ContextProvider.getApplicationContext();
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
-		scanner.addIncludeFilter(new AssignableTypeFilter(ApplicationManager.class));
+		scanner.addIncludeFilter(new AssignableTypeFilter(ContextBuilder.class));
 		scanner.findCandidateComponents(Constants.basePackage)
 			.stream()
 			.map(bean -> {
 				try {
-					return (Class<? extends ApplicationManager>) Class.forName(bean.getBeanClassName());
+					return (Class<? extends ContextBuilder>) Class.forName(bean.getBeanClassName());
 				} catch (Exception ex) {
 					ex.printStackTrace();
 					SpringApplication.exit(context);
@@ -72,7 +75,7 @@ public class ADNApplication {
 			})
 			.forEach(clazz -> {
 				try {
-					ApplicationManager manager = context.getBean(clazz);
+					ContextBuilder manager = context.getBean(clazz);
 					
 					manager.initialize();
 				} catch (BeansException be) {

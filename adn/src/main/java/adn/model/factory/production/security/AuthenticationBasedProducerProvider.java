@@ -2,6 +2,7 @@ package adn.model.factory.production.security;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,15 +13,17 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.stereotype.Component;
 
-import adn.application.ApplicationManager;
-import adn.application.managers.ModelManager;
+import adn.application.Constants;
 import adn.model.Genetized;
+import adn.model.ModelManager;
 import adn.model.entities.Entity;
+import adn.model.factory.ModelProducerProvider;
 import adn.model.models.Model;
+import adn.utilities.Role;
 
-@Component
+@Component(Constants.defaultModelProducerProdiverName)
 @Order(value = 5)
-public class AuthenticationBasedModelProducerFactory implements ApplicationManager {
+public class AuthenticationBasedProducerProvider implements ModelProducerProvider {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -29,6 +32,8 @@ public class AuthenticationBasedModelProducerFactory implements ApplicationManag
 	private final String MODEL_PRODUCER_PACKAGE = "adn.model.factory.production.security";
 
 	private AuthenticationBasedModelProducer<Entity, Model> defaultProducer = new AuthenticationBasedModelProducer<Entity, Model>() {};
+
+	private Map<Role, BiFunction<Entity, Class<Model>, ? extends Model>> functionMap;
 
 	@Autowired
 	private ModelManager modelManager;
@@ -88,6 +93,12 @@ public class AuthenticationBasedModelProducerFactory implements ApplicationManag
 		this.producerMap.forEach((k, v) -> {
 			logger.info(v.getName() + " has been built for production of " + k.getName());
 		});
+		this.functionMap = new HashMap<>();
+		this.functionMap.put(Role.ADMIN, this::produceForAdmin);
+		this.functionMap.put(Role.CUSTOMER, this::produceForCustomer);
+		this.functionMap.put(Role.PERSONNEL, this::produceForPersonnel);
+		this.functionMap.put(Role.ANONYMOUS, this::produce);
+		this.functionMap.put(null, this::produce);
 		// @formatter:on
 		logger.info("Finished initializing Model Producers");
 	}
@@ -96,6 +107,37 @@ public class AuthenticationBasedModelProducerFactory implements ApplicationManag
 	public <T extends Entity, M extends Model> AuthenticationBasedModelProducer<T, M> getProducer(Class<M> modelClass) {
 
 		return (AuthenticationBasedModelProducer<T, M>) this.producerMap.get(modelClass);
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T extends Entity, M extends Model> M produceForAdmin(T entity, Class<M> clazz) {
+		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
+				.produceForAdminAuthentication(entity, reflector.newInstanceOrAbstract(clazz));
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T extends Entity, M extends Model> M produceForCustomer(T entity, Class<M> clazz) {
+		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
+				.produceForCustomerAuthentication(entity, reflector.newInstanceOrAbstract(clazz));
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T extends Entity, M extends Model> M produceForPersonnel(T entity, Class<M> clazz) {
+		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
+				.produceForPersonnelAuthentication(entity, reflector.newInstanceOrAbstract(clazz));
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T extends Entity, M extends Model> M produce(T entity, Class<M> clazz) {
+		// TODO Auto-generated method stub
+		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz)).produce(entity,
+				reflector.newInstanceOrAbstract(clazz));
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T extends Entity, M extends Model> M produce(T entity, Class<M> clazz, Role role) {
+		// TODO Auto-generated method stub
+		return (M) this.functionMap.get(role).apply(entity, (Class<Model>) clazz);
 	}
 
 }

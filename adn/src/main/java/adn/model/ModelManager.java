@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.application.managers;
+package adn.model;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -26,11 +26,8 @@ import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
-import adn.application.ApplicationManager;
 import adn.application.Constants;
-import adn.model.AbstractModel;
-import adn.model.Genetized;
-import adn.model.ModelInheritanceTree;
+import adn.application.context.ContextBuilder;
 import adn.model.models.Model;
 
 /**
@@ -39,7 +36,7 @@ import adn.model.models.Model;
  */
 @Component
 @Order(0)
-public class ModelManager implements ApplicationManager {
+public class ModelManager implements ContextBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
