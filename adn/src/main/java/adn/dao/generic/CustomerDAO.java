@@ -1,25 +1,26 @@
 /**
  * 
  */
-package adn.service.generic;
+package adn.dao.generic;
 
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Repository;
 
+import adn.dao.BaseDAO;
+import adn.dao.GenericDAO;
 import adn.model.Genetized;
 import adn.model.entities.Customer;
-import adn.service.GenericService;
 import adn.utilities.Strings;
 
 /**
  * @author Ngoc Huy
  *
  */
-@Service
+@Repository
 @Genetized(entityGene = Customer.class)
-public class CustomerService implements GenericService<Customer> {
+public class CustomerDAO extends BaseDAO implements GenericDAO<Customer> {
 
 	@Override
-	public Customer executeDefaultProcedure(Customer model) {
+	public Customer defaultBuild(Customer model) {
 		// TODO Auto-generated method stub
 		model.setAddress(Strings.normalizeString(model.getAddress()));
 

@@ -1,30 +1,31 @@
 /**
  * 
  */
-package adn.service.generic;
+package adn.dao.generic;
 
 import java.util.Date;
 
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Repository;
 
+import adn.dao.BaseDAO;
+import adn.dao.GenericDAO;
 import adn.model.Genetized;
 import adn.model.entities.Entity;
-import adn.service.GenericService;
 
 /**
  * @author Ngoc Huy
  *
  */
-@Service
+@Repository
 @Genetized(entityGene = Entity.class)
-public class EntityService implements GenericService<Entity> {
+public class EntityDAO extends BaseDAO implements GenericDAO<Entity> {
 
 	@Override
-	public Entity executeDeactivationProcedure(Entity model) {
+	public Entity deactivationBuild(Entity model) {
 		// TODO Auto-generated method stub
 		model.setDeactivatedDate(new Date());
 
 		return model;
 	}
-
+	
 }

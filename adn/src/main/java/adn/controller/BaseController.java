@@ -14,11 +14,12 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.Constants;
+import adn.application.context.ContextProvider;
 import adn.dao.BaseDAO;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractorProvider;
-import adn.model.factory.ModelProducerProvider;
+import adn.model.factory.production.security.AuthenticationBasedProducerProvider;
 import adn.model.models.Model;
 import adn.utilities.ClassReflector;
 
@@ -34,8 +35,7 @@ public class BaseController {
 	protected ModelManager modelManager;
 
 	@Autowired
-	@Qualifier(Constants.defaultModelProducerProdiverName)
-	protected ModelProducerProvider producerProvider;
+	protected AuthenticationBasedProducerProvider producerProvider;
 
 	@Autowired
 	@Qualifier(Constants.defaultEntityExtractorProdiverName)
@@ -86,7 +86,7 @@ public class BaseController {
 	}
 
 	protected <T extends Entity, M extends Model> M produce(T entity, Class<M> modelClass) {
-		return producerProvider.getProducer(modelClass).produce(entity, reflector.newInstanceOrAbstract(modelClass));
+		return producerProvider.produce(entity, modelClass, ContextProvider.getPrincipalRole());
 	}
 
 }

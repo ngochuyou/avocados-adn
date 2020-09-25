@@ -49,7 +49,7 @@ class And<T extends Entity, M extends Model> implements EntityExtractor<T, M> {
 	@Override
 	public String getName() {
 		// TODO Auto-generated method stub
-		return '[' + left.getName() + ',' + right.getName() + ']';
+		return '[' + left.getName() + ", " + right.getName() + ']';
 	}
 
 }

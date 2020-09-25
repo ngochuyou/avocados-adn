@@ -24,7 +24,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import adn.application.Constants;
-import adn.service.AuthenticationService;
+import adn.service.services.AuthenticationService;
 
 /**
  * @author Ngoc Huy

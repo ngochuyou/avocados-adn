@@ -22,13 +22,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import adn.application.Constants;
 import adn.application.context.ContextProvider;
+import adn.dao.generic.EntityGeneBuilder;
 import adn.model.Result;
 import adn.model.entities.Account;
 import adn.model.models.AccountModel;
-import adn.service.ApplicationService.ServiceStatus;
-import adn.service.EntityGeneBuilder;
 import adn.service.ServiceResult;
-import adn.service.generic.AccountService;
+import adn.service.services.AccountService;
 import adn.service.services.FileService;
 import adn.utilities.Role;
 
@@ -44,7 +43,7 @@ public class AccountController extends BaseController {
 
 	@Autowired
 	protected PasswordEncoder passwordEncoder;
-	
+
 	protected final String missingRole = "USER ROLE IS MISSING";
 
 	protected final String roleFieldname = "role";
@@ -82,21 +81,23 @@ public class AccountController extends BaseController {
 		EntityGeneBuilder<Account> geneBuilder = new EntityGeneBuilder<>(entityClass);
 
 		account = geneBuilder.insert().build(account);
-
-		if (photo != null) {
-			ServiceResult uploadResult = fileService.uploadFile(photo);
-
-			account.setPhoto(uploadResult.getStatus().equals(ServiceStatus.OK) ? uploadResult.getBody().toString()
-					: account.getPhoto());
-		}
+		account.setPhoto(fileService.generateFilename(photo));
 
 		openSession();
 
 		Result<?> insertResult = dao.insert(reflector.genericallyCast(account), entityClass);
+		boolean isOk = insertResult.isOk();
 
-		clearSession(insertResult.isOk());
+		if (isOk) {
+			ServiceResult uploadResult = fileService.uploadFile(photo, account.getPhoto());
 
-		if (!insertResult.isOk()) {
+			isOk = insertResult.isOk() && uploadResult.isOk();
+			account.setPhoto(isOk ? account.getPhoto() : Constants.DEFAULT_USER_PHOTO_NAME);
+		}
+
+		clearSession(isOk);
+
+		if (!isOk) {
 			return ResponseEntity.status(insertResult.getStatus()).body(insertResult.getMessageSet());
 		}
 
@@ -133,7 +134,7 @@ public class AccountController extends BaseController {
 
 	@SuppressWarnings("unchecked")
 	@PutMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
-	public ResponseEntity<?> updateAccount(@RequestPart(name = "model", required = true) String jsonPart,
+	public @ResponseBody ResponseEntity<?> updateAccount(@RequestPart(name = "model", required = true) String jsonPart,
 			@RequestPart(name = "photo", required = false) MultipartFile photo) {
 		Role modelRole = getRoleFromJsonString(jsonPart);
 		AccountModel model;
@@ -162,33 +163,45 @@ public class AccountController extends BaseController {
 
 		Account account;
 		EntityGeneBuilder<Account> geneBuilder = new EntityGeneBuilder<>(entityClass);
-		
+
 		account = extract(model, entityClass);
 		persistedAccount = geneBuilder.update().build(account);
 
+		String oldPhotoName = persistedAccount.getPhoto();
+
 		if (photo != null) {
-			ServiceResult imageUploadResult = fileService.uploadFile(photo);
-
-			if (imageUploadResult.isOk()) {
-				ServiceResult imageRemovalResult = fileService.removeFile(persistedAccount.getPhoto());
-
-				persistedAccount.setPhoto(
-						imageRemovalResult.isOk() ? imageUploadResult.getBody().toString() : persistedAccount.getPhoto());
-			}
+			persistedAccount.setPhoto(fileService.generateFilename(photo));
 		}
 
-		if ((account.getId().equals(principalName) || principalRole.equals(Role.ADMIN)) && !Strings.isEmpty(account.getPassword())) {
+		if ((account.getId().equals(principalName) || principalRole.equals(Role.ADMIN))
+				&& !Strings.isEmpty(account.getPassword())) {
 			persistedAccount.setPassword(passwordEncoder.encode(account.getPassword()));
 		}
-		
+
 		if (principalRole.equals(Role.ADMIN)) {
 			persistedAccount.setRole(account.getRole());
 		}
 
-		Result<?> result = dao.update(reflector.genericallyCast(persistedAccount), Account.class);
+		openSession();
 
-		if (result.isOk()) {
-			return ResponseEntity.ok(produce(account, modelClass));
+		Result<? extends Account> result = dao.update(reflector.genericallyCast(persistedAccount), Account.class);
+
+		boolean isOk = result.isOk();
+
+		if (isOk) {
+			ServiceResult uploadResult = fileService.uploadFile(photo, persistedAccount.getPhoto());
+
+			if (uploadResult.isOk()) {
+				ServiceResult removalResult = fileService.removeFile(oldPhotoName);
+
+				isOk = isOk && uploadResult.isOk() && removalResult.isOk();
+			}
+		}
+
+		clearSession(isOk);
+
+		if (isOk) {
+			return ResponseEntity.ok(produce(result.getInstance(), modelClass));
 		}
 
 		return ResponseEntity.status(result.getStatus()).body(result.getMessageSet());

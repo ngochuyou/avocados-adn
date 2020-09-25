@@ -1,28 +1,29 @@
 /**
  * 
  */
-package adn.service.generic;
+package adn.dao.generic;
 
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Repository;
 
+import adn.dao.BaseDAO;
+import adn.dao.GenericDAO;
 import adn.model.Genetized;
 import adn.model.entities.Personnel;
-import adn.service.GenericService;
 import adn.utilities.Strings;
 
 /**
  * @author Ngoc Huy
  *
  */
-@Service
+@Repository
 @Genetized(entityGene = Personnel.class)
-public class PersonnelService implements GenericService<Personnel> {
+public class PersonnelDAO extends BaseDAO implements GenericDAO<Personnel> {
 
 	@Override
-	public Personnel executeDefaultProcedure(Personnel model) {
+	public Personnel defaultBuild(Personnel model) {
 		// TODO Auto-generated method stub
 		model.setCreatedBy(Strings.removeSpaces(model.getCreatedBy()));
 
@@ -30,7 +31,7 @@ public class PersonnelService implements GenericService<Personnel> {
 	}
 
 	@Override
-	public Personnel executeInsertionProcedure(Personnel model) {
+	public Personnel insertBuild(Personnel model) {
 		// TODO Auto-generated method stub
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 

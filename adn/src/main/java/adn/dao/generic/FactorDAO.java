@@ -1,28 +1,29 @@
 /**
  * 
  */
-package adn.service.generic;
+package adn.dao.generic;
 
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Repository;
 
+import adn.dao.BaseDAO;
+import adn.dao.GenericDAO;
 import adn.model.Genetized;
 import adn.model.entities.Factor;
-import adn.service.GenericService;
 import adn.utilities.Strings;
 
 /**
  * @author Ngoc Huy
  *
  */
-@Service
+@Repository
 @Genetized(entityGene = Factor.class)
-public class FactorService implements GenericService<Factor> {
+public class FactorDAO extends BaseDAO implements GenericDAO<Factor> {
 
 	@Override
-	public Factor executeDefaultProcedure(Factor model) {
+	public Factor defaultBuild(Factor model) {
 		// TODO Auto-generated method stub
 		model.setName(Strings.normalizeString(model.getName()));
 		model.setCreatedBy(Strings.removeSpaces(model.getCreatedBy()));
@@ -32,7 +33,7 @@ public class FactorService implements GenericService<Factor> {
 	}
 
 	@Override
-	public Factor executeInsertionProcedure(Factor model) {
+	public Factor insertBuild(Factor model) {
 		// TODO Auto-generated method stub
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -42,7 +43,7 @@ public class FactorService implements GenericService<Factor> {
 	}
 
 	@Override
-	public Factor executeUpdateProcedure(Factor model) {
+	public Factor updateBuild(Factor model) {
 		// TODO Auto-generated method stub
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 

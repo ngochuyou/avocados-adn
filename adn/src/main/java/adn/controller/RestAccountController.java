@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.context.ContextProvider;
 import adn.model.entities.Account;
-import adn.service.generic.AccountService;
+import adn.service.services.AccountService;
 import adn.utilities.Role;
 import adn.utilities.Strings;
 

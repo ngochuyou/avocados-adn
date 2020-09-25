@@ -23,7 +23,7 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import adn.application.context.ConfigurationsBuilder;
-import adn.service.AuthenticationService;
+import adn.service.services.AuthenticationService;
 import io.jsonwebtoken.lang.Assert;
 
 /**

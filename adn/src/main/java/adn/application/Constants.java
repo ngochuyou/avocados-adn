@@ -19,7 +19,7 @@ public class Constants {
 
 	public static final String genericFactoryPackage = "adn.model.factory.generic";
 
-	public static final String genericServicePackage = "adn.service.generic";
+	public static final String genericDAOPackage = "adn.dao.generic";
 
 	public static final String defaultEntityExtractorProdiverName = "defaultEntityExtractorProvider";
 	

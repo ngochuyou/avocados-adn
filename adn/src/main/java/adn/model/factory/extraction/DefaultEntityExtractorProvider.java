@@ -11,6 +11,7 @@ import org.springframework.context.annotation.ClassPathScanningCandidateComponen
 import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import adn.application.Constants;
 import adn.model.Genetized;
@@ -18,6 +19,7 @@ import adn.model.ModelManager;
 import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractor;
 import adn.model.factory.EntityExtractorProvider;
+import adn.model.factory.GenericEntityExtractor;
 import adn.model.models.Model;
 
 @Component(Constants.defaultEntityExtractorProdiverName)
@@ -39,7 +41,7 @@ public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 	@Override
 	public void initialize() throws Exception {
 		// TODO Auto-generated method stub
-		logger.info("Initializing Entity Extractors");
+		logger.info("Initializing " + this.getClass().getName());
 		this.extractorMap = new HashMap<>();
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
@@ -80,13 +82,22 @@ public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 		});
 		this.extractorMap
 				.forEach((k, v) -> logger.info("Assigning " + v.getName() + " for " + k.getName() + " extraction"));
-		logger.info("Finished initializing Entity Extractors");
+		logger.info("Finished initializing " + this.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> EntityExtractor<T, M> getExtractor(Class<T> entityClass) {
 
 		return (EntityExtractor<T, M>) this.extractorMap.get(entityClass);
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public <T extends Entity, M extends Model> GenericEntityExtractor<T, M> getGenericExtractor(Class<T> entityClass) {
+		EntityExtractor extractor = this.extractorMap.get(entityClass);
+
+		Assert.isTrue(extractor instanceof GenericEntityExtractor, "Can not find GenericExtractor");
+
+		return (GenericEntityExtractor<T, M>) extractor;
 	}
 
 }

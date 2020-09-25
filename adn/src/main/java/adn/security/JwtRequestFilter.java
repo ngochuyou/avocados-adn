@@ -21,7 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.WebUtils;
 
 import adn.application.context.ConfigurationsBuilder;
-import adn.service.AuthenticationService;
+import adn.service.services.AuthenticationService;
 import io.jsonwebtoken.ExpiredJwtException;
 
 /**

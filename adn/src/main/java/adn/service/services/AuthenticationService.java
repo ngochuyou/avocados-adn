@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service;
+package adn.service.services;
 
 import java.util.Collection;
 import java.util.Date;
@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import adn.application.context.ConfigurationsBuilder;
 import adn.security.ApplicationUserDetails;
+import adn.service.ApplicationService;
 import adn.utilities.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -30,7 +31,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
  *
  */
 @Service
-public class AuthenticationService {
+public class AuthenticationService implements ApplicationService {
 
 	// TODO JWT Authenticate Services below
 	public static final String JWT_USERDETAILS_CLAIM_KEY = "userDetails";

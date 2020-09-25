@@ -33,8 +33,7 @@ public class ServiceResult {
 	}
 	
 	public boolean isOk() {
-		
-		return this.status == ServiceStatus.OK;
+		return this.status.equals(ServiceStatus.OK);
 	}
 	
 	public static ServiceResult status(ServiceStatus status) {
@@ -46,7 +45,7 @@ public class ServiceResult {
 	}
 	
 	public static ServiceResult ok(Object body) {
-		return new ServiceResult(ServiceStatus.BAD, body);
+		return new ServiceResult(ServiceStatus.OK, body);
 	}
 	
 }

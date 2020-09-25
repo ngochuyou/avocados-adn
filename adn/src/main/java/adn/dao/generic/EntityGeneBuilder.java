@@ -1,14 +1,15 @@
-package adn.service;
+package adn.dao.generic;
 
 import java.util.function.Function;
 
 import adn.application.context.ContextProvider;
+import adn.dao.GenericDAO;
 import adn.model.entities.Entity;
-import adn.service.generic.GenericServiceProvider;
+import io.jsonwebtoken.lang.Assert;
 
-public class EntityGeneBuilder<T extends Entity> {
+public class EntityGeneBuilder<T extends Entity> implements GeneBuilder<T> {
 
-	private GenericService<T> service;
+	private GenericDAO<T> dao;
 
 	private Strategy<T> procedure;
 
@@ -16,25 +17,26 @@ public class EntityGeneBuilder<T extends Entity> {
 	public EntityGeneBuilder(Class<? extends T> clazz) {
 		super();
 		// TODO Auto-generated constructor stub
-		this.service = (GenericService<T>) ContextProvider.getApplicationContext().getBean(GenericServiceProvider.class)
+		Assert.notNull(clazz, "Entity class can not be null");
+		this.dao = (GenericDAO<T>) ContextProvider.getApplicationContext().getBean(GenericDAOProvider.class)
 				.getService(clazz);
-		this.procedure = new Strategy<T>(service::executeDefaultProcedure);
+		this.procedure = new Strategy<T>(dao::defaultBuild);
 	}
 
 	public EntityGeneBuilder<T> insert() {
-		this.procedure.and(new Strategy<T>(service::executeInsertionProcedure));
+		this.procedure.and(new Strategy<T>(dao::insertBuild));
 
 		return this;
 	}
 
 	public EntityGeneBuilder<T> update() {
-		this.procedure.and(new Strategy<T>(service::executeUpdateProcedure));
+		this.procedure.and(new Strategy<T>(dao::updateBuild));
 
 		return this;
 	}
 
 	public EntityGeneBuilder<T> deactivate() {
-		this.procedure.and(new Strategy<T>(service::executeDeactivationProcedure));
+		this.procedure.and(new Strategy<T>(dao::deactivationBuild));
 
 		return this;
 	}
@@ -45,9 +47,15 @@ public class EntityGeneBuilder<T extends Entity> {
 		return this;
 	}
 
+	@Override
 	public T build(T instance) {
-		return this.procedure.execute(instance);
+		try {
+			return this.procedure.execute(instance);
+		} catch (RuntimeException e) {
+			return null;
+		}
 	}
+
 }
 
 class Strategy<T extends Entity> {

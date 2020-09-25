@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.generic;
+package adn.dao.generic;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,10 +18,10 @@ import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
+import adn.dao.GenericDAO;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
-import adn.service.GenericService;
 
 /**
  * @author Ngoc Huy
@@ -29,13 +29,13 @@ import adn.service.GenericService;
  */
 @Component
 @Order(3)
-public class GenericServiceProvider implements ContextBuilder {
+public class GenericDAOProvider implements ContextBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private Map<Class<? extends Entity>, GenericService<? extends Entity>> serviceMap;
+	private Map<Class<? extends Entity>, GenericDAO<? extends Entity>> serviceMap;
 
-	private GenericService<?> defaultService = new GenericService<Entity>() {};
+	private GenericDAO<?> defaultService = new GenericDAO<Entity>() {};
 
 	private ModelManager modelManager = context.getBean(ModelManager.class);
 
@@ -47,14 +47,14 @@ public class GenericServiceProvider implements ContextBuilder {
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
-		scanner.addIncludeFilter(new AssignableTypeFilter(GenericService.class));
+		scanner.addIncludeFilter(new AssignableTypeFilter(GenericDAO.class));
 		serviceMap = new HashMap<>();
 
-		Set<BeanDefinition> beanDefs = scanner.findCandidateComponents(Constants.genericServicePackage);
+		Set<BeanDefinition> beanDefs = scanner.findCandidateComponents(Constants.genericDAOPackage);
 
 		try {
 			for (BeanDefinition beanDef : beanDefs) {
-				Class<? extends GenericService<?>> clazz = (Class<? extends GenericService<?>>) Class
+				Class<? extends GenericDAO<?>> clazz = (Class<? extends GenericDAO<?>>) Class
 						.forName(beanDef.getBeanClassName());
 				Genetized anno = clazz.getDeclaredAnnotation(Genetized.class);
 
@@ -71,9 +71,9 @@ public class GenericServiceProvider implements ContextBuilder {
 					return;
 				}
 
-				GenericService<?> compositeService;
-				GenericService<?> parentService = serviceMap.get(treeNode.getParent().getNode());
-				GenericService<?> childService = serviceMap.get(treeNode.getNode());
+				GenericDAO<?> compositeService;
+				GenericDAO<?> parentService = serviceMap.get(treeNode.getParent().getNode());
+				GenericDAO<?> childService = serviceMap.get(treeNode.getNode());
 
 				if (parentService != null && childService != null) {
 					compositeService = parentService.and(childService);
@@ -97,9 +97,9 @@ public class GenericServiceProvider implements ContextBuilder {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Entity> GenericService<T> getService(Class<T> clazz) {
+	public <T extends Entity> GenericDAO<T> getService(Class<T> clazz) {
 
-		return (GenericService<T>) this.serviceMap.get(clazz);
+		return (GenericDAO<T>) this.serviceMap.get(clazz);
 	}
 
 }

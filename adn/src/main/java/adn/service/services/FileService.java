@@ -19,17 +19,27 @@ import adn.utilities.Strings;
 @Service
 public class FileService implements ApplicationService {
 
-	protected final String nameNotEmpty = "FILENAME CAN NOT BE EMPTY";
-	
+	protected final String emptyName = "FILENAME CAN NOT BE EMPTY";
+
 	protected final String fileNotFound = "FILE NOT FOUND";
-	
-	public ServiceResult uploadFile(MultipartFile file) {
+
+	public String generateFilename(MultipartFile file) {
+
+		return file != null
+				? new Date().getTime() + '-' + Strings.hash(file.getOriginalFilename()) + '.'
+						+ FilenameUtils.getExtension(file.getOriginalFilename())
+				: null;
+	}
+
+	public ServiceResult uploadFile(MultipartFile file, String filename) {
 		if (file == null || file.isEmpty()) {
-			return ServiceResult.bad();
+			return ServiceResult.bad().setBody(emptyName);
 		}
 
-		String filename = new Date().getTime() + '-' + Strings.hash(file.getOriginalFilename()) + '.'
-				+ FilenameUtils.getExtension(file.getOriginalFilename());
+		filename = filename == null
+				? new Date().getTime() + '-' + Strings.hash(file.getOriginalFilename()) + '.'
+						+ FilenameUtils.getExtension(file.getOriginalFilename())
+				: filename;
 
 		try {
 			byte[] bytes = file.getBytes();
@@ -44,20 +54,20 @@ public class FileService implements ApplicationService {
 			return ServiceResult.status(ServiceStatus.FAILED);
 		}
 	}
-	
+
 	public ServiceResult removeFile(String filename) {
 		if (Strings.isEmpty(filename)) {
-			return ServiceResult.bad().setBody(nameNotEmpty);
+			return ServiceResult.bad().setBody(emptyName);
 		}
-		
+
 		File file = new File(Constants.IMAGE_FILE_PATH + filename);
-		
+
 		if (!file.exists()) {
 			return ServiceResult.bad().setBody(fileNotFound);
 		}
-		
+
 		file.delete();
-		
+
 		return ServiceResult.ok("The file " + filename + " successfully deleted");
 	}
 

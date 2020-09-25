@@ -13,6 +13,7 @@ import java.util.function.BiConsumer;
 import org.springframework.stereotype.Component;
 
 import adn.model.AbstractModel;
+import adn.model.entities.Entity;
 
 /**
  * @author Ngoc Huy
@@ -20,6 +21,16 @@ import adn.model.AbstractModel;
  */
 @Component
 public class ClassReflector {
+
+	public <T extends Entity> String getEntityName(Class<T> clazz) {
+		javax.persistence.Entity anno = clazz.getDeclaredAnnotation(javax.persistence.Entity.class);
+
+		if (anno == null || Strings.isEmpty(anno.name())) {
+			return clazz.getSimpleName();
+		}
+
+		return anno.name();
+	}
 
 	public Stack<Class<?>> getClassStack(Class<?> clazz) {
 		Stack<Class<?>> stack = new Stack<>();
@@ -63,13 +74,13 @@ public class ClassReflector {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <M> M newInstanceOrAbstract(Class<M> clazz) {
+	public <M extends AbstractModel> M newInstanceOrAbstract(Class<M> clazz) {
 		try {
 			return clazz.getConstructor().newInstance();
 		} catch (Exception e) {
 			e.printStackTrace();
 			return (M) new AbstractModel() {
-				
+
 				@Override
 				public Serializable getId() {
 					// TODO Auto-generated method stub
