@@ -20,6 +20,7 @@ public interface Specification<T extends Entity> {
 		return Result.success(instance);
 	}
 
+	@Deprecated
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	default Specification<?> and(Specification<?> next) {
 
@@ -34,6 +35,7 @@ public interface Specification<T extends Entity> {
 
 }
 
+@Deprecated
 class And<T extends Entity> implements Specification<T> {
 
 	private Specification<T> left;

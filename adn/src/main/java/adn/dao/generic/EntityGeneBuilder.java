@@ -24,7 +24,7 @@ public class EntityGeneBuilder<T extends Entity> implements GeneBuilder<T> {
 	}
 
 	public EntityGeneBuilder<T> insert() {
-		this.procedure.and(new Strategy<T>(dao::insertBuild));
+		this.procedure.and(new Strategy<T>(dao::insertionBuild));
 
 		return this;
 	}

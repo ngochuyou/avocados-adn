@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
+import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
 
@@ -32,8 +33,7 @@ public class SpecificationFactory implements ContextBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(SpecificationFactory.class);
 
-	private Specification<?> defaultSpecification = new Specification<Entity>() {
-	};
+	private Specification<?> defaultSpecification = new Specification<Entity>() {};
 
 	@Autowired
 	private ModelManager modelManager;
@@ -49,51 +49,28 @@ public class SpecificationFactory implements ContextBuilder {
 		// @formatter:off
 		scanner.addIncludeFilter(new AssignableTypeFilter(Specification.class));
 		scanner.findCandidateComponents(Constants.genericSpecificationPackage)
-			.stream()
-			.map(bean -> {
+			.forEach(bean -> {
 				try {
-					return (Class<? extends Specification<?>>) Class.forName(bean.getBeanClassName());
-				} catch (Exception e) {
-					e.printStackTrace();
-					SpringApplication.exit(context);
-					
-					return null;
-				}
-			})
-			.forEach(clazz -> {
-				try {
-					GenericSpecification anno = clazz.getDeclaredAnnotation(GenericSpecification.class);
+					Class<? extends Specification<?>> clazz = (Class<? extends Specification<?>>) Class.forName(bean.getBeanClassName());
+					Genetized anno = clazz.getDeclaredAnnotation(Genetized.class);
 					
 					if (anno == null) {
-						throw new Exception(GenericSpecification.class.getName() + " is not found on " + clazz.getName());
+						throw new Exception(Genetized.class.getName() + " not found on" + bean.getBeanClassName());
 					}
 					
-					Class<? extends Entity> modelClass = anno.target();
-					
-					this.specificationMap.put(modelClass, context.getBean(clazz));
+					specificationMap.put(anno.entityGene(), (Specification<?>) context.getBean(reflector.getComponentName(clazz)));
 				} catch (Exception e) {
 					e.printStackTrace();
 					SpringApplication.exit(context);
 				}
 			});
-		this.modelManager
-			.getEntityTree()
-			.forEach(tree -> {
-				if (tree.getParent() == null) {
-					return;
+		this.modelManager.getEntityTree()
+			.forEach(node -> {
+				if (this.specificationMap.get(node.getNode()) == null) {
+					Specification<?> parentSpec = this.specificationMap.get(node.getParent().getNode());
+					
+					this.specificationMap.put(node.getNode(), parentSpec != null ? parentSpec : defaultSpecification);
 				}
-				
-				Specification<?> parentSpec = this.specificationMap.get(tree.getParent().getNode());
-				Specification<?> childrenSpec = this.specificationMap.get(tree.getNode());
-				Specification<?> spec = null;
-				
-				if (parentSpec != null && childrenSpec != null) {
-					spec = parentSpec.and(childrenSpec);
-				} else {
-					spec = parentSpec != null ? parentSpec : childrenSpec;
-				}
-
-				this.specificationMap.put(tree.getNode(), spec == null ? defaultSpecification : spec);
 			});
 		this.specificationMap.forEach((k, v) -> logger.info(v.getName() + " is applied on " + k.getName()));
 		// @formatter:on

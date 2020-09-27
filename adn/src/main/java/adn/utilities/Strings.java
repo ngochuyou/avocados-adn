@@ -70,4 +70,24 @@ public class Strings extends StringUtils {
 		return string != null ? string.trim().replaceAll("[" + Constants.WHITESPACE_CHARS + "]+", "") : null;
 	}
 
+	public static String toCamel(String s, CharSequence seperator) {
+		if (seperator != null) {
+			String[] parts = s.split(seperator + "+");
+
+			if (parts.length > 1) {
+				StringBuilder builder = new StringBuilder(
+						("" + parts[0].charAt(0)).toLowerCase() + parts[0].substring(1, parts[0].length()));
+
+				for (int i = 1; i < parts.length; i++) {
+					builder.append(("" + parts[i].charAt(0)).toUpperCase()
+							+ parts[i].substring(1, parts[i].length()).toLowerCase());
+				}
+
+				return builder.toString();
+			}
+		}
+
+		return ("" + s.charAt(0)).toLowerCase() + s.substring(1, s.length());
+	}
+
 }

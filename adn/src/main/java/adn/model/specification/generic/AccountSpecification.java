@@ -3,9 +3,6 @@
  */
 package adn.model.specification.generic;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
@@ -14,9 +11,9 @@ import org.hibernate.Session;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
+import adn.model.Genetized;
 import adn.model.Result;
 import adn.model.entities.Account;
-import adn.model.specification.GenericSpecification;
 import adn.model.specification.TransactionalSpecification;
 import adn.utilities.Strings;
 
@@ -25,23 +22,23 @@ import adn.utilities.Strings;
  *
  */
 @Component
-@GenericSpecification(target = Account.class)
-public class AccountSpecification implements TransactionalSpecification<Account> {
+@Genetized(entityGene = Account.class)
+public class AccountSpecification<T extends Account> extends EntitySpecification<T>
+		implements TransactionalSpecification<T> {
 
 	@Override
-	public Result<Account> isSatisfiedBy(Account instance) {
+	public Result<T> isSatisfiedBy(T instance) {
 		// TODO Auto-generated method stub
-		boolean flag = true;
-		Map<String, String> messageSet = new HashMap<>();
+		Result<T> result = super.isSatisfiedBy(instance);
 
 		if (instance.getId() == null || instance.getId().length() < 8 || instance.getId().length() > 255) {
-			messageSet.put("id", "Id length must be between 8 and 255");
-			flag = false;
+			result.getMessageSet().put("id", "Id length must be between 8 and 255");
+			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
 		if (!Strings.isEmail(instance.getEmail())) {
-			messageSet.put("email", "Invalid email");
-			flag = false;
+			result.getMessageSet().put("email", "Invalid email");
+			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		} else {
 			Session session = sessionFactory.getCurrentSession();
 			CriteriaBuilder builder = session.getCriteriaBuilder();
@@ -52,32 +49,32 @@ public class AccountSpecification implements TransactionalSpecification<Account>
 					builder.notEqual(root.get("id"), instance.getId())));
 
 			if (session.createQuery(query).getResultStream().findFirst().orElse(0L) != 0) {
-				messageSet.put("email", "Email is already taken");
-				flag = false;
+				result.getMessageSet().put("email", "Email is already taken");
+				result.setStatus(HttpStatus.BAD_REQUEST.value());
 			}
 		}
 
 		if (!Strings.isEmpty(instance.getPhone()) && !Strings.isDigits(instance.getPhone())) {
-			messageSet.put("phone", "Invalid phone number");
-			flag = false;
+			result.getMessageSet().put("phone", "Invalid phone number");
+			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
 		if (!Strings.isBCrypt(instance.getPassword())) {
-			messageSet.put("password", "Invalid password");
-			flag = false;
+			result.getMessageSet().put("password", "Invalid password");
+			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
 		if (instance.getRole() == null) {
-			messageSet.put("role", "Role can not be empty");
-			flag = false;
+			result.getMessageSet().put("role", "Role can not be empty");
+			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
 		if (instance.getGender() == null) {
-			messageSet.put("gender", "Gender can not be empty");
-			flag = false;
+			result.getMessageSet().put("gender", "Gender can not be empty");
+			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
-		return flag ? Result.success(instance) : Result.error(HttpStatus.BAD_REQUEST.value(), instance, messageSet);
+		return result;
 	}
 
 }

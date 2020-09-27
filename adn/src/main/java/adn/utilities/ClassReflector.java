@@ -31,6 +31,16 @@ public class ClassReflector {
 
 		return anno.name();
 	}
+	
+	public String getComponentName(Class<?> clazz) {
+		Component anno = clazz.getDeclaredAnnotation(Component.class);
+
+		if (anno == null || Strings.isEmpty(anno.value())) {
+			return Strings.toCamel(clazz.getSimpleName(), null);
+		}
+		
+		return anno.value();
+	}
 
 	public Stack<Class<?>> getClassStack(Class<?> clazz) {
 		Stack<Class<?>> stack = new Stack<>();

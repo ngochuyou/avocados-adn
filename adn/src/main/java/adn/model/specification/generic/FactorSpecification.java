@@ -3,9 +3,6 @@
  */
 package adn.model.specification.generic;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
@@ -15,9 +12,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import adn.model.Genetized;
 import adn.model.Result;
 import adn.model.entities.Factor;
-import adn.model.specification.GenericSpecification;
 import adn.model.specification.TransactionalSpecification;
 
 /**
@@ -25,19 +22,19 @@ import adn.model.specification.TransactionalSpecification;
  *
  */
 @Component
-@GenericSpecification(target = Factor.class)
-public class FactorSpecification implements TransactionalSpecification<Factor> {
+@Genetized(entityGene = Factor.class)
+public class FactorSpecification<T extends Factor> extends EntitySpecification<T>
+		implements TransactionalSpecification<T> {
 
 	@Transactional
 	@Override
-	public Result<Factor> isSatisfiedBy(Factor instance) {
+	public Result<T> isSatisfiedBy(T instance) {
 		// TODO Auto-generated method stub
-		boolean flag = true;
-		Map<String, String> messageSet = new HashMap<>();
+		Result<T> result = super.isSatisfiedBy(instance);
 
 		if (instance.getName() == null || instance.getName().length() == 0) {
-			messageSet.put("name", "Name mustn't be empty");
-			flag = false;
+			result.getMessageSet().put("name", "Name mustn't be empty");
+			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
 		Session session = sessionFactory.getCurrentSession();
@@ -49,11 +46,11 @@ public class FactorSpecification implements TransactionalSpecification<Factor> {
 				builder.notEqual(root.get("id"), instance.getId())));
 
 		if (session.createQuery(query).getResultStream().findFirst().orElse(0L) != 0) {
-			messageSet.put("name", "Name must be unique");
-			flag = false;
+			result.getMessageSet().put("name", "Name must be unique");
+			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
-		return flag ? Result.success(instance) : Result.error(HttpStatus.BAD_REQUEST.value(), instance, messageSet);
+		return result;
 	}
 
 }

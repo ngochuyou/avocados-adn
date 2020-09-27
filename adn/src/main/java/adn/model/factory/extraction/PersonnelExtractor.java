@@ -1,24 +1,28 @@
 package adn.model.factory.extraction;
 
+import org.springframework.stereotype.Component;
+
 import adn.model.Genetized;
 import adn.model.entities.Personnel;
-import adn.model.factory.GenericEntityExtractor;
 import adn.model.models.PersonnelModel;
 
+@Component("personnelExtractor")
 @Genetized(entityGene = Personnel.class)
-public class PersonnelExtractor implements GenericEntityExtractor<Personnel, PersonnelModel> {
+public class PersonnelExtractor extends AccountExtractor<Personnel, PersonnelModel> {
 
 	@Override
-	public Personnel extract(PersonnelModel model, Personnel entity) {
+	public Personnel extract(PersonnelModel model, Personnel personnel) {
 		// TODO Auto-generated method stub
-		entity.setCreatedBy(model.getCreatedBy());
+		personnel = super.extract(model, personnel);
+		personnel.setCreatedBy(model.getCreatedBy());
 
-		return entity;
+		return personnel;
 	}
 
 	@Override
 	public <E extends Personnel> E map(Personnel model, E target) {
 		// TODO Auto-generated method stub
+		target = super.map(model, target);
 		target.setCreatedBy(model.getCreatedBy());
 
 		return target;

@@ -11,7 +11,6 @@ import org.springframework.context.annotation.ClassPathScanningCandidateComponen
 import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 import adn.application.Constants;
 import adn.model.Genetized;
@@ -19,8 +18,8 @@ import adn.model.ModelManager;
 import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractor;
 import adn.model.factory.EntityExtractorProvider;
-import adn.model.factory.GenericEntityExtractor;
 import adn.model.models.Model;
+import adn.utilities.Strings;
 
 @Component(Constants.defaultEntityExtractorProdiverName)
 @Order(value = 4)
@@ -57,28 +56,25 @@ public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 					throw new Exception(Genetized.class.getName() + " is not found on " + clazz.getName());
 				}
 
-				this.extractorMap.put(anno.entityGene(), clazz.getConstructor().newInstance());
+				Component componentAnno = clazz.getDeclaredAnnotation(Component.class);
+
+				if (componentAnno == null) {
+					throw new Exception(Component.class.getName() + " is not found on " + clazz.getName());
+				}
+
+				this.extractorMap.put(anno.entityGene(),
+						(EntityExtractor<?, ?>) context.getBean(Strings.toCamel(clazz.getSimpleName(), null)));
 			} catch (Exception e) {
 				e.printStackTrace();
 				SpringApplication.exit(context);
 			}
 		});
 		modelManager.getEntityTree().forEach(node -> {
-			if (node.getParent() == null) {
-				return;
+			if (this.extractorMap.get(node.getNode()) == null) {
+				EntityExtractor<?, ?> parentExtractor = this.extractorMap.get(node.getParent().getNode());
+
+				this.extractorMap.put(node.getNode(), parentExtractor != null ? parentExtractor : defaultExtractor);
 			}
-
-			EntityExtractor<?, ?> compositeExtractor = null;
-			EntityExtractor<?, ?> childrenExtractor = this.extractorMap.get(node.getNode());
-			EntityExtractor<?, ?> parentExtractor = this.extractorMap.get(node.getParent().getNode());
-
-			if (parentExtractor != null && childrenExtractor != null) {
-				compositeExtractor = parentExtractor.and(childrenExtractor);
-			} else {
-				compositeExtractor = parentExtractor == null ? childrenExtractor : childrenExtractor;
-			}
-
-			this.extractorMap.put(node.getNode(), compositeExtractor == null ? defaultExtractor : compositeExtractor);
 		});
 		this.extractorMap
 				.forEach((k, v) -> logger.info("Assigning " + v.getName() + " for " + k.getName() + " extraction"));
@@ -89,15 +85,6 @@ public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 	public <T extends Entity, M extends Model> EntityExtractor<T, M> getExtractor(Class<T> entityClass) {
 
 		return (EntityExtractor<T, M>) this.extractorMap.get(entityClass);
-	}
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public <T extends Entity, M extends Model> GenericEntityExtractor<T, M> getGenericExtractor(Class<T> entityClass) {
-		EntityExtractor extractor = this.extractorMap.get(entityClass);
-
-		Assert.isTrue(extractor instanceof GenericEntityExtractor, "Can not find GenericExtractor");
-
-		return (GenericEntityExtractor<T, M>) extractor;
 	}
 
 }

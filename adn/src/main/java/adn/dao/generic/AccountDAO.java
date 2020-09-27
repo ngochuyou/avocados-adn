@@ -5,6 +5,7 @@ package adn.dao.generic;
 
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ public class AccountDAO extends BaseDAO implements GenericDAO<Account> {
 
 	@SuppressWarnings("rawtypes")
 	@Autowired
+	@Qualifier("accountExtractor")
 	private AccountExtractor extractor;
 
 	@Override
@@ -46,7 +48,7 @@ public class AccountDAO extends BaseDAO implements GenericDAO<Account> {
 	}
 
 	@Override
-	public Account insertBuild(Account account) {
+	public Account insertionBuild(Account account) {
 		// TODO Auto-generated method stub
 		account.setRole(account.getRole() == null ? Role.ANONYMOUS : account.getRole());
 		account.setGender(account.getGender() == null ? Gender.UNKNOWN : account.getGender());
@@ -75,7 +77,7 @@ public class AccountDAO extends BaseDAO implements GenericDAO<Account> {
 			persisted.setRole(model.getRole());
 			persisted = extractor.map(persisted, model);
 			updateDType(persisted, persisted.getClass());
-			
+
 			return persisted;
 		}
 

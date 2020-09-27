@@ -9,9 +9,9 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
+import adn.model.Genetized;
 import adn.model.Result;
 import adn.model.entities.Entity;
-import adn.model.specification.GenericSpecification;
 import adn.model.specification.Specification;
 
 /**
@@ -19,11 +19,11 @@ import adn.model.specification.Specification;
  *
  */
 @Component
-@GenericSpecification(target = Entity.class)
-public class EntitySpecification implements Specification<Entity> {
+@Genetized(entityGene = Entity.class)
+public class EntitySpecification<T extends Entity> implements Specification<T> {
 
 	@Override
-	public Result<Entity> isSatisfiedBy(Entity instance) {
+	public Result<T> isSatisfiedBy(T instance) {
 		// TODO Auto-generated method stub
 		boolean flag = true;
 		Map<String, String> messageSet = new HashMap<>();

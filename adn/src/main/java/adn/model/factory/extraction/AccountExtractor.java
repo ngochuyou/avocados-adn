@@ -1,24 +1,23 @@
 package adn.model.factory.extraction;
 
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 import adn.model.Genetized;
 import adn.model.entities.Account;
-import adn.model.factory.GenericEntityExtractor;
 import adn.model.models.AccountModel;
 import adn.utilities.Gender;
 import adn.utilities.Role;
 
-@Component
+@Component("accountExtractor")
 @Genetized(entityGene = Account.class)
-public class AccountExtractor<A extends Account, AM extends AccountModel> implements GenericEntityExtractor<A, AM> {
+public class AccountExtractor<A extends Account, AM extends AccountModel> extends ModelEntityExtractor<A, AM> {
 
 	protected final String nullModel = "extraction: model and target can not be null";
 
 	@Override
 	public A extract(AM model, A account) {
 		// TODO Auto-generated method stub
+		account = super.extract(model, account);
 		account.setId(model.getUsername());
 		account.setEmail(model.getEmail());
 		account.setPhone(model.getPhone());
@@ -45,9 +44,7 @@ public class AccountExtractor<A extends Account, AM extends AccountModel> implem
 	@Override
 	public <E extends A> E map(A model, E target) {
 		// TODO Auto-generated method stub
-		Assert.notNull(model, nullModel);
-		Assert.notNull(target, nullModel);
-
+		target = super.map(model, target);
 		target.setId(model.getId());
 		target.setEmail(model.getEmail());
 		target.setPhone(model.getPhone());

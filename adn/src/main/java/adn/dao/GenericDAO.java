@@ -15,7 +15,7 @@ public interface GenericDAO<T extends Entity> {
 		return model;
 	};
 
-	default T insertBuild(T model) {
+	default T insertionBuild(T model) {
 		return model;
 	};
 
@@ -75,9 +75,9 @@ class And<T extends Entity> implements GenericDAO<T> {
 	}
 
 	@Override
-	public T insertBuild(T model) {
+	public T insertionBuild(T model) {
 		// TODO Auto-generated method stub
-		return right.insertBuild(left.insertBuild(model));
+		return right.insertionBuild(left.insertionBuild(model));
 	}
 
 	@Override

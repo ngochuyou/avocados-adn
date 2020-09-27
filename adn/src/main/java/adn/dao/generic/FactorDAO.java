@@ -33,7 +33,7 @@ public class FactorDAO extends BaseDAO implements GenericDAO<Factor> {
 	}
 
 	@Override
-	public Factor insertBuild(Factor model) {
+	public Factor insertionBuild(Factor model) {
 		// TODO Auto-generated method stub
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 

@@ -3,8 +3,10 @@
  */
 package adn.model.factory;
 
+import adn.application.context.ContextProvider;
 import adn.model.entities.Entity;
 import adn.model.models.Model;
+import adn.utilities.ClassReflector;
 
 /**
  * @author Ngoc Huy
@@ -12,10 +14,17 @@ import adn.model.models.Model;
  */
 public interface EntityExtractor<T extends Entity, M extends Model> {
 
-	default T extract(M model, T entity) {
+	final ClassReflector reflector = ContextProvider.getApplicationContext().getBean(ClassReflector.class);
+
+	default T extract(M model, T entity) throws NullPointerException {
 		return entity;
 	};
 
+	default <E extends T> E map(T model, E target) throws NullPointerException {
+		return target;
+	};
+
+	@Deprecated
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	default EntityExtractor<?, ?> and(EntityExtractor next) {
 		return new And(this, next);
@@ -28,6 +37,7 @@ public interface EntityExtractor<T extends Entity, M extends Model> {
 
 }
 
+@Deprecated
 class And<T extends Entity, M extends Model> implements EntityExtractor<T, M> {
 
 	EntityExtractor<T, M> left;
@@ -44,6 +54,12 @@ class And<T extends Entity, M extends Model> implements EntityExtractor<T, M> {
 	public T extract(M model, T entity) {
 		// TODO Auto-generated method stub
 		return this.right.extract(model, this.left.extract(model, entity));
+	}
+
+	@Override
+	public <E extends T> E map(T model, E target) {
+		// TODO Auto-generated method stub
+		return this.right.map(model, this.left.map(model, target));
 	}
 
 	@Override

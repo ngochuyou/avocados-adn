@@ -31,7 +31,7 @@ public class PersonnelDAO extends BaseDAO implements GenericDAO<Personnel> {
 	}
 
 	@Override
-	public Personnel insertBuild(Personnel model) {
+	public Personnel insertionBuild(Personnel model) {
 		// TODO Auto-generated method stub
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
