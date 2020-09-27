@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.Constants;
 import adn.application.context.ContextProvider;
+import adn.application.context.ServiceTransactionFactory;
 import adn.dao.BaseDAO;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
@@ -53,6 +54,9 @@ public class BaseController {
 	@Autowired
 	protected ObjectMapper mapper;
 
+	@Autowired
+	protected ServiceTransactionFactory transactionFactory;
+	
 	protected final String hasRoleAdmin = "hasRole('ADMIN')";
 
 	protected final String notFound = "NOT FOUND";
