@@ -3,6 +3,7 @@
  */
 package adn.controller;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
 
 import org.hibernate.FlushMode;
@@ -15,7 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.Constants;
 import adn.application.context.ContextProvider;
-import adn.application.context.ServiceTransactionFactory;
+import adn.application.context.TransactionFactory;
 import adn.dao.BaseDAO;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
@@ -55,8 +56,8 @@ public class BaseController {
 	protected ObjectMapper mapper;
 
 	@Autowired
-	protected ServiceTransactionFactory transactionFactory;
-	
+	protected TransactionFactory transactionFactory;
+
 	protected final String hasRoleAdmin = "hasRole('ADMIN')";
 
 	protected final String notFound = "NOT FOUND";
@@ -66,6 +67,8 @@ public class BaseController {
 	protected final String invalidModel = "INVALID MODEL";
 
 	protected final String accessDenied = "ACCESS DENIDED";
+
+	public static final String serviceTransactionFlushHeader = "transaction-flush";
 
 	protected void openSession(FlushMode mode) {
 		sessionFactory.getCurrentSession().setHibernateFlushMode(mode != null ? mode : FlushMode.MANUAL);
@@ -91,6 +94,11 @@ public class BaseController {
 
 	protected <T extends Entity, M extends Model> M produce(T entity, Class<M> modelClass) {
 		return producerProvider.produce(entity, modelClass, ContextProvider.getPrincipalRole());
+	}
+
+	protected void flushTransaction(HttpServletResponse response, adn.service.builder.FlushMode mode) {
+		response.addHeader(serviceTransactionFlushHeader,
+				mode != null ? mode.toString() : adn.service.builder.FlushMode.CLEAR.toString());
 	}
 
 }

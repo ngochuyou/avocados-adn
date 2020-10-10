@@ -1,6 +1,12 @@
 package adn.service.builder;
 
+import java.lang.reflect.Method;
+
 public interface ServiceTransaction {
+	
+	enum TransactionStrategy {
+		NON_TRANSACTION, TRANSACTIONAL
+	}
 
 	boolean commit();
 
@@ -8,14 +14,12 @@ public interface ServiceTransaction {
 
 	boolean clear();
 
-	void registerEvent(TransactionalEvent event);
-
 	void setStrategy(TransactionStrategy strategy);
+	
+	Event registerEvent(Object invoker, Method method, Object[] values);
 
-	enum TransactionStrategy {
-		NON_TRANSACTION, TRANSACTIONAL
-	}
-
+	Event registerRollback(Object invoker, Method method, Object[] values);
+	
 	TransactionStrategy getStrategy();
-
+	
 }

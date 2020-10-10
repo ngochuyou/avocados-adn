@@ -2,16 +2,16 @@ package adn.application.context;
 
 import org.springframework.stereotype.Component;
 
-import adn.service.builder.DefaultServiceTransaction;
+import adn.service.builder.SynchornizedServiceTransaction;
 import adn.service.builder.ServiceTransaction;
 
 @Component
-public class ServiceTransactionFactory {
+public class TransactionFactory {
 
-	private ServiceTransaction transaction = new DefaultServiceTransaction();
+	private ServiceTransaction transaction = new SynchornizedServiceTransaction();
 
 	public ServiceTransaction getTransaction() {
-
+		
 		return transaction;
 	}
 

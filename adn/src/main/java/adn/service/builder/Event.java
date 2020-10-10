@@ -2,7 +2,7 @@ package adn.service.builder;
 
 import java.lang.reflect.Method;
 
-public class TransactionalEvent {
+public class Event extends TransactionComponent {
 
 	protected Object invoker;
 
@@ -10,8 +10,8 @@ public class TransactionalEvent {
 
 	protected Object[] values;
 
-	public TransactionalEvent(Object invoker, Method method, Object[] values) {
-		super();
+	public Event(Object invoker, Method method, Object[] values, ServiceTransaction parent) {
+		super(parent);
 		this.invoker = invoker;
 		this.method = method;
 		this.values = values;
@@ -40,5 +40,12 @@ public class TransactionalEvent {
 	public void setInvoker(Object invoker) {
 		this.invoker = invoker;
 	}
-
+	
+	public Event rollback(Object invoker, Method method, Object[] values) {
+		// TODO Auto-generated method stub
+		this.parent.registerRollback(invoker, method, values);
+		
+		return this;
+	}
+	
 }
