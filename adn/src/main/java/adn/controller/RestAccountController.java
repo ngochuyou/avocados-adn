@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.context.ContextProvider;
 import adn.model.entities.Account;
-import adn.service.builder.ServiceTransaction.TransactionStrategy;
 import adn.service.services.AccountService;
 import adn.utilities.Role;
 import adn.utilities.Strings;
@@ -63,11 +62,5 @@ public class RestAccountController extends AccountController {
 
 		return ResponseEntity.status(HttpStatus.LOCKED).body(locked);
 	}
-	
-	@GetMapping("/test")
-	public ResponseEntity<?> test(@RequestParam(name = "strat") String strat) {
-		transactionFactory.getTransaction().setStrategy(TransactionStrategy.valueOf(strat));
-		
-		return null;
-	}
+
 }

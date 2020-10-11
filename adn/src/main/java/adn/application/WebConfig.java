@@ -29,7 +29,7 @@ import org.springframework.web.servlet.view.JstlView;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import adn.application.web.ServiceTransactionInterceptor;
+import adn.application.web.TransactionalHandlerInterceptor;
 import adn.utilities.Role;
 
 /**
@@ -42,7 +42,7 @@ import adn.utilities.Role;
 public class WebConfig implements WebMvcConfigurer {
 
 	@Autowired
-	private ServiceTransactionInterceptor serviceTransactionInterceptor;
+	private TransactionalHandlerInterceptor serviceTransactionInterceptor;
 
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {

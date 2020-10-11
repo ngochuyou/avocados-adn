@@ -36,7 +36,7 @@ public class PersonnelDAO extends BaseDAO implements GenericDAO<Personnel> {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
 		model.setCreatedBy(authentication instanceof AnonymousAuthenticationToken ? null : authentication.getName());
-
+		
 		return model;
 	}
 

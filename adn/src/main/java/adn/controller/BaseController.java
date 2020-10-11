@@ -3,6 +3,9 @@
  */
 package adn.controller;
 
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
 
@@ -16,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.Constants;
 import adn.application.context.ContextProvider;
-import adn.application.context.TransactionFactory;
+import adn.application.context.GlobalTransactionManager;
 import adn.dao.BaseDAO;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
@@ -56,7 +59,7 @@ public class BaseController {
 	protected ObjectMapper mapper;
 
 	@Autowired
-	protected TransactionFactory transactionFactory;
+	protected GlobalTransactionManager transactionFactory;
 
 	protected final String hasRoleAdmin = "hasRole('ADMIN')";
 
@@ -74,20 +77,6 @@ public class BaseController {
 		sessionFactory.getCurrentSession().setHibernateFlushMode(mode != null ? mode : FlushMode.MANUAL);
 	}
 
-	protected void openSession() {
-		this.openSession(null);
-	}
-
-	protected void clearSession(boolean isFlushed) {
-		if (isFlushed) {
-			sessionFactory.getCurrentSession().flush();
-
-			return;
-		}
-
-		sessionFactory.getCurrentSession().clear();
-	}
-
 	protected <T extends Entity, M extends Model> T extract(M model, Class<T> entityClass) {
 		return extractorProvider.getExtractor(entityClass).extract(model, reflector.newInstanceOrAbstract(entityClass));
 	}
@@ -96,9 +85,13 @@ public class BaseController {
 		return producerProvider.produce(entity, modelClass, ContextProvider.getPrincipalRole());
 	}
 
-	protected void flushTransaction(HttpServletResponse response, adn.service.builder.FlushMode mode) {
-		response.addHeader(serviceTransactionFlushHeader,
-				mode != null ? mode.toString() : adn.service.builder.FlushMode.CLEAR.toString());
+	protected void setFlushMode(HttpServletResponse response, adn.service.transaction.Mode... modes) {
+		if (modes.length == 0) {
+			return;
+		}
+
+		response.setHeader(serviceTransactionFlushHeader,
+				Stream.of(modes).map(mode -> mode.toString()).collect(Collectors.joining("|")));
 	}
 
 }

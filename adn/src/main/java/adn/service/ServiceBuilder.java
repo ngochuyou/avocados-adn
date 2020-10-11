@@ -1,6 +1,7 @@
-package adn.service.builder;
+package adn.service;
 
 import adn.application.context.ContextProvider;
+import adn.service.transaction.Transaction;
 import adn.utilities.ClassReflector;
 
 public interface ServiceBuilder {
@@ -11,6 +12,6 @@ public interface ServiceBuilder {
 	
 	ServiceBuilder persist(Object instance);
 	
-	ServiceTransaction transaction();
+	Transaction transaction();
 	
 }
