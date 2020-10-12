@@ -10,6 +10,8 @@ import java.lang.reflect.Type;
 import java.util.Stack;
 import java.util.function.BiConsumer;
 
+import javax.persistence.Table;
+
 import org.springframework.stereotype.Component;
 
 import adn.model.AbstractModel;
@@ -24,6 +26,16 @@ public class ClassReflector {
 
 	public <T extends Entity> String getEntityName(Class<T> clazz) {
 		javax.persistence.Entity anno = clazz.getDeclaredAnnotation(javax.persistence.Entity.class);
+
+		if (anno == null || Strings.isEmpty(anno.name())) {
+			return clazz.getSimpleName();
+		}
+
+		return anno.name();
+	}
+	
+	public <T extends Entity> String getTableName(Class<T> clazz) {
+		Table anno = clazz.getDeclaredAnnotation(Table.class);
 
 		if (anno == null || Strings.isEmpty(anno.name())) {
 			return clazz.getSimpleName();

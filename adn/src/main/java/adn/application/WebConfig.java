@@ -10,7 +10,6 @@ import javax.sql.DataSource;
 import org.apache.catalina.Context;
 import org.apache.tomcat.util.http.LegacyCookieProcessor;
 import org.hibernate.SessionFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.embedded.tomcat.TomcatContextCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
@@ -22,14 +21,12 @@ import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import adn.application.web.TransactionalHandlerInterceptor;
 import adn.utilities.Role;
 
 /**
@@ -41,15 +38,6 @@ import adn.utilities.Role;
 @EnableTransactionManagement
 public class WebConfig implements WebMvcConfigurer {
 
-	@Autowired
-	private TransactionalHandlerInterceptor serviceTransactionInterceptor;
-
-	@Override
-	public void addInterceptors(InterceptorRegistry registry) {
-		// TODO Auto-generated method stub
-		registry.addInterceptor(serviceTransactionInterceptor);
-	}
-	
 	@Bean
 	public InternalResourceViewResolver viewResolver() {
 		InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
@@ -75,7 +63,7 @@ public class WebConfig implements WebMvcConfigurer {
 		properties.put("hibernate.format_sql", true);
 		properties.put("hibernate.id.new_generator_mappings", "false");
 		properties.put("hibernate.hbm2ddl.auto", "update");
-		properties.put("hibernate.flushMode", "MANUAL");
+		properties.put("hibernate.flush_mode", "MANUAL");
 		sessionFactory.setHibernateProperties(properties);
 
 		return sessionFactory;
@@ -102,10 +90,10 @@ public class WebConfig implements WebMvcConfigurer {
 
 		return dataSource;
 	}
-	
+
 	@Bean
 	ObjectMapper objectMapper() {
-		
+
 		return new ObjectMapper();
 	}
 
@@ -138,7 +126,7 @@ public class WebConfig implements WebMvcConfigurer {
 					throw new EnumConstantNotPresentException(Role.class, source);
 				}
 			}
-
+			
 		};
 	}
 

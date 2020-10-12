@@ -3,9 +3,9 @@
     "updatedDate": null,
     "isActive": false,
     "deactivatedDate": null,
-    "id": "mock_admin_1",
-    "username": "mock_admin_2",
-    "email": "mock.admin.1@gmail.com",
+    "id": "mockAdmin",
+    "username": "mockAdmin",
+    "email": "mock.admin@gmail.com",
     "phone": "0974032706",
     "firstName": "Tran",
     "lastName": "Vu Ngoc Huy",
@@ -13,6 +13,7 @@
     "password": "password",
     "role": "ADMIN",
     "gender": "FEMALE",
-    "contractDate": null,
+    "contractDate": "2020",
+    "prestigePoint" : "10.09",
     "active": true
 }

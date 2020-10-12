@@ -1,17 +1,14 @@
 package adn.service;
 
 import adn.application.context.ContextProvider;
-import adn.service.transaction.Transaction;
 import adn.utilities.ClassReflector;
 
 public interface ServiceBuilder {
-	
+
 	final ClassReflector reflector = ContextProvider.getApplicationContext().getBean(ClassReflector.class);
-	
+
 	<T> T execute();
-	
+
 	ServiceBuilder persist(Object instance);
-	
-	Transaction transaction();
-	
+
 }

@@ -3,13 +3,10 @@
  */
 package adn.controller;
 
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
 
 import org.hibernate.FlushMode;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,7 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.Constants;
 import adn.application.context.ContextProvider;
-import adn.application.context.GlobalTransactionManager;
 import adn.dao.BaseDAO;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
@@ -58,9 +54,6 @@ public class BaseController {
 	@Autowired
 	protected ObjectMapper mapper;
 
-	@Autowired
-	protected GlobalTransactionManager transactionFactory;
-
 	protected final String hasRoleAdmin = "hasRole('ADMIN')";
 
 	protected final String notFound = "NOT FOUND";
@@ -71,10 +64,18 @@ public class BaseController {
 
 	protected final String accessDenied = "ACCESS DENIDED";
 
-	public static final String serviceTransactionFlushHeader = "transaction-flush";
-
 	protected void openSession(FlushMode mode) {
 		sessionFactory.getCurrentSession().setHibernateFlushMode(mode != null ? mode : FlushMode.MANUAL);
+	}
+	
+	protected void closeSession(boolean isFlushed) {
+		Session session = sessionFactory.getCurrentSession();
+		
+		if (isFlushed) {
+			session.flush();
+		}
+		
+		session.clear();
 	}
 
 	protected <T extends Entity, M extends Model> T extract(M model, Class<T> entityClass) {
@@ -83,15 +84,6 @@ public class BaseController {
 
 	protected <T extends Entity, M extends Model> M produce(T entity, Class<M> modelClass) {
 		return producerProvider.produce(entity, modelClass, ContextProvider.getPrincipalRole());
-	}
-
-	protected void setFlushMode(HttpServletResponse response, adn.service.transaction.Mode... modes) {
-		if (modes.length == 0) {
-			return;
-		}
-
-		response.setHeader(serviceTransactionFlushHeader,
-				Stream.of(modes).map(mode -> mode.toString()).collect(Collectors.joining("|")));
 	}
 
 }

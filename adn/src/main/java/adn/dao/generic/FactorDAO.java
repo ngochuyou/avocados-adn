@@ -8,8 +8,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Repository;
 
-import adn.dao.BaseDAO;
-import adn.dao.GenericDAO;
 import adn.model.Genetized;
 import adn.model.entities.Factor;
 import adn.utilities.Strings;
@@ -20,11 +18,12 @@ import adn.utilities.Strings;
  */
 @Repository
 @Genetized(entityGene = Factor.class)
-public class FactorDAO extends BaseDAO implements GenericDAO<Factor> {
+public class FactorDAO<T extends Factor> extends EntityDAO<T> {
 
 	@Override
-	public Factor defaultBuild(Factor model) {
+	public T defaultBuild(T model) {
 		// TODO Auto-generated method stub
+		model = super.defaultBuild(model);
 		model.setName(Strings.normalizeString(model.getName()));
 		model.setCreatedBy(Strings.removeSpaces(model.getCreatedBy()));
 		model.setUpdatedBy(Strings.removeSpaces(model.getUpdatedBy()));
@@ -33,20 +32,22 @@ public class FactorDAO extends BaseDAO implements GenericDAO<Factor> {
 	}
 
 	@Override
-	public Factor insertionBuild(Factor model) {
+	public T insertionBuild(T model) {
 		// TODO Auto-generated method stub
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
+		model = super.insertionBuild(model);
 		model.setCreatedBy(authentication instanceof AnonymousAuthenticationToken ? null : authentication.getName());
 
 		return model;
 	}
 
 	@Override
-	public Factor updateBuild(Factor model) {
+	public T updateBuild(T model) {
 		// TODO Auto-generated method stub
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
+		model = super.updateBuild(model);
 		model.setUpdatedBy(authentication instanceof AnonymousAuthenticationToken ? null : authentication.getName());
 
 		return model;

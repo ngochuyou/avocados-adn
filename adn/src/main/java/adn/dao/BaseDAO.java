@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Repository;
 
+import adn.dao.generic.EntityGeneBuilder;
 import adn.model.Result;
 import adn.model.entities.Entity;
 import adn.model.specification.Specification;
@@ -73,6 +74,10 @@ public class BaseDAO {
 			return Result.error(HttpStatus.CONFLICT.value(), instance, Map.of("id", EXISTED));
 		}
 
+		EntityGeneBuilder<T> geneBuilder = new EntityGeneBuilder<>(clazz);
+
+		instance = geneBuilder.insertion().build(instance);
+
 		Specification<T> specification = specificationFactory.getSpecification(clazz);
 		Result<T> result = specification.isSatisfiedBy(instance);
 		Session session = sessionFactory.getCurrentSession();
@@ -86,36 +91,49 @@ public class BaseDAO {
 		return result;
 	}
 
-	public <T extends Entity> Result<T> update(T instance, Class<T> clazz) {
-		if (instance == null || clazz == null) {
-			return Result.error(HttpStatus.BAD_REQUEST.value(), instance, Map.of());
+	public <T extends Entity, A extends T> Result<A> update(A model, Class<A> newPersistedClass, Class<T> oldType) {
+		if (model == null || oldType == null || newPersistedClass == null) {
+			return Result.error(HttpStatus.BAD_REQUEST.value(), model, Map.of());
 		}
 
-		T persisted;
-
-		if ((persisted = findById(instance.getId(), clazz)) == null) {
-			return Result.error(HttpStatus.CONFLICT.value(), instance, Map.of("id", NOT_FOUND));
-		}
-
-		Specification<T> specification = specificationFactory.getSpecification(clazz);
 		Session session = sessionFactory.getCurrentSession();
-		Result<T> result = specification.isSatisfiedBy(instance);
+
+		if (session.load(oldType, model.getId()) == null) {
+			return Result.error(HttpStatus.CONFLICT.value(), model, Map.of("id", NOT_FOUND));
+		}
+
+		new EntityGeneBuilder<>(newPersistedClass).update().build(model);
+		A persistence = session.load(newPersistedClass, model.getId());
+
+		Specification<A> specification = specificationFactory.getSpecification(newPersistedClass);
+		Result<A> result = specification.isSatisfiedBy(persistence);
 
 		if (result.isOk()) {
-			session.evict(persisted);
-			session.update(instance);
-		} else {
-			session.evict(instance);
+			session.update(persistence);
+
+			return result;
 		}
+
+		session.evict(persistence);
 
 		return result;
 	}
 
-	public <T extends Entity> Result<T> updateDType(T instance, Class<? extends T> clazz) {
+	/**
+	 * This method was deprecated since updating the DTYPE is a very bad design.
+	 * <p>
+	 * Willingly, this action could be accomplished by deleting the old entity and
+	 * saving a new one of the desired type
+	 * </p>
+	 * 
+	 */
+	@Deprecated
+	public <T extends Entity, A extends T> Result<A> updateDType(A instance, Class<T> clazz) {
 		Session session = sessionFactory.getCurrentSession();
-		Query<?> query = session.createQuery("UPDATE Account a SET DTYPE = :type WHERE a.id = :id");
+		Query<?> query = session
+				.createNativeQuery("UPDATE " + reflector.getTableName(clazz) + " e SET DTYPE = :type WHERE e.id = :id");
 
-		query.setParameter("type", reflector.getEntityName(clazz));
+		query.setParameter("type", reflector.getEntityName(instance.getClass()));
 		query.setParameter("id", instance.getId());
 
 		int result = query.executeUpdate();

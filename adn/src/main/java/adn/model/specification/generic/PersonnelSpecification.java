@@ -32,7 +32,7 @@ public class PersonnelSpecification extends AccountSpecification<Personnel>
 	public Result<Personnel> isSatisfiedBy(Personnel instance) {
 		// TODO Auto-generated method stub
 		Result<Personnel> result = super.isSatisfiedBy(instance);
-
+		
 		Session session = sessionFactory.getCurrentSession();
 		CriteriaBuilder builder = session.getCriteriaBuilder();
 		CriteriaQuery<Long> query = builder.createQuery(Long.class);
@@ -44,7 +44,7 @@ public class PersonnelSpecification extends AccountSpecification<Personnel>
 			result.getMessageSet().put("createdBy", "Invalid creator informations");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
-
+		
 		return result;
 	}
 

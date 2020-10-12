@@ -83,6 +83,7 @@ public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> EntityExtractor<T, M> getExtractor(Class<T> entityClass) {
+		logger.debug("Providing extractor for: " + entityClass);
 
 		return (EntityExtractor<T, M>) this.extractorMap.get(entityClass);
 	}

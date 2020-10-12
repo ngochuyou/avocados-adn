@@ -8,8 +8,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Repository;
 
-import adn.dao.BaseDAO;
-import adn.dao.GenericDAO;
 import adn.model.Genetized;
 import adn.model.entities.Personnel;
 import adn.utilities.Strings;
@@ -20,23 +18,37 @@ import adn.utilities.Strings;
  */
 @Repository
 @Genetized(entityGene = Personnel.class)
-public class PersonnelDAO extends BaseDAO implements GenericDAO<Personnel> {
+public class PersonnelDAO extends AccountDAO<Personnel> {
 
 	@Override
 	public Personnel defaultBuild(Personnel model) {
 		// TODO Auto-generated method stub
-		model.setCreatedBy(Strings.removeSpaces(model.getCreatedBy()));
+		model = super.defaultBuild(model);
+
+		if (Strings.isEmpty(model.getCreatedBy())) {
+			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+			model.setCreatedBy(
+					authentication instanceof AnonymousAuthenticationToken ? null : authentication.getName());
+		}
 
 		return model;
 	}
 
 	@Override
-	public Personnel insertionBuild(Personnel model) {
+	public Personnel updateBuild(Personnel model) {
 		// TODO Auto-generated method stub
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		model = super.updateBuild(model);
 
-		model.setCreatedBy(authentication instanceof AnonymousAuthenticationToken ? null : authentication.getName());
-		
+		Personnel persistence = sessionFactory.getCurrentSession().load(Personnel.class, model.getId());
+
+		if (Strings.isEmpty(persistence.getCreatedBy())) {
+			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+			persistence.setCreatedBy(
+					authentication instanceof AnonymousAuthenticationToken ? null : authentication.getName());
+		}
+
 		return model;
 	}
 

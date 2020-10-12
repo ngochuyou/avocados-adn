@@ -2,8 +2,9 @@ package adn.dao.generic;
 
 import java.util.function.Function;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import adn.application.context.ContextProvider;
-import adn.dao.GenericDAO;
 import adn.model.entities.Entity;
 import io.jsonwebtoken.lang.Assert;
 
@@ -23,7 +24,7 @@ public class EntityGeneBuilder<T extends Entity> implements GeneBuilder<T> {
 		this.procedure = new Strategy<T>(dao::defaultBuild);
 	}
 
-	public EntityGeneBuilder<T> insert() {
+	public EntityGeneBuilder<T> insertion() {
 		this.procedure.and(new Strategy<T>(dao::insertionBuild));
 
 		return this;
@@ -35,7 +36,7 @@ public class EntityGeneBuilder<T extends Entity> implements GeneBuilder<T> {
 		return this;
 	}
 
-	public EntityGeneBuilder<T> deactivate() {
+	public EntityGeneBuilder<T> deactivation() {
 		this.procedure.and(new Strategy<T>(dao::deactivationBuild));
 
 		return this;
@@ -52,7 +53,9 @@ public class EntityGeneBuilder<T extends Entity> implements GeneBuilder<T> {
 		try {
 			return this.procedure.execute(instance);
 		} catch (RuntimeException e) {
-			return null;
+			e.printStackTrace();
+
+			return instance;
 		}
 	}
 
@@ -65,7 +68,6 @@ class Strategy<T extends Entity> {
 	Function<T, T> procedure;
 
 	public Strategy(Function<T, T> procedure) {
-		super();
 		this.procedure = procedure;
 	}
 
@@ -79,6 +81,7 @@ class Strategy<T extends Entity> {
 		this.next.and(next);
 	}
 
+	@Transactional
 	public T execute(T instance) {
 		if (this.next == null) {
 			return this.procedure.apply(instance);

@@ -18,10 +18,10 @@ import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
-import adn.dao.GenericDAO;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
+import adn.utilities.Strings;
 
 /**
  * @author Ngoc Huy
@@ -33,9 +33,9 @@ public class GenericDAOProvider implements ContextBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private Map<Class<? extends Entity>, GenericDAO<? extends Entity>> serviceMap;
+	private Map<Class<? extends Entity>, GenericDAO<? extends Entity>> genericDAOMap;
 
-	private GenericDAO<?> defaultService = new GenericDAO<Entity>() {};
+	private GenericDAO<?> defaultGDAO = new GenericDAO<Entity>() {};
 
 	private ModelManager modelManager = context.getBean(ModelManager.class);
 
@@ -48,7 +48,7 @@ public class GenericDAOProvider implements ContextBuilder {
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
 		scanner.addIncludeFilter(new AssignableTypeFilter(GenericDAO.class));
-		serviceMap = new HashMap<>();
+		genericDAOMap = new HashMap<>();
 
 		Set<BeanDefinition> beanDefs = scanner.findCandidateComponents(Constants.genericDAOPackage);
 
@@ -63,29 +63,20 @@ public class GenericDAOProvider implements ContextBuilder {
 
 				Class<? extends Entity> modelClass = anno.entityGene();
 
-				serviceMap.put(modelClass, context.getBean(clazz));
+				genericDAOMap.put(modelClass,
+						(GenericDAO<? extends Entity>) context.getBean(Strings.toCamel(clazz.getSimpleName(), null)));
 			}
 
-			modelManager.getEntityTree().forEach(treeNode -> {
-				if (treeNode.getParent() == null) {
-					return;
+			modelManager.getEntityTree().forEach(node -> {
+				if (this.genericDAOMap.get(node.getNode()) == null) {
+					GenericDAO<?> parentGDAO = genericDAOMap.get(node.getParent().getNode());
+
+					genericDAOMap.put(node.getNode(), parentGDAO == null ? defaultGDAO : parentGDAO);
 				}
-
-				GenericDAO<?> compositeService;
-				GenericDAO<?> parentService = serviceMap.get(treeNode.getParent().getNode());
-				GenericDAO<?> childService = serviceMap.get(treeNode.getNode());
-
-				if (parentService != null && childService != null) {
-					compositeService = parentService.and(childService);
-				} else {
-					compositeService = parentService != null ? parentService : childService;
-				}
-
-				serviceMap.put(treeNode.getNode(), compositeService == null ? defaultService : compositeService);
 			});
 
 			modelManager.getEntityTree().forEach(treeNode -> {
-				logger.info("Assigning " + serviceMap.get(treeNode.getNode()).getName() + " for "
+				logger.info("Assigning " + genericDAOMap.get(treeNode.getNode()).getClass().getName() + " for "
 						+ treeNode.getNode().getName());
 			});
 		} catch (Exception e) {
@@ -98,8 +89,9 @@ public class GenericDAOProvider implements ContextBuilder {
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity> GenericDAO<T> getService(Class<T> clazz) {
+		logger.debug("Providing GerericDAO for " + clazz.getName());
 
-		return (GenericDAO<T>) this.serviceMap.get(clazz);
+		return (GenericDAO<T>) this.genericDAOMap.get(clazz);
 	}
 
 }
