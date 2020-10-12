@@ -3,10 +3,10 @@ package adn.dao.generic;
 import java.util.function.Function;
 
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import adn.application.context.ContextProvider;
 import adn.model.entities.Entity;
-import io.jsonwebtoken.lang.Assert;
 
 public class EntityGeneBuilder<T extends Entity> implements GeneBuilder<T> {
 
@@ -14,13 +14,11 @@ public class EntityGeneBuilder<T extends Entity> implements GeneBuilder<T> {
 
 	private Strategy<T> procedure;
 
-	@SuppressWarnings("unchecked")
-	public EntityGeneBuilder(Class<? extends T> clazz) {
-		super();
+	public EntityGeneBuilder(Class<T> clazz) {
 		// TODO Auto-generated constructor stub
-		Assert.notNull(clazz, "Entity class can not be null");
-		this.dao = (GenericDAO<T>) ContextProvider.getApplicationContext().getBean(GenericDAOProvider.class)
-				.getService(clazz);
+		super();
+		this.dao = ContextProvider.getApplicationContext().getBean(GenericDAOProvider.class).getService(clazz);
+		Assert.notNull(dao, "Cannot get GenericDAO for: " + clazz);
 		this.procedure = new Strategy<T>(dao::defaultBuild);
 	}
 

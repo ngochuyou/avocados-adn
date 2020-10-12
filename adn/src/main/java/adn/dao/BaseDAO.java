@@ -41,10 +41,6 @@ public class BaseDAO {
 	@Autowired
 	protected SpecificationFactory specificationFactory;
 
-	private static final String EXISTED = "Resource already existed";
-
-	private static final String NOT_FOUND = "Resource not found";
-
 	public <T extends Entity> T findById(Serializable id, Class<T> clazz) {
 		Session session = sessionFactory.getCurrentSession();
 
@@ -70,10 +66,6 @@ public class BaseDAO {
 			return Result.error(HttpStatus.BAD_REQUEST.value(), instance, null);
 		}
 
-		if (this.findById(instance.getId(), clazz) != null) {
-			return Result.error(HttpStatus.CONFLICT.value(), instance, Map.of("id", EXISTED));
-		}
-
 		EntityGeneBuilder<T> geneBuilder = new EntityGeneBuilder<>(clazz);
 
 		instance = geneBuilder.insertion().build(instance);
@@ -97,10 +89,6 @@ public class BaseDAO {
 		}
 
 		Session session = sessionFactory.getCurrentSession();
-
-		if (session.load(oldType, model.getId()) == null) {
-			return Result.error(HttpStatus.CONFLICT.value(), model, Map.of("id", NOT_FOUND));
-		}
 
 		new EntityGeneBuilder<>(newPersistedClass).update().build(model);
 		A persistence = session.load(newPersistedClass, model.getId());

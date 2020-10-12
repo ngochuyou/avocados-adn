@@ -68,6 +68,10 @@ public class AccountController extends BaseController {
 			return ResponseEntity.badRequest().body(invalidModel);
 		}
 
+		if (dao.findById(model.getId(), Account.class) != null) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(exsited);
+		}
+		
 		Role principalRole = ContextProvider.getPrincipalRole();
 
 		if (model.getRole() != null && model.getRole().equals(Role.ADMIN.name()) && !principalRole.equals(Role.ADMIN)) {

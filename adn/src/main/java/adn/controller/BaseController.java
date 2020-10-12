@@ -64,6 +64,8 @@ public class BaseController {
 
 	protected final String accessDenied = "ACCESS DENIDED";
 
+	protected final String exsited = "RESOURCE IS ALREADY EXSITED";
+	
 	protected void openSession(FlushMode mode) {
 		sessionFactory.getCurrentSession().setHibernateFlushMode(mode != null ? mode : FlushMode.MANUAL);
 	}

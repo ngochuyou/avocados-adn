@@ -11,7 +11,7 @@
     "lastName": "Vu Ngoc Huy",
     "photo": null,
     "password": "password",
-    "role": "ADMIN",
+    "role": "CUSTOMER",
     "gender": "FEMALE",
     "contractDate": "2020",
     "prestigePoint" : "10.09",
