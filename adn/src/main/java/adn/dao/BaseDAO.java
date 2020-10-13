@@ -76,9 +76,11 @@ public class BaseDAO {
 
 		if (result.isOk()) {
 			session.save(instance);
-		} else {
-			session.evict(instance);
+
+			return result;
 		}
+
+		session.evict(instance);
 
 		return result;
 	}

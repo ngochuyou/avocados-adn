@@ -3,8 +3,6 @@
  */
 package adn.controller;
 
-import javax.transaction.Transactional;
-
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -22,13 +20,13 @@ import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractorProvider;
 import adn.model.factory.production.security.AuthenticationBasedProducerProvider;
 import adn.model.models.Model;
+import adn.service.transaction.GlobalTransactionManager;
 import adn.utilities.ClassReflector;
 
 /**
  * @author Ngoc Huy
  *
  */
-@Transactional
 @Component
 public class BaseController {
 
@@ -54,6 +52,9 @@ public class BaseController {
 	@Autowired
 	protected ObjectMapper mapper;
 
+	@Autowired
+	protected GlobalTransactionManager globalTransactionManager;
+
 	protected final String hasRoleAdmin = "hasRole('ADMIN')";
 
 	protected final String notFound = "NOT FOUND";
@@ -65,18 +66,18 @@ public class BaseController {
 	protected final String accessDenied = "ACCESS DENIDED";
 
 	protected final String exsited = "RESOURCE IS ALREADY EXSITED";
-	
+
 	protected void openSession(FlushMode mode) {
 		sessionFactory.getCurrentSession().setHibernateFlushMode(mode != null ? mode : FlushMode.MANUAL);
 	}
-	
+
 	protected void closeSession(boolean isFlushed) {
 		Session session = sessionFactory.getCurrentSession();
-		
+
 		if (isFlushed) {
 			session.flush();
 		}
-		
+
 		session.clear();
 	}
 

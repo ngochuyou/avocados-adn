@@ -4,6 +4,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.logging.log4j.util.Strings;
 import org.hibernate.FlushMode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -27,8 +29,12 @@ import adn.application.context.ContextProvider;
 import adn.model.Result;
 import adn.model.entities.Account;
 import adn.model.models.AccountModel;
+import adn.service.ServiceResult;
 import adn.service.services.AccountService;
 import adn.service.services.FileService;
+import adn.service.transaction.Event;
+import adn.service.transaction.GlobalTransaction;
+import adn.service.transaction.TransactionException;
 import adn.utilities.Role;
 
 @Controller
@@ -47,7 +53,10 @@ public class AccountController extends BaseController {
 
 	protected final String notFound = "USER NOT FOUND";
 
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
+
 	@SuppressWarnings("unchecked")
+	@Transactional
 	@PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
 	public @ResponseBody ResponseEntity<?> createAccount(@RequestPart(name = "model", required = true) String jsonPart,
 			@RequestPart(name = "photo", required = false) MultipartFile photo, HttpServletResponse response) {
@@ -71,7 +80,7 @@ public class AccountController extends BaseController {
 		if (dao.findById(model.getId(), Account.class) != null) {
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(exsited);
 		}
-		
+
 		Role principalRole = ContextProvider.getPrincipalRole();
 
 		if (model.getRole() != null && model.getRole().equals(Role.ADMIN.name()) && !principalRole.equals(Role.ADMIN)) {
@@ -96,7 +105,8 @@ public class AccountController extends BaseController {
 	@GetMapping("/photo")
 	public @ResponseBody Object obtainPhoto(
 			@RequestParam(name = "username", required = false, defaultValue = "") String username,
-			@RequestParam(name = "filename", required = false) String filename, Authentication authentication) {
+			@RequestParam(name = "filename", required = false) String filename, Authentication authentication)
+			throws Exception {
 		byte[] photoBytes = fileService.getImageBytes(filename);
 
 		if (photoBytes != null) {
@@ -120,10 +130,12 @@ public class AccountController extends BaseController {
 		return fileService.getImageBytes(account.getPhoto());
 	}
 
+	@Transactional
 	@SuppressWarnings("unchecked")
 	@PutMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
 	public @ResponseBody ResponseEntity<?> updateAccount(@RequestPart(name = "model", required = true) String jsonPart,
-			@RequestPart(name = "photo", required = false) MultipartFile photo) {
+			@RequestPart(name = "photo", required = false) MultipartFile photo)
+			throws NoSuchMethodException, SecurityException, TransactionException {
 		Role modelRole = getRoleFromJsonString(jsonPart);
 		AccountModel model;
 		Class<? extends Account> entityClass = accountService.getClassFromRole(modelRole);
@@ -160,15 +172,33 @@ public class AccountController extends BaseController {
 		if (!principalRole.equals(Role.ADMIN)) {
 			account.setRole(null);
 		}
+		// open a global transaction for image upload
+		GlobalTransaction transaction = globalTransactionManager.openTransaction();
+
+		if (photo != null) {
+			ServiceResult<String> uploadResult = fileService.uploadFile(photo, transaction);
+			// register rollback method
+			logger.debug("Registering rollback FileService.removeFile to transaction. Transaction id: "
+					+ transaction.getId());
+			transaction.addRollback(Event.functional(fileService::removeFile, uploadResult.getBody(), "removeFile"));
+			// set output into persisted entity
+			account.setPhoto(uploadResult.getBody());
+		}
 
 		Result<? extends Account> result = dao.update(reflector.genericallyCast(account), entityClass, Account.class);
 
+		if (result.isOk()) {
+			// commit and close transaction
+			transaction.commit();
+			globalTransactionManager.closeTransaction(transaction.getId());
+		}
+		// if the transaction successfully executed, flush the Hibernate session
 		closeSession(result.isOk());
 
 		if (result.isOk()) {
 			return ResponseEntity.ok(produce(result.getInstance(), modelClass));
 		}
-		
+
 		return ResponseEntity.status(result.getStatus()).body(result.getMessageSet());
 	}
 

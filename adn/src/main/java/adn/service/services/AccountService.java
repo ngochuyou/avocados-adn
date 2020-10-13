@@ -8,11 +8,11 @@ import adn.model.entities.Account;
 import adn.model.entities.Admin;
 import adn.model.entities.Customer;
 import adn.model.entities.Personnel;
-import adn.service.ApplicationService;
+import adn.service.ADNService;
 import adn.utilities.Role;
 
 @Service
-public class AccountService implements ApplicationService {
+public class AccountService implements ADNService {
 
 	public static final String UNKNOWN_USER_FIRSTNAME = "ADN";
 

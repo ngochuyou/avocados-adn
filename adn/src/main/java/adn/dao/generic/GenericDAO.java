@@ -6,6 +6,9 @@ package adn.dao.generic;
 import adn.model.entities.Entity;
 
 /**
+ * An interface which it's implementations manage the {@link Entity} constraint,
+ * specification, and core procedure for each entity interaction.
+ * 
  * @author Ngoc Huy
  *
  */
