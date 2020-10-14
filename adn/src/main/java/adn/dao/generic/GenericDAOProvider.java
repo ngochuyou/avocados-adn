@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
+import adn.dao.GenericDAO;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;

@@ -3,7 +3,6 @@ package adn.service.services;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
@@ -17,9 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 import adn.application.Constants;
 import adn.service.ADNService;
 import adn.service.ServiceResult;
-import adn.service.transaction.GlobalTransaction;
-import adn.service.transaction.MethodEvent;
-import adn.service.transaction.Transaction;
 import adn.utilities.Strings;
 
 @Service
@@ -32,14 +28,13 @@ public class FileService implements ADNService {
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	public String generateFilename(MultipartFile file) {
-
 		return file != null
 				? new Date().getTime() + '-' + Strings.hash(file.getOriginalFilename()) + '.'
 						+ FilenameUtils.getExtension(file.getOriginalFilename())
 				: null;
 	}
 
-	public ServiceResult<String> uploadFile(MultipartFile file, GlobalTransaction transaction) {
+	public ServiceResult<String> uploadFile(MultipartFile file) {
 		if (file == null || file.isEmpty()) {
 			return ServiceResult.bad().body(emptyName);
 		}
@@ -50,31 +45,15 @@ public class FileService implements ADNService {
 		try {
 			byte[] bytes = file.getBytes();
 			Path path = Paths.get(Constants.IMAGE_FILE_PATH + filename);
-			// if a transaction is passed, register the final method and return the output
-			if (transaction != null) {
-				if (!transaction.getLockMode().equals(Transaction.LockMode.NONE)) {
-					logger.debug("Cannot register event since transaction is locked." + transaction.getId()
-							+ " LockMode: " + transaction.getLockMode());
-					Files.write(path, bytes);
 
-					return ServiceResult.ok(filename);
-				}
-
-				logger.debug("Registering action Files.write to transaction. Transaction id: " + transaction.getId());
-				transaction.addAction(new MethodEvent<>(
-						Files.class.getDeclaredMethod("write", Path.class, byte[].class, OpenOption[].class), null,
-						Path.class, path, bytes, new OpenOption[0]));
-			}
+			logger.debug("Writing file: " + filename);
+			Files.write(path, bytes);
 
 			return ServiceResult.ok(filename);
 		} catch (SecurityException | IOException e) {
 			e.printStackTrace();
 
 			return ServiceResult.status(ServiceStatus.FAILED, String.class).body(e.getMessage());
-		} catch (NoSuchMethodException e) {
-			// TODO Auto-generated catch block
-			return ServiceResult.status(ServiceStatus.FAILED, String.class)
-					.body("Failed to register method into transaction\n" + e.getMessage());
 		}
 	}
 
@@ -88,7 +67,8 @@ public class FileService implements ADNService {
 		if (!file.exists()) {
 			return ServiceResult.bad().body(fileNotFound);
 		}
-		
+
+		logger.debug("Writing file: " + filename);
 		file.delete();
 
 		return ServiceResult.ok(filename + " was successfully deleted");
@@ -107,7 +87,7 @@ public class FileService implements ADNService {
 			return data;
 		} catch (Exception e) {
 			e.printStackTrace();
-			
+
 			return null;
 		}
 	}

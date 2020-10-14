@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.transaction;
+package adn.service.context.transaction;
 
 /**
  * @author Ngoc Huy
@@ -18,9 +18,9 @@ public interface Transaction {
 	void rollback() throws TransactionException;
 
 	<T> void addAction(Event<T> action);
-
+	
 	<T> void addRollback(Event<T> rollback);
-
+	
 	LockMode getLockMode();
-
+	
 }

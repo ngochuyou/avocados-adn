@@ -3,6 +3,11 @@
  */
 package adn.utilities;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -133,6 +138,23 @@ public class ClassReflector {
 	public <T, M extends T> M genericallyCast(T target) {
 
 		return (M) target;
+	}
+	
+	public <T extends Serializable> byte[] serialize(T instance) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream dos = new ObjectOutputStream(baos);
+		
+		dos.writeObject(instance);
+		dos.close();
+		
+		return baos.toByteArray();
+	}
+	
+	@SuppressWarnings("unchecked")
+	public <T> T deserialize(byte[] serialized, Class<T> clazz) throws IOException, ClassNotFoundException {
+		ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(serialized));
+		
+		return (T) ois.readObject();
 	}
 
 }

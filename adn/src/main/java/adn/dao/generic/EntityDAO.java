@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 
 import adn.dao.BaseDAO;
+import adn.dao.GenericDAO;
 import adn.model.Genetized;
 import adn.model.entities.Entity;
 

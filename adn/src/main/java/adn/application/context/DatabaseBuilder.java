@@ -48,22 +48,28 @@ public class DatabaseBuilder implements ContextBuilder {
 		logger.info("Finished initializing " + this.getClass().getName());
 	}
 
+	public Admin getAdmin() {
+		Admin admin = new Admin();
+
+		admin.setId("ngochuy.ou");
+		admin.setPassword(passwordEncoder.encode("password"));
+		admin.setActive(true);
+		admin.setEmail("ngochuy.ou@gmail.com");
+		admin.setFirstName("Tran");
+		admin.setGender(Gender.MALE);
+		admin.setLastName("Vu Ngoc Huy");
+		admin.setPhone("0974032706");
+		admin.setPhoto(Constants.DEFAULT_USER_PHOTO_NAME);
+		admin.setRole(Role.ADMIN);
+
+		return admin;
+	}
+
 	private void insertAdmin() {
 		Session session = sessionFactory.getCurrentSession();
 
 		if (session.get(Admin.class, "ngochuy.ou") == null) {
-			Admin admin = new Admin();
-
-			admin.setId("ngochuy.ou");
-			admin.setPassword(passwordEncoder.encode("password"));
-			admin.setActive(true);
-			admin.setEmail("ngochuy.ou@gmail.com");
-			admin.setFirstName("Tran");
-			admin.setGender(Gender.MALE);
-			admin.setLastName("Vu Ngoc Huy");
-			admin.setPhone("0974032706");
-			admin.setPhoto(Constants.DEFAULT_USER_PHOTO_NAME);
-			admin.setRole(Role.ADMIN);
+			Admin admin = getAdmin();
 
 			session.save(admin);
 

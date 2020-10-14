@@ -80,7 +80,7 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 	@Override
 	public T updateBuild(T model) {
 		// TODO Auto-generated method stub
-		model = super.updateBuild(model);
+		super.updateBuild(model);
 
 		Session session = sessionFactory.getCurrentSession();
 		Account persistence = session.load(Account.class, model.getId());

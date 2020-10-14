@@ -20,7 +20,7 @@ import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractorProvider;
 import adn.model.factory.production.security.AuthenticationBasedProducerProvider;
 import adn.model.models.Model;
-import adn.service.transaction.GlobalTransactionManager;
+import adn.service.context.transaction.GlobalTransactionManager;
 import adn.utilities.ClassReflector;
 
 /**

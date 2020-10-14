@@ -45,10 +45,14 @@ public class FactorDAO<T extends Factor> extends EntityDAO<T> {
 	@Override
 	public T updateBuild(T model) {
 		// TODO Auto-generated method stub
+		super.updateBuild(model);
+		
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-		model = super.updateBuild(model);
-		model.setUpdatedBy(authentication instanceof AnonymousAuthenticationToken ? null : authentication.getName());
+		Factor persisted = sessionFactory.getCurrentSession().load(Factor.class, model.getId());
+		
+		if (persisted.getUpdatedBy() == null) {
+			persisted.setUpdatedBy(authentication instanceof AnonymousAuthenticationToken ? null : authentication.getName());
+		}
 
 		return model;
 	}

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.dao.generic;
+package adn.dao;
 
 import adn.model.entities.Entity;
 

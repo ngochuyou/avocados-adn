@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import adn.application.context.ContextProvider;
+import adn.dao.GenericDAO;
 import adn.model.entities.Entity;
 
 public class EntityGeneBuilder<T extends Entity> implements GeneBuilder<T> {

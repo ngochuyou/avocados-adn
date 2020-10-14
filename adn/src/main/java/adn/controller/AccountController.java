@@ -30,11 +30,11 @@ import adn.model.Result;
 import adn.model.entities.Account;
 import adn.model.models.AccountModel;
 import adn.service.ServiceResult;
+import adn.service.context.transaction.Event;
+import adn.service.context.transaction.GlobalTransaction;
+import adn.service.context.transaction.TransactionException;
 import adn.service.services.AccountService;
 import adn.service.services.FileService;
-import adn.service.transaction.Event;
-import adn.service.transaction.GlobalTransaction;
-import adn.service.transaction.TransactionException;
 import adn.utilities.Role;
 
 @Controller
@@ -176,7 +176,8 @@ public class AccountController extends BaseController {
 		GlobalTransaction transaction = globalTransactionManager.openTransaction();
 
 		if (photo != null) {
-			ServiceResult<String> uploadResult = fileService.uploadFile(photo, transaction);
+			ServiceResult<String> uploadResult = fileService.uploadFile(photo);
+			transaction.addAction(Event.functional(fileService::uploadFile, photo, "uploadFile"));
 			// register rollback method
 			logger.debug("Registering rollback FileService.removeFile to transaction. Transaction id: "
 					+ transaction.getId());
