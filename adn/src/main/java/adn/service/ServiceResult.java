@@ -1,24 +1,24 @@
 package adn.service;
 
-import adn.service.ADNService.ServiceStatus;
+import adn.service.ADNService.Status;
 
 public class ServiceResult<T> {
 
-	protected ServiceStatus status;
+	protected Status status;
 
 	protected T body;
 	
-	public ServiceResult(ServiceStatus status, T body) {
+	public ServiceResult(Status status, T body) {
 		super();
 		this.status = status;
 		this.body = body;
 	}
 
-	public ServiceStatus getStatus() {
+	public Status getStatus() {
 		return status;
 	}
 
-	public void setStatus(ServiceStatus status) {
+	public void setStatus(Status status) {
 		this.status = status;
 	}
 
@@ -33,19 +33,19 @@ public class ServiceResult<T> {
 	}
 	
 	public boolean isOk() {
-		return this.status.equals(ServiceStatus.OK);
+		return this.status.equals(Status.OK);
 	}
 	
-	public static <T> ServiceResult<T> status(ServiceStatus status, Class<T> clazz) {
+	public static <T> ServiceResult<T> status(Status status, Class<T> clazz) {
 		return new ServiceResult<>(status, null);
 	}
 	
 	public static ServiceResult<String> bad() {
-		return new ServiceResult<>(ServiceStatus.BAD, "BAD INVOKE");
+		return new ServiceResult<>(Status.BAD, "BAD INVOKE");
 	}
 	
 	public static <T> ServiceResult<T> ok(T body) {
-		return new ServiceResult<>(ServiceStatus.OK, body);
+		return new ServiceResult<>(Status.OK, body);
 	}
 	
 }

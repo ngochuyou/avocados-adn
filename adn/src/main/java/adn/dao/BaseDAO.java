@@ -22,7 +22,7 @@ import adn.model.Result;
 import adn.model.entities.Entity;
 import adn.model.specification.Specification;
 import adn.model.specification.SpecificationFactory;
-import adn.utilities.ClassReflector;
+import adn.utilities.TypeUtils;
 
 /**
  * @author Ngoc Huy
@@ -33,7 +33,7 @@ import adn.utilities.ClassReflector;
 public class BaseDAO {
 
 	@Autowired
-	protected ClassReflector reflector;
+	protected TypeUtils reflector;
 
 	@Autowired
 	protected SessionFactory sessionFactory;

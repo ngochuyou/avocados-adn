@@ -48,12 +48,12 @@ public class FileService implements ADNService {
 
 			logger.debug("Writing file: " + filename);
 			Files.write(path, bytes);
-
+			
 			return ServiceResult.ok(filename);
 		} catch (SecurityException | IOException e) {
 			e.printStackTrace();
 
-			return ServiceResult.status(ServiceStatus.FAILED, String.class).body(e.getMessage());
+			return ServiceResult.status(Status.FAILED, String.class).body(e.getMessage());
 		}
 	}
 

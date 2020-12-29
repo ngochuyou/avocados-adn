@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.WebUtils;
 
-import adn.application.context.ConfigurationsBuilder;
+import adn.application.context.ConfigurationContext;
 import adn.service.services.AuthenticationService;
 import io.jsonwebtoken.ExpiredJwtException;
 
@@ -33,14 +33,17 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 	@Autowired
 	private AuthenticationService authService;
 
+	@Autowired
+	private ApplicationUserDetailsService userDetailsService;
+
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		String authHeader = request.getHeader("Authorization");
 
-		if (authHeader != null && authHeader.startsWith(ConfigurationsBuilder.securityResource.jwtAuthHeaderValue)) {
-			Cookie c = WebUtils.getCookie(request, ConfigurationsBuilder.securityResource.jwtCookieName);
+		if (authHeader != null && authHeader.startsWith(ConfigurationContext.getJwtAuthHeaderValue())) {
+			Cookie c = WebUtils.getCookie(request, ConfigurationContext.getJwtCookieName());
 
 			if (c != null) {
 				String jwt = c.getValue();
@@ -55,7 +58,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 				}
 
 				if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-					UserDetails userDetails = authService.extractUserDetails(jwt);
+					UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
 					if (authService.validateToken(jwt, userDetails.getUsername())) {
 						UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(userDetails,

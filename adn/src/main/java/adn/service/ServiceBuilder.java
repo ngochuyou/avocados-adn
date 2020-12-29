@@ -1,11 +1,11 @@
 package adn.service;
 
 import adn.application.context.ContextProvider;
-import adn.utilities.ClassReflector;
+import adn.utilities.TypeUtils;
 
 public interface ServiceBuilder {
 
-	final ClassReflector reflector = ContextProvider.getApplicationContext().getBean(ClassReflector.class);
+	final TypeUtils reflector = ContextProvider.getApplicationContext().getBean(TypeUtils.class);
 
 	<T> T execute();
 

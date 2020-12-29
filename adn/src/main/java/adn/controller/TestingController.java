@@ -23,7 +23,12 @@ public class TestingController extends BaseController {
 	@GetMapping("/greet")
 	public ResponseEntity<?> greet(@CookieValue(name = "_sie9t", required = false) Cookie c,
 			HttpServletResponse response) {
-
+		System.out.println(c == null);
+		
+		if (c != null) {
+			System.out.println(c.getValue());
+		}
+		
 		return ResponseEntity.ok("hello");
 	}
 

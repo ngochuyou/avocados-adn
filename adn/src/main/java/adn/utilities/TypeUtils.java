@@ -27,7 +27,7 @@ import adn.model.entities.Entity;
  *
  */
 @Component
-public class ClassReflector {
+public class TypeUtils {
 
 	public <T extends Entity> String getEntityName(Class<T> clazz) {
 		javax.persistence.Entity anno = clazz.getDeclaredAnnotation(javax.persistence.Entity.class);
@@ -38,7 +38,7 @@ public class ClassReflector {
 
 		return anno.name();
 	}
-	
+
 	public <T extends Entity> String getTableName(Class<T> clazz) {
 		Table anno = clazz.getDeclaredAnnotation(Table.class);
 
@@ -117,12 +117,12 @@ public class ClassReflector {
 		}
 	}
 
-	public void consumeFields(Object o, BiConsumer<Field, Object> consumer, boolean superClassIncluded) {
+	public void consumeFields(Object o, BiConsumer<Field, Object> consumer, boolean isSuperClassIncluded) {
 		Stack<Class<?>> classStack = new Stack<>();
 
 		classStack.add(o.getClass());
 
-		if (superClassIncluded) {
+		if (isSuperClassIncluded) {
 			classStack.addAll(getClassStack(o.getClass().getSuperclass()));
 		}
 
@@ -139,21 +139,21 @@ public class ClassReflector {
 
 		return (M) target;
 	}
-	
-	public <T extends Serializable> byte[] serialize(T instance) throws IOException {
+
+	public static <T extends Serializable> byte[] serialize(T instance) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ObjectOutputStream dos = new ObjectOutputStream(baos);
-		
+
 		dos.writeObject(instance);
 		dos.close();
-		
+
 		return baos.toByteArray();
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	public <T> T deserialize(byte[] serialized, Class<T> clazz) throws IOException, ClassNotFoundException {
+	public static <T> T deserialize(byte[] serialized, Class<T> clazz) throws IOException, ClassNotFoundException {
 		ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(serialized));
-		
+
 		return (T) ois.readObject();
 	}
 

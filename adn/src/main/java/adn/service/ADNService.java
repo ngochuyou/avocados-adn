@@ -1,11 +1,14 @@
 package adn.service;
 
 import adn.application.context.ContextProvider;
-import adn.utilities.ClassReflector;
+import adn.utilities.TypeUtils;
 
 public interface ADNService {
 
-	enum ServiceStatus {
+	final TypeUtils reflector = ContextProvider.getApplicationContext().getBean(TypeUtils.class);
+
+	public enum Status {
+
 		BAD(0, "INVALID INPUT"),
 
 		OK(1, "SUCCESS"),
@@ -16,7 +19,7 @@ public interface ADNService {
 
 		private final String message;
 
-		ServiceStatus(int code, String message) {
+		Status(int code, String message) {
 			this.code = code;
 			this.message = message;
 		}
@@ -30,7 +33,5 @@ public interface ADNService {
 		}
 
 	}
-
-	final ClassReflector reflector = ContextProvider.getApplicationContext().getBean(ClassReflector.class);
 
 }

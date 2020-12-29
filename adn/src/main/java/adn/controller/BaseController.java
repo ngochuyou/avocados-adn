@@ -20,8 +20,7 @@ import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractorProvider;
 import adn.model.factory.production.security.AuthenticationBasedProducerProvider;
 import adn.model.models.Model;
-import adn.service.context.transaction.GlobalTransactionManager;
-import adn.utilities.ClassReflector;
+import adn.utilities.TypeUtils;
 
 /**
  * @author Ngoc Huy
@@ -47,13 +46,10 @@ public class BaseController {
 	protected SessionFactory sessionFactory;
 
 	@Autowired
-	protected ClassReflector reflector;
+	protected TypeUtils reflector;
 
 	@Autowired
 	protected ObjectMapper mapper;
-
-	@Autowired
-	protected GlobalTransactionManager globalTransactionManager;
 
 	protected final String hasRoleAdmin = "hasRole('ADMIN')";
 

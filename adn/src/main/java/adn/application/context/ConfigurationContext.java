@@ -10,21 +10,23 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.SpringApplication;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.util.ResourceUtils;
 
 import adn.application.Constants;
-import adn.security.SecurityResource;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Order(value = Ordered.HIGHEST_PRECEDENCE)
-public class ConfigurationsBuilder implements ContextBuilder {
+public class ConfigurationContext implements ContextBuilder {
 
-	public static SecurityResource securityResource;
+	private static SecurityResource securityConfiguration;
+
+	private static final String FILE_RESOURCE_DIRECTORY_PATH = "C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\";
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -37,25 +39,66 @@ public class ConfigurationsBuilder implements ContextBuilder {
 	}
 
 	private void readSecurityProperties() {
-		ConfigurationsBuilder.securityResource = new SecurityResource();
+		securityConfiguration = new SecurityResource();
 
 		try {
 			File file = ResourceUtils.getFile(Constants.CONFIG_PATH + "SpevIDMKW.txt");
 			List<String> lines = Files.readAllLines(file.toPath());
+
+			if (lines.size() == 0) {
+				throw new NoSuchFieldException("Could not build configuration. Invalid file format");
+			}
+
 			String nameValSeperator = lines.get(0);
 
 			for (int i = 1; i < lines.size(); i++) {
 				String[] pair = lines.get(i).split(nameValSeperator);
 				String name = pair[0], val = pair[1];
 
-				ConfigurationsBuilder.securityResource.getClass().getDeclaredField(name)
-						.set(ConfigurationsBuilder.securityResource, val);
+				securityConfiguration.getClass().getDeclaredField(name).set(securityConfiguration, val);
 			}
 		} catch (IOException | IllegalArgumentException | IllegalAccessException | NoSuchFieldException
 				| SecurityException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			SpringApplication.exit(context);
 		}
+	}
+
+	public static String getJwtAuthEndpoint() {
+
+		return ConfigurationContext.securityConfiguration.jwtAuthEndpoint;
+	}
+
+	public static String getJwtSecretKey() {
+
+		return ConfigurationContext.securityConfiguration.jwtSecretKey;
+	}
+
+	public static String getJwtAuthHeaderValue() {
+
+		return ConfigurationContext.securityConfiguration.jwtAuthHeaderValue;
+	}
+
+	public static String getJwtCookieName() {
+
+		return ConfigurationContext.securityConfiguration.jwtCookieName;
+	}
+
+	public static String getFileResourceDirectoryPath() {
+
+		return ConfigurationContext.FILE_RESOURCE_DIRECTORY_PATH;
+	}
+
+	class SecurityResource {
+
+		String jwtAuthEndpoint;
+
+		String jwtSecretKey;
+
+		String jwtAuthHeaderValue;
+
+		String jwtCookieName;
 
 	}
 

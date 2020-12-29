@@ -22,7 +22,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import adn.application.context.ConfigurationsBuilder;
+import adn.application.context.ConfigurationContext;
 import adn.service.services.AuthenticationService;
 import io.jsonwebtoken.lang.Assert;
 
@@ -35,14 +35,18 @@ public class JwtUsernamePasswordAuthenticationFilter extends AbstractAuthenticat
 	@Autowired
 	private AuthenticationService authService;
 
+	public final String authenticationPath;
+
 	/**
 	 * @param requiresAuthenticationRequestMatcher
 	 */
 	public JwtUsernamePasswordAuthenticationFilter(AuthenticationService authService) {
+		// TODO Auto-generated constructor stub
 		super(new AntPathRequestMatcher("/auth/token", HttpMethod.POST.name()));
+
 		Assert.notNull(authService);
 		this.authService = authService;
-		// TODO Auto-generated constructor stub
+		authenticationPath = "/auth/token";
 	}
 
 	@Override
@@ -66,23 +70,14 @@ public class JwtUsernamePasswordAuthenticationFilter extends AbstractAuthenticat
 		// TODO Auto-generated method stub
 		UserDetails userDetails = (UserDetails) authResult.getPrincipal();
 		String jwt = authService.generateToken(userDetails);
-		Cookie cookie = authService.createSessionCookie(ConfigurationsBuilder.securityResource.jwtCookieName, jwt, "/",
-				false);
+		Cookie cookie = authService.createSessionCookie(ConfigurationContext.getJwtCookieName(), jwt, "/", false);
 
-		cookie.setMaxAge(7 * 24 * 60 * 60);// days
+		cookie.setMaxAge(7 * 24 * 60 * 60);// 7 days
 		response.addCookie(cookie);
 		response.getWriter().print("LOGGED_IN");
 		response.getWriter().flush();
 		response.setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE);
 		response.setStatus(HttpStatus.OK.ordinal());
-	}
-
-	public AuthenticationService getAuthService() {
-		return authService;
-	}
-
-	public void setAuthService(AuthenticationService authService) {
-		this.authService = authService;
 	}
 
 }

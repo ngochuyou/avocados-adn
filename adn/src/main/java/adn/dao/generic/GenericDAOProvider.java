@@ -36,7 +36,7 @@ public class GenericDAOProvider implements ContextBuilder {
 
 	private Map<Class<? extends Entity>, GenericDAO<? extends Entity>> genericDAOMap;
 
-	private GenericDAO<?> defaultGDAO = new GenericDAO<Entity>() {};
+	private GenericDAO<?> defaultGenericDAO = new GenericDAO<Entity>() {};
 
 	private ModelManager modelManager = context.getBean(ModelManager.class);
 
@@ -72,13 +72,13 @@ public class GenericDAOProvider implements ContextBuilder {
 				if (this.genericDAOMap.get(node.getNode()) == null) {
 					GenericDAO<?> parentGDAO = genericDAOMap.get(node.getParent().getNode());
 
-					genericDAOMap.put(node.getNode(), parentGDAO == null ? defaultGDAO : parentGDAO);
+					genericDAOMap.put(node.getNode(), parentGDAO == null ? defaultGenericDAO : parentGDAO);
 				}
 			});
 
-			modelManager.getEntityTree().forEach(treeNode -> {
-				logger.info("Assigning " + genericDAOMap.get(treeNode.getNode()).getClass().getName() + " for "
-						+ treeNode.getNode().getName());
+			modelManager.getEntityTree().forEach(node -> {
+				logger.info("Assigning " + genericDAOMap.get(node.getNode()).getClass().getName() + " for "
+						+ node.getNode().getName());
 			});
 		} catch (Exception e) {
 			e.printStackTrace();

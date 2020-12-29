@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 import adn.utilities.Role;
 
-@Retention(RetentionPolicy.CLASS)
+@Retention(RetentionPolicy.SOURCE)
 @Target({ ElementType.TYPE, ElementType.METHOD, ElementType.FIELD })
 public @interface SecuredFor {
 

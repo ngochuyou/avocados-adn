@@ -4,8 +4,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.logging.log4j.util.Strings;
 import org.hibernate.FlushMode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -29,10 +27,6 @@ import adn.application.context.ContextProvider;
 import adn.model.Result;
 import adn.model.entities.Account;
 import adn.model.models.AccountModel;
-import adn.service.ServiceResult;
-import adn.service.context.transaction.Event;
-import adn.service.context.transaction.GlobalTransaction;
-import adn.service.context.transaction.TransactionException;
 import adn.service.services.AccountService;
 import adn.service.services.FileService;
 import adn.utilities.Role;
@@ -53,7 +47,7 @@ public class AccountController extends BaseController {
 
 	protected final String notFound = "USER NOT FOUND";
 
-	private Logger logger = LoggerFactory.getLogger(this.getClass());
+//	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@SuppressWarnings("unchecked")
 	@Transactional
@@ -135,7 +129,7 @@ public class AccountController extends BaseController {
 	@PutMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
 	public @ResponseBody ResponseEntity<?> updateAccount(@RequestPart(name = "model", required = true) String jsonPart,
 			@RequestPart(name = "photo", required = false) MultipartFile photo)
-			throws NoSuchMethodException, SecurityException, TransactionException {
+			throws NoSuchMethodException, SecurityException {
 		Role modelRole = getRoleFromJsonString(jsonPart);
 		AccountModel model;
 		Class<? extends Account> entityClass = accountService.getClassFromRole(modelRole);
@@ -172,28 +166,9 @@ public class AccountController extends BaseController {
 		if (!principalRole.equals(Role.ADMIN)) {
 			account.setRole(null);
 		}
-		// open a global transaction for image upload
-		GlobalTransaction transaction = globalTransactionManager.openTransaction();
-
-		if (photo != null) {
-			ServiceResult<String> uploadResult = fileService.uploadFile(photo);
-			transaction.addAction(Event.functional(fileService::uploadFile, photo, "uploadFile"));
-			// register rollback method
-			logger.debug("Registering rollback FileService.removeFile to transaction. Transaction id: "
-					+ transaction.getId());
-			transaction.addRollback(Event.functional(fileService::removeFile, uploadResult.getBody(), "removeFile"));
-			// set output into persisted entity
-			account.setPhoto(uploadResult.getBody());
-		}
 
 		Result<? extends Account> result = dao.update(reflector.genericallyCast(account), entityClass, Account.class);
 
-		if (result.isOk()) {
-			// commit and close transaction
-			transaction.commit();
-			globalTransactionManager.closeTransaction(transaction.getId());
-		}
-		// if the transaction successfully executed, flush the Hibernate session
 		closeSession(result.isOk());
 
 		if (result.isOk()) {
