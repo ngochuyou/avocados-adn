@@ -4,6 +4,9 @@
 package adn.service.transaction;
 
 import java.io.Serializable;
+import java.lang.reflect.Type;
+
+import org.springframework.util.Assert;
 
 /**
  * @author Ngoc Huy
@@ -20,13 +23,26 @@ public class ResourceKey implements Serializable {
 
 	private final int hashCode;
 
+	private final Type type;
+
 	/**
 	 * 
 	 */
-	public ResourceKey(Serializable id) {
+	public ResourceKey(Serializable id, Type type) {
 		// TODO Auto-generated constructor stub
+		Assert.isTrue(type != null && id != null, "Resource identifier and type can not be null");
 		this.id = id;
-		this.hashCode = id.hashCode();
+		this.type = type;
+		this.hashCode = generateHashCode();
+	}
+
+	private int generateHashCode() {
+		int result = 17;
+
+		result = 37 * result + id.hashCode();
+		result = 37 * result + type.hashCode();
+
+		return result;
 	}
 
 	@Override
@@ -38,7 +54,7 @@ public class ResourceKey implements Serializable {
 
 		ResourceKey that = (ResourceKey) other;
 
-		return id == that.id;
+		return id == that.id && type.equals(that.type);
 	}
 
 	@Override

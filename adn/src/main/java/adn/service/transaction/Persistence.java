@@ -9,6 +9,4 @@ package adn.service.transaction;
  */
 public interface Persistence {
 
-	
-	
 }
