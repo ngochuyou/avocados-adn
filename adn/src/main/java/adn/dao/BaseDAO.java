@@ -42,23 +42,24 @@ public class BaseDAO {
 	protected SpecificationFactory specificationFactory;
 
 	public <T extends Entity> T findById(Serializable id, Class<T> clazz) {
-		Session session = sessionFactory.getCurrentSession();
 
-		return session.get(clazz, id);
+		return sessionFactory.getCurrentSession().get(clazz, id);
 	}
 
 	public <T extends Entity> T findOne(CriteriaQuery<T> query, Class<T> clazz) {
-		Session session = sessionFactory.getCurrentSession();
-		Query<T> hql = session.createQuery(query);
-
-		return hql.getResultStream().findFirst().orElse(null);
+		// @formatter:off
+		return sessionFactory.getCurrentSession()
+				.createQuery(query)
+				.getResultStream().findFirst().orElse(null);
+		// @formatter:on
 	}
 
 	public <T extends Entity> List<T> find(CriteriaQuery<T> query, Class<T> clazz) {
-		Session session = sessionFactory.getCurrentSession();
-		Query<T> hql = session.createQuery(query);
-
-		return hql.getResultList();
+		// @formatter:off
+		return sessionFactory.getCurrentSession()
+				.createQuery(query)
+				.getResultList();
+		// @formatter:on
 	}
 
 	public <T extends Entity> Result<T> insert(T instance, Class<T> clazz) {
@@ -117,7 +118,7 @@ public class BaseDAO {
 	 * </p>
 	 * 
 	 */
-	@Deprecated
+	@Deprecated(forRemoval = true)
 	public <T extends Entity, A extends T> Result<A> updateDType(A instance, Class<T> clazz) {
 		Session session = sessionFactory.getCurrentSession();
 		Query<?> query = session

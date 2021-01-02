@@ -17,7 +17,6 @@ import adn.model.Genetized;
 import adn.model.entities.Account;
 import adn.model.factory.extraction.AccountExtractor;
 import adn.service.services.AccountService;
-import adn.utilities.TypeUtils;
 import adn.utilities.Gender;
 import adn.utilities.Role;
 import adn.utilities.Strings;
@@ -35,9 +34,6 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 	@Autowired
 	@Qualifier("accountExtractor")
 	private AccountExtractor extractor;
-
-	@Autowired
-	protected TypeUtils reflector;
 
 	@Autowired
 	protected AccountService accountService;

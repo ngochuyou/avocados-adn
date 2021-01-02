@@ -80,7 +80,7 @@ public class ADNApplication {
 					manager.initialize();
 				} catch (BeansException be) {
 					try {	
-						clazz.getConstructor().newInstance().initialize();;
+						clazz.getConstructor().newInstance().initialize();
 					} catch (Exception e) {
 						e.printStackTrace();
 						SpringApplication.exit(context);

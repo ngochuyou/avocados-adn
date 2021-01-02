@@ -82,7 +82,7 @@ public class AccountController extends BaseController {
 		}
 
 		Account account = extract(model, entityClass);
-		Result<? extends Account> insertionResult = dao.insert(reflector.genericallyCast(account), entityClass);
+		Result<? extends Account> insertionResult = dao.insert(reflector.cast(account), entityClass);
 
 		if (insertionResult.isOk()) {
 			sessionFactory.getCurrentSession().flush();
@@ -167,7 +167,7 @@ public class AccountController extends BaseController {
 			account.setRole(null);
 		}
 
-		Result<? extends Account> result = dao.update(reflector.genericallyCast(account), entityClass, Account.class);
+		Result<? extends Account> result = dao.update(reflector.cast(account), entityClass, Account.class);
 
 		closeSession(result.isOk());
 

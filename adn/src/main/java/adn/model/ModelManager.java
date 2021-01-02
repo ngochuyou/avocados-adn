@@ -38,7 +38,7 @@ import adn.model.models.Model;
 @Order(0)
 public class ModelManager implements ContextBuilder {
 
-	private Logger logger = LoggerFactory.getLogger(this.getClass());
+	private transient Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private ModelInheritanceTree<adn.model.entities.Entity> entityTree;
 
@@ -51,10 +51,10 @@ public class ModelManager implements ContextBuilder {
 	@Override
 	public void initialize() {
 		// TODO Auto-generated method stub
-		this.initializeEntityTree();
-		this.initializeModelTree();
-		this.initializeRelationMap();
-		this.initializeDefaultModelMap();
+		initializeEntityTree();
+		initializeModelTree();
+		initializeRelationMap();
+		initializeDefaultModelMap();
 	}
 
 	@SuppressWarnings("unchecked")

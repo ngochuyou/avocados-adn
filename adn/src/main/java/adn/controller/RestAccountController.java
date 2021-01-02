@@ -3,7 +3,6 @@
  */
 package adn.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.context.ContextProvider;
 import adn.model.entities.Account;
-import adn.service.services.AccountService;
 import adn.utilities.Role;
 import adn.utilities.Strings;
 
@@ -25,9 +23,6 @@ import adn.utilities.Strings;
 @RestController
 @RequestMapping("/rest/account")
 public class RestAccountController extends AccountController {
-
-	@Autowired
-	private AccountService accountService;
 
 	@GetMapping
 	@Transactional(readOnly = true)

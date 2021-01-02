@@ -135,7 +135,7 @@ public class TypeUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T, M extends T> M genericallyCast(T target) {
+	public <T, M extends T> M cast(T target) {
 
 		return (M) target;
 	}
