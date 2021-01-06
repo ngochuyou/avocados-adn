@@ -31,9 +31,7 @@ public interface ResourceEntry {
 	Object getState();
 
 	Object getPropertyValue();
-
-	ResourceKey getResourceKey();
-
+	
 	Type getResourceType();
 
 	void postUpdate(Object resourceInstance, Object updatedState, Object nextVersion);

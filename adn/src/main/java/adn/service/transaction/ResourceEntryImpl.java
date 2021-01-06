@@ -19,8 +19,6 @@ public class ResourceEntryImpl implements Serializable, ResourceEntry {
 
 	private final Serializable id;
 
-	private final ResourceKey key;
-
 	private final Type type;
 
 	private LockModeType lockMode;
@@ -31,12 +29,11 @@ public class ResourceEntryImpl implements Serializable, ResourceEntry {
 
 	private Object version;
 
-	public ResourceEntryImpl(Serializable id, LockModeType lockMode, Status status, ResourceKey key, Type type) {
+	public ResourceEntryImpl(Serializable id, LockModeType lockMode, Status status, Type type) {
 		super();
 		this.id = id;
 		this.lockMode = lockMode;
 		this.status = status;
-		this.key = key;
 		this.type = type;
 	}
 
@@ -74,12 +71,6 @@ public class ResourceEntryImpl implements Serializable, ResourceEntry {
 	public Object getState() {
 		// TODO Auto-generated method stub
 		return state;
-	}
-
-	@Override
-	public ResourceKey getResourceKey() {
-		// TODO Auto-generated method stub
-		return key;
 	}
 
 	@Override
