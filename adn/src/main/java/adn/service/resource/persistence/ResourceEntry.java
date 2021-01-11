@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.transaction;
+package adn.service.resource.persistence;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
@@ -38,6 +38,6 @@ public interface ResourceEntry {
 
 	void postDelete();
 
-	void postInsert(Object[] insertedState);
+	void postInsert(Object insertedState);
 
 }

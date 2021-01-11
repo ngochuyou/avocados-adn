@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.transaction;
+package adn.service.resource.persistence;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
@@ -9,6 +9,7 @@ import java.lang.reflect.Type;
 import javax.persistence.LockModeType;
 
 import org.hibernate.engine.spi.Status;
+import org.springframework.util.Assert;
 
 /**
  * @author Ngoc Huy
@@ -46,6 +47,7 @@ public class ResourceEntryImpl implements Serializable, ResourceEntry {
 	@Override
 	public void setLockMode(LockModeType lockMode) {
 		// TODO Auto-generated method stub
+		Assert.notNull(lockMode, "Entry lock mode can nit be null");
 		this.lockMode = lockMode;
 	}
 
@@ -58,6 +60,7 @@ public class ResourceEntryImpl implements Serializable, ResourceEntry {
 	@Override
 	public void setStatus(Status status) {
 		// TODO Auto-generated method stub
+		Assert.notNull(status, "Entry status can nit be null");
 		this.status = status;
 	}
 
@@ -102,7 +105,7 @@ public class ResourceEntryImpl implements Serializable, ResourceEntry {
 	}
 
 	@Override
-	public void postInsert(Object[] insertedState) {
+	public void postInsert(Object insertedState) {
 		// TODO Auto-generated method stub
 	}
 

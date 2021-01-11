@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.transaction;
+package adn.service.resource.persistence;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
@@ -22,17 +22,19 @@ import org.springframework.util.Assert;
  */
 @Component
 @SuppressWarnings("unused")
-public class ResourcePersistenceContext {
+public final class ResourcePersistenceContext {
 
 	private final EntityManager entityManager;
 
-	private final int COLLECTION_SIZE = 80;
+	private final int COLLECTION_SIZE = 100;
 
-	private Map<ResourceKey, Object> resources = new HashMap<>(COLLECTION_SIZE);
+	private final String ENTRY_NOT_FOUND = "Entry not found";
+	
+	private volatile Map<ResourceKey, Object> resources = new HashMap<>(COLLECTION_SIZE);
 
-	private Map<ResourceKey, Object> deletedResources = new HashMap<>(COLLECTION_SIZE);
+	private volatile Map<ResourceKey, Object> deletedResources = new HashMap<>(COLLECTION_SIZE);
 
-	private Map<Object, ResourceEntry> entryMap = new IdentityHashMap<>();
+	private volatile Map<Object, ResourceEntry> entryMap = new IdentityHashMap<>();
 
 	public ResourcePersistenceContext(EntityManager entityManager) {
 		super();
@@ -46,7 +48,8 @@ public class ResourcePersistenceContext {
 
 	public ResourceEntry addResource(Object resource, Status status, Object state, ResourceKey key, Object version,
 			LockModeType lockMode, Type type) {
-		addResource(key, lockMode);
+		addResource(key, resource);
+
 		return addEntry(resource, status, state, key.getIdentifier(), version, lockMode, type);
 	}
 
@@ -76,7 +79,17 @@ public class ResourcePersistenceContext {
 			return null;
 		}
 
+		deletedResources.put(key, resource);
 		resources.remove(key);
+
+		ResourceEntry entry = entryMap.get(resource);
+
+		Assert.notNull(entry, ENTRY_NOT_FOUND);
+		entryMap.compute(key, (k, v) -> {
+			v.setStatus(Status.DELETED);
+
+			return v;
+		});
 
 		return resource;
 	}
@@ -92,10 +105,38 @@ public class ResourcePersistenceContext {
 
 		return entry;
 	}
-	
+
 	public boolean hasEntry(Object resource) {
-		
+
 		return entryMap.get(resource) != null;
+	}
+	
+	public void setEntryStatus(Object resource, Status status) {
+		ResourceEntry entry = entryMap.get(resource);
+		
+		Assert.notNull(entry, ENTRY_NOT_FOUND);
+		entryMap.compute(resource, (k, v) -> {
+			v.setStatus(status);
+			
+			return v;
+		});
+	}
+	
+	public void setEntryLockMode(Object resource, LockModeType lockMode) {
+		ResourceEntry entry = entryMap.get(resource);
+		
+		Assert.notNull(entry, ENTRY_NOT_FOUND);
+		entryMap.compute(resource, (k, v) -> {
+			v.setLockMode(lockMode);
+			
+			return v;
+		});
+	}
+	
+	public void clear() {
+		resources.clear();
+		deletedResources.clear();
+		entryMap.clear();
 	}
 
 }

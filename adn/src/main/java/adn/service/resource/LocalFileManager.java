@@ -27,7 +27,7 @@ public interface LocalFileManager {
 		return new FileMeta(new File(DIRECTORY_PATH + pathname), this);
 	}
 
-	class FileMeta {
+	static class FileMeta {
 
 		protected final File file;
 
