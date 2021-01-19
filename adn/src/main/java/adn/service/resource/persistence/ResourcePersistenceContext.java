@@ -5,23 +5,19 @@ package adn.service.resource.persistence;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 
 import org.hibernate.engine.spi.Status;
-import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 /**
  * @author Ngoc Huy
  *
  */
-@Component
-@SuppressWarnings("unused")
 public final class ResourcePersistenceContext {
 
 	private final EntityManager entityManager;
@@ -29,12 +25,12 @@ public final class ResourcePersistenceContext {
 	private final int COLLECTION_SIZE = 100;
 
 	private final String ENTRY_NOT_FOUND = "Entry not found";
-	
-	private volatile Map<ResourceKey, Object> resources = new HashMap<>(COLLECTION_SIZE);
 
-	private volatile Map<ResourceKey, Object> deletedResources = new HashMap<>(COLLECTION_SIZE);
+	private volatile Map<ResourceKey, Object> resources = new ConcurrentHashMap<>(COLLECTION_SIZE);
 
-	private volatile Map<Object, ResourceEntry> entryMap = new IdentityHashMap<>();
+	private volatile Map<ResourceKey, Object> deletedResources = new ConcurrentHashMap<>(COLLECTION_SIZE);
+
+	private volatile Map<ResourceKey, ResourceEntry> entryMap = new ConcurrentHashMap<>(COLLECTION_SIZE);
 
 	public ResourcePersistenceContext(EntityManager entityManager) {
 		super();
@@ -47,17 +43,17 @@ public final class ResourcePersistenceContext {
 	}
 
 	public ResourceEntry addResource(Object resource, Status status, Object state, ResourceKey key, Object version,
-			LockModeType lockMode, Type type) {
+			LockModeType lockMode) {
 		addResource(key, resource);
 
-		return addEntry(resource, status, state, key.getIdentifier(), version, lockMode, type);
+		return addEntry(key, status, state, key.getIdentifier(), version, lockMode, resource.getClass());
 	}
 
-	public ResourceEntry addEntry(Object resource, Status status, Object loadedState, Serializable identifier,
+	public ResourceEntry addEntry(ResourceKey key, Status status, Object loadedState, Serializable identifier,
 			Object version, LockModeType lockMode, Type type) {
-		ResourceEntryImpl entry = new ResourceEntryImpl(identifier, lockMode, status, type);
+		ResourceEntryImpl entry = new ResourceEntryImpl(key.getIdentifier(), key, lockMode, status, type, this);
 
-		entryMap.put(resource, entry);
+		entryMap.put(key, entry);
 
 		return entry;
 	}
@@ -67,9 +63,9 @@ public final class ResourcePersistenceContext {
 		return resources.get(key);
 	}
 
-	public ResourceEntry getEntry(Object resource) {
+	public ResourceEntry getEntry(ResourceKey key) {
 
-		return entryMap.get(resource);
+		return entryMap.get(key);
 	}
 
 	public Object removeResource(ResourceKey key) {
@@ -94,14 +90,14 @@ public final class ResourcePersistenceContext {
 		return resource;
 	}
 
-	public ResourceEntry removeEntry(Object resource) {
-		ResourceEntry entry = entryMap.get(resource);
+	public ResourceEntry removeEntry(ResourceKey key) {
+		ResourceEntry entry = entryMap.get(key);
 
 		if (entry == null) {
 			return null;
 		}
 
-		entryMap.remove(entry);
+		entryMap.remove(key);
 
 		return entry;
 	}
@@ -110,33 +106,38 @@ public final class ResourcePersistenceContext {
 
 		return entryMap.get(resource) != null;
 	}
-	
-	public void setEntryStatus(Object resource, Status status) {
-		ResourceEntry entry = entryMap.get(resource);
-		
+
+	public void setEntryStatus(ResourceKey key, Status status) {
+		ResourceEntry entry = entryMap.get(key);
+
 		Assert.notNull(entry, ENTRY_NOT_FOUND);
-		entryMap.compute(resource, (k, v) -> {
+		entryMap.compute(key, (k, v) -> {
 			v.setStatus(status);
-			
+
 			return v;
 		});
 	}
-	
-	public void setEntryLockMode(Object resource, LockModeType lockMode) {
-		ResourceEntry entry = entryMap.get(resource);
-		
+
+	public void setEntryLockMode(ResourceKey key, LockModeType lockMode) {
+		ResourceEntry entry = entryMap.get(key);
+
 		Assert.notNull(entry, ENTRY_NOT_FOUND);
-		entryMap.compute(resource, (k, v) -> {
+		entryMap.compute(key, (k, v) -> {
 			v.setLockMode(lockMode);
-			
+
 			return v;
 		});
 	}
-	
+
 	public void clear() {
 		resources.clear();
 		deletedResources.clear();
 		entryMap.clear();
+	}
+
+	public EntityManager getEntityManager() {
+
+		return entityManager;
 	}
 
 }

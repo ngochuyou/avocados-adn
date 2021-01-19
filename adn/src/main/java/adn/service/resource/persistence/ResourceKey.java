@@ -21,16 +21,16 @@ public class ResourceKey implements Serializable {
 
 	private final Serializable identifier;
 
-	private final int hashCode;
-
 	private final Type type;
+	
+	private final int hashCode;
 
 	/**
 	 * 
 	 */
 	public ResourceKey(Serializable id, Type type) {
 		// TODO Auto-generated constructor stub
-		Assert.isTrue(type != null && id != null, "Resource identifier and type can not be null");
+		Assert.isTrue(type != null || id != null, "Resource identifier and type can not be null");
 		this.identifier = id;
 		this.type = type;
 		this.hashCode = generateHashCode();
@@ -41,7 +41,7 @@ public class ResourceKey implements Serializable {
 
 		result = 37 * result + identifier.hashCode();
 		result = 37 * result + type.hashCode();
-
+		
 		return result;
 	}
 
@@ -52,9 +52,9 @@ public class ResourceKey implements Serializable {
 			return false;
 		}
 
-		ResourceKey that = (ResourceKey) other;
-
-		return identifier == that.identifier && type.equals(that.type);
+		ResourceKey otherKey = (ResourceKey) other;
+		
+		return identifier.equals(otherKey.identifier) && type.equals(otherKey.type);
 	}
 
 	@Override

@@ -18,7 +18,7 @@ public interface LocalFileManager {
 
 	final String DIRECTORY_PATH = ConfigurationContext.getFileResourceDirectoryPath();
 
-	final int MAX_SIZE_IN_ONE_READ = 3145728; // 3MB
+	final int MAX_SIZE_IN_ONE_READ = 3145728;// 3MB
 
 	boolean supports(String filename);
 

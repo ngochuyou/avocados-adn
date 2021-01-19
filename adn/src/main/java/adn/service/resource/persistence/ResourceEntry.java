@@ -3,6 +3,8 @@
  */
 package adn.service.resource.persistence;
 
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Type;
 
@@ -16,6 +18,8 @@ import org.hibernate.engine.spi.Status;
  */
 public interface ResourceEntry {
 
+	Serializable getId();
+	
 	LockModeType getLockMode();
 
 	void setLockMode(LockModeType lockMode);
@@ -26,12 +30,12 @@ public interface ResourceEntry {
 
 	Object getVersion();
 
-	Serializable getId();
+	ResourceKey getKey();
 
 	Object getState();
 
 	Object getPropertyValue();
-	
+
 	Type getResourceType();
 
 	void postUpdate(Object resourceInstance, Object updatedState, Object nextVersion);
@@ -40,4 +44,8 @@ public interface ResourceEntry {
 
 	void postInsert(Object insertedState);
 
+	ResourcePersistenceContext getPersistenceContext();
+	
+	void serialize(ObjectOutputStream oos) throws IOException;
+	
 }
