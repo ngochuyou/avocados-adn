@@ -11,7 +11,6 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -19,8 +18,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-
-import adn.service.resource.LocalFileReader;
 
 /**
  * @author Ngoc Huy
@@ -33,16 +30,12 @@ public class ApplicationTestRunner implements ContextBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	@Autowired
-	private LocalFileReader reader;
-
 	@Override
 	@Transactional
 	public void initialize() throws Exception {
 		// TODO Auto-generated method stub
-		logger.info("Initializing " + this.getClass().getName());
-
-		logger.info("Finished initializing " + this.getClass().getName());
+		logger.info("[LOWEST]Initializing " + this.getClass().getName());
+		logger.info("[LOWEST]Finished initializing " + this.getClass().getName());
 	}
 
 	protected void injectPrincipal() {

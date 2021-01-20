@@ -40,7 +40,7 @@ public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 	@Override
 	public void initialize() throws Exception {
 		// TODO Auto-generated method stub
-		logger.info("Initializing " + this.getClass().getName());
+		logger.info("[4]Initializing " + this.getClass().getName());
 		this.extractorMap = new HashMap<>();
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
@@ -78,7 +78,7 @@ public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 		});
 		this.extractorMap
 				.forEach((k, v) -> logger.info("Assigning " + v.getName() + " for " + k.getName() + " extraction"));
-		logger.info("Finished initializing " + this.getClass().getName());
+		logger.info("[4]Finished initializing " + this.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")

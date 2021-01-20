@@ -19,6 +19,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
+import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.Metamodel;
 
 import org.slf4j.Logger;
@@ -26,27 +27,36 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import adn.service.resource.persistence.ResourceEntry;
+import adn.service.resource.FileResource;
 import adn.service.resource.persistence.ResourcePersistenceContext;
+import adn.service.resource.persistence.metamodel.FileResourceEntityType;
+import adn.service.resource.persistence.metamodel.ResourceMetamodel;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Component
-public class GlobalResourceManager implements EntityManager {
+public final class GlobalResourceManager implements EntityManager {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+	private final ResourceMetamodel metamodel;
 
 	private ResourcePersistenceContext persistenceContext;
 
 	/**
+	 * @throws SecurityException    when failed to instantiate
+	 *                              {@link ResourceMetamodel}
+	 * @throws NoSuchFieldException when failed to instantiate
+	 *                              {@link ResourceMetamodel}
 	 * 
 	 */
 	@Autowired
-	public GlobalResourceManager() {
+	public GlobalResourceManager() throws NoSuchFieldException, SecurityException {
 		// TODO Auto-generated constructor stub
 		persistenceContext = new ResourcePersistenceContext(this);
+		metamodel = new ResourceMetamodel(this);
 	}
 
 	@Override
@@ -111,7 +121,7 @@ public class GlobalResourceManager implements EntityManager {
 	@Override
 	public FlushModeType getFlushMode() {
 		// TODO Auto-generated method stub
-		return null;
+		return FlushModeType.COMMIT;
 	}
 
 	@Override

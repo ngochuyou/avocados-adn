@@ -60,7 +60,7 @@ public class ModelManager implements ContextBuilder {
 	@SuppressWarnings("unchecked")
 	private void initializeEntityTree() {
 		this.entityTree = new ModelInheritanceTree<>(null, adn.model.entities.Entity.class, null);
-		logger.info("Initializing " + this.entityTree.getClass().getName());
+		logger.info("[0]Initializing " + this.entityTree.getClass().getName());
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
@@ -87,7 +87,7 @@ public class ModelManager implements ContextBuilder {
 							: " with root " + tree.getParent().getNode().getName()));
 		});
 		// @formatter:on
-		logger.info("Finished initializing " + this.entityTree.getClass().getName());
+		logger.info("[0]Finished initializing " + this.entityTree.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")

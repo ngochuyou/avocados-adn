@@ -44,7 +44,7 @@ public class GenericDAOProvider implements ContextBuilder {
 	@Override
 	public void initialize() {
 		// TODO Auto-generated method stub
-		logger.info("Initializing " + this.getClass().getName());
+		logger.info("[3]Initializing " + this.getClass().getName());
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
@@ -85,7 +85,7 @@ public class GenericDAOProvider implements ContextBuilder {
 			SpringApplication.exit(context);
 		}
 
-		logger.info("Finished initializing " + this.getClass().getName());
+		logger.info("[3]Finished initializing " + this.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")

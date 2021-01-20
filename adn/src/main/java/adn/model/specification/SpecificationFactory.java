@@ -42,7 +42,7 @@ public class SpecificationFactory implements ContextBuilder {
 	@Override
 	public void initialize() {
 		// TODO Auto-generated method stub
-		logger.info("Initializing " + this.getClass().getName());
+		logger.info("[2]Initializing " + this.getClass().getName());
 		this.specificationMap = new HashMap<>();
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
@@ -74,7 +74,7 @@ public class SpecificationFactory implements ContextBuilder {
 			});
 		this.specificationMap.forEach((k, v) -> logger.info(v.getName() + " is applied on " + k.getName()));
 		// @formatter:on
-		logger.info("Finished initializing " + this.getClass().getName());
+		logger.info("[2]Finished initializing " + this.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")

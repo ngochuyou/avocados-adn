@@ -33,9 +33,9 @@ public class ConfigurationContext implements ContextBuilder {
 	@Override
 	public void initialize() {
 		// TODO Auto-generated method stub
-		logger.info("Intializing " + this.getClass().getName());
+		logger.info("[HIGHEST]Intializing " + this.getClass().getName());
 		this.readSecurityProperties();
-		logger.info("Finished intializing " + this.getClass().getName());
+		logger.info("[HIGHEST]Finished intializing " + this.getClass().getName());
 	}
 
 	private void readSecurityProperties() {

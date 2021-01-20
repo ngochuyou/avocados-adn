@@ -20,10 +20,8 @@ import javax.persistence.metamodel.SetAttribute;
 import javax.persistence.metamodel.SingularAttribute;
 import javax.persistence.metamodel.Type;
 
-import org.springframework.boot.SpringApplication;
 import org.springframework.util.Assert;
 
-import adn.application.context.ContextProvider;
 import adn.service.resource.FileResource;
 
 /**
@@ -39,30 +37,42 @@ public class FileResourceEntityType implements EntityType<FileResource> {
 
 	private final ContentType contentType = new ContentType(this);
 
-	private transient Field identifierMember;
+	private final Field identifierMember;
 
-	private transient Field versionMember;
+	private final Field versionMember;
 
-	private transient Field contentMember;
+	private final Field contentMember;
 
 	private final String entityName = FileResource.class.getName();
 
 	private final Set<Attribute<FileResource, ?>> attributeSet = Set.of(identifierType, versionType, contentType);
+	// @formatter:off
+	private final Set<Attribute<? super FileResource, ?>> superAttributeSet = attributeSet
+			.stream()
+			.collect(Collectors.toSet());
 
+	private final Set<SingularAttribute<? super FileResource, ?>> superSingularAttributeSet = attributeSet
+			.stream().filter(ele -> ele instanceof SingularAttribute)
+			.map(ele -> (SingularAttribute<? super FileResource, ?>) ele)
+			.collect(Collectors.toSet());
+
+	private final Set<SingularAttribute<FileResource, ?>> singularAttributeSet = attributeSet
+			.stream().filter(ele -> ele instanceof SingularAttribute)
+			.map(ele -> (SingularAttribute<FileResource, ?>) ele)
+			.collect(Collectors.toSet());
+	// @formatter:on
 	/**
+	 * @throws SecurityException    when any {@link Member} of FileResource can not
+	 *                              be instantiate
+	 * @throws NoSuchFieldException when any {@link Member} of FileResource can not
+	 *                              be accessed
 	 * 
 	 */
-	public FileResourceEntityType() {
+	public FileResourceEntityType() throws NoSuchFieldException, SecurityException {
 		// TODO Auto-generated constructor stub
-		try {
-			identifierMember = FileResource.class.getDeclaredField(identifierType.identiferName);
-			versionMember = FileResource.class.getDeclaredField(versionType.versionName);
-			contentMember = FileResource.class.getDeclaredField(contentType.contentName);
-		} catch (NoSuchFieldException | SecurityException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			SpringApplication.exit(ContextProvider.getApplicationContext());
-		}
+		identifierMember = FileResource.class.getDeclaredField(identifierType.identiferName);
+		versionMember = FileResource.class.getDeclaredField(versionType.versionName);
+		contentMember = FileResource.class.getDeclaredField(contentType.contentName);
 	}
 
 	private <Y> void assertRequestedIdType(Class<Y> type) {
@@ -70,7 +80,7 @@ public class FileResourceEntityType implements EntityType<FileResource> {
 	}
 
 	private <Y> void assertRequestedVersionType(Class<Y> type) {
-		Assert.isTrue(String.class.isAssignableFrom(type), "Can not find identifier of type " + type);
+		Assert.isTrue(String.class.isAssignableFrom(type), "Can not find version of type " + type);
 	}
 
 	@Override
@@ -126,7 +136,7 @@ public class FileResourceEntityType implements EntityType<FileResource> {
 	@Override
 	public Set<SingularAttribute<? super FileResource, ?>> getIdClassAttributes() {
 		// TODO Auto-generated method stub
-		return Set.of(identifierType);
+		return Set.of();
 	}
 
 	@Override
@@ -138,7 +148,7 @@ public class FileResourceEntityType implements EntityType<FileResource> {
 	@Override
 	public Set<Attribute<? super FileResource, ?>> getAttributes() {
 		// TODO Auto-generated method stub
-		return attributeSet.stream().collect(Collectors.toSet());
+		return superAttributeSet;
 	}
 
 	@Override
@@ -151,7 +161,7 @@ public class FileResourceEntityType implements EntityType<FileResource> {
 	public <Y> SingularAttribute<? super FileResource, Y> getSingularAttribute(String name, Class<Y> type) {
 		// TODO Auto-generated method stub
 		// @formatter:off
-		return (SingularAttribute<? super FileResource, Y>) attributeSet.stream()
+		return (SingularAttribute<? super FileResource, Y>) singularAttributeSet.stream()
 				.filter(ele -> ele.getName().equals(name) && ele.getJavaType().equals(type))
 				.findFirst()
 				.orElse(null);
@@ -162,7 +172,7 @@ public class FileResourceEntityType implements EntityType<FileResource> {
 	public <Y> SingularAttribute<FileResource, Y> getDeclaredSingularAttribute(String name, Class<Y> type) {
 		// TODO Auto-generated method stub
 		// @formatter:off
-		return (SingularAttribute<FileResource, Y>) attributeSet.stream()
+		return (SingularAttribute<FileResource, Y>) singularAttributeSet.stream()
 				.filter(ele -> ele.getName().equals(name) && ele.getJavaType().equals(type))
 				.findFirst()
 				.orElse(null);
@@ -172,21 +182,13 @@ public class FileResourceEntityType implements EntityType<FileResource> {
 	@Override
 	public Set<SingularAttribute<? super FileResource, ?>> getSingularAttributes() {
 		// TODO Auto-generated method stub
-		// @formatter:off
-		return attributeSet
-				.stream().map(ele -> (SingularAttribute<FileResource, ?>) ele)
-				.collect(Collectors.toSet());
-		// @formatter:on
+		return superSingularAttributeSet;
 	}
 
 	@Override
 	public Set<SingularAttribute<FileResource, ?>> getDeclaredSingularAttributes() {
 		// TODO Auto-generated method stub
-		// @formatter:off
-		return attributeSet
-				.stream().map(ele -> (SingularAttribute<FileResource, ?>) ele)
-				.collect(Collectors.toSet());
-		// @formatter:on
+		return singularAttributeSet;
 	}
 
 	@Override
@@ -272,21 +274,13 @@ public class FileResourceEntityType implements EntityType<FileResource> {
 	@Override
 	public SingularAttribute<? super FileResource, ?> getSingularAttribute(String name) {
 		// TODO Auto-generated method stub
-		// @formatter:off
-		return (SingularAttribute<? super FileResource, ?>) attributeSet
-				.stream().filter(ele -> ele instanceof SingularAttribute && ele.getName().equals(name))
-				.findFirst().orElse(null);
-		// @formatter:on
+		return getSingularAttribute(name, Object.class);
 	}
 
 	@Override
 	public SingularAttribute<FileResource, ?> getDeclaredSingularAttribute(String name) {
 		// TODO Auto-generated method stub
-		// @formatter:off
-		return (SingularAttribute<FileResource, ?>) attributeSet
-				.stream().filter(ele -> ele instanceof SingularAttribute && ele.getName().equals(name))
-				.findFirst().orElse(null);
-		// @formatter:on
+		return getDeclaredSingularAttribute(name, Object.class);
 	}
 
 	@Override

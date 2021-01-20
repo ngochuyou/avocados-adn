@@ -40,12 +40,12 @@ public class DatabaseBuilder implements ContextBuilder {
 	@Override
 	public void initialize() {
 		// TODO Auto-generated method stub
-		logger.info("Initializing " + this.getClass().getName());
+		logger.info("[1]Initializing " + this.getClass().getName());
 		this.insertAdmin();
 		this.insertCustomer();
 		this.insertManager();
 		this.insertEmployee();
-		logger.info("Finished initializing " + this.getClass().getName());
+		logger.info("[1]Finished initializing " + this.getClass().getName());
 	}
 
 	public Admin getAdmin() {
