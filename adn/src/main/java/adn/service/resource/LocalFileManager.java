@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import org.apache.commons.io.FilenameUtils;
+import org.springframework.util.Assert;
+
 import adn.application.context.ConfigurationContext;
 
 /**
@@ -16,30 +19,34 @@ import adn.application.context.ConfigurationContext;
  */
 public interface LocalFileManager {
 
-	final String DIRECTORY_PATH = ConfigurationContext.getFileResourceDirectoryPath();
+	final String DIRECTORY_PATH = ConfigurationContext.getLocalFileResourceDirectoryPath();
 
 	final int MAX_SIZE_IN_ONE_READ = 3145728;// 3MB
 
 	boolean supports(String filename);
 
-	default FileMeta asserts(String pathname) {
+	default FileMeta getMeta(String pathname) {
 		
 		return new FileMeta(new File(DIRECTORY_PATH + pathname), this);
 	}
 
-	static class FileMeta {
-
-		protected final File file;
+	static final class FileMeta {
 
 		private final LocalFileManager manager;
+		
+		final File file;
+
+		final String extension;
 
 		private boolean check;
 
 		public FileMeta(File file, LocalFileManager manager) {
 			super();
+			Assert.notNull(manager, "LocalFileManager cannot be null");
 			this.manager = manager;
 			this.file = file;
 			this.check = file.exists();
+			this.extension = this.check ? FilenameUtils.getExtension(file.getPath()) : null;
 		}
 
 		FileMeta inOneRead() throws IOException {
@@ -60,7 +67,7 @@ public interface LocalFileManager {
 			return this;
 		}
 
-		public boolean check() {
+		public boolean asserts() {
 			return check;
 		}
 

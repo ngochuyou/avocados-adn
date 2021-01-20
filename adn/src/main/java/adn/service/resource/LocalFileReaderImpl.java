@@ -5,16 +5,15 @@ package adn.service.resource;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,16 +23,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class LocalFileReaderImpl implements LocalFileReader {
 
-	protected final List<String> supportedTypes;
+	protected final List<String> supportedTypes = Arrays.asList("jpg", "jpeg", "png", "txt");
 
-	/**
-	 * 
-	 */
-	@Autowired
-	public LocalFileReaderImpl() {
-		// TODO Auto-generated constructor stub
-		supportedTypes = Arrays.asList("jpg", "jpeg", "png", "txt");
-	}
+	protected final String UNSUPPORTED_EXTENSION_FORMAT = "Unsupported extension: %s on file: %s";
 
 	@Override
 	public boolean supports(String filename) {
@@ -42,56 +34,39 @@ public class LocalFileReaderImpl implements LocalFileReader {
 	}
 
 	@Override
-	public byte[] read(String filename) {
+	public byte[] read(String filename) throws IOException, IllegalArgumentException {
 		// TODO Auto-generated method stub
 		FileMeta meta;
 
-		try {
-			if (!(meta = asserts(filename).isSupported().inOneRead()).check()) {
-				return null;
-			}
-
-			return Files.readAllBytes(Paths.get(meta.file.getPath()));
-		} catch (IOException | IllegalArgumentException e) {
-			e.printStackTrace();
-			return null;
+		if (!(meta = getMeta(filename).isSupported().inOneRead()).asserts()) {
+			throw new IllegalArgumentException("Max chunk size exceeded in one read, filename: " + filename);
 		}
+
+		return Files.readAllBytes(Paths.get(meta.file.getPath()));
 	}
 
 	@Override
-	public FileInputStream getFileInputStream(String filename) {
+	public FileInputStream getFileInputStream(String filename) throws IOException, IllegalArgumentException {
 		// TODO Auto-generated method stub
 		FileMeta meta;
-		
-		if (!(meta = asserts(filename).isSupported()).check()) {
-			return null;
+
+		if (!(meta = getMeta(filename).isSupported()).asserts()) {
+			throw new IllegalArgumentException(String.format(UNSUPPORTED_EXTENSION_FORMAT, meta.extension, filename));
 		}
-		
-		try {
-			return new FileInputStream(meta.file);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
-		}
+
+		return new FileInputStream(meta.file);
 	}
 
 	@Override
-	public BufferedReader getBufferedReader(String filename) {
+	public BufferedReader getBufferedReader(String filename) throws IOException, IllegalArgumentException {
 		// TODO Auto-generated method stub
 		FileMeta meta;
-		
-		if (!(meta = asserts(filename).isSupported()).check()) {
-			return null;
+
+		if (!(meta = getMeta(filename).isSupported()).asserts()) {
+			throw new IllegalArgumentException(String.format(UNSUPPORTED_EXTENSION_FORMAT, meta.extension, filename));
 		}
-		
-		try {
-			return new BufferedReader(new FileReader(meta.file));
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
-		}
+
+		return new BufferedReader(new FileReader(meta.file, Charset.forName("UTF-8")));
 	}
 
 }

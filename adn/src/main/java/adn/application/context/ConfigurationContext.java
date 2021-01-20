@@ -26,7 +26,7 @@ public class ConfigurationContext implements ContextBuilder {
 
 	private static SecurityResource securityConfiguration;
 
-	private static final String FILE_RESOURCE_DIRECTORY_PATH = "C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\";
+	private static final String LOCAL_FILE_RESOURCE_DIRECTORY_PATH = "C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\";
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -53,7 +53,8 @@ public class ConfigurationContext implements ContextBuilder {
 
 			for (int i = 1; i < lines.size(); i++) {
 				String[] pair = lines.get(i).split(nameValSeperator);
-				String name = pair[0], val = pair[1];
+				String name = pair[0];
+				String val = pair[1];
 
 				securityConfiguration.getClass().getDeclaredField(name).set(securityConfiguration, val);
 			}
@@ -85,9 +86,9 @@ public class ConfigurationContext implements ContextBuilder {
 		return ConfigurationContext.securityConfiguration.jwtCookieName;
 	}
 
-	public static String getFileResourceDirectoryPath() {
+	public static String getLocalFileResourceDirectoryPath() {
 
-		return ConfigurationContext.FILE_RESOURCE_DIRECTORY_PATH;
+		return ConfigurationContext.LOCAL_FILE_RESOURCE_DIRECTORY_PATH;
 	}
 
 	class SecurityResource {

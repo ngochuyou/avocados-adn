@@ -28,8 +28,8 @@ import adn.service.resource.FileResource;
  * @author Ngoc Huy
  *
  */
-@SuppressWarnings("unchecked")
-public class FileResourceEntityType implements EntityType<FileResource> {
+
+public final class FileResourceEntityType implements EntityType<FileResource> {
 
 	private final IdentifierType identifierType = new IdentifierType(this);
 
@@ -84,6 +84,7 @@ public class FileResourceEntityType implements EntityType<FileResource> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <Y> SingularAttribute<? super FileResource, Y> getId(Class<Y> type) {
 		// TODO Auto-generated method stub
 		assertRequestedIdType(type);
@@ -92,6 +93,7 @@ public class FileResourceEntityType implements EntityType<FileResource> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <Y> SingularAttribute<FileResource, Y> getDeclaredId(Class<Y> type) {
 		// TODO Auto-generated method stub
 		assertRequestedIdType(type);
@@ -100,6 +102,7 @@ public class FileResourceEntityType implements EntityType<FileResource> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <Y> SingularAttribute<? super FileResource, Y> getVersion(Class<Y> type) {
 		// TODO Auto-generated method stub
 		assertRequestedVersionType(type);
@@ -108,6 +111,7 @@ public class FileResourceEntityType implements EntityType<FileResource> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <Y> SingularAttribute<FileResource, Y> getDeclaredVersion(Class<Y> type) {
 		// TODO Auto-generated method stub
 		assertRequestedVersionType(type);
@@ -158,6 +162,7 @@ public class FileResourceEntityType implements EntityType<FileResource> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <Y> SingularAttribute<? super FileResource, Y> getSingularAttribute(String name, Class<Y> type) {
 		// TODO Auto-generated method stub
 		// @formatter:off
@@ -169,6 +174,7 @@ public class FileResourceEntityType implements EntityType<FileResource> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <Y> SingularAttribute<FileResource, Y> getDeclaredSingularAttribute(String name, Class<Y> type) {
 		// TODO Auto-generated method stub
 		// @formatter:off

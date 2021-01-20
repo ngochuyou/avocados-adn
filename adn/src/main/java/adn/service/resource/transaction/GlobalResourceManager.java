@@ -34,8 +34,10 @@ import adn.service.resource.persistence.metamodel.ResourceMetamodel;
 @Component
 public final class GlobalResourceManager implements EntityManager {
 
+	@SuppressWarnings("unused")
 	private final ResourceMetamodel metamodel;
 
+	@SuppressWarnings("unused")
 	private ResourcePersistenceContext persistenceContext;
 
 	/**
@@ -202,12 +204,14 @@ public final class GlobalResourceManager implements EntityManager {
 	}
 
 	@Override
+	@SuppressWarnings("rawtypes")
 	public Query createQuery(CriteriaUpdate updateQuery) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
+	@SuppressWarnings("rawtypes")
 	public Query createQuery(CriteriaDelete deleteQuery) {
 		// TODO Auto-generated method stub
 		return null;
@@ -238,6 +242,7 @@ public final class GlobalResourceManager implements EntityManager {
 	}
 
 	@Override
+	@SuppressWarnings("rawtypes")
 	public Query createNativeQuery(String sqlString, Class resultClass) {
 		// TODO Auto-generated method stub
 		return null;
@@ -262,6 +267,7 @@ public final class GlobalResourceManager implements EntityManager {
 	}
 
 	@Override
+	@SuppressWarnings("rawtypes")
 	public StoredProcedureQuery createStoredProcedureQuery(String procedureName, Class... resultClasses) {
 		// TODO Auto-generated method stub
 		return null;
