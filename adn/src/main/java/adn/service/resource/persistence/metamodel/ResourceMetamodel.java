@@ -61,7 +61,7 @@ public final class ResourceMetamodel implements Metamodel, ContextBuilder {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void initialize() throws Exception {
+	public void buildAfterStartUp() throws Exception {
 		// TODO Auto-generated method stub
 		// @formatter:off
 		logger.info("[6]Initializing " + this.getClass().getName());

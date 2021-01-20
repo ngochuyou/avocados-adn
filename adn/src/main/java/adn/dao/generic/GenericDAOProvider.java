@@ -42,7 +42,7 @@ public class GenericDAOProvider implements ContextBuilder {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void initialize() {
+	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
 		logger.info("[3]Initializing " + this.getClass().getName());
 

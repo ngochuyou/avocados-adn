@@ -27,7 +27,7 @@ public class ModelEntityExtractor<T extends Entity, M extends Model> implements 
 	}
 
 	@Override
-	public <E extends T> E map(T model, E target) throws NullPointerException {
+	public <E extends T> E merge(T model, E target) throws NullPointerException {
 		// TODO Auto-generated method stub
 		if (model == null || target == null) {
 			throw new NullPointerException("model and entity can not be null");

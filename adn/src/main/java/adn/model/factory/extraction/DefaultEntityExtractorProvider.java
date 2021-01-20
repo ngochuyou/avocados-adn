@@ -38,7 +38,7 @@ public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
-	public void initialize() throws Exception {
+	public void buildAfterStartUp() throws Exception {
 		// TODO Auto-generated method stub
 		logger.info("[4]Initializing " + this.getClass().getName());
 		this.extractorMap = new HashMap<>();

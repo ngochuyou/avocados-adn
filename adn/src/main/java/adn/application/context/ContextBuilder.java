@@ -17,6 +17,6 @@ public interface ContextBuilder {
 
 	final TypeUtils reflector = ContextProvider.getApplicationContext().getBean(TypeUtils.class);
 
-	void initialize() throws Exception;
+	void buildAfterStartUp() throws Exception;
 
 }

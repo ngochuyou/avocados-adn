@@ -20,9 +20,9 @@ public class PersonnelExtractor extends AccountExtractor<Personnel, PersonnelMod
 	}
 
 	@Override
-	public <E extends Personnel> E map(Personnel model, E target) {
+	public <E extends Personnel> E merge(Personnel model, E target) {
 		// TODO Auto-generated method stub
-		target = super.map(model, target);
+		target = super.merge(model, target);
 		target.setCreatedBy(model.getCreatedBy());
 
 		return target;

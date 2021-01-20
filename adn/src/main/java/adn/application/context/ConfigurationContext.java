@@ -31,7 +31,7 @@ public class ConfigurationContext implements ContextBuilder {
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Override
-	public void initialize() {
+	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
 		logger.info("[HIGHEST]Intializing " + this.getClass().getName());
 		this.readSecurityProperties();

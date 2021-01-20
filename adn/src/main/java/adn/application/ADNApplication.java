@@ -77,10 +77,10 @@ public class ADNApplication {
 				try {
 					ContextBuilder manager = context.getBean(clazz);
 					
-					manager.initialize();
+					manager.buildAfterStartUp();
 				} catch (BeansException be) {
 					try {	
-						clazz.getConstructor().newInstance().initialize();
+						clazz.getConstructor().newInstance().buildAfterStartUp();
 					} catch (Exception e) {
 						e.printStackTrace();
 						SpringApplication.exit(context);

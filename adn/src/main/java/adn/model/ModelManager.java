@@ -49,7 +49,7 @@ public class ModelManager implements ContextBuilder {
 	private Map<Class<? extends adn.model.entities.Entity>, Class<? extends Model>> defaultModelMap;
 
 	@Override
-	public void initialize() {
+	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
 		initializeEntityTree();
 		initializeModelTree();

@@ -12,8 +12,6 @@ import adn.utilities.Role;
 @Genetized(entityGene = Account.class)
 public class AccountExtractor<A extends Account, AM extends AccountModel> extends ModelEntityExtractor<A, AM> {
 
-	protected final String nullModel = "extraction: model and target can not be null";
-
 	@Override
 	public A extract(AM model, A account) {
 		// TODO Auto-generated method stub
@@ -42,9 +40,9 @@ public class AccountExtractor<A extends Account, AM extends AccountModel> extend
 	}
 
 	@Override
-	public <E extends A> E map(A model, E target) {
+	public <E extends A> E merge(A model, E target) {
 		// TODO Auto-generated method stub
-		target = super.map(model, target);
+		target = super.merge(model, target);
 		target.setId(model.getId());
 		target.setEmail(model.getEmail());
 		target.setPhone(model.getPhone());

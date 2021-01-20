@@ -40,7 +40,7 @@ public class SpecificationFactory implements ContextBuilder {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void initialize() {
+	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
 		logger.info("[2]Initializing " + this.getClass().getName());
 		this.specificationMap = new HashMap<>();

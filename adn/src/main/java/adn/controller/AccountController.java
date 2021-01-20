@@ -150,7 +150,7 @@ public class AccountController extends BaseController {
 		}
 		// get current session with FlushMode.MANUAL
 		openSession(FlushMode.MANUAL);
-		// This entity will takes effects throughout as the handler progress
+		// This entity will take effects throughout as the handler progresses
 		// Only changes on this persisted entity will be committed
 		if (dao.findById(model.getUsername(), Account.class) == null) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(notFound);

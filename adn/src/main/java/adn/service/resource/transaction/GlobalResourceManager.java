@@ -19,17 +19,12 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
-import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.Metamodel;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import adn.service.resource.FileResource;
 import adn.service.resource.persistence.ResourcePersistenceContext;
-import adn.service.resource.persistence.metamodel.FileResourceEntityType;
 import adn.service.resource.persistence.metamodel.ResourceMetamodel;
 
 /**
@@ -38,8 +33,6 @@ import adn.service.resource.persistence.metamodel.ResourceMetamodel;
  */
 @Component
 public final class GlobalResourceManager implements EntityManager {
-
-	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private final ResourceMetamodel metamodel;
 

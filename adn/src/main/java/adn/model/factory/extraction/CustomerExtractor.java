@@ -21,9 +21,9 @@ public class CustomerExtractor extends AccountExtractor<Customer, CustomerModel>
 	}
 
 	@Override
-	public <E extends Customer> E map(Customer model, E target) {
+	public <E extends Customer> E merge(Customer model, E target) {
 		// TODO Auto-generated method stub
-		target = super.map(model, target);
+		target = super.merge(model, target);
 		target.setAddress(model.getAddress());
 		target.setPrestigePoint(model.getPrestigePoint());
 

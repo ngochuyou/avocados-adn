@@ -20,9 +20,9 @@ public class AdminExtractor extends AccountExtractor<Admin, AdminModel> {
 	}
 
 	@Override
-	public <E extends Admin> E map(Admin model, E target) {
+	public <E extends Admin> E merge(Admin model, E target) {
 		// TODO Auto-generated method stub
-		target = super.map(model, target);
+		target = super.merge(model, target);
 		target.setContractDate(model.getContractDate());
 
 		return target;

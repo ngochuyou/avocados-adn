@@ -38,7 +38,7 @@ public class DatabaseBuilder implements ContextBuilder {
 
 	@Transactional
 	@Override
-	public void initialize() {
+	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
 		logger.info("[1]Initializing " + this.getClass().getName());
 		this.insertAdmin();

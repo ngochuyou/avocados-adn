@@ -20,7 +20,7 @@ public interface EntityExtractor<T extends Entity, M extends Model> {
 		return entity;
 	};
 
-	default <E extends T> E map(T model, E target) throws NullPointerException {
+	default <E extends T> E merge(T model, E target) throws NullPointerException {
 		return target;
 	};
 
@@ -57,9 +57,9 @@ class And<T extends Entity, M extends Model> implements EntityExtractor<T, M> {
 	}
 
 	@Override
-	public <E extends T> E map(T model, E target) {
+	public <E extends T> E merge(T model, E target) {
 		// TODO Auto-generated method stub
-		return this.right.map(model, this.left.map(model, target));
+		return this.right.merge(model, this.left.merge(model, target));
 	}
 
 	@Override

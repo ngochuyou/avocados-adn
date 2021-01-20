@@ -40,7 +40,7 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void initialize() throws Exception {
+	public void buildAfterStartUp() throws Exception {
 		// TODO Auto-generated method stub
 		logger.info("[5]Initializing Model Producers");
 		this.producerMap = new HashMap<>();

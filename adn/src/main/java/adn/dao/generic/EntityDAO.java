@@ -21,7 +21,7 @@ import adn.model.entities.Entity;
 @Genetized(entityGene = Entity.class)
 public class EntityDAO<T extends Entity> extends BaseDAO implements GenericDAO<T> {
 
-	private final String nullModel = "model parameter cannot be null";
+	protected final String nullModel = "model parameter cannot be null";
 
 	@Override
 	public T defaultBuild(T model) {

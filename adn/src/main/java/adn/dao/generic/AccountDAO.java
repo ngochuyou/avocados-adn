@@ -8,9 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.Assert;
 
 import adn.application.Constants;
 import adn.model.Genetized;
@@ -20,7 +20,6 @@ import adn.service.services.AccountService;
 import adn.utilities.Gender;
 import adn.utilities.Role;
 import adn.utilities.Strings;
-import io.jsonwebtoken.lang.Assert;
 
 /**
  * @author Ngoc Huy
@@ -63,7 +62,7 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 		model = super.insertionBuild(model);
 		model.setRole(model.getRole() == null ? Role.ANONYMOUS : model.getRole());
 		model.setGender(model.getGender() == null ? Gender.UNKNOWN : model.getGender());
-		model.setPassword(model.getPassword() == null ? "" : new BCryptPasswordEncoder().encode(model.getPassword()));
+		model.setPassword(model.getPassword() == null ? "" : passwordEncoder.encode(model.getPassword()));
 
 		return model;
 	}
@@ -81,19 +80,18 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 		Session session = sessionFactory.getCurrentSession();
 		Account persistence = session.load(Account.class, model.getId());
 
-		Assert.notNull(persistence,
-				"Cannot find entity with identifier: " + model.getId() + " in the context persistence");
+		Assert.notNull(persistence, "Cannot update null persistence, id: " + model.getId());
 		persistence.setEmail(model.getEmail());
 		persistence.setPhone(model.getPhone());
 		persistence.setFirstName(model.getPhone());
 		persistence.setLastName(model.getLastName());
 		persistence.setPhoto(model.getPhoto());
 		persistence.setGender(model.getGender());
-		// leave out model's password if there's no need for password editing
+		// leave out model's password if there's no need of password editing
 		if (!Strings.isEmpty(model.getPassword())) {
 			persistence.setPassword(passwordEncoder.encode(model.getPassword()));
 		}
-		// set model's role to null if there's no need for role editing
+		// set model's role to null if there's no need of role editing
 		if (model.getRole() != null && !persistence.getRole().equals(model.getRole())) {
 			// SHOULD BE AVOIDED A.M.A.P
 			logger.debug("UPDATING role from " + persistence.getRole() + " to " + model.getRole());
@@ -102,7 +100,7 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 			session.delete(persistence);
 			// creating an entity of the new type since role editing requires entity's class
 			// to be modified and then merge the old entity with the new one
-			persistence = extractor.map(persistence,
+			persistence = extractor.merge(persistence,
 					reflector.newInstanceOrAbstract(accountService.getClassFromRole(model.getRole())));
 			// persist the new entity
 			session.persist(persistence);

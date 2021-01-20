@@ -32,7 +32,7 @@ public class ApplicationTestRunner implements ContextBuilder {
 
 	@Override
 	@Transactional
-	public void initialize() throws Exception {
+	public void buildAfterStartUp() throws Exception {
 		// TODO Auto-generated method stub
 		logger.info("[LOWEST]Initializing " + this.getClass().getName());
 		logger.info("[LOWEST]Finished initializing " + this.getClass().getName());
