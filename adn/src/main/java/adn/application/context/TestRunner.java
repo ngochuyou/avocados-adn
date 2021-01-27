@@ -11,6 +11,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -19,6 +20,13 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import adn.service.resource.FileResource;
+import adn.service.resource.LocalFileReader;
+import adn.service.resource.LocalFileReaderImpl;
+import adn.service.resource.persistence.metamodel.PojoResourceTuplizer;
+import adn.service.resource.persistence.metamodel.ResourceMetamodel;
+import adn.service.resource.persistence.metamodel.ResourceTuplizer;
+
 /**
  * @author Ngoc Huy
  *
@@ -26,15 +34,35 @@ import org.springframework.stereotype.Component;
 @Component
 @SuppressWarnings("all")
 @Order(value = Ordered.LOWEST_PRECEDENCE)
-public class ApplicationTestRunner implements ContextBuilder {
+public class TestRunner implements ContextBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
-
+	
+	@Autowired
+	private ResourceMetamodel metamodel;
+	
+	@Autowired
+	private LocalFileReader reader;
+	
+	private ResourceTuplizer fileTuplizer;
+	
 	@Override
 	@Transactional
 	public void buildAfterStartUp() throws Exception {
 		// TODO Auto-generated method stub
 		logger.info("[LOWEST]Initializing " + this.getClass().getName());
+		fileTuplizer = new PojoResourceTuplizer(metamodel, FileResource.class, String.class);
+		
+		String filename = "alesia-kazantceva-XLm6-fPwK5Q-unsplash.jpg";
+		FileResource file = new FileResource(filename, reader.read(filename), null);
+		String id = (String) fileTuplizer.getIdentifier(file);
+		
+		System.out.println(id);
+
+		fileTuplizer.setIdentifier(file, "updated-value.jpg");
+		
+		System.out.println(fileTuplizer.getIdentifier(file).toString());
+		
 		logger.info("[LOWEST]Finished initializing " + this.getClass().getName());
 	}
 

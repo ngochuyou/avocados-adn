@@ -58,11 +58,11 @@ public class ADNApplication {
 					Order rightOrder = right.getDeclaredAnnotation(Order.class);
 
 					if (leftOrder == null) {
-						throw new Exception("Order annotation is required on " + left.getClass().getName());
+						throw new Exception("Order annotation is required on " + left.getName());
 					}
 					
 					if (rightOrder == null) {
-						throw new Exception("Order annotation is required on " + right.getClass().getName());
+						throw new Exception("Order annotation is required on " + right.getName());
 					}
 					
 					return Integer.compare(leftOrder.value(), rightOrder.value());

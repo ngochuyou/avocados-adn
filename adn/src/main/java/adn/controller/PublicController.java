@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/public")
-public class TestingController extends BaseController {
+public class PublicController extends BaseController {
 
 	@GetMapping("/greet")
 	public ResponseEntity<?> greet(@CookieValue(name = "_sie9t", required = false) Cookie c,

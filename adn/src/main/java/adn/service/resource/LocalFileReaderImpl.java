@@ -27,6 +27,8 @@ public class LocalFileReaderImpl implements LocalFileReader {
 
 	protected final String UNSUPPORTED_EXTENSION_FORMAT = "Unsupported extension: %s on file: %s";
 
+	protected final Charset defaultCharset = Charset.forName("UTF-8");
+
 	@Override
 	public boolean supports(String filename) {
 		// TODO Auto-generated method stub
@@ -66,7 +68,7 @@ public class LocalFileReaderImpl implements LocalFileReader {
 			throw new IllegalArgumentException(String.format(UNSUPPORTED_EXTENSION_FORMAT, meta.extension, filename));
 		}
 
-		return new BufferedReader(new FileReader(meta.file, Charset.forName("UTF-8")));
+		return new BufferedReader(new FileReader(meta.file, defaultCharset));
 	}
 
 }

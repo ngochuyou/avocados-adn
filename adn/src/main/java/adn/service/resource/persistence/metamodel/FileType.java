@@ -29,21 +29,21 @@ import adn.service.resource.FileResource;
  *
  */
 
-public final class FileResourceEntityType implements EntityType<FileResource> {
+public class FileType implements EntityType<FileResource> {
 
-	private final IdentifierType identifierType = new IdentifierType(this);
+	protected final IdentifierType identifierType = new IdentifierType(this);
 
-	private final VersionType versionType = new VersionType(this);
+	protected final VersionType versionType = new VersionType(this);
 
-	private final ContentType contentType = new ContentType(this);
+	protected final ContentType contentType = new ContentType(this);
 
-	private final Field identifierMember;
+	protected final Field identifierMember;
 
-	private final Field versionMember;
+	protected final Field versionMember;
 
-	private final Field contentMember;
+	protected final Field contentMember;
 
-	private final String entityName = FileResource.class.getName();
+	protected final String entityName = FileResource.class.getName();
 
 	private final Set<Attribute<FileResource, ?>> attributeSet = Set.of(identifierType, versionType, contentType);
 	// @formatter:off
@@ -68,7 +68,7 @@ public final class FileResourceEntityType implements EntityType<FileResource> {
 	 *                              be accessed
 	 * 
 	 */
-	public FileResourceEntityType() throws NoSuchFieldException, SecurityException {
+	public FileType() throws NoSuchFieldException, SecurityException {
 		// TODO Auto-generated constructor stub
 		identifierMember = FileResource.class.getDeclaredField(identifierType.identiferName);
 		versionMember = FileResource.class.getDeclaredField(versionType.versionName);
@@ -371,9 +371,9 @@ public final class FileResourceEntityType implements EntityType<FileResource> {
 
 		protected final String identiferName = "pathname";
 
-		private final FileResourceEntityType declaringType;
+		private final FileType declaringType;
 
-		public IdentifierType(FileResourceEntityType declaringType) {
+		public IdentifierType(FileType declaringType) {
 			super();
 			Assert.notNull(declaringType, "Declaring type can not be null");
 			this.declaringType = declaringType;
@@ -469,12 +469,12 @@ public final class FileResourceEntityType implements EntityType<FileResource> {
 
 		protected final String versionName = "version";
 
-		private final FileResourceEntityType declaringType;
+		private final FileType declaringType;
 
 		/**
 		 * 
 		 */
-		public VersionType(FileResourceEntityType declaringType) {
+		public VersionType(FileType declaringType) {
 			// TODO Auto-generated constructor stub
 			super();
 			Assert.notNull(declaringType, "Declaring type can not be null");
@@ -571,12 +571,12 @@ public final class FileResourceEntityType implements EntityType<FileResource> {
 
 		protected final String contentName = "content";
 
-		private final FileResourceEntityType declaringType;
+		private final FileType declaringType;
 
 		/**
 		 * 
 		 */
-		public ContentType(FileResourceEntityType declaringType) {
+		public ContentType(FileType declaringType) {
 			// TODO Auto-generated constructor stub
 			super();
 			Assert.notNull(declaringType, "Declaring type can not be null");

@@ -48,7 +48,7 @@ public final class ResourceMetamodel implements Metamodel, ContextBuilder {
 	private Set<EntityType<?>> entityTypeSet;
 
 	/**
-	 * @throws SecurityExceptionS
+	 * @throws SecurityException
 	 * @throws NoSuchFieldException
 	 * 
 	 */
@@ -67,7 +67,7 @@ public final class ResourceMetamodel implements Metamodel, ContextBuilder {
 		logger.info("[6]Initializing " + this.getClass().getName());
 		managedTypeMap = Map.of(
 			String.class, new ManagedStringType(),
-			FileResource.class, new FileResourceEntityType()
+			FileResource.class, new FileType()
 		);
 		entityTypeMap = new HashMap<>();
 		

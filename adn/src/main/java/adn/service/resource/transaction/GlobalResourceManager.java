@@ -34,7 +34,6 @@ import adn.service.resource.persistence.metamodel.ResourceMetamodel;
 @Component
 public final class GlobalResourceManager implements EntityManager {
 
-	@SuppressWarnings("unused")
 	private final ResourceMetamodel metamodel;
 
 	@SuppressWarnings("unused")
@@ -336,7 +335,7 @@ public final class GlobalResourceManager implements EntityManager {
 	@Override
 	public Metamodel getMetamodel() {
 		// TODO Auto-generated method stub
-		return null;
+		return metamodel;
 	}
 
 	@Override
