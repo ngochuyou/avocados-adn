@@ -3,6 +3,9 @@
  */
 package adn.service.resource;
 
+import javax.persistence.Id;
+import javax.persistence.Version;
+
 import org.springframework.util.Assert;
 
 /**
@@ -13,10 +16,12 @@ public class FileResource {
 
 	public static final transient String versionMark = ".v";
 
+	@Id
 	private String pathname;
 
 	private byte[] content;
 
+	@Version
 	private String version;
 
 	public FileResource(String path, byte[] content, String version) {

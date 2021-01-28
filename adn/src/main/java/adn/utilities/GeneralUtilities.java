@@ -27,12 +27,12 @@ import adn.model.entities.Entity;
  *
  */
 @Component
-public class TypeUtils {
+public class GeneralUtilities {
 
 	public <T extends Entity> String getEntityName(Class<T> clazz) {
 		javax.persistence.Entity anno = clazz.getDeclaredAnnotation(javax.persistence.Entity.class);
 
-		if (anno == null || Strings.isEmpty(anno.name())) {
+		if (anno == null || !Strings.hasLength(anno.name())) {
 			return clazz.getSimpleName();
 		}
 
@@ -42,7 +42,7 @@ public class TypeUtils {
 	public <T extends Entity> String getTableName(Class<T> clazz) {
 		Table anno = clazz.getDeclaredAnnotation(Table.class);
 
-		if (anno == null || Strings.isEmpty(anno.name())) {
+		if (anno == null || !Strings.hasLength(anno.name())) {
 			return clazz.getSimpleName();
 		}
 
@@ -52,7 +52,7 @@ public class TypeUtils {
 	public String getComponentName(Class<?> clazz) {
 		Component anno = clazz.getDeclaredAnnotation(Component.class);
 
-		if (anno == null || Strings.isEmpty(anno.value())) {
+		if (anno == null || !Strings.hasLength(anno.value())) {
 			return Strings.toCamel(clazz.getSimpleName(), null);
 		}
 
@@ -155,6 +155,14 @@ public class TypeUtils {
 		ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(serialized));
 
 		return (T) ois.readObject();
+	}
+	
+	public <T> void remove(T[] arr, int i) {
+		int n = arr.length;
+		
+		for (int j = i; j < n; j++) {
+			arr[j] = arr[j + 1];
+		}
 	}
 
 }

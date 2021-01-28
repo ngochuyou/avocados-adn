@@ -87,7 +87,24 @@ public class Strings extends StringUtils {
 			}
 		}
 
-		return ("" + s.charAt(0)).toLowerCase() + s.substring(1, s.length());
+		return ("" + s.charAt(0)).toLowerCase() + s.substring(1);
+	}
+
+	public static String removeFirstCamelWord(String s) {
+		if (s == null || !Strings.hasLength(s)) {
+			return "";
+		}
+
+		String result = Strings.removeSpaces(s);
+		int length = result.length();
+
+		for (int i = 0; i < length; i++) {
+			if (result.charAt(i) >= 'A' && result.charAt(i) <= 'Z') {
+				return ("" + result.charAt(i)).toLowerCase() + result.substring(i + 1);
+			}
+		}
+
+		return result;
 	}
 
 }

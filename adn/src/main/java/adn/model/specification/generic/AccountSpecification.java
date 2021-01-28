@@ -54,7 +54,7 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 			}
 		}
 
-		if (!Strings.isEmpty(instance.getPhone()) && !Strings.isDigits(instance.getPhone())) {
+		if (Strings.hasLength(instance.getPhone()) && !Strings.isDigits(instance.getPhone())) {
 			result.getMessageSet().put("phone", "Invalid phone number");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}

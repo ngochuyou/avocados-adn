@@ -18,7 +18,7 @@ public abstract class AbstractResourcePersister implements ResourcePersister, Co
 
 	private final EntityManager entityManager;
 
-	protected ResourceMetamodel metamodel;
+	protected MetamodelImpl metamodel;
 
 	protected final ResourceTuplizer tuplizer;
 
@@ -34,7 +34,7 @@ public abstract class AbstractResourcePersister implements ResourcePersister, Co
 	@Override
 	public void buildAfterStartUp() throws Exception {
 		// TODO Auto-generated method stub
-		this.metamodel = ContextProvider.getApplicationContext().getBean(ResourceMetamodel.class);
+		this.metamodel = ContextProvider.getApplicationContext().getBean(MetamodelImpl.class);
 	}
 
 	@Override
@@ -46,7 +46,7 @@ public abstract class AbstractResourcePersister implements ResourcePersister, Co
 	/**
 	 * @return the metamodel
 	 */
-	public ResourceMetamodel getMetamodel() {
+	public MetamodelImpl getMetamodel() {
 		return metamodel;
 	}
 

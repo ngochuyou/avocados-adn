@@ -25,7 +25,7 @@ public class PersonnelDAO extends AccountDAO<Personnel> {
 		// TODO Auto-generated method stub
 		model = super.defaultBuild(model);
 
-		if (Strings.isEmpty(model.getCreatedBy())) {
+		if (Strings.hasLength(model.getCreatedBy())) {
 			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
 			model.setCreatedBy(
@@ -42,7 +42,7 @@ public class PersonnelDAO extends AccountDAO<Personnel> {
 
 		Personnel persistence = sessionFactory.getCurrentSession().load(Personnel.class, model.getId());
 
-		if (Strings.isEmpty(persistence.getCreatedBy())) {
+		if (!Strings.hasLength(persistence.getCreatedBy())) {
 			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
 			persistence.setCreatedBy(

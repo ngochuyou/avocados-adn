@@ -35,7 +35,7 @@ public interface ResourceTuplizer {
 
 	boolean isInstance(Object resource);
 
-	<T> Class<T> getMappedClass();
+	Class<?> getMappedClass();
 
 	Serializable getIdentifier(Object resource)
 			throws ClassCastException, IllegalAccessException, IllegalArgumentException, InvocationTargetException;

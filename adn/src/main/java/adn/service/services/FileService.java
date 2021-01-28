@@ -48,7 +48,7 @@ public class FileService implements ADNService {
 
 			logger.debug("Writing file: " + filename);
 			Files.write(path, bytes);
-			
+
 			return ServiceResult.ok(filename);
 		} catch (SecurityException | IOException e) {
 			e.printStackTrace();
@@ -58,7 +58,7 @@ public class FileService implements ADNService {
 	}
 
 	public ServiceResult<String> removeFile(String filename) {
-		if (Strings.isEmpty(filename)) {
+		if (!Strings.hasLength(filename)) {
 			return ServiceResult.bad().body(emptyName);
 		}
 

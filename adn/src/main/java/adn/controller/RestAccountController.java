@@ -33,7 +33,7 @@ public class RestAccountController extends AccountController {
 		Account account;
 		Class<? extends Account> clazz;
 
-		if (Strings.isEmpty(username) || principalName.equals(username)) {
+		if (!Strings.hasLength(username) || principalName.equals(username)) {
 			clazz = accountService.getClassFromRole(principalRole);
 			account = dao.findById(principalName, clazz);
 

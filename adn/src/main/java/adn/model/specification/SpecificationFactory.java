@@ -57,7 +57,7 @@ public class SpecificationFactory implements ContextBuilder {
 					if (anno == null) {
 						throw new Exception(Genetized.class.getName() + " not found on" + bean.getBeanClassName());
 					}
-					
+
 					specificationMap.put(anno.entityGene(), (Specification<?>) context.getBean(reflector.getComponentName(clazz)));
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -80,7 +80,7 @@ public class SpecificationFactory implements ContextBuilder {
 	@SuppressWarnings("unchecked")
 	public <T extends Entity> Specification<T> getSpecification(Class<T> clazz) {
 		logger.debug("Providing Specification for " + clazz.getName());
-		
+
 		return (Specification<T>) this.specificationMap.get(clazz);
 	}
 

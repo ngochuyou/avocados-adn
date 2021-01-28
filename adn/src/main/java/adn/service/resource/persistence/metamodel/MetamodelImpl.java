@@ -32,7 +32,7 @@ import adn.service.resource.transaction.GlobalResourceManager;
  */
 @Component
 @Order(6)
-public final class ResourceMetamodel implements Metamodel, ContextBuilder {
+public final class MetamodelImpl implements Metamodel, ContextBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -53,7 +53,7 @@ public final class ResourceMetamodel implements Metamodel, ContextBuilder {
 	 * 
 	 */
 	@Autowired
-	public ResourceMetamodel(GlobalResourceManager entityManager) {
+	public MetamodelImpl(GlobalResourceManager entityManager) {
 		// TODO Auto-generated constructor stub
 		Assert.notNull(entityManager, "EntityManager cannot be null");
 		this.entityManager = entityManager;

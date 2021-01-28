@@ -47,11 +47,11 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 		// TODO Auto-generated method stub
 		model = super.defaultBuild(model);
 		model.setId(Strings.removeSpaces(model.getId()));
-		model.setFirstName(Strings.isEmpty(model.getFirstName()) ? AccountService.UNKNOWN_USER_FIRSTNAME
+		model.setFirstName(!Strings.hasLength(model.getFirstName()) ? AccountService.UNKNOWN_USER_FIRSTNAME
 				: Strings.normalizeString(model.getFirstName()));
-		model.setLastName(Strings.isEmpty(model.getLastName()) ? AccountService.UNKNOWN_USER_LASTNAME
+		model.setLastName(!Strings.hasLength(model.getLastName()) ? AccountService.UNKNOWN_USER_LASTNAME
 				: Strings.normalizeString(model.getLastName()));
-		model.setPhoto(Strings.isEmpty(model.getPhoto()) ? Constants.DEFAULT_USER_PHOTO_NAME : model.getPhoto());
+		model.setPhoto(!Strings.hasLength(model.getPhoto()) ? Constants.DEFAULT_USER_PHOTO_NAME : model.getPhoto());
 
 		return model;
 	}
@@ -88,7 +88,7 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 		persistence.setPhoto(model.getPhoto());
 		persistence.setGender(model.getGender());
 		// leave out model's password if there's no need of password editing
-		if (!Strings.isEmpty(model.getPassword())) {
+		if (Strings.hasLength(model.getPassword())) {
 			persistence.setPassword(passwordEncoder.encode(model.getPassword()));
 		}
 		// set model's role to null if there's no need of role editing

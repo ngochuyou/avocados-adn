@@ -25,7 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import adn.service.resource.persistence.ResourcePersistenceContext;
-import adn.service.resource.persistence.metamodel.ResourceMetamodel;
+import adn.service.resource.persistence.metamodel.MetamodelImpl;
 
 /**
  * @author Ngoc Huy
@@ -34,23 +34,23 @@ import adn.service.resource.persistence.metamodel.ResourceMetamodel;
 @Component
 public final class GlobalResourceManager implements EntityManager {
 
-	private final ResourceMetamodel metamodel;
+	private final MetamodelImpl metamodel;
 
 	@SuppressWarnings("unused")
 	private ResourcePersistenceContext persistenceContext;
 
 	/**
 	 * @throws SecurityException    when failed to instantiate
-	 *                              {@link ResourceMetamodel}
+	 *                              {@link MetamodelImpl}
 	 * @throws NoSuchFieldException when failed to instantiate
-	 *                              {@link ResourceMetamodel}
+	 *                              {@link MetamodelImpl}
 	 * 
 	 */
 	@Autowired
 	public GlobalResourceManager() throws NoSuchFieldException, SecurityException {
 		// TODO Auto-generated constructor stub
 		persistenceContext = new ResourcePersistenceContext(this);
-		metamodel = new ResourceMetamodel(this);
+		metamodel = new MetamodelImpl(this);
 	}
 
 	@Override
