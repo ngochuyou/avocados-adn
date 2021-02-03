@@ -20,7 +20,7 @@ import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractorProvider;
 import adn.model.factory.production.security.AuthenticationBasedProducerProvider;
 import adn.model.models.Model;
-import adn.utilities.GeneralUtilities;
+import adn.utilities.TypeUtils;
 
 /**
  * @author Ngoc Huy
@@ -46,7 +46,7 @@ public class BaseController {
 	protected SessionFactory sessionFactory;
 
 	@Autowired
-	protected GeneralUtilities reflector;
+	protected TypeUtils reflector;
 
 	@Autowired
 	protected ObjectMapper mapper;

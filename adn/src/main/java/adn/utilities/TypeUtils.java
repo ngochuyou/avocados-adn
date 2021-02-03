@@ -12,6 +12,9 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Stack;
 import java.util.function.BiConsumer;
 
@@ -27,7 +30,7 @@ import adn.model.entities.Entity;
  *
  */
 @Component
-public class GeneralUtilities {
+public class TypeUtils {
 
 	public <T extends Entity> String getEntityName(Class<T> clazz) {
 		javax.persistence.Entity anno = clazz.getDeclaredAnnotation(javax.persistence.Entity.class);
@@ -59,7 +62,7 @@ public class GeneralUtilities {
 		return anno.value();
 	}
 
-	public Stack<Class<?>> getClassStack(Class<?> clazz) {
+	public static Stack<Class<?>> getClassStack(Class<?> clazz) {
 		Stack<Class<?>> stack = new Stack<>();
 		Class<?> superClass = clazz;
 
@@ -156,13 +159,24 @@ public class GeneralUtilities {
 
 		return (T) ois.readObject();
 	}
-	
+
 	public <T> void remove(T[] arr, int i) {
 		int n = arr.length;
-		
+
 		for (int j = i; j < n; j++) {
 			arr[j] = arr[j + 1];
 		}
+	}
+
+	public static Field[] getAllFields(Class<?> type) {
+		List<Field> fields = new ArrayList<>();
+		Stack<Class<?>> classStack = getClassStack(type);
+
+		while (!classStack.isEmpty()) {
+			fields.addAll(Arrays.asList(classStack.pop().getDeclaredFields()));
+		}
+
+		return fields.toArray(new Field[fields.size()]);
 	}
 
 }

@@ -24,6 +24,8 @@ public class FileResource {
 	@Version
 	private String version;
 
+	private String extension;
+
 	public FileResource(String path, byte[] content, String version) {
 		super();
 		Assert.notNull(path, "Filepath can not be empty");
@@ -54,6 +56,14 @@ public class FileResource {
 
 	public void setVersion(String version) {
 		this.version = version;
+	}
+
+	public String getExtension() {
+		return extension;
+	}
+
+	public void setExtension(String extension) {
+		this.extension = extension;
 	}
 
 }

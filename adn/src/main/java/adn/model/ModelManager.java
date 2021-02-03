@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.model.models.Model;
+import adn.utilities.TypeUtils;
 
 /**
  * @author Ngoc Huy
@@ -71,7 +72,7 @@ public class ModelManager implements ContextBuilder {
 			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.entityPackage)) {
 				Class<? extends adn.model.entities.Entity> clazz = (Class<? extends adn.model.entities.Entity>) Class
 						.forName(beanDef.getBeanClassName());
-				Stack<Class<?>> stack = reflector.getClassStack(clazz);
+				Stack<Class<?>> stack = TypeUtils.getClassStack(clazz);
 
 				while (!stack.isEmpty()) {
 					this.entityTree.add((Class<adn.model.entities.Entity>) stack.pop());
@@ -102,7 +103,7 @@ public class ModelManager implements ContextBuilder {
 		try {
 			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.modelPackage)) {
 				Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(beanDef.getBeanClassName());
-				Stack<Class<?>> stack = reflector.getClassStack(clazz);
+				Stack<Class<?>> stack = TypeUtils.getClassStack(clazz);
 
 				while (!stack.isEmpty()) {
 					this.modelTree.add((Class<Model>) stack.pop());
