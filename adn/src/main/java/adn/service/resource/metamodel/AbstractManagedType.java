@@ -31,7 +31,7 @@ public abstract class AbstractManagedType<X> extends AbstractType<X> implements 
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 2L;
 
 	private final AbstractManagedType<? super X> superType;
 
@@ -39,7 +39,7 @@ public abstract class AbstractManagedType<X> extends AbstractType<X> implements 
 	private final Map<String, SingularAttribute<X, ?>> declaredSingularAttributes = new HashMap<>();
 	private final Map<String, PluralAttribute<X, ?, ?>> declaredPluralAttributes = new HashMap<>();
 
-	private AbstractManagedType.Access<X> access;
+	private transient AbstractManagedType.Access<X> access;
 
 	/**
 	 * @param javaType

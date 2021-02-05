@@ -24,7 +24,7 @@ public abstract class AbstractIdentifiableType<X> extends AbstractManagedType<X>
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 2L;
 
 	private final boolean hasIdentifierProperty;
 	private final boolean hasIdClass;
@@ -34,7 +34,7 @@ public abstract class AbstractIdentifiableType<X> extends AbstractManagedType<X>
 	private final boolean isVersioned;
 	private SingularAttribute<X, ?> version;
 
-	private AbstractIdentifiableType.Access<X> access;
+	private transient AbstractIdentifiableType.Access<X> access;
 
 	/**
 	 * @param javaType
