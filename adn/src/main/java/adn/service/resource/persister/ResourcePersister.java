@@ -12,7 +12,7 @@ import javax.persistence.PersistenceException;
 import javax.persistence.metamodel.Type;
 
 import adn.service.resource.metamodel.ResourceMetamodel;
-import adn.service.resource.tuplizer.ResourceTuplizer;
+import adn.service.resource.tuple.ResourceTuplizer;
 
 /**
  * @author Ngoc Huy

@@ -24,8 +24,8 @@ public class EmbeddableTypeImpl<X> extends AbstractManagedType<X> implements Emb
 	 * @param javaType
 	 * @param superType
 	 */
-	public EmbeddableTypeImpl(Class<X> javaType, AbstractManagedType<X> superType, AbstractManagedType<?> parent) {
-		super(javaType, superType);
+	public EmbeddableTypeImpl(Class<X> javaType, AbstractManagedType<X> superType, AbstractManagedType<?> parent, boolean hasPojo) {
+		super(javaType, superType, false, hasPojo);
 		// TODO Auto-generated constructor stub
 		this.parent = parent;
 	}

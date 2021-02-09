@@ -28,8 +28,9 @@ public class MappedSuperClassImpl<X> extends AbstractIdentifiableType<X>
 	 * @throws IllegalAccessException
 	 */
 	public MappedSuperClassImpl(Class<X> javaType, AbstractIdentifiableType<X> superType, boolean hasIdentifierProperty,
-			boolean hasIdClass, boolean isVersioned) throws IllegalAccessException {
-		super(javaType, superType, hasIdentifierProperty, hasIdClass, isVersioned);
+			boolean hasIdClass, boolean isVersioned, boolean isAbstract, boolean hasPojo)
+			throws IllegalAccessException {
+		super(javaType, superType, hasIdentifierProperty, hasIdClass, isVersioned, isAbstract, hasPojo);
 		// TODO Auto-generated constructor stub
 	}
 

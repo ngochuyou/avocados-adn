@@ -4,10 +4,12 @@
 package adn.service.resource.metamodel;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,15 +43,21 @@ public abstract class AbstractManagedType<X> extends AbstractType<X> implements 
 
 	private transient AbstractManagedType.Access<X> access;
 
+	private final List<AbstractManagedType<? extends X>> subtypes = new ArrayList<>();
+
+	private boolean isPolymorphic;
+
+	private final boolean hasPojo;
+	
 	/**
 	 * @param javaType
 	 * @param superType
 	 */
-	public AbstractManagedType(Class<X> javaType, AbstractManagedType<X> superType) {
-		super(javaType);
+	public AbstractManagedType(Class<X> javaType, AbstractManagedType<X> superType, boolean isAbstract, boolean hasPojo) {
+		super(javaType, isAbstract);
 		// TODO Auto-generated constructor stub
 		this.superType = superType;
-
+		this.hasPojo = hasPojo;
 		access = new AccessImpl();
 	}
 
@@ -468,6 +476,27 @@ public abstract class AbstractManagedType<X> extends AbstractType<X> implements 
 			access = null;
 		}
 
+	}
+
+	public void addSubType(AbstractManagedType<? extends X> next) {
+		subtypes.add(next);
+		this.isPolymorphic = true;
+	}
+
+	public boolean hasSubtypes() {
+		return !subtypes.isEmpty();
+	}
+
+	public List<AbstractManagedType<? extends X>> getSubtypes() {
+		return subtypes;
+	}
+
+	public boolean isPolymorphic() {
+		return isPolymorphic;
+	}
+	
+	public boolean hasPojo() {
+		return hasPojo;
 	}
 
 }

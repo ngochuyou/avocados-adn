@@ -43,8 +43,9 @@ public abstract class AbstractIdentifiableType<X> extends AbstractManagedType<X>
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public AbstractIdentifiableType(Class<X> javaType, AbstractIdentifiableType<X> superType,
-			boolean hasIdentifierProperty, boolean hasIdClass, boolean isVersioned) throws IllegalAccessException {
-		super(javaType, superType);
+			boolean hasIdentifierProperty, boolean hasIdClass, boolean isVersioned, boolean isAbstract, boolean hasPojo)
+			throws IllegalAccessException {
+		super(javaType, superType, isAbstract, hasPojo);
 		// TODO Auto-generated constructor stub
 		this.hasIdentifierProperty = hasIdentifierProperty;
 		this.hasIdClass = hasIdClass;
@@ -114,6 +115,12 @@ public abstract class AbstractIdentifiableType<X> extends AbstractManagedType<X>
 		}
 
 		return null;
+	}
+
+	@SuppressWarnings("unchecked")
+	public <Y> SingularAttribute<? super X, Y> getVersion() {
+
+		return (SingularAttribute<? super X, Y>) locateVersion();
 	}
 
 	@SuppressWarnings("unchecked")

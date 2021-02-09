@@ -42,7 +42,7 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 	@Override
 	public void buildAfterStartUp() throws Exception {
 		// TODO Auto-generated method stub
-		logger.info("[5]Initializing Model Producers");
+		logger.info("[5]Initializing " + this.getClass());
 		this.producerMap = new HashMap<>();
 		// @formatter:off
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
@@ -100,7 +100,7 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 		this.functionMap.put(Role.ANONYMOUS, this::produce);
 		this.functionMap.put(null, this::produce);
 		// @formatter:on
-		logger.info("[5]Finished initializing Model Producers");
+		logger.info("[5]Initializing " + this.getClass());
 	}
 
 	@SuppressWarnings("unchecked")

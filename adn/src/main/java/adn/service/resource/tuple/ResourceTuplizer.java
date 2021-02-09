@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.tuplizer;
+package adn.service.resource.tuple;
 
 /**
  * @author Ngoc Huy
