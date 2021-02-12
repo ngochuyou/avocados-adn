@@ -80,7 +80,7 @@ public class Strings extends StringUtils {
 
 				for (int i = 1; i < parts.length; i++) {
 					builder.append(("" + parts[i].charAt(0)).toUpperCase()
-							+ parts[i].substring(1, parts[i].length()).toLowerCase());
+							+ parts[i].substring(1, parts[i].length()));
 				}
 
 				return builder.toString();

@@ -11,6 +11,8 @@ import javax.persistence.LockModeType;
 import javax.persistence.PersistenceException;
 import javax.persistence.metamodel.Type;
 
+import adn.service.resource.ResourceEntryFactory;
+import adn.service.resource.metamodel.EntityMode;
 import adn.service.resource.metamodel.ResourceMetamodel;
 import adn.service.resource.tuple.ResourceTuplizer;
 
@@ -49,6 +51,8 @@ public interface ResourcePersister {
 	boolean canExtractIdOutOfEntity();
 
 	boolean isVersioned();
+
+	boolean isMutable();
 
 	Type<?> getVersionType();
 
@@ -127,4 +131,10 @@ public interface ResourcePersister {
 
 	ResourceTuplizer getEntityTuplizer();
 
+	ResourceEntryFactory getEntryFactory();
+	
+	EntityManager getResourceManager();
+
+	EntityMode getEntityMode();
+	
 }
