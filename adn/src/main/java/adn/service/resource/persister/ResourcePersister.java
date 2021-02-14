@@ -32,7 +32,7 @@ public interface ResourcePersister {
 
 	String[] getPropertyNames();
 
-	int[] resolveAttributeIndexes(String[] attributeNames);
+	int[] resolveAttributeIndices(String[] attributeNames);
 
 	Type<?> getPropertyType(String propertyName) throws IllegalStateException;
 
@@ -62,7 +62,7 @@ public interface ResourcePersister {
 
 	Object getCurrentVersion(Serializable id, EntityManager resourceManager) throws PersistenceException;
 
-	Object[] getDatabaseSnapshot(Serializable id, EntityManager resourceManager) throws PersistenceException;
+	Object[] getStorageSnapshot(Serializable id, EntityManager resourceManager) throws PersistenceException;
 
 	Object load(Serializable id, Object optionalObject, LockModeType lockMode, EntityManager resourceManager)
 			throws PersistenceException;
@@ -101,7 +101,7 @@ public interface ResourcePersister {
 	) throws PersistenceException;
 	// @formatter:on
 
-	void afterInitialize(Object entity, EntityManager resourceManager);
+	void afterInitialize(Object resource, EntityManager resourceManager);
 
 	Boolean isTransient(Object object, EntityManager resourceManager) throws PersistenceException;
 
@@ -117,9 +117,9 @@ public interface ResourcePersister {
 
 	Object getPropertyValue(Object object, String propertyName);
 
-	Serializable getIdentifier(Object entity);
+	Serializable getIdentifier(Object resource);
 
-	void setIdentifier(Object entity, Serializable id);
+	void setIdentifier(Object resource, Serializable id, EntityManager resourceManager);
 
 	Object getVersion(Object object) throws PersistenceException;
 
@@ -127,14 +127,22 @@ public interface ResourcePersister {
 
 	boolean isInstance(Object object);
 
-	ResourcePersister getSubclassEntityPersister(Object instance, EntityManager resourceManager);
+	ResourcePersister getSubclassResourcePersister(Object instance, EntityManager resourceManager);
 
 	ResourceTuplizer getEntityTuplizer();
 
 	ResourceEntryFactory getEntryFactory();
-	
+
 	EntityManager getResourceManager();
 
 	EntityMode getEntityMode();
-	
+
+	boolean[] getPropertyUpdatability();
+
+	boolean[] getPropertyCheckability();
+
+	boolean[] getPropertyNullability();
+
+	boolean[] getPropertyVersionability();
+
 }

@@ -30,6 +30,8 @@ import adn.service.resource.tuple.IdentifierProperty;
 import adn.service.resource.tuple.IdentifierValue;
 import adn.service.resource.tuple.PojoResourceTuplizer;
 import adn.service.resource.tuple.ResourceTuplizer;
+import adn.service.resource.tuple.VersionProperty;
+import adn.service.resource.tuple.VersionValue;
 import adn.utilities.TypeUtils;
 
 /**
@@ -50,6 +52,7 @@ public class ResourceMetamodel {
 
 	private final IdentifierProperty<?, ?> identifierAttribute;
 	private final boolean versioned;
+	private final VersionProperty<?, ?> versionAttribute;
 
 	private final int propertySpan;
 	private final int versionPropertyIndex;
@@ -63,7 +66,7 @@ public class ResourceMetamodel {
 	private final boolean[] propertyInsertability;
 	private final boolean[] propertyVersionability;
 
-	private final Map<String, Integer> propertyIndicies = new HashMap<>();
+	private final Map<String, Integer> propertyIndices = new HashMap<>();
 	private final boolean hasCollections;
 	private final BitSet mutablePropertiesIndexes;
 
@@ -107,7 +110,15 @@ public class ResourceMetamodel {
 		SingularAttribute<? super X, ?> id;
 
 		identifierAttribute = new IdentifierProperty<>((id = type.getId(type.getIdType().getJavaType())).getName(),
-				id.getType(), id.getType() instanceof EmbeddableTypeImpl, IdentifierValue.NULL, null, type);
+				id.getType(), id.getType() instanceof EmbeddableTypeImpl, IdentifierValue.NULL, null, type,
+				id.getPersistentAttributeType());
+
+		SingularAttribute<? super X, ?> version = type.getVersion();
+
+		versionAttribute = versioned
+				? new VersionProperty<>(version.getName(), version.getType(), version.getDeclaringType(),
+						VersionValue.NULL, version.getPersistentAttributeType())
+				: null;
 
 		Field[] fields = TypeUtils.getAllFields(type.getJavaType());
 
@@ -140,7 +151,7 @@ public class ResourceMetamodel {
 			propertyNullability[i] = casted.isNullable();
 			propertyInsertability[i] = casted.isInsertable();
 			propertyVersionability[i] = casted.isVersionable();
-			propertyIndicies.put(casted.getAttributeName(), i);
+			propertyIndices.put(casted.getAttributeName(), i);
 			foundCollections = foundCollections || Collection.class.isAssignableFrom(casted.getJavaType());
 
 			if (((AbstractType<?>) ((AbstractAttribute<?, ?>) propertyTypes[i]).getAttributeType()).isMutable()
@@ -167,7 +178,7 @@ public class ResourceMetamodel {
 		}
 
 		tuplizer = new PojoResourceTuplizer(this);
-		
+
 		logger.debug(toString());
 	}
 
@@ -261,7 +272,7 @@ public class ResourceMetamodel {
 	}
 
 	public Map<String, Integer> getPropertyIndexes() {
-		return propertyIndicies;
+		return propertyIndices;
 	}
 
 	public boolean getHasCollections() {
@@ -313,6 +324,26 @@ public class ResourceMetamodel {
 		return mappedClass;
 	}
 
+	public int getPropertyIndex(String propertyName) {
+
+		return propertyIndices.get(propertyName);
+	}
+
+	public IdentifierProperty<?, ?> getIdentifierProperty() {
+		return identifierAttribute;
+	}
+
+	public Type<?> getPropertyType(String propertyName) {
+		return propertyTypes[propertyIndices.get(propertyName)];
+	}
+	
+	/**
+	 * @return the versionAttribute
+	 */
+	public VersionProperty<?, ?> getVersionAttribute() {
+		return versionAttribute;
+	}
+
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
@@ -347,7 +378,7 @@ public class ResourceMetamodel {
 			identifierAttribute.getName(),
 			versioned,
 			propertySpan,
-			propertyIndicies.entrySet().stream().map(entry -> "[" + entry.getKey() + "|" + entry.getValue() + ']').collect(Collectors.joining(", ")),
+			propertyIndices.entrySet().stream().map(entry -> "[" + entry.getKey() + "|" + entry.getValue() + ']').collect(Collectors.joining(", ")),
 			Stream.of(propertyNames).collect(Collectors.joining(", ")),
 			Stream.of(propertyTypes).map(t -> t.getJavaType().getSimpleName()).collect(Collectors.joining(", ")),
 			IntStream.range(0, propertyUpdatability.length).mapToObj(i -> propertyUpdatability[i])

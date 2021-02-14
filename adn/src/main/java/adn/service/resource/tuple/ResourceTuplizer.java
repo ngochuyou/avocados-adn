@@ -34,8 +34,12 @@ public interface ResourceTuplizer {
 
 	Object getPropertyValue(Object resource, String propertyName) throws PersistenceException;
 
+	public void setPropertyValues(Object resource, Object[] values) throws PersistenceException;
+	
 	Object[] getPropertyValues(Object resource) throws PersistenceException;
 
 	boolean isInstance(Object resource) throws PersistenceException;
+
+	void afterInitialize(Object resource, EntityManager resourceManager);
 
 }

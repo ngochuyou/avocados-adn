@@ -79,7 +79,16 @@ public abstract class AbstractResourceTuplizer implements ResourceTuplizer {
 			throws PersistenceException {
 		// TODO Auto-generated method stub
 		try {
-			idSetter.set(resource, id);
+			if (metamodel.getIdentifierProperty().isEmbedded()) {
+				if (resource != null) {
+					// TODO: type exclusively set the composite identifier
+					return;
+				}
+			}
+
+			if (idSetter != null) {
+				idSetter.set(resource, idGetter.get(resource));
+			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			throw new PersistenceException(e);
@@ -153,6 +162,18 @@ public abstract class AbstractResourceTuplizer implements ResourceTuplizer {
 	}
 
 	@Override
+	public void setPropertyValues(Object resource, Object[] values) throws PersistenceException {
+		// TODO Auto-generated method stub
+		try {
+			for (int i = 0; i < propertySpan; i++) {
+				setters[i].set(resource, values[i]);
+			}
+		} catch (Exception e) {
+			throw new PersistenceException(e);
+		}
+	}
+
+	@Override
 	public Object instantiate(Serializable id, EntityManager resoureManager) throws PersistenceException {
 		// TODO Auto-generated method stub
 		try {
@@ -171,6 +192,11 @@ public abstract class AbstractResourceTuplizer implements ResourceTuplizer {
 
 	public ResourceMetamodel getMetamodel() {
 		return metamodel;
+	}
+
+	@Override
+	public void afterInitialize(Object resource, EntityManager resourceManager) {
+		// TODO Auto-generated method stub
 	}
 
 }

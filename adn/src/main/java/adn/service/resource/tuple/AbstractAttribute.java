@@ -27,6 +27,8 @@ public abstract class AbstractAttribute<X, Y> implements Attribute<X, Y> {
 
 	private final boolean isVersionable;
 
+	private final PersistentAttributeType attributePersistentType;
+
 	// @formatter:off
 	public AbstractAttribute(
 			String attributeName,
@@ -44,6 +46,7 @@ public abstract class AbstractAttribute<X, Y> implements Attribute<X, Y> {
 		this.isUpdatable = updatable;
 		this.isInsertable = insertable;
 		this.isVersionable = versionable;
+		this.attributePersistentType = PersistentAttributeType.BASIC;
 	}
 	// @formatter:on
 	public String getAttributeName() {
@@ -72,6 +75,10 @@ public abstract class AbstractAttribute<X, Y> implements Attribute<X, Y> {
 
 	public boolean isVersionable() {
 		return isVersionable;
+	}
+
+	public PersistentAttributeType getAttributePersistentType() {
+		return attributePersistentType;
 	}
 
 }

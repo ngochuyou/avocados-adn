@@ -21,6 +21,7 @@ public class IdentifierProperty<X, Y> extends AbstractAttribute<X, Y> implements
 	private final IdentifierValue unsavedValue;
 	private final IdentifierGenerator identifierGenerator;
 	private final boolean hasIdentifierMapper;
+	private final PersistentAttributeType persistentType;
 
 	// @formatter:off
 	/**
@@ -33,7 +34,7 @@ public class IdentifierProperty<X, Y> extends AbstractAttribute<X, Y> implements
 			boolean embedded,
 			IdentifierValue unsavedValue,
 			IdentifierGenerator identifierGenerator,
-			ManagedType<X> declaringType) {
+			ManagedType<X> declaringType, PersistentAttributeType persistentType) {
 		super(attributeName, attributeType, declaringType, false, false, true, false);
 		// TODO Auto-generated constructor stub
 		this.virtual = false;
@@ -41,6 +42,7 @@ public class IdentifierProperty<X, Y> extends AbstractAttribute<X, Y> implements
 		this.hasIdentifierMapper = false;
 		this.unsavedValue = unsavedValue;
 		this.identifierGenerator = identifierGenerator;
+		this.persistentType = persistentType;
 	}
 	// @formatter:on
 	@Override
@@ -52,7 +54,7 @@ public class IdentifierProperty<X, Y> extends AbstractAttribute<X, Y> implements
 	@Override
 	public PersistentAttributeType getPersistentAttributeType() {
 		// TODO Auto-generated method stub
-		return PersistentAttributeType.BASIC;
+		return persistentType;
 	}
 
 	@Override
@@ -76,13 +78,13 @@ public class IdentifierProperty<X, Y> extends AbstractAttribute<X, Y> implements
 	@Override
 	public boolean isAssociation() {
 		// TODO Auto-generated method stub
-		return false;
+		return !(persistentType == PersistentAttributeType.BASIC || persistentType == PersistentAttributeType.EMBEDDED);
 	}
 
 	@Override
 	public boolean isCollection() {
 		// TODO Auto-generated method stub
-		return false;
+		return persistentType == PersistentAttributeType.ELEMENT_COLLECTION;
 	}
 
 	@Override
@@ -113,6 +115,14 @@ public class IdentifierProperty<X, Y> extends AbstractAttribute<X, Y> implements
 	public IdentifierValue getUnsavedValue() {
 		// TODO Auto-generated method stub
 		return unsavedValue;
+	}
+
+	public boolean getHasIdentifierMapper() {
+		return hasIdentifierMapper;
+	}
+
+	public PersistentAttributeType getPersistentType() {
+		return persistentType;
 	}
 
 }
