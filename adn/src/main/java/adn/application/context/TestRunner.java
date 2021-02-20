@@ -34,8 +34,8 @@ public class TestRunner implements ContextBuilder {
 	@Transactional
 	public void buildAfterStartUp() throws Exception {
 		// TODO Auto-generated method stub
-		logger.info("[LOWEST]Initializing " + this.getClass().getName());
-		logger.info("[LOWEST]Finished initializing " + this.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}
 
 	protected void injectPrincipal() {

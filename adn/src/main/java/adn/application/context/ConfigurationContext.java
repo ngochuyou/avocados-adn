@@ -33,9 +33,9 @@ public class ConfigurationContext implements ContextBuilder {
 	@Override
 	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
-		logger.info("[HIGHEST]Intializing " + this.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Intializing " + this.getClass().getName());
 		this.readSecurityProperties();
-		logger.info("[HIGHEST]Finished intializing " + this.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Finished intializing " + this.getClass().getName());
 	}
 
 	private void readSecurityProperties() {
@@ -62,7 +62,7 @@ public class ConfigurationContext implements ContextBuilder {
 				| SecurityException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			SpringApplication.exit(context);
+			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
 	}
 

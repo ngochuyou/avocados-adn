@@ -32,7 +32,7 @@ import adn.model.entities.Entity;
 @Component
 public class TypeUtils {
 
-	public <T extends Entity> String getEntityName(Class<T> clazz) {
+	public static <T extends Entity> String getEntityName(Class<T> clazz) {
 		javax.persistence.Entity anno = clazz.getDeclaredAnnotation(javax.persistence.Entity.class);
 
 		if (anno == null || !Strings.hasLength(anno.name())) {
@@ -42,7 +42,7 @@ public class TypeUtils {
 		return anno.name();
 	}
 
-	public <T extends Entity> String getTableName(Class<T> clazz) {
+	public static <T extends Entity> String getTableName(Class<T> clazz) {
 		Table anno = clazz.getDeclaredAnnotation(Table.class);
 
 		if (anno == null || !Strings.hasLength(anno.name())) {
@@ -52,7 +52,7 @@ public class TypeUtils {
 		return anno.name();
 	}
 
-	public String getComponentName(Class<?> clazz) {
+	public static String getComponentName(Class<?> clazz) {
 		Component anno = clazz.getDeclaredAnnotation(Component.class);
 
 		if (anno == null || !Strings.hasLength(anno.value())) {
@@ -74,7 +74,7 @@ public class TypeUtils {
 		return stack;
 	}
 
-	public boolean isExtendedFrom(Class<?> clazz, Class<?> superClass) {
+	public static boolean isExtendedFrom(Class<?> clazz, Class<?> superClass) {
 		if (clazz.equals(superClass)) {
 			return true;
 		}
@@ -88,7 +88,7 @@ public class TypeUtils {
 		return false;
 	}
 
-	public boolean isImplementedFrom(Class<?> clazz, Class<?> superClass) {
+	public static boolean isImplementedFrom(Class<?> clazz, Class<?> superClass) {
 		for (Class<?> i : clazz.getInterfaces()) {
 			if (i.equals(superClass)) {
 				return true;
@@ -98,13 +98,13 @@ public class TypeUtils {
 		return false;
 	}
 
-	public Type getGenericType(Class<?> clazz) {
+	public static Type getGenericType(Class<?> clazz) {
 
 		return ((ParameterizedType) clazz.getGenericSuperclass()).getActualTypeArguments()[0];
 	}
 
 	@SuppressWarnings("unchecked")
-	public <M extends AbstractModel> M newInstanceOrAbstract(Class<M> clazz) {
+	public static <M extends AbstractModel> M newInstanceOrAbstract(Class<M> clazz) {
 		try {
 			return clazz.getConstructor().newInstance();
 		} catch (Exception e) {
@@ -120,7 +120,7 @@ public class TypeUtils {
 		}
 	}
 
-	public void consumeFields(Object o, BiConsumer<Field, Object> consumer, boolean isSuperClassIncluded) {
+	public static void consumeFields(Object o, BiConsumer<Field, Object> consumer, boolean isSuperClassIncluded) {
 		Stack<Class<?>> classStack = new Stack<>();
 
 		classStack.add(o.getClass());
@@ -138,7 +138,7 @@ public class TypeUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T, M extends T> M cast(T target) {
+	public static <T, M extends T> M cast(T target) {
 
 		return (M) target;
 	}
@@ -160,7 +160,7 @@ public class TypeUtils {
 		return (T) ois.readObject();
 	}
 
-	public <T> void remove(T[] arr, int i) {
+	public static <T> void remove(T[] arr, int i) {
 		int n = arr.length;
 
 		for (int j = i; j < n; j++) {

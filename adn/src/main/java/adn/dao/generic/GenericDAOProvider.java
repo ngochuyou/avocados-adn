@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
+import adn.application.context.ContextProvider;
 import adn.dao.GenericDAO;
 import adn.model.Genetized;
 import adn.model.ModelManager;
@@ -38,13 +40,14 @@ public class GenericDAOProvider implements ContextBuilder {
 
 	private GenericDAO<?> defaultGenericDAO = new GenericDAO<Entity>() {};
 
-	private ModelManager modelManager = context.getBean(ModelManager.class);
+	@Autowired
+	private ModelManager modelManager;
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
-		logger.info("[3]Initializing " + this.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
@@ -64,8 +67,8 @@ public class GenericDAOProvider implements ContextBuilder {
 
 				Class<? extends Entity> modelClass = anno.entityGene();
 
-				genericDAOMap.put(modelClass,
-						(GenericDAO<? extends Entity>) context.getBean(Strings.toCamel(clazz.getSimpleName(), null)));
+				genericDAOMap.put(modelClass, (GenericDAO<? extends Entity>) ContextProvider.getApplicationContext()
+						.getBean(Strings.toCamel(clazz.getSimpleName(), null)));
 			}
 
 			modelManager.getEntityTree().forEach(node -> {
@@ -82,10 +85,10 @@ public class GenericDAOProvider implements ContextBuilder {
 			});
 		} catch (Exception e) {
 			e.printStackTrace();
-			SpringApplication.exit(context);
+			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
 
-		logger.info("[3]Finished initializing " + this.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")

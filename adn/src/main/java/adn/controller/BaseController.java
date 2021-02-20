@@ -46,9 +46,6 @@ public class BaseController {
 	protected SessionFactory sessionFactory;
 
 	@Autowired
-	protected TypeUtils reflector;
-
-	@Autowired
 	protected ObjectMapper mapper;
 
 	protected final String hasRoleAdmin = "hasRole('ADMIN')";
@@ -78,7 +75,7 @@ public class BaseController {
 	}
 
 	protected <T extends Entity, M extends Model> T extract(M model, Class<T> entityClass) {
-		return extractorProvider.getExtractor(entityClass).extract(model, reflector.newInstanceOrAbstract(entityClass));
+		return extractorProvider.getExtractor(entityClass).extract(model, TypeUtils.newInstanceOrAbstract(entityClass));
 	}
 
 	protected <T extends Entity, M extends Model> M produce(T entity, Class<M> modelClass) {

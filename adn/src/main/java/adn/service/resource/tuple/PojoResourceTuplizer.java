@@ -35,7 +35,7 @@ public class PojoResourceTuplizer extends AbstractResourceTuplizer {
 	protected <X, Y> Getter buildPropertyGetter(Attribute<X, Y> attribute) {
 		// TODO Auto-generated method stub
 		try {
-			return PropertyAccessBuildingStrategy.CAMEL_CASED_INSTANCE.buildGetter(attribute);
+			return PropertyAccessBuildingStrategy.CAMEL_CASED_METHOD_INSTANCE.buildGetter(attribute);
 		} catch (NoSuchMethodException | SecurityException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -48,7 +48,7 @@ public class PojoResourceTuplizer extends AbstractResourceTuplizer {
 	protected <X, Y> Setter buildPropertySetter(Attribute<X, Y> attribute) {
 		// TODO Auto-generated method stub
 		try {
-			return PropertyAccessBuildingStrategy.CAMEL_CASED_INSTANCE.buildSetter(attribute);
+			return PropertyAccessBuildingStrategy.CAMEL_CASED_METHOD_INSTANCE.buildSetter(attribute);
 		} catch (NoSuchMethodException | SecurityException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -55,7 +55,7 @@ public class WebConfig implements WebMvcConfigurer {
 
 		sessionFactory.setDataSource(dataSource);
 		sessionFactory.setPackagesToScan(new String[] { Constants.entityPackage });
-
+		
 		Properties properties = new Properties();
 
 		properties.put("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");
@@ -114,7 +114,7 @@ public class WebConfig implements WebMvcConfigurer {
 	}
 
 	@Bean
-	Converter<String, Role> roleStringConverter() {
+	public Converter<String, Role> roleStringConverter() {
 		return new Converter<String, Role>() {
 
 			@Override

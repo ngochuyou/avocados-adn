@@ -20,6 +20,7 @@ import adn.service.services.AccountService;
 import adn.utilities.Gender;
 import adn.utilities.Role;
 import adn.utilities.Strings;
+import adn.utilities.TypeUtils;
 
 /**
  * @author Ngoc Huy
@@ -101,7 +102,7 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 			// creating an entity of the new type since role editing requires entity's class
 			// to be modified and then merge the old entity with the new one
 			persistence = extractor.merge(persistence,
-					reflector.newInstanceOrAbstract(accountService.getClassFromRole(model.getRole())));
+					TypeUtils.newInstanceOrAbstract(accountService.getClassFromRole(model.getRole())));
 			// persist the new entity
 			session.persist(persistence);
 		}

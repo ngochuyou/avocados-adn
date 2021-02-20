@@ -13,6 +13,7 @@ import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
+import adn.application.context.ContextProvider;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
@@ -40,7 +41,7 @@ public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 	@Override
 	public void buildAfterStartUp() throws Exception {
 		// TODO Auto-generated method stub
-		logger.info("[4]Initializing " + this.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
 		this.extractorMap = new HashMap<>();
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
@@ -62,11 +63,11 @@ public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 					throw new Exception(Component.class.getName() + " is not found on " + clazz.getName());
 				}
 
-				this.extractorMap.put(anno.entityGene(),
-						(EntityExtractor<?, ?>) context.getBean(Strings.toCamel(clazz.getSimpleName(), null)));
+				this.extractorMap.put(anno.entityGene(), (EntityExtractor<?, ?>) ContextProvider.getApplicationContext()
+						.getBean(Strings.toCamel(clazz.getSimpleName(), null)));
 			} catch (Exception e) {
 				e.printStackTrace();
-				SpringApplication.exit(context);
+				SpringApplication.exit(ContextProvider.getApplicationContext());
 			}
 		});
 		modelManager.getEntityTree().forEach(node -> {
@@ -78,7 +79,7 @@ public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 		});
 		this.extractorMap
 				.forEach((k, v) -> logger.info("Assigning " + v.getName() + " for " + k.getName() + " extraction"));
-		logger.info("[4]Finished initializing " + this.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")

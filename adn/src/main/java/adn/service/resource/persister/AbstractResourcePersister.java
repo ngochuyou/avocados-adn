@@ -11,9 +11,6 @@ import javax.persistence.LockModeType;
 import javax.persistence.PersistenceException;
 import javax.persistence.metamodel.Type;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import adn.service.resource.ImmutableResourceEntryFactory;
 import adn.service.resource.MutableResourceEntryFactory;
 import adn.service.resource.ResourceEntryFactory;
@@ -28,8 +25,6 @@ import adn.service.resource.tuple.ResourceTuplizer;
  *
  */
 public abstract class AbstractResourcePersister implements ResourcePersister, ClassMetadata, Lockable {
-
-	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private final EntityManager resourceManager;
 
@@ -451,6 +446,13 @@ public abstract class AbstractResourcePersister implements ResourcePersister, Cl
 	public boolean isBatchLoadable() {
 		// TODO Auto-generated method stub
 		return batchSize > 1;
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return "AbstractResourcePersister for: " + metamodel.getName() + "\t" + metamodel.toString() + "\n"
+				+ "\tEntryFactory: " + entryFactory.getClass().getName();
 	}
 
 }

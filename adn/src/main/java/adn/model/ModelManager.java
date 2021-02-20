@@ -28,6 +28,7 @@ import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
+import adn.application.context.ContextProvider;
 import adn.model.models.Model;
 import adn.utilities.TypeUtils;
 
@@ -61,7 +62,7 @@ public class ModelManager implements ContextBuilder {
 	@SuppressWarnings("unchecked")
 	private void initializeEntityTree() {
 		this.entityTree = new ModelInheritanceTree<>(null, adn.model.entities.Entity.class, null);
-		logger.info("[0]Initializing " + this.entityTree.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Initializing " + this.entityTree.getClass().getName());
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
@@ -80,7 +81,7 @@ public class ModelManager implements ContextBuilder {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			SpringApplication.exit(context);
+			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
 		this.entityTree.forEach(tree -> {
 			logger.info(tree.getNode().getName() + " added to " + this.entityTree.getClass().getName()
@@ -88,7 +89,7 @@ public class ModelManager implements ContextBuilder {
 							: " with root " + tree.getParent().getNode().getName()));
 		});
 		// @formatter:on
-		logger.info("[0]Finished initializing " + this.entityTree.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.entityTree.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -111,7 +112,7 @@ public class ModelManager implements ContextBuilder {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			SpringApplication.exit(context);
+			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
 		this.modelTree.forEach(tree -> {
 			logger.info(tree.getNode().getName() + " added to " + this.modelTree.getClass().getName()
@@ -136,7 +137,7 @@ public class ModelManager implements ContextBuilder {
 			try {
 				Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(bean.getBeanClassName());
 
-				if (!reflector.isExtendedFrom(clazz, Model.class)) {
+				if (!TypeUtils.isExtendedFrom(clazz, Model.class)) {
 					throw new Exception(clazz.getName() + " is a Non-standard Model. A Model must be extended from "
 							+ Entity.class);
 				}
@@ -146,7 +147,7 @@ public class ModelManager implements ContextBuilder {
 				return clazz;
 			} catch (Exception e) {
 				e.printStackTrace();
-				SpringApplication.exit(context);
+				SpringApplication.exit(ContextProvider.getApplicationContext());
 
 				return null;
 			}
@@ -155,17 +156,17 @@ public class ModelManager implements ContextBuilder {
 				Field[] fields = clazz.getDeclaredFields();
 
 				for (Field f : fields) {
-					if (reflector.isExtendedFrom(f.getType(), AbstractModel.class) && models.contains(clazz)
+					if (TypeUtils.isExtendedFrom(f.getType(), AbstractModel.class) && models.contains(clazz)
 							&& this.entityTree.contains((Class<? extends Model>) f.getType())) {
 						throw new Exception(clazz.getName() + " is a Non-standard Model. " + f.getType().getName()
 								+ " was modelized into a Model. Use the modelized type instead");
 					}
 
-					if (reflector.isImplementedFrom(f.getType(), Collection.class)) {
+					if (TypeUtils.isImplementedFrom(f.getType(), Collection.class)) {
 						ParameterizedType type = (ParameterizedType) f.getGenericType();
 						Class<?> clz = (Class<?>) type.getActualTypeArguments()[0];
 
-						if (reflector.isExtendedFrom(clz, Model.class) && models.contains(clazz)
+						if (TypeUtils.isExtendedFrom(clz, Model.class) && models.contains(clazz)
 								&& this.entityTree.contains((Class<? extends Model>) clz)) {
 							throw new Exception(clazz.getName() + " is a Non-standard Model. " + clz.getName()
 									+ " was modelized into a Model. Use the modelized type instead on field: "
@@ -175,7 +176,7 @@ public class ModelManager implements ContextBuilder {
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
-				SpringApplication.exit(context);
+				SpringApplication.exit(ContextProvider.getApplicationContext());
 			}
 		});
 		models.forEach(clazz -> {
@@ -219,7 +220,7 @@ public class ModelManager implements ContextBuilder {
 					this.defaultModelMap.put(clazz.getDeclaredAnnotation(Genetized.class).entityGene(), clazz);
 				} catch (Exception e) {
 					e.printStackTrace();
-					SpringApplication.exit(context);
+					SpringApplication.exit(ContextProvider.getApplicationContext());
 				}
 			});
 		this.defaultModelMap.forEach((k, v) -> logger.info(v.getName() + " assigned to be default model of " + k.getName()));

@@ -122,9 +122,9 @@ public class BaseDAO {
 	public <T extends Entity, A extends T> Result<A> updateDType(A instance, Class<T> clazz) {
 		Session session = sessionFactory.getCurrentSession();
 		Query<?> query = session
-				.createNativeQuery("UPDATE " + reflector.getTableName(clazz) + " e SET DTYPE = :type WHERE e.id = :id");
+				.createNativeQuery("UPDATE " + TypeUtils.getTableName(clazz) + " e SET DTYPE = :type WHERE e.id = :id");
 
-		query.setParameter("type", reflector.getEntityName(instance.getClass()));
+		query.setParameter("type", TypeUtils.getEntityName(instance.getClass()));
 		query.setParameter("id", instance.getId());
 
 		int result = query.executeUpdate();

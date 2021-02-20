@@ -26,7 +26,7 @@ import adn.utilities.Role;
  */
 @Component
 @Order(1)
-public class DatabaseBuilder implements ContextBuilder {
+public class DatabaseInitializer implements ContextBuilder {
 
 	@Autowired
 	private SessionFactory sessionFactory;
@@ -40,12 +40,12 @@ public class DatabaseBuilder implements ContextBuilder {
 	@Override
 	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
-		logger.info("[1]Initializing " + this.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
 		this.insertAdmin();
 		this.insertCustomer();
 		this.insertManager();
 		this.insertEmployee();
-		logger.info("[1]Finished initializing " + this.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}
 
 	public Admin getAdmin() {

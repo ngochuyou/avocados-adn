@@ -30,6 +30,7 @@ import adn.model.models.AccountModel;
 import adn.service.services.AccountService;
 import adn.service.services.FileService;
 import adn.utilities.Role;
+import adn.utilities.TypeUtils;
 
 @Controller
 @RequestMapping("/account")
@@ -82,7 +83,7 @@ public class AccountController extends BaseController {
 		}
 
 		Account account = extract(model, entityClass);
-		Result<? extends Account> insertionResult = dao.insert(reflector.cast(account), entityClass);
+		Result<? extends Account> insertionResult = dao.insert(TypeUtils.cast(account), entityClass);
 
 		if (insertionResult.isOk()) {
 			sessionFactory.getCurrentSession().flush();
@@ -167,7 +168,7 @@ public class AccountController extends BaseController {
 			account.setRole(null);
 		}
 
-		Result<? extends Account> result = dao.update(reflector.cast(account), entityClass, Account.class);
+		Result<? extends Account> result = dao.update(TypeUtils.cast(account), entityClass, Account.class);
 
 		closeSession(result.isOk());
 

@@ -23,7 +23,7 @@ import adn.application.context.ContextProvider;
  * @author Ngoc Huy
  *
  */
-@ComponentScan(basePackages = { Constants.basePackage })
+@ComponentScan(basePackages = { Constants.rootPackage })
 @SpringBootApplication
 @EnableAutoConfiguration(exclude = HibernateJpaAutoConfiguration.class)
 public class ADNApplication {
@@ -40,7 +40,7 @@ public class ADNApplication {
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
 		scanner.addIncludeFilter(new AssignableTypeFilter(ContextBuilder.class));
-		scanner.findCandidateComponents(Constants.basePackage)
+		scanner.findCandidateComponents(Constants.rootPackage)
 			.stream()
 			.map(bean -> {
 				try {

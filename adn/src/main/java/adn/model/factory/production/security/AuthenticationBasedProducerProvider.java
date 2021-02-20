@@ -14,12 +14,14 @@ import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
+import adn.application.context.ContextProvider;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
 import adn.model.factory.ModelProducerProvider;
 import adn.model.models.Model;
 import adn.utilities.Role;
+import adn.utilities.TypeUtils;
 
 @Component(Constants.defaultModelProducerProdiverName)
 @Order(value = 5)
@@ -42,7 +44,7 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 	@Override
 	public void buildAfterStartUp() throws Exception {
 		// TODO Auto-generated method stub
-		logger.info("[5]Initializing " + this.getClass());
+		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass());
 		this.producerMap = new HashMap<>();
 		// @formatter:off
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
@@ -54,10 +56,10 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 						.forName(bean.getBeanClassName());
 				Genetized anno = clazz.getDeclaredAnnotation(Genetized.class);
 
-				this.producerMap.put(anno.modelGene(), context.getBean(clazz));
+				this.producerMap.put(anno.modelGene(), ContextProvider.getApplicationContext().getBean(clazz));
 			} catch (Exception e) {
 				e.printStackTrace();
-				SpringApplication.exit(context);
+				SpringApplication.exit(ContextProvider.getApplicationContext());
 			}
 		});
 		modelManager.getRelationMap().values().forEach(set -> set.forEach(clazz -> {
@@ -100,7 +102,7 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 		this.functionMap.put(Role.ANONYMOUS, this::produce);
 		this.functionMap.put(null, this::produce);
 		// @formatter:on
-		logger.info("[5]Initializing " + this.getClass());
+		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -112,26 +114,26 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produceForAdmin(T entity, Class<M> clazz) {
 		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-				.produceForAdminAuthentication(entity, reflector.newInstanceOrAbstract(clazz));
+				.produceForAdminAuthentication(entity, TypeUtils.newInstanceOrAbstract(clazz));
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produceForCustomer(T entity, Class<M> clazz) {
 		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-				.produceForCustomerAuthentication(entity, reflector.newInstanceOrAbstract(clazz));
+				.produceForCustomerAuthentication(entity, TypeUtils.newInstanceOrAbstract(clazz));
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produceForPersonnel(T entity, Class<M> clazz) {
 		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-				.produceForPersonnelAuthentication(entity, reflector.newInstanceOrAbstract(clazz));
+				.produceForPersonnelAuthentication(entity, TypeUtils.newInstanceOrAbstract(clazz));
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produce(T entity, Class<M> clazz) {
 		// TODO Auto-generated method stub
 		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz)).produce(entity,
-				reflector.newInstanceOrAbstract(clazz));
+				TypeUtils.newInstanceOrAbstract(clazz));
 	}
 
 	@SuppressWarnings("unchecked")

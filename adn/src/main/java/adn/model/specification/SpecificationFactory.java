@@ -17,9 +17,11 @@ import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
+import adn.application.context.ContextProvider;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
+import adn.utilities.TypeUtils;
 
 /**
  * @author Ngoc Huy
@@ -42,7 +44,7 @@ public class SpecificationFactory implements ContextBuilder {
 	@Override
 	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
-		logger.info("[2]Initializing " + this.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
 		this.specificationMap = new HashMap<>();
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
@@ -58,10 +60,10 @@ public class SpecificationFactory implements ContextBuilder {
 						throw new Exception(Genetized.class.getName() + " not found on" + bean.getBeanClassName());
 					}
 
-					specificationMap.put(anno.entityGene(), (Specification<?>) context.getBean(reflector.getComponentName(clazz)));
+					specificationMap.put(anno.entityGene(), (Specification<?>) ContextProvider.getApplicationContext().getBean(TypeUtils.getComponentName(clazz)));
 				} catch (Exception e) {
 					e.printStackTrace();
-					SpringApplication.exit(context);
+					SpringApplication.exit(ContextProvider.getApplicationContext());
 				}
 			});
 		this.modelManager.getEntityTree()
@@ -74,7 +76,7 @@ public class SpecificationFactory implements ContextBuilder {
 			});
 		this.specificationMap.forEach((k, v) -> logger.info(v.getName() + " is applied on " + k.getName()));
 		// @formatter:on
-		logger.info("[2]Finished initializing " + this.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")

@@ -17,7 +17,7 @@ public interface PropertyAccessBuildingStrategy {
 
 	Setter buildSetter(Attribute<?, ?> attr) throws Exception;
 
-	public static CamelCasedMethodPropertyAccessStrategy CAMEL_CASED_INSTANCE = new CamelCasedMethodPropertyAccessStrategy();
+	public static CamelCasedMethodPropertyAccessStrategy CAMEL_CASED_METHOD_INSTANCE = new CamelCasedMethodPropertyAccessStrategy();
 
 	class CamelCasedMethodPropertyAccessStrategy implements PropertyAccessBuildingStrategy {
 

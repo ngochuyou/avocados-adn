@@ -3,9 +3,8 @@
  */
 package adn.application.context;
 
-import org.springframework.context.ApplicationContext;
-
-import adn.utilities.TypeUtils;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 
 /**
  * @author Ngoc Huy
@@ -13,10 +12,23 @@ import adn.utilities.TypeUtils;
  */
 public interface ContextBuilder {
 
-	final ApplicationContext context = ContextProvider.getApplicationContext();
-
-	final TypeUtils reflector = ContextProvider.getApplicationContext().getBean(TypeUtils.class);
-
 	void buildAfterStartUp() throws Exception;
+
+	default String getLoggingPrefix(ContextBuilder builder) {
+		Order anno = builder.getClass().getDeclaredAnnotation(Order.class);
+
+		if (anno == null) {
+			return "[UNKNOWN Order]";
+		}
+
+		switch (anno.value()) {
+			case Ordered.HIGHEST_PRECEDENCE:
+				return "[Ordered#HIGHEST]";
+			case Ordered.LOWEST_PRECEDENCE:
+				return "[Ordered#LOWEST]";
+			default:
+				return "[Ordered#" + anno.value() + "]";
+		}
+	}
 
 }

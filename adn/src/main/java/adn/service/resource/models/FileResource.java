@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource;
+package adn.service.resource.models;
 
 import javax.persistence.Id;
 import javax.persistence.Version;

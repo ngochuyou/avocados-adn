@@ -23,8 +23,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import adn.application.Constants;
 import adn.service.services.AuthenticationService;
+import adn.utilities.Strings;
 
 /**
  * @author Ngoc Huy
@@ -46,6 +46,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private SimpleJwtLogoutFilter jwtLogoutFilter;
 
+	private final String[] publicEndPoints = { "/account/photo\\GET" };
+
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 		// TODO Auto-generated method stub
@@ -62,7 +64,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 			.csrf().disable()
 			.cors();
 		
-		for (String endpoint: Constants.publicEndPoints) {
+		for (String endpoint: publicEndPoints) {
 			String[] parts = endpoint.split("\\\\");
 			
 			if (parts.length == 0) {
@@ -75,7 +77,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 				continue;
 			}
 
-			String[] methods = parts[1].split('[' + Constants.WHITESPACE_CHARS + ']');
+			String[] methods = parts[1].split('[' + Strings.WHITESPACE_CHARS + ']');
 			
 			for (String method: methods) {
 				HttpMethod httpMethod = HttpMethod.resolve(method);
