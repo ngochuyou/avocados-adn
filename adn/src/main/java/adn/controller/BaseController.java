@@ -52,7 +52,7 @@ public class BaseController {
 
 	protected final String notFound = "NOT FOUND";
 
-	protected final String locked = "RESOURCE IS DEACTIVATED";
+	protected final String locked = "RESOURCE WAS DEACTIVATED";
 
 	protected final String invalidModel = "INVALID MODEL";
 

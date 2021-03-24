@@ -27,6 +27,8 @@ public class Constants {
 
 	public static final String defaultModelProducerProdiverName = "authenticationBasedProducerProvider";
 
+	public static final String defaultResourceManagerName = "defaultResourceManager";
+
 	public static final String IMAGE_FILE_PATH = "C:\\Users\\Ngoc Huy\\Pictures\\avocados-adn\\";
 
 	public static final String CONFIG_PATH = "C:\\Users\\Ngoc Huy\\Documents\\workspace\\avocados-adn\\config\\";

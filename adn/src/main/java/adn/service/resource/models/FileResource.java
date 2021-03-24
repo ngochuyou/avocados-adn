@@ -3,36 +3,24 @@
  */
 package adn.service.resource.models;
 
-import javax.persistence.Id;
-import javax.persistence.Version;
+import java.util.Date;
 
-import org.springframework.util.Assert;
+import javax.persistence.Entity;
+import javax.persistence.Id;
 
 /**
  * @author Ngoc Huy
  *
  */
+@Entity
 public class FileResource {
-
-	public static final transient String versionMark = ".v";
 
 	@Id
 	private String pathname;
 
-	private byte[] content;
+	private String filename;
 
-	@Version
-	private String version;
-
-	private String extension;
-
-	public FileResource(String path, byte[] content, String version) {
-		super();
-		Assert.notNull(path, "Filepath can not be empty");
-		this.pathname = path;
-		this.content = content;
-		this.version = version;
-	}
+	private Date timestamp;
 
 	public String getPathname() {
 		return pathname;
@@ -42,28 +30,20 @@ public class FileResource {
 		this.pathname = pathname;
 	}
 
-	public byte[] getContent() {
-		return content;
+	public String getFilename() {
+		return filename;
 	}
 
-	public void setContent(byte[] content) {
-		this.content = content;
+	public void setFilename(String filename) {
+		this.filename = filename;
 	}
 
-	public String getVersion() {
-		return version;
+	public Date getTimestamp() {
+		return timestamp;
 	}
 
-	public void setVersion(String version) {
-		this.version = version;
-	}
-
-	public String getExtension() {
-		return extension;
-	}
-
-	public void setExtension(String extension) {
-		this.extension = extension;
+	public void setTimestamp(Date timestamp) {
+		this.timestamp = timestamp;
 	}
 
 }

@@ -30,11 +30,14 @@ public class TestRunner implements ContextBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+	private final int loopT = 10000;
+
 	@Override
 	@Transactional
 	public void buildAfterStartUp() throws Exception {
 		// TODO Auto-generated method stub
 		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
+
 		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}
 

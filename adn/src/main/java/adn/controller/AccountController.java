@@ -26,6 +26,7 @@ import adn.application.Constants;
 import adn.application.context.ContextProvider;
 import adn.model.Result;
 import adn.model.entities.Account;
+import adn.model.factory.extraction.AccountRoleExtractor;
 import adn.model.models.AccountModel;
 import adn.service.services.AccountService;
 import adn.service.services.FileService;
@@ -42,20 +43,19 @@ public class AccountController extends BaseController {
 	@Autowired
 	protected FileService fileService;
 
+	@Autowired
+	protected AccountRoleExtractor roleExtractor;
+
 	protected final String missingRole = "USER ROLE IS MISSING";
 
-	protected final String roleFieldname = "role";
-
 	protected final String notFound = "USER NOT FOUND";
-
-//	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@SuppressWarnings("unchecked")
 	@Transactional
 	@PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
 	public @ResponseBody ResponseEntity<?> createAccount(@RequestPart(name = "model", required = true) String jsonPart,
 			@RequestPart(name = "photo", required = false) MultipartFile photo, HttpServletResponse response) {
-		Role modelRole = getRoleFromJsonString(jsonPart);
+		Role modelRole = roleExtractor.extractRole(jsonPart);
 
 		if (modelRole == null) {
 			return ResponseEntity.badRequest().body(missingRole);
@@ -131,7 +131,7 @@ public class AccountController extends BaseController {
 	public @ResponseBody ResponseEntity<?> updateAccount(@RequestPart(name = "model", required = true) String jsonPart,
 			@RequestPart(name = "photo", required = false) MultipartFile photo)
 			throws NoSuchMethodException, SecurityException {
-		Role modelRole = getRoleFromJsonString(jsonPart);
+		Role modelRole = roleExtractor.extractRole(jsonPart);
 		AccountModel model;
 		Class<? extends Account> entityClass = accountService.getClassFromRole(modelRole);
 		Class<? extends AccountModel> modelClass = (Class<? extends AccountModel>) modelManager
@@ -177,14 +177,6 @@ public class AccountController extends BaseController {
 		}
 
 		return ResponseEntity.status(result.getStatus()).body(result.getMessageSet());
-	}
-
-	protected Role getRoleFromJsonString(String jsonPart) {
-		try {
-			return Role.valueOf(mapper.readTree(jsonPart).get(roleFieldname).asText());
-		} catch (Exception e) {
-			return Role.ANONYMOUS;
-		}
 	}
 
 }

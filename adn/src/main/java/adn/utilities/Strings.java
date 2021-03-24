@@ -49,6 +49,8 @@ public class Strings extends StringUtils {
 			+ "\\u205F" // MEDIUM MATHEMATICAL SPACE
 			+ "\\u3000"; // IDEOGRAPHIC SPACE
 
+	public static final String MULTIPLE_MATCHES_WHITESPACE_CHARS = "[" + WHITESPACE_CHARS + "]";
+	
 	public static String hash(String a) {
 		MessageDigest md;
 
