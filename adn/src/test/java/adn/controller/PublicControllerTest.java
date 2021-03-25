@@ -3,6 +3,8 @@
  */
 package adn.controller;
 
+import java.io.UnsupportedEncodingException;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.junit.Test;
@@ -13,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ContextConfiguration;
@@ -26,8 +27,12 @@ import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.util.Assert;
 
-import adn.application.Constants;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import adn.application.WebConfig;
+import adn.application.context.ContextProvider;
+import adn.model.models.AccountModel;
 import adn.security.SecurityConfiguration;
 
 /**
@@ -40,7 +45,6 @@ import adn.security.SecurityConfiguration;
 @WebAppConfiguration
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
-@ComponentScan(basePackages = Constants.rootPackage)
 public class PublicControllerTest {
 
 	@Autowired
@@ -51,7 +55,7 @@ public class PublicControllerTest {
 	@Test
 	@WithUserDetails(value = "ngochuy.ou", userDetailsServiceBeanName = "applicationUserDetailsService")
 	public void testGreets() throws Exception {
-		RequestBuilder req = MockMvcRequestBuilders.get("/public/greet");
+		RequestBuilder req = MockMvcRequestBuilders.get("/rest/account");
 		MvcResult res = null;
 
 		try {
@@ -83,12 +87,44 @@ public class PublicControllerTest {
 	}
 
 	@Test
+	@WithUserDetails(value = "ngochuy.ou", userDetailsServiceBeanName = "applicationUserDetailsService")
+	public void plurallyPerformAndGetArray() {
+		String[] usernames = plurallyPerform((resArray) -> {
+			return resArray.filter(res -> res != null && res.getResponse().getStatus() == HttpStatus.OK.value())
+					.map(res -> {
+						final ObjectMapper mapper = ContextProvider.getApplicationContext().getBean(ObjectMapper.class);
+
+						try {
+							return mapper.readValue(res.getResponse().getContentAsString(), AccountModel.class)
+									.getUsername();
+						} catch (JsonProcessingException | UnsupportedEncodingException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							return null;
+						}
+					}).filter(username -> username != null).toArray(String[]::new);
+		}, MockMvcRequestBuilders.get("/rest/account"),
+				MockMvcRequestBuilders.get("/rest/account?username=ngochuy.ou"));
+
+		Assert.isTrue(usernames.length == 2, "Failed");
+	}
+
+	protected <T> T plurallyPerform(Function<Stream<MvcResult>, T> function, RequestBuilder... reqs) {
+		return function.apply(Stream.of(reqs).map(req -> {
+			try {
+				return mock.perform(req).andReturn();
+			} catch (Exception e) {
+				return null;
+			}
+		}));
+	}
+
+	@Test
 	public void concurrentlyPerform() {
-		int amount = 100;
+		int amount = 20;
 
 		for (int i = 0; i < amount; i++) {
 			Thread thread = new Thread() {
-
 				RequestBuilder req = MockMvcRequestBuilders.get("/public/greet");
 				MvcResult res = null;
 

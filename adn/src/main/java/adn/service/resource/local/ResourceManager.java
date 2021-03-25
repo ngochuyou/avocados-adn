@@ -11,18 +11,10 @@ import java.io.Serializable;
  */
 public interface ResourceManager {
 
-	ResourcePersistenceContext getContext(Serializable id) throws IllegalStateException, IllegalArgumentException;
+	<T> void manage(T instance, Class<T> type);
 
-	ResourcePersistenceContext openContext();
+	<T> T find(Serializable identifier, Class<T> type);
 
-	<T> ResourceTuplizer<T> getTuplizer(String name);
-
-	<T> ResourceTuplizer<T> getTuplizer(Class<T> clazz);
-
-	void doContextClose(ResourcePersistenceContext context);
-
-	boolean isLocked(Serializable identifier);
-
-	boolean setLocked(Serializable identifier, boolean isLocked);
+	ResourceManagerFactory getResourceManagerFactory();
 
 }

@@ -3,18 +3,15 @@
  */
 package adn.controller;
 
-import java.util.UUID;
-
 import javax.servlet.http.Cookie;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import adn.service.resource.local.ResourceContextImpl;
 
 /**
  * @author Ngoc Huy
@@ -24,13 +21,11 @@ import adn.service.resource.local.ResourceContextImpl;
 @RequestMapping("/public")
 public class PublicController extends BaseController {
 
-	@Autowired
-	private ResourceContextImpl context;
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@GetMapping("/greet")
 	public ResponseEntity<?> greet(@CookieValue(name = "_sie9t", required = false) Cookie c) {
-		String uuid = UUID.randomUUID().toString();
-		context.add(uuid, "val_" + uuid);
+		logger.debug("Current thread: " + Thread.currentThread().getId());
 
 		return ResponseEntity.ok("hello");
 	}

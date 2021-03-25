@@ -19,7 +19,7 @@ import adn.application.context.ContextProvider;
  */
 @Component
 @Order(6)
-public class ResourceManagerBuilder implements ContextBuilder {
+public class ResourceManagerFactoryBuilder implements ContextBuilder {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -44,17 +44,17 @@ public class ResourceManagerBuilder implements ContextBuilder {
 		// ContextProvider.getApplicationContext().getBean([Explicit bean name]);
 		ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) ContextProvider
 				.getApplicationContext()).getBeanFactory();
-		ResourceManager resourceManager = build();
+		ResourceManagerFactory resourceManager = build();
 
 		beanFactory.registerSingleton(resourceManager.getClass().getName(), resourceManager);
-		beanFactory.registerAlias(resourceManager.getClass().getName(), ResourceManager.class.getName());
+		beanFactory.registerAlias(resourceManager.getClass().getName(), ResourceManagerFactory.class.getName());
 
 		logger.info(getLoggingPrefix(this) + "Finished building " + this.getClass());
 	}
 
-	private ResourceManager build() throws IllegalAccessException, NoSuchMethodException, SecurityException {
+	private ResourceManagerFactory build() throws IllegalAccessException, NoSuchMethodException, SecurityException {
 		// TODO Auto-generated method stub
-		return new GlobalResourceManager(contextBuildingService);
+		return new ResourceManagerFactoryImpl(contextBuildingService);
 	}
 
 }

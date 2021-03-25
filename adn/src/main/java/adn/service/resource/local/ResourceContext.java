@@ -9,23 +9,15 @@ import java.io.Serializable;
  * @author Ngoc Huy
  *
  */
-public interface ResourcePersistenceContext {
+public interface ResourceContext {
 
-	Serializable getId();
-	
 	Object find(String pathName);
 
-	void add(Serializable id, Object resource);
+	void add(Serializable pathName, Object resource);
 
 	void remove(String pathName);
 
-	void commit();
-
 	void clear();
-
-	default void close() {
-		getResourceManager().doContextClose(this);
-	}
 
 	boolean contains(String pathName);
 

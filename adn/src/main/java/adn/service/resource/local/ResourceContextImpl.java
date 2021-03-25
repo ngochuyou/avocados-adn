@@ -7,32 +7,17 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.context.annotation.ScopedProxyMode;
-import org.springframework.stereotype.Component;
-import org.springframework.web.context.annotation.RequestScope;
-
 /**
  * @author Ngoc Huy
  *
  */
-@Lazy
-@RequestScope(proxyMode = ScopedProxyMode.TARGET_CLASS)
-@Component
-public class ResourceContextImpl implements ResourcePersistenceContext {
+public class ResourceContextImpl implements ResourceContext {
 
-	private Map<Serializable, Object> context;
+	private static final int INIT_MAP_SIZE = 8;
+	
+	private Map<Serializable, Object> context = new HashMap<>(INIT_MAP_SIZE);
 
 	private final ResourceManager resourceManager;
-
-	private final Serializable id;
-
-	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	/**
 	 * 
@@ -40,7 +25,6 @@ public class ResourceContextImpl implements ResourcePersistenceContext {
 	public ResourceContextImpl(ResourceManager resourceManager) {
 		// TODO Auto-generated constructor stub
 		this.resourceManager = resourceManager;
-		this.id = Thread.currentThread().getId();
 	}
 
 	@Override
@@ -70,12 +54,6 @@ public class ResourceContextImpl implements ResourcePersistenceContext {
 	}
 
 	@Override
-	public void commit() {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
 	public void clear() {
 		// TODO Auto-generated method stub
 
@@ -91,22 +69,6 @@ public class ResourceContextImpl implements ResourcePersistenceContext {
 	public ResourceManager getResourceManager() {
 		// TODO Auto-generated method stub
 		return resourceManager;
-	}
-
-	@Override
-	public Serializable getId() {
-		// TODO Auto-generated method stub
-		return id;
-	}
-
-	@PostConstruct
-	private void init() {
-		logger.debug("ResourceContextImpl started in thread: " + Thread.currentThread().getId());
-	}
-
-	@PreDestroy
-	private void destroy() {
-		logger.debug("ResourceContextImpl destroyed in thread: " + Thread.currentThread().getId());
 	}
 
 }

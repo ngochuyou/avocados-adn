@@ -15,6 +15,7 @@ import org.springframework.boot.web.embedded.tomcat.TomcatContextCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.SimpleThreadScope;
 import org.springframework.core.convert.converter.Converter;
@@ -35,6 +36,7 @@ import adn.utilities.Role;
  * @author Ngoc Huy
  *
  */
+@ComponentScan(basePackages = { Constants.rootPackage })
 @Configuration
 @EnableWebMvc
 @EnableTransactionManagement
@@ -61,8 +63,8 @@ public class WebConfig implements WebMvcConfigurer {
 		Properties properties = new Properties();
 
 		properties.put("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");
-		properties.put("hibernate.show_sql", false);
-		properties.put("hibernate.format_sql", false);
+		properties.put("hibernate.show_sql", true);
+		properties.put("hibernate.format_sql", true);
 		properties.put("hibernate.id.new_generator_mappings", "false");
 		properties.put("hibernate.hbm2ddl.auto", "update");
 		properties.put("hibernate.flush_mode", "MANUAL");
