@@ -33,11 +33,15 @@ public class ResourceManagerBuilder implements ContextBuilder {
 		contextBuildingService = new ContextBuildingService();
 		// create Metadata
 		final Metadata metadata = new ClassPathScanningMetadata();
-		
+
 		contextBuildingService.register(Metadata.class, metadata);
-		// register naming strategy
+		// register naming-strategy
 		contextBuildingService.register(NamingStrategy.class, NamingStrategy.DEFAULT_NAMING_STRATEGY);
-		
+		// inject ResourceManager bean into ApplicationContext
+		// usages of this bean should be obtained via
+		// ContextProvider.getApplicationContext().getBean(ResourceManager.class.getName());
+		// or
+		// ContextProvider.getApplicationContext().getBean([Explicit bean name]);
 		ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) ContextProvider
 				.getApplicationContext()).getBeanFactory();
 		ResourceManager resourceManager = build();
@@ -45,7 +49,7 @@ public class ResourceManagerBuilder implements ContextBuilder {
 		beanFactory.registerSingleton(resourceManager.getClass().getName(), resourceManager);
 		beanFactory.registerAlias(resourceManager.getClass().getName(), ResourceManager.class.getName());
 
-		logger.info(getLoggingPrefix(this) + "Finished building" + this.getClass());
+		logger.info(getLoggingPrefix(this) + "Finished building " + this.getClass());
 	}
 
 	private ResourceManager build() throws IllegalAccessException, NoSuchMethodException, SecurityException {

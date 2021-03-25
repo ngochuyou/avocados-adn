@@ -12,10 +12,10 @@ import java.io.Serializable;
 public interface ResourcePersistenceContext {
 
 	Serializable getId();
-
+	
 	Object find(String pathName);
 
-	void add(Object resource);
+	void add(Serializable id, Object resource);
 
 	void remove(String pathName);
 
@@ -24,7 +24,7 @@ public interface ResourcePersistenceContext {
 	void clear();
 
 	default void close() {
-		getResourceManager().doResourceContextClose(this);
+		getResourceManager().doContextClose(this);
 	}
 
 	boolean contains(String pathName);

@@ -29,9 +29,6 @@ public class ResourceTuplizerImpl<T> implements ResourceTuplizer<T> {
 
 	private final Class<T> type;
 
-	@SuppressWarnings("unused")
-	private final ResourceManager resourceManager;
-
 	/**
 	 * @throws SecurityException
 	 * @throws NoSuchMethodException
@@ -41,8 +38,6 @@ public class ResourceTuplizerImpl<T> implements ResourceTuplizer<T> {
 			throws NoSuchMethodException, SecurityException {
 		// TODO Auto-generated constructor stub
 		Assert.notNull(type, "Resource type cannot be null");
-		Assert.notNull(resourceManager, "ResourceManager cannot be null");
-		this.resourceManager = resourceManager;
 		this.type = type;
 		// Instantiate identifier getter/setter via @Id
 		Field idField = null;
@@ -61,10 +56,12 @@ public class ResourceTuplizerImpl<T> implements ResourceTuplizer<T> {
 		Assert.isTrue(Serializable.class.isAssignableFrom(idField.getType()),
 				"Resource identifier must be Serializable");
 
-		Method method = type.getDeclaredMethod(Strings.toCamel("get " + idField.getName(), Strings.MULTIPLE_MATCHES_WHITESPACE_CHARS));
+		Method method = type.getDeclaredMethod(
+				Strings.toCamel("get " + idField.getName(), Strings.MULTIPLE_MATCHES_WHITESPACE_CHARS));
 
 		idGetter = new GetterMethodImpl(type, idField.getName(), method);
-		method = type.getDeclaredMethod(Strings.toCamel("set " + idField.getName(), Strings.MULTIPLE_MATCHES_WHITESPACE_CHARS),
+		method = type.getDeclaredMethod(
+				Strings.toCamel("set " + idField.getName(), Strings.MULTIPLE_MATCHES_WHITESPACE_CHARS),
 				idField.getType());
 		idSetter = new SetterMethodImpl(type, idField.getName(), method);
 	}

@@ -20,7 +20,7 @@ import adn.model.entities.Account;
  * @author Ngoc Huy
  *
  */
-@Service
+@Service("applicationUserDetailsService")
 public class ApplicationUserDetailsService implements UserDetailsService {
 
 	@Autowired

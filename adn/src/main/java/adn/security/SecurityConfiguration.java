@@ -6,6 +6,7 @@ package adn.security;
 import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,6 +16,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
@@ -38,7 +40,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	private AuthenticationService authService;
 
 	@Autowired
-	private ApplicationUserDetailsService userDetailsService;
+	@Qualifier("applicationUserDetailsService")
+	private UserDetailsService userDetailsService;
 
 	@Autowired
 	private JwtRequestFilter jwtFilter;
@@ -46,7 +49,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private SimpleJwtLogoutFilter jwtLogoutFilter;
 
-	private final String[] publicEndPoints = { "/account/photo\\GET" };
+	private final String[] publicEndPoints = { "/account/photo\\GET", "/public/**" };
 
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {

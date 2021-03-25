@@ -39,7 +39,11 @@ public class ContextProvider implements ApplicationContextAware {
 		if (auth instanceof AnonymousAuthenticationToken) {
 			return Role.ANONYMOUS;
 		}
-
+		// handle with care when working with unit testing
+		// e.g: using @WithMockUser may make the test unit inject
+		// an instance of type org.springframework.security.core.userdetails.User
+		// rather than ApplicationUserDetails, which causes the following type-casting
+		// to fail
 		return ((ApplicationUserDetails) auth.getPrincipal()).getRole();
 	}
 

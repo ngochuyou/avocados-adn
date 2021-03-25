@@ -52,9 +52,9 @@ public class ContextBuildingService {
 		Assert.isTrue(candidateKeys.length != 0, "No service class of type: " + serviceClass + " were registered");
 		Assert.isTrue(candidateKeys.length == 1, "More than one service class of type: " + serviceClass + " were registered");
 		
-		Set<Service> serviceSet;
+		Set<Service> serviceSet = serviceMap.get(candidateKeys[0]);
 
-		candidateKeys = (serviceSet = serviceMap.get(candidateKeys[0])).stream()
+		candidateKeys = serviceSet.stream()
 				.filter(serviceClassKey -> serviceClassKey.getClass().isAssignableFrom(serviceClass))
 				.toArray(Class<?>[]::new);
 		// @formatter:on

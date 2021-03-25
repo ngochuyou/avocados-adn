@@ -4,14 +4,15 @@
 package adn.service.resource.local;
 
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
 
 /**
@@ -20,9 +21,9 @@ import org.springframework.util.Assert;
  */
 public class GlobalResourceManager implements ResourceManager {
 
-	private volatile Map<String, Boolean> lockStateContext = Collections.synchronizedMap(new HashMap<>());
+//	private volatile Map<String, Boolean> lockStateContext = Collections.synchronizedMap(new HashMap<>());
 
-	private final Map<Serializable, ResourcePersistenceContext> persistenceContextMap = new HashMap<>(1000, 0.75f);
+//	private final Map<Serializable, ResourcePersistenceContext> persistenceContextMap = new HashMap<>(1000, 0.75f);
 
 	private final Map<String, ResourceTuplizer<?>> tuplizersByName = new HashMap<>();
 
@@ -52,7 +53,7 @@ public class GlobalResourceManager implements ResourceManager {
 
 		managedModels = modelClassSet.stream().map(clazz -> resourceNamingStrategy.getName(clazz))
 				.collect(Collectors.toSet());
-
+		// create Tuplizers
 		for (Class<?> modelClass : modelClassSet) {
 			ResourceTuplizer<?> tuplizer = createTuplizer(modelClass);
 
@@ -77,18 +78,21 @@ public class GlobalResourceManager implements ResourceManager {
 	public ResourcePersistenceContext getContext(Serializable id)
 			throws IllegalStateException, IllegalArgumentException {
 		// TODO Auto-generated method stub
-		Assert.notNull(id, "Null identifier");
-		return persistenceContextMap.get(id);
+		return (ResourcePersistenceContext) TransactionSynchronizationManager.getResource(id);
 	}
 
 	@Override
 	public ResourcePersistenceContext openContext() {
 		// TODO Auto-generated method stub
-		return null;
+		String uuid = UUID.randomUUID().toString();
+		ResourcePersistenceContext context;
+		TransactionSynchronizationManager.bindResource(uuid, context = new ResourceContextImpl(this));
+
+		return context;
 	}
 
 	@Override
-	public void doResourceContextClose(ResourcePersistenceContext context) {
+	public void doContextClose(ResourcePersistenceContext context) {
 		// TODO Auto-generated method stub
 	}
 
@@ -115,7 +119,8 @@ public class GlobalResourceManager implements ResourceManager {
 	public <T> ResourceTuplizer<T> getTuplizer(String resourceName) throws IllegalArgumentException {
 		// TODO Auto-generated method stub
 		if (!managedModels.contains(resourceName)) {
-			throw new IllegalArgumentException("Could not obtain identifier for resource of name: " + resourceName);
+			throw new IllegalArgumentException("Could not obtain tuplizer for resource of name: " + resourceName
+					+ ", provided resource name is not a managed type");
 		}
 
 		return (ResourceTuplizer<T>) tuplizersByName.get(resourceName);
