@@ -24,7 +24,7 @@ import adn.utilities.Strings;
 
 @Component(Constants.defaultEntityExtractorProdiverName)
 @Order(value = 4)
-public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
+public class DelegateEntityExtractorProvider implements EntityExtractorProvider {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 

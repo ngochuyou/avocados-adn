@@ -14,7 +14,7 @@ import java.util.Map;
 public class ResourceContextImpl implements ResourceContext {
 
 	private static final int INIT_MAP_SIZE = 8;
-	
+
 	private Map<Serializable, Object> context = new HashMap<>(INIT_MAP_SIZE);
 
 	private final ResourceManager resourceManager;
@@ -28,7 +28,7 @@ public class ResourceContextImpl implements ResourceContext {
 	}
 
 	@Override
-	public Object find(String pathName) {
+	public Object find(Serializable pathName) {
 		// TODO Auto-generated method stub
 		if (context == null || context.isEmpty()) {
 			return null;
@@ -48,7 +48,7 @@ public class ResourceContextImpl implements ResourceContext {
 	}
 
 	@Override
-	public void remove(String pathName) {
+	public void remove(Serializable pathName) {
 		// TODO Auto-generated method stub
 
 	}
@@ -60,9 +60,9 @@ public class ResourceContextImpl implements ResourceContext {
 	}
 
 	@Override
-	public boolean contains(String pathName) {
+	public boolean contains(Serializable pathName) {
 		// TODO Auto-generated method stub
-		return false;
+		return context.containsKey(pathName);
 	}
 
 	@Override

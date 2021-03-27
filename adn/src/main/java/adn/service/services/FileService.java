@@ -14,8 +14,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import adn.application.Constants;
+import adn.application.context.ContextProvider;
 import adn.service.ADNService;
 import adn.service.ServiceResult;
+import adn.service.resource.local.ResourceManager;
+import adn.service.resource.local.ResourceManagerFactory;
+import adn.service.resource.models.FileResource;
+import adn.service.resource.models.NamedResource;
 import adn.utilities.Strings;
 
 @Service
@@ -90,6 +95,16 @@ public class FileService implements ADNService {
 
 			return null;
 		}
+	}
+
+	public void processName(FileResource resource) {
+		ResourceManagerFactory factory = (ResourceManagerFactory) ContextProvider.getApplicationContext()
+				.getBean(ResourceManagerFactory.class.getName());
+		ResourceManager manager = factory.getResourceManager();
+		NamedResource file = manager.find(resource.getPathname(), NamedResource.class);
+		
+		logger.debug("Retreiving " + resource.getPathname() + " in current thread: " + Thread.currentThread().getId());
+		logger.debug("Resource's identity match result: " + resource.equals(file));
 	}
 
 }

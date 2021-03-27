@@ -11,7 +11,7 @@ import java.io.Serializable;
  */
 public interface ResourceManagerFactory {
 
-	public static final String HIBERNATE_UNSUPPORTED = "Hibernate implementation is unsupported here";
+	public static final String HIBERNATE_UNSUPPORTED = "Some of Hibernate implementations might be unsupported";
 
 	ResourceManager getResourceManager();
 

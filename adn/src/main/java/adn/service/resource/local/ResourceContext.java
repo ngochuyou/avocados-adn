@@ -11,15 +11,15 @@ import java.io.Serializable;
  */
 public interface ResourceContext {
 
-	Object find(String pathName);
+	Object find(Serializable identifier);
 
-	void add(Serializable pathName, Object resource);
+	void add(Serializable identifier, Object resource);
 
-	void remove(String pathName);
+	void remove(Serializable identifier);
 
 	void clear();
 
-	boolean contains(String pathName);
+	boolean contains(Serializable pathName);
 
 	ResourceManager getResourceManager();
 

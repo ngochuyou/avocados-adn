@@ -52,8 +52,14 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private SimpleJwtLogoutFilter jwtLogoutFilter;
 
-	private final String[] publicEndPoints = { "/account/photo\\GET", "/public/**" };
-
+	public static final String TESTUNIT_PREFIX = "/testunit";
+	// @formatter:off
+	private static final String[] PUBLIC_ENDPOINTS = {
+			"/account/photo\\GET",
+			"public/**",
+			TESTUNIT_PREFIX + "/**"
+	};
+	// @formatter:on
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 		// TODO Auto-generated method stub
@@ -70,7 +76,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 			.csrf().disable()
 			.cors();
 		
-		for (String endpoint: publicEndPoints) {
+		for (String endpoint: PUBLIC_ENDPOINTS) {
 			String[] parts = endpoint.split("\\\\");
 			
 			if (parts.length == 0) {

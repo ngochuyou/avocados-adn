@@ -40,7 +40,7 @@ import adn.utilities.Role;
 @Configuration
 @EnableWebMvc
 @EnableTransactionManagement
-public class WebConfig implements WebMvcConfigurer {
+public class WebConfiguration implements WebMvcConfigurer {
 
 	@Bean
 	public InternalResourceViewResolver viewResolver() {
