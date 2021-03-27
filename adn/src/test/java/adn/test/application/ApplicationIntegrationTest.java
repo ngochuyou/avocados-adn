@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -67,12 +68,13 @@ public class ApplicationIntegrationTest {
 		File directory = new File(Constants.IMAGE_FILE_PATH);
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
 				.get(MULTITHREADING_ENDPOINT + "/file/public/image/bytes");
+		int amount = directory.listFiles().length;
 
 		for (File f : directory.listFiles()) {
 			reqBuilder.queryParam("filenames", f.getName());
 		}
 
-		reqBuilder.queryParam("amount", String.valueOf(directory.listFiles().length));
+		reqBuilder.queryParam("amount", String.valueOf(amount));
 
 		MockHttpServletRequest req = reqBuilder.buildRequest(mock.getDispatcherServlet().getServletContext());
 
@@ -92,9 +94,11 @@ public class ApplicationIntegrationTest {
 				assertThat(
 					Stream
 						.of(statusSet)
-						.filter(status -> status.startsWith("FAILED"))
-						.count() == 0
+						.filter(status -> status.startsWith(HttpStatus.OK.toString()))
+						.count() == amount
 				);
+				
+				logger.trace("Successfully retrieved " + statusSet.length + " files");
 			});
 		// @formatter:on
 	}

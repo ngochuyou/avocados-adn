@@ -3,8 +3,12 @@
  */
 package adn.controller;
 
+import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -38,29 +42,48 @@ public class TestController extends BaseController {
 	@Autowired
 	private FileController fileController;
 
-	private class TaskWithSingleArgumentAndReducer<T> implements Runnable {
+	protected class ConsumeAndReduce<T> implements Runnable {
 
 		private final T arg;
 
-		private final Consumer<ResponseEntity<?>> reducer;
+		private final BiConsumer<ResponseEntity<?>, T> reducer;
 
-		private final BiConsumer<T, Consumer<ResponseEntity<?>>> consumer;
+		private final BiConsumer<T, BiConsumer<ResponseEntity<?>, T>> consumer;
+
+		private final CountDownLatch signal;
+
+		private Consumer<Exception> exceptionConsumer;
 
 		/**
 		 * 
 		 */
-		public TaskWithSingleArgumentAndReducer(T arg, Consumer<ResponseEntity<?>> reducer,
-				BiConsumer<T, Consumer<ResponseEntity<?>>> consumer) {
+		public ConsumeAndReduce(T arg, BiConsumer<ResponseEntity<?>, T> reducer,
+				BiConsumer<T, BiConsumer<ResponseEntity<?>, T>> consumer, Consumer<Exception> exceptionConsumer,
+				CountDownLatch signal) {
 			// TODO Auto-generated constructor stub
 			this.arg = arg;
 			this.consumer = consumer;
 			this.reducer = reducer;
+			this.exceptionConsumer = exceptionConsumer;
+			this.signal = signal;
 		}
 
 		@Override
 		public void run() {
 			// TODO Auto-generated method stub
-			consumer.accept(arg, reducer);
+			try {
+				consumer.accept(arg, reducer);
+				signal.countDown();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				if (exceptionConsumer != null) {
+					exceptionConsumer.accept(e);
+
+					return;
+				}
+
+				e.printStackTrace();
+			}
 		}
 
 	}
@@ -69,35 +92,81 @@ public class TestController extends BaseController {
 	@GetMapping("/multithreading/file/public/image/bytes")
 	public @ResponseBody ResponseEntity<?> testGetImageBytes(
 			@RequestParam(name = "filenames", required = true) String[] filenames,
-			@RequestParam(name = "amount", required = true) int amount) throws JsonMappingException, JsonProcessingException {
+			@RequestParam(name = "amount", required = true) int amount) throws JsonMappingException, JsonProcessingException, InterruptedException, ExecutionException {
 		ThreadPoolTaskExecutor executorService = new ThreadPoolTaskExecutor();
+		CountDownLatch doneSignal = new CountDownLatch(amount);
 		
 		executorService.setCorePoolSize(amount);
 		executorService.initialize();
-		
-		Set<String> messages = new HashSet<>();
+
+		Collection<String> messageHolder = new HashSet<>();
 
 		for (int i = 0; i < amount; i++) {
-			executorService.submit(new TaskWithSingleArgumentAndReducer<String>(
-				filenames[i],
-				(res) -> {
-					messages.add(isOk(res) ? "SUCCESS: " + res.getStatusCodeValue() : "FAILED: " + res.getStatusCodeValue());
-				},
-				(passedFilename, consumer) -> {
-					logger.trace("Executing task testGetImageBytes(), thread: " + Thread.currentThread().getName());
-	
-					ResponseEntity<?> res = fileController.getImageBytes(passedFilename);
-
-					consumer.accept(res);
-			}));
+			try {
+				executorService.submit(new ConsumeAndReduce<String>(
+					filenames[i],
+					(res, passedFilename) -> {
+						messageHolder.add(String.format("%s: %s", res.getStatusCode(), passedFilename));
+					},
+					(passedFilename, reducer) -> {
+						logger.trace(
+							String.format("\n\tReading image bytes, filename: %s, thread: %s",
+								passedFilename,
+								currentThreadName()
+							)
+						);
+						
+						ResponseEntity<?> res = fileController.getImageBytes(passedFilename);
+						
+						logger.debug(String.format(
+							"\n\tRequest in thread %s was fulfilled"
+								+ "\n\t\t-status code: %s",
+							currentThreadName(),
+							res.getStatusCode().toString()
+						));
+						reducer.accept(res, passedFilename);
+					},
+					(ex) -> {
+						logger.error("\n\tA thread has thrown an Exception: " + Thread.currentThread()
+										+ "\n\t-Error type: %s"
+										+ "\n\t-Error message: %s",
+							ex.getClass(), ex.getMessage()
+						);
+					}, doneSignal
+				)).get(5, TimeUnit.SECONDS);
+			} catch (InterruptedException | ExecutionException | TimeoutException ex) {
+				// TODO Auto-generated catch block
+				messageHolder.add(String.format("%s: %s", HttpStatus.REQUEST_TIMEOUT, filenames[i]));
+			}
 		}
 		// @formatter:on
-		return ResponseEntity.ok(messages);
+		logger.info("Waiting for done signal...");
+		doneSignal.await();
+		logger.info("Done signal received");
+
+		return ResponseEntity.ok(messageHolder.toArray());
 	}
 
-	private boolean isOk(ResponseEntity<?> res) {
+	private String currentThreadName() {
 
-		return res != null && res.getStatusCode() == HttpStatus.OK;
+		return Thread.currentThread().getName();
+	}
+
+	protected class CountDownLatchPair {
+
+		final CountDownLatch start;
+
+		final CountDownLatch done;
+
+		/**
+		 * 
+		 */
+		public CountDownLatchPair(CountDownLatch start, CountDownLatch done) {
+			// TODO Auto-generated constructor stub
+			this.start = start;
+			this.done = done;
+		}
+
 	}
 
 }
