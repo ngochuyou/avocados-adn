@@ -10,12 +10,11 @@ import java.util.Date;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import adn.application.Constants;
 import adn.application.context.ContextProvider;
-import adn.service.ADNService;
+import adn.controller.FileController;
+import adn.service.Service;
 import adn.service.ServiceResult;
 import adn.service.resource.local.ResourceManager;
 import adn.service.resource.local.ResourceManagerFactory;
@@ -23,8 +22,8 @@ import adn.service.resource.models.FileResource;
 import adn.service.resource.models.NamedResource;
 import adn.utilities.Strings;
 
-@Service
-public class FileService implements ADNService {
+@org.springframework.stereotype.Service
+public class FileService implements Service {
 
 	protected final String emptyName = "FILENAME CAN NOT BE EMPTY";
 
@@ -49,7 +48,7 @@ public class FileService implements ADNService {
 
 		try {
 			byte[] bytes = file.getBytes();
-			Path path = Paths.get(Constants.IMAGE_FILE_PATH + filename);
+			Path path = Paths.get(FileController.IMAGE_FILE_PATH + filename);
 
 			logger.debug("Writing file: " + filename);
 			Files.write(path, bytes);
@@ -67,7 +66,7 @@ public class FileService implements ADNService {
 			return ServiceResult.bad().body(emptyName);
 		}
 
-		File file = new File(Constants.IMAGE_FILE_PATH + filename);
+		File file = new File(FileController.IMAGE_FILE_PATH + filename);
 
 		if (!file.exists()) {
 			return ServiceResult.bad().body(fileNotFound);
@@ -81,7 +80,7 @@ public class FileService implements ADNService {
 
 	public byte[] getImageBytes(String filename) {
 		try {
-			File file = new File(Constants.IMAGE_FILE_PATH + filename);
+			File file = new File(FileController.IMAGE_FILE_PATH + filename);
 
 			if (!file.exists()) {
 				return null;
@@ -102,7 +101,7 @@ public class FileService implements ADNService {
 				.getBean(ResourceManagerFactory.class.getName());
 		ResourceManager manager = factory.getResourceManager();
 		NamedResource file = manager.find(resource.getPathname(), NamedResource.class);
-		
+
 		logger.debug("Retreiving " + resource.getPathname() + " in current thread: " + Thread.currentThread().getId());
 		logger.debug("Resource's identity match result: " + resource.equals(file));
 	}

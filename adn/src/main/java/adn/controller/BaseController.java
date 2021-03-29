@@ -20,7 +20,6 @@ import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractorProvider;
 import adn.model.factory.production.security.AuthenticationBasedProducerProvider;
 import adn.model.models.Model;
-import adn.utilities.TypeUtils;
 
 /**
  * @author Ngoc Huy
@@ -36,7 +35,7 @@ public class BaseController {
 	protected AuthenticationBasedProducerProvider producerProvider;
 
 	@Autowired
-	@Qualifier(Constants.defaultEntityExtractorProdiverName)
+	@Qualifier(Constants.DEFAULT_ENTITY_EXTRACTOR_PROVIDER_NAME)
 	protected EntityExtractorProvider extractorProvider;
 
 	@Autowired
@@ -75,7 +74,7 @@ public class BaseController {
 	}
 
 	protected <T extends Entity, M extends Model> T extract(M model, Class<T> entityClass) {
-		return extractorProvider.getExtractor(entityClass).extract(model, TypeUtils.newInstanceOrAbstract(entityClass));
+		return extractorProvider.getExtractor(entityClass).extract(model, modelManager.instantiate(entityClass));
 	}
 
 	protected <T extends Entity, M extends Model> M produce(T entity, Class<M> modelClass) {

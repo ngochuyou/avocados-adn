@@ -2,25 +2,26 @@ package adn.service.services;
 
 import java.util.Map;
 
-import org.springframework.stereotype.Service;
-
 import adn.model.entities.Account;
 import adn.model.entities.Admin;
 import adn.model.entities.Customer;
 import adn.model.entities.Personnel;
-import adn.service.ADNService;
+import adn.service.Service;
 import adn.utilities.Role;
 
-@Service
-public class AccountService implements ADNService {
+@org.springframework.stereotype.Service
+public class AccountService implements Service {
 
 	public static final String UNKNOWN_USER_FIRSTNAME = "ADN";
 
 	public static final String UNKNOWN_USER_LASTNAME = "USER";
-
-	private final Map<Role, Class<? extends Account>> roleClassMap = Map.of(Role.ADMIN, Admin.class, Role.CUSTOMER,
-			Customer.class, Role.PERSONNEL, Personnel.class, Role.ANONYMOUS, Account.class);
-
+	// @formatter:off
+	private final Map<Role, Class<? extends Account>> roleClassMap = Map.of(
+			Role.ADMIN, Admin.class,
+			Role.CUSTOMER, Customer.class,
+			Role.PERSONNEL, Personnel.class,
+			Role.ANONYMOUS, Account.class);
+	// @formatter:on
 	@SuppressWarnings("unchecked")
 	public <T extends Account> Class<T> getClassFromRole(Role role) {
 

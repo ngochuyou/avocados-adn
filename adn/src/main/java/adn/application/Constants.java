@@ -9,30 +9,28 @@ package adn.application;
  */
 public class Constants {
 
-	public static final String rootPackage = "adn";
+	private Constants() {
 
-	public static final String entityPackage = "adn.model.entities";
+	}
 
-	public static final String modelPackage = "adn.model.models";
+	public static final String ROOT_PACKAGE = "adn";
 
-	public static final String resourceModelPackage = "adn.service.resource.models";
+	public static final String ENTITY_PACKAGE = "adn.model.entities";
 
-	public static final String genericSpecificationPackage = "adn.model.specification.generic";
+	public static final String MODEL_PACKAGE = "adn.model.models";
 
-	public static final String genericFactoryPackage = "adn.model.factory.generic";
+	public static final String RESOURCE_MODEL_PACKAGE = "adn.service.resource.models";
 
-	public static final String genericDAOPackage = "adn.dao.generic";
+	public static final String GENERIC_SPECIFICATION_PACKAGE = "adn.model.specification.generic";
 
-	public static final String defaultEntityExtractorProdiverName = "defaultEntityExtractorProvider";
+	public static final String GENERIC_FACTORY_PACKAGE = "adn.model.factory.generic";
 
-	public static final String defaultModelProducerProdiverName = "authenticationBasedProducerProvider";
+	public static final String GENERIC_DAO_PACKAGE = "adn.dao.generic";
 
-	public static final String defaultResourceManagerName = "defaultResourceManager";
+	public static final String DEFAULT_ENTITY_EXTRACTOR_PROVIDER_NAME = "defaultEntityExtractorProvider";
 
-	public static final String IMAGE_FILE_PATH = "C:\\Users\\Ngoc Huy\\Pictures\\avocados-adn\\";
+	public static final String DEFAULT_MODEL_PRODUCER_PROVIDER_NAME = "authenticationBasedProducerProvider";
 
-	public static final String CONFIG_PATH = "C:\\Users\\Ngoc Huy\\Documents\\workspace\\avocados-adn\\config\\";
+	public static final String DEFAULT_RESOURCE_MANAGER_NAME = "defaultResourceManager";
 
-	public static final String DEFAULT_USER_PHOTO_NAME = "aad81c87bd8316705c4568e72577eb62476a.jpg";
-	
 }

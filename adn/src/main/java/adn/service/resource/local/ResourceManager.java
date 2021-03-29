@@ -15,6 +15,16 @@ public interface ResourceManager {
 
 	<T> T find(Serializable identifier, Class<T> type);
 
+	<T> Serializable save(T instance);
+
 	ResourceManagerFactory getResourceManagerFactory();
+
+	LocalResourceStorage getLocalResourceStorage();
+
+	void setRollbackOnly();
+
+	boolean isRollbackOnly();
+
+	ResourceContext getResourceContext();
 
 }

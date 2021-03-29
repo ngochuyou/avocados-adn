@@ -5,11 +5,14 @@ package adn.security;
 
 import java.util.Arrays;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -34,16 +37,19 @@ import adn.utilities.Strings;
  * @author Ngoc Huy
  *
  */
-@ComponentScan(basePackages = { Constants.rootPackage })
+@ComponentScan(basePackages = { Constants.ROOT_PACKAGE })
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
 	@Autowired
+	private Environment env;
+
+	@Autowired
 	private AuthenticationService authService;
 
 	@Autowired
-	@Qualifier("applicationUserDetailsService")
+	@Qualifier(ApplicationUserDetailsService.NAME)
 	private UserDetailsService userDetailsService;
 
 	@Autowired
@@ -52,20 +58,21 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private SimpleJwtLogoutFilter jwtLogoutFilter;
 
+	public static final String CONFIG_PATH = "C:\\Users\\Ngoc Huy\\Documents\\workspace\\avocados-adn\\config\\";
+
 	public static final String TESTUNIT_PREFIX = "/testunit";
 	// @formatter:off
 	private static final String[] PUBLIC_ENDPOINTS = {
 			"/account/photo\\GET",
-			"public/**",
-			TESTUNIT_PREFIX + "/**"
+			"public/**"
 	};
 	// @formatter:on
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 		// TODO Auto-generated method stub
-		// @formatter:off
 		auth.userDetailsService(userDetailsService);
-		// @formatter:on
 	}
 
 	@Override
@@ -101,6 +108,11 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 				http.authorizeRequests()
 					.antMatchers(httpMethod, parts[0]).permitAll();
 			}
+		}
+		
+		if (!env.getProperty("spring.profiles.active").equals("PROD")) {
+			http.authorizeRequests().antMatchers(TESTUNIT_PREFIX + "/**").permitAll();
+			logger.debug("Publishing " + TESTUNIT_PREFIX + " endpoints");
 		}
 		
 		http

@@ -3,6 +3,7 @@
  */
 package adn.model;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
@@ -15,8 +16,13 @@ import java.util.stream.Collectors;
 
 import javax.persistence.Entity;
 
+import org.hibernate.SessionFactory;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.tuple.entity.AbstractEntityTuplizer;
+import org.hibernate.tuple.entity.EntityTuplizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
@@ -30,7 +36,7 @@ import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
 import adn.model.models.Model;
-import adn.utilities.TypeUtils;
+import adn.utilities.TypeHelper;
 
 /**
  * @author Ngoc Huy
@@ -40,7 +46,7 @@ import adn.utilities.TypeUtils;
 @Order(0)
 public class ModelManager implements ContextBuilder {
 
-	private transient Logger logger = LoggerFactory.getLogger(this.getClass());
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private ModelInheritanceTree<adn.model.entities.Entity> entityTree;
 
@@ -49,6 +55,9 @@ public class ModelManager implements ContextBuilder {
 	private Map<Class<? extends adn.model.entities.Entity>, Set<Class<? extends Model>>> relationMap;
 
 	private Map<Class<? extends adn.model.entities.Entity>, Class<? extends Model>> defaultModelMap;
+
+	@Autowired
+	private SessionFactory sessionFactory;
 
 	@Override
 	public void buildAfterStartUp() {
@@ -70,10 +79,10 @@ public class ModelManager implements ContextBuilder {
 		scanner.addIncludeFilter(new AssignableTypeFilter(adn.model.entities.Entity.class));
 
 		try {
-			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.entityPackage)) {
+			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.ENTITY_PACKAGE)) {
 				Class<? extends adn.model.entities.Entity> clazz = (Class<? extends adn.model.entities.Entity>) Class
 						.forName(beanDef.getBeanClassName());
-				Stack<Class<?>> stack = TypeUtils.getClassStack(clazz);
+				Stack<Class<?>> stack = TypeHelper.getClassStack(clazz);
 
 				while (!stack.isEmpty()) {
 					this.entityTree.add((Class<adn.model.entities.Entity>) stack.pop());
@@ -102,9 +111,9 @@ public class ModelManager implements ContextBuilder {
 		scanner.addIncludeFilter(new AssignableTypeFilter(Model.class));
 
 		try {
-			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.modelPackage)) {
+			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.MODEL_PACKAGE)) {
 				Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(beanDef.getBeanClassName());
-				Stack<Class<?>> stack = TypeUtils.getClassStack(clazz);
+				Stack<Class<?>> stack = TypeHelper.getClassStack(clazz);
 
 				while (!stack.isEmpty()) {
 					this.modelTree.add((Class<Model>) stack.pop());
@@ -133,11 +142,11 @@ public class ModelManager implements ContextBuilder {
 		// @formatter:off
 		scanner.addIncludeFilter(new AssignableTypeFilter(Model.class));
 		scanner.addIncludeFilter(new AnnotationTypeFilter(Genetized.class));
-		scanner.findCandidateComponents(Constants.modelPackage).stream().map(bean -> {
+		scanner.findCandidateComponents(Constants.MODEL_PACKAGE).stream().map(bean -> {
 			try {
 				Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(bean.getBeanClassName());
 
-				if (!TypeUtils.isExtendedFrom(clazz, Model.class)) {
+				if (!TypeHelper.isExtendedFrom(clazz, Model.class)) {
 					throw new Exception(clazz.getName() + " is a Non-standard Model. A Model must be extended from "
 							+ Entity.class);
 				}
@@ -156,17 +165,17 @@ public class ModelManager implements ContextBuilder {
 				Field[] fields = clazz.getDeclaredFields();
 
 				for (Field f : fields) {
-					if (TypeUtils.isExtendedFrom(f.getType(), AbstractModel.class) && models.contains(clazz)
+					if (TypeHelper.isExtendedFrom(f.getType(), AbstractModel.class) && models.contains(clazz)
 							&& this.entityTree.contains((Class<? extends Model>) f.getType())) {
 						throw new Exception(clazz.getName() + " is a Non-standard Model. " + f.getType().getName()
 								+ " was modelized into a Model. Use the modelized type instead");
 					}
 
-					if (TypeUtils.isImplementedFrom(f.getType(), Collection.class)) {
+					if (TypeHelper.isImplementedFrom(f.getType(), Collection.class)) {
 						ParameterizedType type = (ParameterizedType) f.getGenericType();
 						Class<?> clz = (Class<?>) type.getActualTypeArguments()[0];
 
-						if (TypeUtils.isExtendedFrom(clz, Model.class) && models.contains(clazz)
+						if (TypeHelper.isExtendedFrom(clz, Model.class) && models.contains(clazz)
 								&& this.entityTree.contains((Class<? extends Model>) clz)) {
 							throw new Exception(clazz.getName() + " is a Non-standard Model. " + clz.getName()
 									+ " was modelized into a Model. Use the modelized type instead on field: "
@@ -207,7 +216,7 @@ public class ModelManager implements ContextBuilder {
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
 		scanner.addIncludeFilter(new AssignableTypeFilter(Model.class));
-		scanner.findCandidateComponents(Constants.modelPackage)
+		scanner.findCandidateComponents(Constants.MODEL_PACKAGE)
 			.forEach(bean -> {
 				try {
 					Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(bean.getBeanClassName());
@@ -248,6 +257,24 @@ public class ModelManager implements ContextBuilder {
 	public Class<? extends Model> getModelClass(Class<? extends adn.model.entities.Entity> entityClass) {
 
 		return this.defaultModelMap.get(entityClass);
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T extends adn.model.entities.Entity> T instantiate(Class<T> type) {
+
+		return (T) ((AbstractEntityTuplizer) getTuplizer(type)).instantiate();
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T extends adn.model.entities.Entity> T instantiate(Class<T> type, Serializable id) {
+
+		return (T) ((AbstractEntityTuplizer) getTuplizer(type)).instantiate(id);
+	}
+
+	private <T extends adn.model.entities.Entity> EntityTuplizer getTuplizer(Class<T> type) {
+
+		return sessionFactory.unwrap(SessionFactoryImplementor.class).getMetamodel().locateEntityPersister(type)
+				.getEntityTuplizer();
 	}
 
 }

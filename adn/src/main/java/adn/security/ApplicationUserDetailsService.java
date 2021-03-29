@@ -20,8 +20,10 @@ import adn.model.entities.Account;
  * @author Ngoc Huy
  *
  */
-@Service("applicationUserDetailsService")
+@Service(ApplicationUserDetailsService.NAME)
 public class ApplicationUserDetailsService implements UserDetailsService {
+
+	public static final String NAME = "applicationUserDetailsService";
 
 	@Autowired
 	private BaseDAO dao;

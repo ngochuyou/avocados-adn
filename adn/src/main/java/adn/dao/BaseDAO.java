@@ -12,6 +12,8 @@ import javax.persistence.criteria.CriteriaQuery;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
@@ -22,7 +24,7 @@ import adn.model.Result;
 import adn.model.entities.Entity;
 import adn.model.specification.Specification;
 import adn.model.specification.SpecificationFactory;
-import adn.utilities.TypeUtils;
+import adn.utilities.TypeHelper;
 
 /**
  * @author Ngoc Huy
@@ -33,13 +35,15 @@ import adn.utilities.TypeUtils;
 public class BaseDAO {
 
 	@Autowired
-	protected TypeUtils reflector;
+	protected TypeHelper reflector;
 
 	@Autowired
 	protected SessionFactory sessionFactory;
 
 	@Autowired
 	protected SpecificationFactory specificationFactory;
+
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	public <T extends Entity> T findById(Serializable id, Class<T> clazz) {
 
@@ -114,17 +118,17 @@ public class BaseDAO {
 	 * This method was deprecated since updating the DTYPE is a very bad design.
 	 * <p>
 	 * Willingly, this action could be accomplished by deleting the old entity and
-	 * saving a new one of the desired type
+	 * saving a new one with the desired type
 	 * </p>
 	 * 
 	 */
 	@Deprecated(forRemoval = true)
 	public <T extends Entity, A extends T> Result<A> updateDType(A instance, Class<T> clazz) {
 		Session session = sessionFactory.getCurrentSession();
-		Query<?> query = session
-				.createNativeQuery("UPDATE " + TypeUtils.getTableName(clazz) + " e SET DTYPE = :type WHERE e.id = :id");
+		Query<?> query = session.createNativeQuery(
+				"UPDATE " + TypeHelper.getTableName(clazz) + " e SET DTYPE = :type WHERE e.id = :id");
 
-		query.setParameter("type", TypeUtils.getEntityName(instance.getClass()));
+		query.setParameter("type", TypeHelper.getEntityName(instance.getClass()));
 		query.setParameter("id", instance.getId());
 
 		int result = query.executeUpdate();
@@ -133,6 +137,8 @@ public class BaseDAO {
 			return Result.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), instance,
 					Map.of("id", "Can not update DTYPE"));
 		}
+
+		logger.trace("Updating DTYPE. Id: " + instance.getId() + " new type: " + query.getParameter("type"));
 
 		return Result.success(instance);
 	}

@@ -22,7 +22,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import adn.application.Constants;
 import adn.application.context.ContextProvider;
 import adn.model.Result;
 import adn.model.entities.Account;
@@ -31,7 +30,7 @@ import adn.model.models.AccountModel;
 import adn.service.services.AccountService;
 import adn.service.services.FileService;
 import adn.utilities.Role;
-import adn.utilities.TypeUtils;
+import adn.utilities.TypeHelper;
 
 @Controller
 @RequestMapping("/account")
@@ -83,7 +82,7 @@ public class AccountController extends BaseController {
 		}
 
 		Account account = extract(model, entityClass);
-		Result<? extends Account> insertionResult = dao.insert(TypeUtils.cast(account), entityClass);
+		Result<? extends Account> insertionResult = dao.insert(TypeHelper.cast(account), entityClass);
 
 		if (insertionResult.isOk()) {
 			sessionFactory.getCurrentSession().flush();
@@ -110,7 +109,7 @@ public class AccountController extends BaseController {
 
 		if (Strings.isEmpty(username)) {
 			if (authentication == null) {
-				return fileService.getImageBytes(Constants.DEFAULT_USER_PHOTO_NAME);
+				return fileService.getImageBytes(FileController.DEFAULT_USER_PHOTO_NAME);
 			}
 
 			username = authentication.getName();
@@ -168,7 +167,7 @@ public class AccountController extends BaseController {
 			account.setRole(null);
 		}
 
-		Result<? extends Account> result = dao.update(TypeUtils.cast(account), entityClass, Account.class);
+		Result<? extends Account> result = dao.update(TypeHelper.cast(account), entityClass, Account.class);
 
 		closeSession(result.isOk());
 

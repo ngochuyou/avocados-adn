@@ -50,6 +50,9 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		beanFactory.registerAlias(resourceManager.getClass().getName(), ResourceManagerFactory.class.getName());
 
 		logger.info(getLoggingPrefix(this) + "Finished building " + this.getClass());
+
+//		EntityPersister cp = factory.unwrap(SessionFactoryImplementor.class).getServiceRegistry()
+//				.getService(PersisterFactory.class);
 	}
 
 	private ResourceManagerFactory build() throws IllegalAccessException, NoSuchMethodException, SecurityException {

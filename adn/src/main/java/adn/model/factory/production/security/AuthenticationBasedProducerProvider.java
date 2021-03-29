@@ -21,9 +21,9 @@ import adn.model.entities.Entity;
 import adn.model.factory.ModelProducerProvider;
 import adn.model.models.Model;
 import adn.utilities.Role;
-import adn.utilities.TypeUtils;
+import adn.utilities.TypeHelper;
 
-@Component(Constants.defaultModelProducerProdiverName)
+@Component(Constants.DEFAULT_MODEL_PRODUCER_PROVIDER_NAME)
 @Order(value = 5)
 public class AuthenticationBasedProducerProvider implements ModelProducerProvider {
 
@@ -113,27 +113,30 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produceForAdmin(T entity, Class<M> clazz) {
+
 		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-				.produceForAdminAuthentication(entity, TypeUtils.newInstanceOrAbstract(clazz));
+				.produceForAdminAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produceForCustomer(T entity, Class<M> clazz) {
+
 		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-				.produceForCustomerAuthentication(entity, TypeUtils.newInstanceOrAbstract(clazz));
+				.produceForCustomerAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produceForPersonnel(T entity, Class<M> clazz) {
+
 		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-				.produceForPersonnelAuthentication(entity, TypeUtils.newInstanceOrAbstract(clazz));
+				.produceForPersonnelAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produce(T entity, Class<M> clazz) {
 		// TODO Auto-generated method stub
 		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz)).produce(entity,
-				TypeUtils.newInstanceOrAbstract(clazz));
+				TypeHelper.newModelOrAbstract(clazz));
 	}
 
 	@SuppressWarnings("unchecked")

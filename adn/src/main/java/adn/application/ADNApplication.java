@@ -40,7 +40,7 @@ public class ADNApplication {
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
 		scanner.addIncludeFilter(new AssignableTypeFilter(ContextBuilder.class));
-		scanner.findCandidateComponents(Constants.rootPackage)
+		scanner.findCandidateComponents(Constants.ROOT_PACKAGE)
 			.stream()
 			.map(bean -> {
 				try {

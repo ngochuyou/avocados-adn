@@ -35,9 +35,11 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import adn.application.Constants;
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
+import adn.controller.FileController;
+import adn.model.ModelManager;
+import adn.model.entities.Admin;
 import adn.security.SecurityConfiguration;
 
 /**
@@ -64,8 +66,16 @@ public class ApplicationIntegrationTest {
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Test
-	public void testGetImageBytes() throws Exception {
-		File directory = new File(Constants.IMAGE_FILE_PATH);
+	public void testGetImageByte() throws Exception {
+		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get("/file/public/image/bytes");
+		reqBuilder.queryParam("filename", "IMG_20210301_162741.jpg").with(ADMIN);
+
+		mock.perform(reqBuilder).andExpect(status().is4xxClientError());
+	}
+
+	@Test
+	private void testGetImageBytes() throws Exception {
+		File directory = new File(FileController.IMAGE_FILE_PATH);
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
 				.get(MULTITHREADING_ENDPOINT + "/file/public/image/bytes");
 		int amount = directory.listFiles().length;
@@ -94,13 +104,26 @@ public class ApplicationIntegrationTest {
 				assertThat(
 					Stream
 						.of(statusSet)
+						.map(status -> { System.out.println(status); return status; })
 						.filter(status -> status.startsWith(HttpStatus.OK.toString()))
 						.count() == amount
-				);
+				).isTrue();
 				
 				logger.trace("Successfully retrieved " + statusSet.length + " files");
 			});
 		// @formatter:on
+	}
+
+	@Autowired
+	private ModelManager modelManager;
+
+	@Test
+	private void testInstantiateEntity() {
+		String id = "ngochuy.ou";
+		Admin instance = modelManager.instantiate(Admin.class, id);
+
+		assertThat(instance != null).isTrue();
+		assertThat(instance.getId()).isEqualTo(id);
 	}
 
 }

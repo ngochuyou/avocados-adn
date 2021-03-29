@@ -21,7 +21,7 @@ import adn.application.context.ContextProvider;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
-import adn.utilities.TypeUtils;
+import adn.utilities.TypeHelper;
 
 /**
  * @author Ngoc Huy
@@ -50,7 +50,7 @@ public class SpecificationFactory implements ContextBuilder {
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
 		scanner.addIncludeFilter(new AssignableTypeFilter(Specification.class));
-		scanner.findCandidateComponents(Constants.genericSpecificationPackage)
+		scanner.findCandidateComponents(Constants.GENERIC_SPECIFICATION_PACKAGE)
 			.forEach(bean -> {
 				try {
 					Class<? extends Specification<?>> clazz = (Class<? extends Specification<?>>) Class.forName(bean.getBeanClassName());
@@ -60,7 +60,7 @@ public class SpecificationFactory implements ContextBuilder {
 						throw new Exception(Genetized.class.getName() + " not found on" + bean.getBeanClassName());
 					}
 
-					specificationMap.put(anno.entityGene(), (Specification<?>) ContextProvider.getApplicationContext().getBean(TypeUtils.getComponentName(clazz)));
+					specificationMap.put(anno.entityGene(), (Specification<?>) ContextProvider.getApplicationContext().getBean(TypeHelper.getComponentName(clazz)));
 				} catch (Exception e) {
 					e.printStackTrace();
 					SpringApplication.exit(ContextProvider.getApplicationContext());

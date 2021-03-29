@@ -34,7 +34,7 @@ public class ClassPathScanningMetadata implements Metadata {
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
 		scanner.addIncludeFilter(new AnnotationTypeFilter(Entity.class));
-		modelClassSet = scanner.findCandidateComponents(Constants.resourceModelPackage)
+		modelClassSet = scanner.findCandidateComponents(Constants.RESOURCE_MODEL_PACKAGE)
 			.stream()
 			.map(bean -> {
 				try {

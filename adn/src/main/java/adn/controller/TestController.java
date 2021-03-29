@@ -5,12 +5,15 @@ package adn.controller;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,31 +51,48 @@ public class TestController extends BaseController {
 
 		private final BiConsumer<ResponseEntity<?>, T> reducer;
 
-		private final BiConsumer<T, BiConsumer<ResponseEntity<?>, T>> consumer;
+		private final Function<T, ResponseEntity<?>> producer;
 
 		private final CountDownLatch signal;
 
 		private Consumer<Exception> exceptionConsumer;
 
+		private final Timer timer;
+
+		private volatile boolean isTimedOut = false;
+
 		/**
 		 * 
 		 */
 		public ConsumeAndReduce(T arg, BiConsumer<ResponseEntity<?>, T> reducer,
-				BiConsumer<T, BiConsumer<ResponseEntity<?>, T>> consumer, Consumer<Exception> exceptionConsumer,
-				CountDownLatch signal) {
+				Function<T, ResponseEntity<?>> consumer, Consumer<Exception> exceptionConsumer, CountDownLatch signal,
+				long timeout) {
 			// TODO Auto-generated constructor stub
 			this.arg = arg;
-			this.consumer = consumer;
+			this.producer = consumer;
 			this.reducer = reducer;
 			this.exceptionConsumer = exceptionConsumer;
 			this.signal = signal;
+			this.timer = new Timer();
+			this.timer.schedule(new TimerTask() {
+				@Override
+				public void run() {
+					// TODO Auto-generated method stub
+					isTimedOut = true;
+				}
+			}, timeout);
 		}
 
 		@Override
 		public void run() {
 			// TODO Auto-generated method stub
 			try {
-				consumer.accept(arg, reducer);
+				ResponseEntity<?> res = producer.apply(arg);
+
+				if (!isTimedOut) {
+					reducer.accept(res, arg);
+				}
+
 				signal.countDown();
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -88,8 +108,10 @@ public class TestController extends BaseController {
 
 	}
 
+	public static final String MULTITHREADING_PREFIX = "/multithreading";
+
 	// @formatter:off
-	@GetMapping("/multithreading/file/public/image/bytes")
+	@GetMapping(MULTITHREADING_PREFIX + "/file/public/image/bytes")
 	public @ResponseBody ResponseEntity<?> testGetImageBytes(
 			@RequestParam(name = "filenames", required = true) String[] filenames,
 			@RequestParam(name = "amount", required = true) int amount) throws JsonMappingException, JsonProcessingException, InterruptedException, ExecutionException {
@@ -108,11 +130,11 @@ public class TestController extends BaseController {
 					(res, passedFilename) -> {
 						messageHolder.add(String.format("%s: %s", res.getStatusCode(), passedFilename));
 					},
-					(passedFilename, reducer) -> {
+					passedFilename -> {
 						logger.trace(
 							String.format("\n\tReading image bytes, filename: %s, thread: %s",
 								passedFilename,
-								currentThreadName()
+								getCurrentThreadName()
 							)
 						);
 						
@@ -121,18 +143,19 @@ public class TestController extends BaseController {
 						logger.debug(String.format(
 							"\n\tRequest in thread %s was fulfilled"
 								+ "\n\t\t-status code: %s",
-							currentThreadName(),
+							getCurrentThreadName(),
 							res.getStatusCode().toString()
 						));
-						reducer.accept(res, passedFilename);
+
+						return res;
 					},
 					(ex) -> {
-						logger.error("\n\tA thread has thrown an Exception: " + Thread.currentThread()
+						logger.error(String.format("\n\tA thread has thrown an Exception: " + Thread.currentThread()
 										+ "\n\t-Error type: %s"
 										+ "\n\t-Error message: %s",
-							ex.getClass(), ex.getMessage()
+							ex.getClass(), ex.getMessage())
 						);
-					}, doneSignal
+					}, doneSignal, TimeUnit.SECONDS.toMillis(5) 
 				)).get(5, TimeUnit.SECONDS);
 			} catch (InterruptedException | ExecutionException | TimeoutException ex) {
 				// TODO Auto-generated catch block
@@ -147,7 +170,7 @@ public class TestController extends BaseController {
 		return ResponseEntity.ok(messageHolder.toArray());
 	}
 
-	private String currentThreadName() {
+	protected String getCurrentThreadName() {
 
 		return Thread.currentThread().getName();
 	}

@@ -6,7 +6,7 @@ package adn.model.factory;
 import adn.application.context.ContextProvider;
 import adn.model.entities.Entity;
 import adn.model.models.Model;
-import adn.utilities.TypeUtils;
+import adn.utilities.TypeHelper;
 
 /**
  * @author Ngoc Huy
@@ -14,7 +14,7 @@ import adn.utilities.TypeUtils;
  */
 public interface EntityExtractor<T extends Entity, M extends Model> {
 
-	final TypeUtils reflector = ContextProvider.getApplicationContext().getBean(TypeUtils.class);
+	final TypeHelper reflector = ContextProvider.getApplicationContext().getBean(TypeHelper.class);
 
 	default T extract(M model, T entity) throws NullPointerException {
 		return entity;

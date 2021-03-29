@@ -113,4 +113,18 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 		return resourceManager;
 	}
 
+	public <T> ResourceDescriptor<T> locateResourceDescriptor(Class<T> type) {
+		supportCheck(type);
+
+		return getResourceDescriptor(type);
+	}
+
+	private <T> void supportCheck(Class<T> type) throws IllegalArgumentException {
+		ResourceDescriptor<T> descriptor = getResourceDescriptor(type);
+
+		Assert.notNull(descriptor, "Unable to locate descriptor for resource of type: " + type
+				+ ", provided resource type is not a managed type");
+		Assert.isTrue(descriptor.isInstance(type), "Type check failed. Denied by: " + descriptor.getClass().getName());
+	}
+
 }

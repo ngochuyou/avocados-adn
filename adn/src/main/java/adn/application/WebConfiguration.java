@@ -36,7 +36,7 @@ import adn.utilities.Role;
  * @author Ngoc Huy
  *
  */
-@ComponentScan(basePackages = { Constants.rootPackage })
+@ComponentScan(basePackages = { Constants.ROOT_PACKAGE })
 @Configuration
 @EnableWebMvc
 @EnableTransactionManagement
@@ -58,7 +58,7 @@ public class WebConfiguration implements WebMvcConfigurer {
 		LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
 
 		sessionFactory.setDataSource(dataSource);
-		sessionFactory.setPackagesToScan(new String[] { Constants.entityPackage });
+		sessionFactory.setPackagesToScan(new String[] { Constants.ENTITY_PACKAGE });
 
 		Properties properties = new Properties();
 

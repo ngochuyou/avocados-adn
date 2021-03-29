@@ -12,15 +12,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 
-import adn.application.Constants;
+import adn.controller.FileController;
 import adn.model.Genetized;
+import adn.model.ModelManager;
 import adn.model.entities.Account;
 import adn.model.factory.extraction.AccountExtractor;
 import adn.service.services.AccountService;
 import adn.utilities.Gender;
 import adn.utilities.Role;
 import adn.utilities.Strings;
-import adn.utilities.TypeUtils;
 
 /**
  * @author Ngoc Huy
@@ -41,6 +41,9 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 	@Autowired
 	protected PasswordEncoder passwordEncoder;
 
+	@Autowired
+	protected ModelManager modelManager;
+
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Override
@@ -52,7 +55,7 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 				: Strings.normalizeString(model.getFirstName()));
 		model.setLastName(!Strings.hasLength(model.getLastName()) ? AccountService.UNKNOWN_USER_LASTNAME
 				: Strings.normalizeString(model.getLastName()));
-		model.setPhoto(!Strings.hasLength(model.getPhoto()) ? Constants.DEFAULT_USER_PHOTO_NAME : model.getPhoto());
+		model.setPhoto(!Strings.hasLength(model.getPhoto()) ? FileController.DEFAULT_USER_PHOTO_NAME : model.getPhoto());
 
 		return model;
 	}
@@ -102,7 +105,7 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 			// creating an entity of the new type since role editing requires entity's class
 			// to be modified and then merge the old entity with the new one
 			persistence = extractor.merge(persistence,
-					TypeUtils.newInstanceOrAbstract(accountService.getClassFromRole(model.getRole())));
+					modelManager.instantiate(accountService.getClassFromRole(model.getRole())));
 			// persist the new entity
 			session.persist(persistence);
 		}

@@ -10,5 +10,7 @@ package adn.service.resource.models;
 public interface NamedResource {
 
 	String getName();
+	
+	String getDirectoryPath();
 
 }

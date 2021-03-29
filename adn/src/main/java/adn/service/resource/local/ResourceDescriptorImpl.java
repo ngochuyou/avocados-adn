@@ -38,6 +38,8 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 
 	private final AnnotationBasedResourceValueGeneration idGeneration;
 
+	private final ResourceManagerFactory factory;
+
 	private static final String NULL_STRING = "null";
 
 	/**
@@ -45,7 +47,7 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 	 * @throws NoSuchMethodException
 	 * 
 	 */
-	public ResourceDescriptorImpl(Class<T> type, ResourceManagerFactory resourceManager)
+	public ResourceDescriptorImpl(Class<T> type, ResourceManagerFactory resourceManagerFactory)
 			throws IllegalArgumentException, SecurityException, NoSuchMethodException {
 		// TODO Auto-generated constructor stub
 		Assert.notNull(type, "Resource type cannot be null");
@@ -86,6 +88,14 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 				Strings.toCamel("set " + idField.getName(), Strings.MULTIPLE_MATCHES_WHITESPACE_CHARS),
 				idField.getType());
 		idSetter = new SetterMethodImpl(type, idField.getName(), method);
+		factory = resourceManagerFactory;
+	}
+
+	@Override
+	public void setIdentifier(T instance, Serializable identifier) {
+		// TODO Auto-generated method stub
+		idSetter.set(instance, getIdentifierValueGeneration().getValueGenerator().generateValue(factory, instance),
+				null);
 	}
 
 	@Override
@@ -141,6 +151,7 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 		public static final String IDENTIFIER_PARTS_SEPERATOR = "_";
 
 		@Override
+		@Deprecated
 		public Serializable generateValue(Session session, Object owner) {
 			// TODO Auto-generated method stub
 			throw new UnsupportedOperationException(ResourceManagerFactory.HIBERNATE_UNSUPPORTED);
@@ -151,9 +162,12 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 			// TODO Auto-generated method stub
 			if (instance instanceof NamedResource) {
 				// @formatter:off
-				return new StringBuilder(String.valueOf(new Date().getTime()))
+				NamedResource casted = (NamedResource) instance;
+				
+				return new StringBuilder(casted.getDirectoryPath())
+						.append(new Date().getTime())
 						.append(IDENTIFIER_PARTS_SEPERATOR)
-						.append(((NamedResource) instance).getName())
+						.append(casted.getName())
 						.toString();
 				// @formatter:on
 			}
@@ -203,6 +217,12 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 			// TODO Auto-generated method stub
 		}
 
+	}
+
+	@Override
+	public ResourceManagerFactory getResourceManagerFactory() {
+		// TODO Auto-generated method stub
+		return factory;
 	}
 
 }

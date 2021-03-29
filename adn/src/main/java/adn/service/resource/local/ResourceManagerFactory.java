@@ -19,6 +19,8 @@ public interface ResourceManagerFactory {
 
 	<T> ResourceDescriptor<T> getResourceDescriptor(Class<T> clazz);
 
+	<T> ResourceDescriptor<T> locateResourceDescriptor(Class<T> clazz) throws IllegalArgumentException;
+	
 	boolean isLocked(Serializable identifier);
 
 	boolean setLocked(Serializable identifier, boolean isLocked);

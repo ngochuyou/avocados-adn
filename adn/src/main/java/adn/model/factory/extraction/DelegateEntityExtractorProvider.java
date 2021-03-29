@@ -22,7 +22,7 @@ import adn.model.factory.EntityExtractorProvider;
 import adn.model.models.Model;
 import adn.utilities.Strings;
 
-@Component(Constants.defaultEntityExtractorProdiverName)
+@Component(Constants.DEFAULT_ENTITY_EXTRACTOR_PROVIDER_NAME)
 @Order(value = 4)
 public class DelegateEntityExtractorProvider implements EntityExtractorProvider {
 

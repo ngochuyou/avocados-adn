@@ -54,7 +54,7 @@ public class GenericDAOProvider implements ContextBuilder {
 		scanner.addIncludeFilter(new AssignableTypeFilter(GenericDAO.class));
 		genericDAOMap = new HashMap<>();
 
-		Set<BeanDefinition> beanDefs = scanner.findCandidateComponents(Constants.genericDAOPackage);
+		Set<BeanDefinition> beanDefs = scanner.findCandidateComponents(Constants.GENERIC_DAO_PACKAGE);
 
 		try {
 			for (BeanDefinition beanDef : beanDefs) {

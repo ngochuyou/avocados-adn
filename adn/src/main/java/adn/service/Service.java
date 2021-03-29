@@ -1,11 +1,11 @@
 package adn.service;
 
 import adn.application.context.ContextProvider;
-import adn.utilities.TypeUtils;
+import adn.utilities.TypeHelper;
 
-public interface ADNService {
+public interface Service {
 
-	final TypeUtils reflector = ContextProvider.getApplicationContext().getBean(TypeUtils.class);
+	final TypeHelper reflector = ContextProvider.getApplicationContext().getBean(TypeHelper.class);
 
 	public enum Status {
 

@@ -50,7 +50,7 @@ public class RestAccountController extends AccountController {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(notFound);
 		}
 
-		if (principalRole.equals(Role.ADMIN) || account.isActive()) {
+		if (account.isActive()) {
 			return ResponseEntity.ok(
 					produce(account, modelManager.getModelClass(accountService.getClassFromRole(account.getRole()))));
 		}

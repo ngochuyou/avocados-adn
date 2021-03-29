@@ -15,7 +15,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.util.ResourceUtils;
 
-import adn.application.Constants;
+import adn.security.SecurityConfiguration;
 
 /**
  * @author Ngoc Huy
@@ -26,26 +26,24 @@ public class ConfigurationContext implements ContextBuilder {
 
 	private static SecurityResource securityConfiguration;
 
-	private static final String LOCAL_FILE_RESOURCE_DIRECTORY_PATH = "C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\";
-
-	private Logger logger = LoggerFactory.getLogger(this.getClass());
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Override
 	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
-		logger.info(getLoggingPrefix(this) + "Intializing " + this.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Building " + this.getClass().getName());
 		this.readSecurityProperties();
-		logger.info(getLoggingPrefix(this) + "Finished intializing " + this.getClass().getName());
+		logger.info(getLoggingPrefix(this) + "Finished building " + this.getClass().getName());
 	}
 
 	private void readSecurityProperties() {
 		securityConfiguration = new SecurityResource();
 
 		try {
-			File file = ResourceUtils.getFile(Constants.CONFIG_PATH + "SpevIDMKW.txt");
+			File file = ResourceUtils.getFile(SecurityConfiguration.CONFIG_PATH + "SpevIDMKW.txt");
 			List<String> lines = Files.readAllLines(file.toPath());
 
-			if (lines.size() == 0) {
+			if (lines.size() < 1) {
 				throw new NoSuchFieldException("Could not build configuration. Invalid file format");
 			}
 
@@ -53,13 +51,24 @@ public class ConfigurationContext implements ContextBuilder {
 
 			for (int i = 1; i < lines.size(); i++) {
 				String[] pair = lines.get(i).split(nameValSeperator);
+
+				if (pair.length != 2) {
+					logger.trace("Skipping configuration line: " + lines.get(i)
+							+ " since it does not match configuration format");
+					continue;
+				}
+
 				String name = pair[0];
 				String val = pair[1];
 
-				securityConfiguration.getClass().getDeclaredField(name).set(securityConfiguration, val);
+				try {
+					securityConfiguration.getClass().getDeclaredField(name).set(securityConfiguration, val);
+				} catch (IllegalArgumentException | IllegalAccessException | SecurityException e) {
+					logger.trace("Skipping property " + name + " since it was not included in configuration context");
+					continue;
+				}
 			}
-		} catch (IOException | IllegalArgumentException | IllegalAccessException | NoSuchFieldException
-				| SecurityException e) {
+		} catch (IOException | NoSuchFieldException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			SpringApplication.exit(ContextProvider.getApplicationContext());
@@ -86,12 +95,7 @@ public class ConfigurationContext implements ContextBuilder {
 		return ConfigurationContext.securityConfiguration.jwtCookieName;
 	}
 
-	public static String getLocalFileResourceDirectoryPath() {
-
-		return ConfigurationContext.LOCAL_FILE_RESOURCE_DIRECTORY_PATH;
-	}
-
-	class SecurityResource {
+	private class SecurityResource {
 
 		String jwtAuthEndpoint;
 

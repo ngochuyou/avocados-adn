@@ -1,6 +1,6 @@
 package adn.service;
 
-import adn.service.ADNService.Status;
+import adn.service.Service.Status;
 
 public class ServiceResult<T> {
 

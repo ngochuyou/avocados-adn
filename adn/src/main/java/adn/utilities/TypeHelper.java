@@ -22,15 +22,17 @@ import javax.persistence.Table;
 
 import org.springframework.stereotype.Component;
 
-import adn.model.AbstractModel;
 import adn.model.entities.Entity;
+import adn.model.models.Model;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Component
-public class TypeUtils {
+public class TypeHelper {
+
+	private TypeHelper() {};
 
 	public static <T extends Entity> String getEntityName(Class<T> clazz) {
 		javax.persistence.Entity anno = clazz.getDeclaredAnnotation(javax.persistence.Entity.class);
@@ -104,15 +106,15 @@ public class TypeUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <M extends AbstractModel> M newInstanceOrAbstract(Class<M> clazz) {
+	public static <M extends Model> M newModelOrAbstract(Class<M> clazz) {
 		try {
 			return clazz.getConstructor().newInstance();
 		} catch (Exception e) {
 			e.printStackTrace();
-			return (M) new AbstractModel() {
+			return (M) new Model() {
 
 				@Override
-				public Serializable getId() {
+				public String getId() {
 					// TODO Auto-generated method stub
 					return null;
 				}
@@ -158,14 +160,6 @@ public class TypeUtils {
 		ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(serialized));
 
 		return (T) ois.readObject();
-	}
-
-	public static <T> void remove(T[] arr, int i) {
-		int n = arr.length;
-
-		for (int j = i; j < n; j++) {
-			arr[j] = arr[j + 1];
-		}
 	}
 
 	public static Field[] getAllFields(Class<?> type) {
