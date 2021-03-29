@@ -8,13 +8,16 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
+import org.springframework.boot.SpringApplication;
 import org.springframework.util.StringUtils;
+
+import adn.application.context.ContextProvider;
 
 /**
  * @author Ngoc Huy
  *
  */
-public class Strings extends StringUtils {
+public class StringHelper extends StringUtils {
 
 	// stolen from stackoverflow below
 	public static final String EMAIL_REGEX = "(?p:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])";
@@ -50,37 +53,39 @@ public class Strings extends StringUtils {
 			+ "\\u3000"; // IDEOGRAPHIC SPACE
 
 	public static final String MULTIPLE_MATCHES_WHITESPACE_CHARS = "[" + WHITESPACE_CHARS + "]";
+
+	private static MessageDigest SHA_256_MD = null;
 	
-	public static String hash(String a) {
-		MessageDigest md;
-
+	private static SecureRandom random = new SecureRandom();
+	
+	static {
 		try {
-			// Select the message digest for the hash computation -> SHA-256
-			md = MessageDigest.getInstance("SHA-256");
-			// Generate the random salt
-			SecureRandom random = new SecureRandom();
+			SHA_256_MD = MessageDigest.getInstance("SHA-256");
+			
 			byte[] salt = new byte[16];
+			
 			random.nextBytes(salt);
-			// Passing the salt to the digest for the computation
-			md.update(salt);
-			// Generate the salted hash
-			byte[] hashedPassword = md.digest(a.getBytes(StandardCharsets.UTF_8));
-			StringBuilder sb = new StringBuilder();
-
-			for (byte b : hashedPassword)
-				sb.append(String.format("%02x", b));
-
-			return sb.toString();
-		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return "shjreisSnaIo";
+			SHA_256_MD.update(salt);
+		} catch (NoSuchAlgorithmException nsae) {
+			nsae.printStackTrace();
+			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
+	}
+
+	public static String hash(String input) {
+		byte[] hashedPassword = SHA_256_MD.digest(input.getBytes(StandardCharsets.UTF_8));
+		
+		StringBuilder sb = new StringBuilder();
+
+		for (byte b : hashedPassword)
+			sb.append(String.format("%02x", b));
+
+		return sb.toString();
 	}
 
 	public static boolean isEmail(String email) {
 
-		return email == null ? false : email.matches(Strings.EMAIL_REGEX);
+		return email == null ? false : email.matches(StringHelper.EMAIL_REGEX);
 	}
 
 	public static boolean isDigits(String string) {
@@ -90,17 +95,17 @@ public class Strings extends StringUtils {
 
 	public static boolean isBCrypt(String string) {
 
-		return string == null ? false : string.matches(Strings.BCRYPT_REGEX);
+		return string == null ? false : string.matches(StringHelper.BCRYPT_REGEX);
 	}
 
 	public static String normalizeString(String string) {
 
-		return string != null ? string.trim().replaceAll("[" + Strings.WHITESPACE_CHARS + "]+", " ") : null;
+		return string != null ? string.trim().replaceAll("[" + StringHelper.WHITESPACE_CHARS + "]+", " ") : null;
 	}
 
 	public static String removeSpaces(String string) {
 
-		return string != null ? string.trim().replaceAll("[" + Strings.WHITESPACE_CHARS + "]+", "") : null;
+		return string != null ? string.trim().replaceAll("[" + StringHelper.WHITESPACE_CHARS + "]+", "") : null;
 	}
 
 	public static String toCamel(String s, CharSequence seperator) {

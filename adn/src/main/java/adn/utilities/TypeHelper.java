@@ -37,7 +37,7 @@ public class TypeHelper {
 	public static <T extends Entity> String getEntityName(Class<T> clazz) {
 		javax.persistence.Entity anno = clazz.getDeclaredAnnotation(javax.persistence.Entity.class);
 
-		if (anno == null || !Strings.hasLength(anno.name())) {
+		if (anno == null || !StringHelper.hasLength(anno.name())) {
 			return clazz.getSimpleName();
 		}
 
@@ -47,7 +47,7 @@ public class TypeHelper {
 	public static <T extends Entity> String getTableName(Class<T> clazz) {
 		Table anno = clazz.getDeclaredAnnotation(Table.class);
 
-		if (anno == null || !Strings.hasLength(anno.name())) {
+		if (anno == null || !StringHelper.hasLength(anno.name())) {
 			return clazz.getSimpleName();
 		}
 
@@ -57,8 +57,8 @@ public class TypeHelper {
 	public static String getComponentName(Class<?> clazz) {
 		Component anno = clazz.getDeclaredAnnotation(Component.class);
 
-		if (anno == null || !Strings.hasLength(anno.value())) {
-			return Strings.toCamel(clazz.getSimpleName(), null);
+		if (anno == null || !StringHelper.hasLength(anno.value())) {
+			return StringHelper.toCamel(clazz.getSimpleName(), null);
 		}
 
 		return anno.value();

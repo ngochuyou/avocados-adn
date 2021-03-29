@@ -20,7 +20,7 @@ import adn.model.factory.extraction.AccountExtractor;
 import adn.service.services.AccountService;
 import adn.utilities.Gender;
 import adn.utilities.Role;
-import adn.utilities.Strings;
+import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -50,12 +50,12 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 	public T defaultBuild(T model) {
 		// TODO Auto-generated method stub
 		model = super.defaultBuild(model);
-		model.setId(Strings.removeSpaces(model.getId()));
-		model.setFirstName(!Strings.hasLength(model.getFirstName()) ? AccountService.UNKNOWN_USER_FIRSTNAME
-				: Strings.normalizeString(model.getFirstName()));
-		model.setLastName(!Strings.hasLength(model.getLastName()) ? AccountService.UNKNOWN_USER_LASTNAME
-				: Strings.normalizeString(model.getLastName()));
-		model.setPhoto(!Strings.hasLength(model.getPhoto()) ? FileController.DEFAULT_USER_PHOTO_NAME : model.getPhoto());
+		model.setId(StringHelper.removeSpaces(model.getId()));
+		model.setFirstName(!StringHelper.hasLength(model.getFirstName()) ? AccountService.UNKNOWN_USER_FIRSTNAME
+				: StringHelper.normalizeString(model.getFirstName()));
+		model.setLastName(!StringHelper.hasLength(model.getLastName()) ? AccountService.UNKNOWN_USER_LASTNAME
+				: StringHelper.normalizeString(model.getLastName()));
+		model.setPhoto(!StringHelper.hasLength(model.getPhoto()) ? FileController.DEFAULT_USER_PHOTO_NAME : model.getPhoto());
 
 		return model;
 	}
@@ -92,7 +92,7 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 		persistence.setPhoto(model.getPhoto());
 		persistence.setGender(model.getGender());
 		// leave out model's password if there's no need of password editing
-		if (Strings.hasLength(model.getPassword())) {
+		if (StringHelper.hasLength(model.getPassword())) {
 			persistence.setPassword(passwordEncoder.encode(model.getPassword()));
 		}
 		// set model's role to null if there's no need of role editing

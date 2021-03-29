@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import adn.model.Genetized;
 import adn.model.entities.Factor;
-import adn.utilities.Strings;
+import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -24,9 +24,9 @@ public class FactorDAO<T extends Factor> extends EntityDAO<T> {
 	public T defaultBuild(T model) {
 		// TODO Auto-generated method stub
 		model = super.defaultBuild(model);
-		model.setName(Strings.normalizeString(model.getName()));
-		model.setCreatedBy(Strings.removeSpaces(model.getCreatedBy()));
-		model.setUpdatedBy(Strings.removeSpaces(model.getUpdatedBy()));
+		model.setName(StringHelper.normalizeString(model.getName()));
+		model.setCreatedBy(StringHelper.removeSpaces(model.getCreatedBy()));
+		model.setUpdatedBy(StringHelper.removeSpaces(model.getUpdatedBy()));
 
 		return model;
 	}

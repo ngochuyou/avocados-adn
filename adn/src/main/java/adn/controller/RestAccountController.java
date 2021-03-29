@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import adn.application.context.ContextProvider;
 import adn.model.entities.Account;
 import adn.utilities.Role;
-import adn.utilities.Strings;
+import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -33,7 +33,7 @@ public class RestAccountController extends AccountController {
 		Account account;
 		Class<? extends Account> clazz;
 
-		if (!Strings.hasLength(username) || principalName.equals(username)) {
+		if (!StringHelper.hasLength(username) || principalName.equals(username)) {
 			clazz = accountService.getClassFromRole(principalRole);
 			account = dao.findById(principalName, clazz);
 

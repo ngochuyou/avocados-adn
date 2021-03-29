@@ -15,7 +15,7 @@ import adn.model.Genetized;
 import adn.model.Result;
 import adn.model.entities.Account;
 import adn.model.specification.TransactionalSpecification;
-import adn.utilities.Strings;
+import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -36,7 +36,7 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
-		if (!Strings.isEmail(instance.getEmail())) {
+		if (!StringHelper.isEmail(instance.getEmail())) {
 			result.getMessageSet().put("email", "Invalid email");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		} else {
@@ -54,12 +54,12 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 			}
 		}
 
-		if (Strings.hasLength(instance.getPhone()) && !Strings.isDigits(instance.getPhone())) {
+		if (StringHelper.hasLength(instance.getPhone()) && !StringHelper.isDigits(instance.getPhone())) {
 			result.getMessageSet().put("phone", "Invalid phone number");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
-		if (!Strings.isBCrypt(instance.getPassword())) {
+		if (!StringHelper.isBCrypt(instance.getPassword())) {
 			result.getMessageSet().put("password", "Invalid password");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}

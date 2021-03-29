@@ -26,6 +26,8 @@ public class FileResource implements NamedResource {
 
 	private String directoryPath;
 
+	private String extension;
+
 	/**
 	 * 
 	 */
@@ -33,11 +35,12 @@ public class FileResource implements NamedResource {
 		// TODO Auto-generated constructor stub
 	}
 
-	public FileResource(String name, String firectoryPath, Date timestamp) {
+	public FileResource(String directoryPath, String name, String extension, Date timestamp) {
 		super();
-		this.name = String.valueOf(name);
-		this.timestamp = new Date(timestamp.getTime());
-		this.directoryPath = firectoryPath;
+		this.name = name;
+		this.timestamp = timestamp;
+		this.directoryPath = directoryPath;
+		this.extension = "." + extension;
 	}
 
 	public String getPathname() {
@@ -73,6 +76,15 @@ public class FileResource implements NamedResource {
 
 	public void setDirectoryPath(String directoryPath) {
 		this.directoryPath = directoryPath;
+	}
+
+	@Override
+	public String getExtension() {
+		return extension;
+	}
+
+	void setExtension(String extension) {
+		this.extension = extension;
 	}
 
 }

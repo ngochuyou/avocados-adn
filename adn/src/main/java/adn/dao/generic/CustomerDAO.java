@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import adn.model.Genetized;
 import adn.model.entities.Customer;
-import adn.utilities.Strings;
+import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -24,7 +24,7 @@ public class CustomerDAO extends AccountDAO<Customer> {
 	public Customer defaultBuild(Customer model) {
 		// TODO Auto-generated method stub
 		model = super.defaultBuild(model);
-		model.setAddress(Strings.normalizeString(model.getAddress()));
+		model.setAddress(StringHelper.normalizeString(model.getAddress()));
 
 		return model;
 	}

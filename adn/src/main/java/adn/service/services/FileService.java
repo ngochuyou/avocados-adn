@@ -20,7 +20,7 @@ import adn.service.resource.local.ResourceManager;
 import adn.service.resource.local.ResourceManagerFactory;
 import adn.service.resource.models.FileResource;
 import adn.service.resource.models.NamedResource;
-import adn.utilities.Strings;
+import adn.utilities.StringHelper;
 
 @org.springframework.stereotype.Service
 public class FileService implements Service {
@@ -33,7 +33,7 @@ public class FileService implements Service {
 
 	public String generateFilename(MultipartFile file) {
 		return file != null
-				? new Date().getTime() + '-' + Strings.hash(file.getOriginalFilename()) + '.'
+				? new Date().getTime() + '-' + StringHelper.hash(file.getOriginalFilename()) + '.'
 						+ FilenameUtils.getExtension(file.getOriginalFilename())
 				: null;
 	}
@@ -43,7 +43,7 @@ public class FileService implements Service {
 			return ServiceResult.bad().body(emptyName);
 		}
 
-		String filename = new Date().getTime() + '-' + Strings.hash(file.getOriginalFilename()) + '.'
+		String filename = new Date().getTime() + '-' + StringHelper.hash(file.getOriginalFilename()) + '.'
 				+ FilenameUtils.getExtension(file.getOriginalFilename());
 
 		try {
@@ -62,7 +62,7 @@ public class FileService implements Service {
 	}
 
 	public ServiceResult<String> removeFile(String filename) {
-		if (!Strings.hasLength(filename)) {
+		if (!StringHelper.hasLength(filename)) {
 			return ServiceResult.bad().body(emptyName);
 		}
 

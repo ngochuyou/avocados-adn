@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import adn.model.Genetized;
 import adn.model.entities.Personnel;
-import adn.utilities.Strings;
+import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -25,7 +25,7 @@ public class PersonnelDAO extends AccountDAO<Personnel> {
 		// TODO Auto-generated method stub
 		model = super.defaultBuild(model);
 
-		if (Strings.hasLength(model.getCreatedBy())) {
+		if (StringHelper.hasLength(model.getCreatedBy())) {
 			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
 			model.setCreatedBy(
@@ -42,7 +42,7 @@ public class PersonnelDAO extends AccountDAO<Personnel> {
 
 		Personnel persistence = sessionFactory.getCurrentSession().load(Personnel.class, model.getId());
 
-		if (!Strings.hasLength(persistence.getCreatedBy())) {
+		if (!StringHelper.hasLength(persistence.getCreatedBy())) {
 			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
 			persistence.setCreatedBy(

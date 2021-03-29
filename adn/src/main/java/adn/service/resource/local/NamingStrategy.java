@@ -3,7 +3,7 @@
  */
 package adn.service.resource.local;
 
-import adn.utilities.Strings;
+import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -24,7 +24,7 @@ public interface NamingStrategy extends Service {
 		@Override
 		public String getName(Class<?> clazz) {
 			// TODO Auto-generated method stub
-			return Strings.toCamel(clazz.getSimpleName(), null);
+			return StringHelper.toCamel(clazz.getSimpleName(), null);
 		}
 
 	}

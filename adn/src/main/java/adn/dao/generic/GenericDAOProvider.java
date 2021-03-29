@@ -24,7 +24,7 @@ import adn.dao.GenericDAO;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
-import adn.utilities.Strings;
+import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -68,7 +68,7 @@ public class GenericDAOProvider implements ContextBuilder {
 				Class<? extends Entity> modelClass = anno.entityGene();
 
 				genericDAOMap.put(modelClass, (GenericDAO<? extends Entity>) ContextProvider.getApplicationContext()
-						.getBean(Strings.toCamel(clazz.getSimpleName(), null)));
+						.getBean(StringHelper.toCamel(clazz.getSimpleName(), null)));
 			}
 
 			modelManager.getEntityTree().forEach(node -> {

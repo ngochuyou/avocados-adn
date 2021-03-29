@@ -31,7 +31,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import adn.application.Constants;
 import adn.service.services.AuthenticationService;
-import adn.utilities.Strings;
+import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -96,7 +96,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 				continue;
 			}
 
-			String[] methods = parts[1].split('[' + Strings.WHITESPACE_CHARS + ']');
+			String[] methods = parts[1].split('[' + StringHelper.WHITESPACE_CHARS + ']');
 			
 			for (String method: methods) {
 				HttpMethod httpMethod = HttpMethod.resolve(method);

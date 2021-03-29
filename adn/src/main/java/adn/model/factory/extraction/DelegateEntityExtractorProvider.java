@@ -20,7 +20,7 @@ import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractor;
 import adn.model.factory.EntityExtractorProvider;
 import adn.model.models.Model;
-import adn.utilities.Strings;
+import adn.utilities.StringHelper;
 
 @Component(Constants.DEFAULT_ENTITY_EXTRACTOR_PROVIDER_NAME)
 @Order(value = 4)
@@ -64,7 +64,7 @@ public class DelegateEntityExtractorProvider implements EntityExtractorProvider 
 				}
 
 				this.extractorMap.put(anno.entityGene(), (EntityExtractor<?, ?>) ContextProvider.getApplicationContext()
-						.getBean(Strings.toCamel(clazz.getSimpleName(), null)));
+						.getBean(StringHelper.toCamel(clazz.getSimpleName(), null)));
 			} catch (Exception e) {
 				e.printStackTrace();
 				SpringApplication.exit(ContextProvider.getApplicationContext());

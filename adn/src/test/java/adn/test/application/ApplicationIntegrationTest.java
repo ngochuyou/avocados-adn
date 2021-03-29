@@ -70,7 +70,7 @@ public class ApplicationIntegrationTest {
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get("/file/public/image/bytes");
 		reqBuilder.queryParam("filename", "IMG_20210301_162741.jpg").with(ADMIN);
 
-		mock.perform(reqBuilder).andExpect(status().is4xxClientError());
+		mock.perform(reqBuilder).andExpect(status().isOk());
 	}
 
 	@Test

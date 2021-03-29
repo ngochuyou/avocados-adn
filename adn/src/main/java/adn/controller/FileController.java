@@ -5,6 +5,7 @@ package adn.controller;
 
 import java.util.Date;
 
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,20 +37,28 @@ public class FileController extends BaseController {
 
 	public static final String IMAGE_FILE_PATH = "C:\\Users\\Ngoc Huy\\Pictures\\avocados-adn\\";
 
+	protected FileResource toFileResource(String filename, Date timestamp) {
+		String ext = FilenameUtils.getExtension(filename);
+
+		return new FileResource(IMAGE_FILE_PATH, filename.substring(0, filename.indexOf(ext)), ext, timestamp);
+	}
+
 	@GetMapping("/public/image/bytes")
 	public @ResponseBody ResponseEntity<?> getImageBytes(
 			@RequestParam(name = "filename", required = true) String filename) {
 		byte[] bytes = fileService.getImageBytes(filename);
 
-		resourceManager.manage(new FileResource(filename, IMAGE_FILE_PATH, new Date()), FileResource.class);
+		FileResource resource = toFileResource(filename, new Date());
 
-		FileResource resource = resourceManager.find(IMAGE_FILE_PATH + filename, FileResource.class);
+		resourceManager.manage(resource, FileResource.class);
 
-		if (bytes == null || resource.getPathname().equals(IMAGE_FILE_PATH + filename)) {
+		resource = resourceManager.find(resource.getPathname(), FileResource.class);
+
+		if (bytes == null || resource == null) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("FILE NOT FOUND");
 		}
 
-		return ResponseEntity.ok(bytes);
+		return ResponseEntity.ok(null);
 	}
 
 }

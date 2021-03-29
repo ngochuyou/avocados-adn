@@ -20,7 +20,7 @@ import org.hibernate.tuple.GenerationTiming;
 import org.springframework.util.Assert;
 
 import adn.service.resource.models.NamedResource;
-import adn.utilities.Strings;
+import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -81,11 +81,11 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 		}
 
 		Method method = type.getDeclaredMethod(
-				Strings.toCamel("get " + idField.getName(), Strings.MULTIPLE_MATCHES_WHITESPACE_CHARS));
+				StringHelper.toCamel("get " + idField.getName(), StringHelper.MULTIPLE_MATCHES_WHITESPACE_CHARS));
 
 		idGetter = new GetterMethodImpl(type, idField.getName(), method);
 		method = type.getDeclaredMethod(
-				Strings.toCamel("set " + idField.getName(), Strings.MULTIPLE_MATCHES_WHITESPACE_CHARS),
+				StringHelper.toCamel("set " + idField.getName(), StringHelper.MULTIPLE_MATCHES_WHITESPACE_CHARS),
 				idField.getType());
 		idSetter = new SetterMethodImpl(type, idField.getName(), method);
 		factory = resourceManagerFactory;
@@ -94,8 +94,7 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 	@Override
 	public void setIdentifier(T instance, Serializable identifier) {
 		// TODO Auto-generated method stub
-		idSetter.set(instance, getIdentifierValueGeneration().getValueGenerator().generateValue(factory, instance),
-				null);
+		idSetter.set(instance, identifier, null);
 	}
 
 	@Override
@@ -158,16 +157,17 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 		}
 
 		@Override
-		public Serializable generateValue(ResourceManagerFactory factory, Object instance) {
+		public Serializable generateValue(ResourceManagerFactory factory, Object object) {
 			// TODO Auto-generated method stub
-			if (instance instanceof NamedResource) {
+			if (object instanceof NamedResource) {
 				// @formatter:off
-				NamedResource casted = (NamedResource) instance;
+				NamedResource instance = (NamedResource) object;
 				
-				return new StringBuilder(casted.getDirectoryPath())
+				return new StringBuilder(instance.getDirectoryPath())
 						.append(new Date().getTime())
 						.append(IDENTIFIER_PARTS_SEPERATOR)
-						.append(casted.getName())
+						.append(StringHelper.hash(instance.getName()))
+						.append(instance.getExtension())
 						.toString();
 				// @formatter:on
 			}
@@ -191,7 +191,7 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 		@Override
 		public GenerationTiming getGenerationTiming() {
 			// TODO Auto-generated method stub
-			return GenerationTiming.INSERT;
+			return GenerationTiming.ALWAYS;
 		}
 
 		@Override

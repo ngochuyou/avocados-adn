@@ -5,10 +5,12 @@ package adn.service.resource.event;
 
 import java.io.Serializable;
 
+import org.hibernate.tuple.GenerationTiming;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 
+import adn.service.resource.local.ResourceDescriptor;
 import adn.service.resource.local.ResourceManager;
 
 /**
@@ -25,13 +27,13 @@ public abstract class ManageEvent<T> extends AbstractPersistentEvent<T> {
 		super(resourceManager, instance, type);
 	}
 
-	abstract public void postManage();
+	abstract public void preManage();
 
 	@Override
 	public void fire() {
 		// TODO Auto-generated method stub
 		try {
-			postManage();
+			preManage();
 
 			Serializable identifier;
 
@@ -50,7 +52,7 @@ public abstract class ManageEvent<T> extends AbstractPersistentEvent<T> {
 		}
 
 		@Override
-		public void postManage() {
+		public void preManage() {
 			// TODO Auto-generated method stub
 		}
 
@@ -64,9 +66,17 @@ public abstract class ManageEvent<T> extends AbstractPersistentEvent<T> {
 		}
 
 		@Override
-		public void postManage() {
+		public void preManage() {
 			// TODO Auto-generated method stub
-			getResourceDescriptor().setIdentifier(instance, null);
+			ResourceDescriptor<E> descriptor = getResourceDescriptor();
+			// @formatter:off
+			if (descriptor.getIdentifierValueGeneration().getGenerationTiming().equals(GenerationTiming.ALWAYS)) {
+				getResourceDescriptor().setIdentifier(instance,
+						descriptor.getIdentifierValueGeneration()
+							.getValueGenerator()
+							.generateValue(getResourceManager().getResourceManagerFactory(), instance));
+			}
+			// @formatter:on
 		}
 
 	}
