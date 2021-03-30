@@ -24,7 +24,5 @@ public abstract class AbstractEvent implements Event {
 	public ResourceManager getResourceManager() {
 		return resourceManager;
 	}
-	
-	abstract public void fire();
 
 }

@@ -50,15 +50,13 @@ public class FileController extends BaseController {
 
 		FileResource resource = toFileResource(filename, new Date());
 
-		resourceManager.manage(resource, FileResource.class);
-
-		resource = resourceManager.find(resource.getPathname(), FileResource.class);
+		resourceManager.save(resource);
 
 		if (bytes == null || resource == null) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("FILE NOT FOUND");
 		}
 
-		return ResponseEntity.ok(null);
+		return ResponseEntity.ok(resource.getPathname());
 	}
 
 }

@@ -31,5 +31,7 @@ public interface ResourceDescriptor<T> {
 	AnnotationBasedResourceValueGeneration getIdentifierValueGeneration();
 
 	ResourceManagerFactory getResourceManagerFactory();
+	
+	void cleanUp();
 
 }

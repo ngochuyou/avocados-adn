@@ -32,6 +32,8 @@ public class LocalResourceSession implements ResourceManager {
 
 	private volatile boolean isRollbackOnly = false;
 
+	
+	
 	/**
 	 * 
 	 */
@@ -63,24 +65,22 @@ public class LocalResourceSession implements ResourceManager {
 		eventFactory.createManageEvent(instance, type, this).fire();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T find(Serializable identifier, Class<T> type) {
 		// TODO Auto-generated method stub
 		Object candidate = resourceContext.contains(identifier) ? resourceContext.find(identifier) : null;
 
-		if (candidate.getClass().equals(type) || type.isAssignableFrom(candidate.getClass())) {
-			return (T) candidate;
-		}
-
-		return null;
+		return unwrap(candidate, type);
 	}
 
 	@Override
 	public <T> Serializable save(T instance) {
 		// TODO Auto-generated method stub
+		Class<T> type = unwrapType(instance.getClass());
 
-		return null;
+		eventFactory.createSaveEvent(instance, type, this).fire();
+
+		return resourceManagerFactory.locateResourceDescriptor(type).getIdentifier(instance);
 	}
 
 	@Override
@@ -96,9 +96,18 @@ public class LocalResourceSession implements ResourceManager {
 	}
 
 	@SuppressWarnings("unchecked")
-	protected <T> Class<T> unwrap(Class<?> type) {
+	protected <T> Class<T> unwrapType(Class<?> type) {
 
 		return (Class<T>) type;
+	}
+
+	@SuppressWarnings("unchecked")
+	protected <T> T unwrap(Object instance, Class<T> type) {
+		if (instance == null || !instance.getClass().equals(type) || !type.isAssignableFrom(instance.getClass())) {
+			return null;
+		}
+
+		return (T) instance;
 	}
 
 	@Override

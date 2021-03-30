@@ -51,7 +51,6 @@ import adn.security.SecurityConfiguration;
 @TestPropertySource(locations = "classpath:application-test.properties")
 @ContextConfiguration(classes = { WebConfiguration.class, SecurityConfiguration.class })
 @AutoConfigureMockMvc
-@SuppressWarnings("unused")
 public class ApplicationIntegrationTest {
 
 	public static final String PREFIX = "/testunit";
@@ -70,7 +69,9 @@ public class ApplicationIntegrationTest {
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get("/file/public/image/bytes");
 		reqBuilder.queryParam("filename", "IMG_20210301_162741.jpg").with(ADMIN);
 
-		mock.perform(reqBuilder).andExpect(status().isOk());
+		mock.perform(reqBuilder).andExpect(status().isOk()).andDo(result -> {
+			logger.debug(result.getResponse().getContentAsString());
+		});
 	}
 
 	@Test

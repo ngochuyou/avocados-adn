@@ -9,6 +9,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
+import adn.service.resource.local.ResourceIdentifier;
+
 /**
  * @author Ngoc Huy
  *
@@ -18,6 +20,7 @@ public class FileResource implements NamedResource {
 
 	@Id
 	@GeneratedValue
+	@ResourceIdentifier
 	private String pathname;
 
 	private String name;
