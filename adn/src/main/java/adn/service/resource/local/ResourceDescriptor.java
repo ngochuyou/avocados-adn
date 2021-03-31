@@ -14,6 +14,8 @@ import org.hibernate.property.access.spi.Setter;
  */
 public interface ResourceDescriptor<T> {
 
+	String getName();
+
 	Class<T> getType();
 
 	Serializable getIdentifier(T instance);
@@ -31,7 +33,7 @@ public interface ResourceDescriptor<T> {
 	AnnotationBasedResourceValueGeneration getIdentifierValueGeneration();
 
 	ResourceManagerFactory getResourceManagerFactory();
-	
+
 	void cleanUp();
 
 }

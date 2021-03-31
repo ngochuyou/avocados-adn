@@ -3,6 +3,8 @@
  */
 package adn.service.resource.local;
 
+import static adn.service.resource.local.ResourceManagerFactory.unsupportHBN;
+
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -30,6 +32,8 @@ import adn.utilities.StringHelper;
  */
 public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 
+	private final String resourceName;
+
 	private final Class<T> type;
 
 	private final Getter idGetter;
@@ -51,11 +55,12 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 	 * @throws NoSuchMethodException
 	 * 
 	 */
-	public ResourceDescriptorImpl(Class<T> type, ResourceManagerFactory resourceManagerFactory)
+	public ResourceDescriptorImpl(String resourceName, Class<T> type, ResourceManagerFactory resourceManagerFactory)
 			throws IllegalArgumentException, SecurityException, NoSuchMethodException {
 		// TODO Auto-generated constructor stub
 		Assert.notNull(type, "Resource type cannot be null");
 		this.type = type;
+		this.resourceName = resourceName;
 		// Instantiate identifier getter/setter via @Id
 		Field idField = null;
 
@@ -176,7 +181,8 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 		@Deprecated
 		public Serializable generateValue(Session session, Object owner) {
 			// TODO Auto-generated method stub
-			throw new UnsupportedOperationException(ResourceManagerFactory.HIBERNATE_UNSUPPORTED);
+			unsupportHBN();
+			return null;
 		}
 
 		@Override
@@ -233,13 +239,15 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 		@Override
 		public boolean referenceColumnInSql() {
 			// TODO Auto-generated method stub
-			throw new UnsupportedOperationException(ResourceManagerFactory.HIBERNATE_UNSUPPORTED);
+			unsupportHBN();
+			return false;
 		}
 
 		@Override
 		public String getDatabaseGeneratedReferencedColumnValue() {
 			// TODO Auto-generated method stub
-			throw new UnsupportedOperationException(ResourceManagerFactory.HIBERNATE_UNSUPPORTED);
+			unsupportHBN();
+			return null;
 		}
 
 		@Override
@@ -259,6 +267,12 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 	public void cleanUp() {
 		// TODO Auto-generated method stub
 		valueGenerationMap = null;
+	}
+
+	@Override
+	public String getName() {
+		// TODO Auto-generated method stub
+		return resourceName;
 	}
 
 }

@@ -54,9 +54,10 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 				.collect(Collectors.toSet());
 		// create descriptors
 		for (Class<?> modelClass : modelClassSet) {
-			ResourceDescriptor<?> descriptor = createDescriptor(modelClass);
+			String resourceName = resourceNamingStrategy.getName(modelClass);
+			ResourceDescriptor<?> descriptor = createDescriptor(resourceName, modelClass);
 
-			descriptorsByName.put(resourceNamingStrategy.getName(modelClass), descriptor);
+			descriptorsByName.put(resourceName, descriptor);
 			// @formatter:off
 			logger.debug(String.format("\nCreated descriptor for type: %s with name: %s\n"
 					+ "\t-idGetter: %s returns %s\n"
@@ -79,8 +80,9 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 		}
 	}
 
-	private ResourceDescriptor<?> createDescriptor(Class<?> clazz) throws NoSuchMethodException, SecurityException {
-		return new ResourceDescriptorImpl<>(clazz, this);
+	private ResourceDescriptor<?> createDescriptor(String resourceName, Class<?> clazz)
+			throws NoSuchMethodException, SecurityException {
+		return new ResourceDescriptorImpl<>(resourceName, clazz, this);
 	}
 
 	@Override

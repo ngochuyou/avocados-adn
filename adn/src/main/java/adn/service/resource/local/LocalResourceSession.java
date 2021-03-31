@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
 import adn.service.resource.event.EventFactory;
+import adn.utilities.TypeHelper;
 
 /**
  * @author Ngoc Huy
@@ -21,6 +22,8 @@ import adn.service.resource.event.EventFactory;
 @RequestScope
 @Lazy
 public class LocalResourceSession implements ResourceManager {
+
+	private ActionQueue actionQueue;
 
 	private final EventFactory eventFactory = EventFactory.INSTANCE;
 
@@ -32,8 +35,6 @@ public class LocalResourceSession implements ResourceManager {
 
 	private volatile boolean isRollbackOnly = false;
 
-	
-	
 	/**
 	 * 
 	 */
@@ -62,7 +63,7 @@ public class LocalResourceSession implements ResourceManager {
 	@Override
 	public <T> void manage(T instance, Class<T> type) {
 		// TODO Auto-generated method stub
-		eventFactory.createManageEvent(instance, type, this).fire();
+//		eventFactory.createManageEvent(instance, type, this).fire();
 	}
 
 	@Override
@@ -70,15 +71,15 @@ public class LocalResourceSession implements ResourceManager {
 		// TODO Auto-generated method stub
 		Object candidate = resourceContext.contains(identifier) ? resourceContext.find(identifier) : null;
 
-		return unwrap(candidate, type);
+		return TypeHelper.unwrap(candidate, type);
 	}
 
 	@Override
 	public <T> Serializable save(T instance) {
 		// TODO Auto-generated method stub
-		Class<T> type = unwrapType(instance.getClass());
+		Class<T> type = TypeHelper.unwrapType(instance.getClass());
 
-		eventFactory.createSaveEvent(instance, type, this).fire();
+//		eventFactory.createSaveEvent(instance, type, this).fire();
 
 		return resourceManagerFactory.locateResourceDescriptor(type).getIdentifier(instance);
 	}
@@ -93,21 +94,6 @@ public class LocalResourceSession implements ResourceManager {
 	public void setRollbackOnly() {
 		// TODO Auto-generated method stub
 		this.isRollbackOnly = true;
-	}
-
-	@SuppressWarnings("unchecked")
-	protected <T> Class<T> unwrapType(Class<?> type) {
-
-		return (Class<T>) type;
-	}
-
-	@SuppressWarnings("unchecked")
-	protected <T> T unwrap(Object instance, Class<T> type) {
-		if (instance == null || !instance.getClass().equals(type) || !type.isAssignableFrom(instance.getClass())) {
-			return null;
-		}
-
-		return (T) instance;
 	}
 
 	@Override

@@ -11,8 +11,6 @@ import java.io.Serializable;
  */
 public interface ResourceManagerFactory {
 
-	public static final String HIBERNATE_UNSUPPORTED = "Some of Hibernate implementations might be unsupported";
-
 	ResourceManager getResourceManager();
 
 	<T> ResourceDescriptor<T> getResourceDescriptor(String name);
@@ -20,9 +18,13 @@ public interface ResourceManagerFactory {
 	<T> ResourceDescriptor<T> getResourceDescriptor(Class<T> clazz);
 
 	<T> ResourceDescriptor<T> locateResourceDescriptor(Class<T> clazz) throws IllegalArgumentException;
-	
+
 	boolean isLocked(Serializable identifier);
 
 	boolean setLocked(Serializable identifier, boolean isLocked);
+
+	public static void unsupportHBN() {
+		throw new UnsupportedOperationException("Some of Hibernate implementations might be unsupported");
+	}
 
 }

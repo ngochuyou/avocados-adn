@@ -23,4 +23,8 @@ public interface ResourceContext {
 
 	ResourceManager getResourceManager();
 
+	<T> ResourceEntry<T> getEntry(Object entity);
+
+	<T> void addEntry(ResourceEntry<T> entry);
+
 }

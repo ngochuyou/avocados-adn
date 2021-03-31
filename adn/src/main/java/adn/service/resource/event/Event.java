@@ -14,9 +14,5 @@ import adn.service.resource.local.ResourceManager;
 public interface Event extends Serializable {
 
 	ResourceManager getResourceManager();
-
-	void preFire();
-
-	void fire();
-
+	
 }

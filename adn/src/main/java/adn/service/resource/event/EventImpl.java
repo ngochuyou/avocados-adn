@@ -9,19 +9,22 @@ import adn.service.resource.local.ResourceManager;
  * @author Ngoc Huy
  *
  */
-public abstract class AbstractEvent implements Event {
+@SuppressWarnings("serial")
+public class EventImpl implements Event {
 
-	private static final long serialVersionUID = 1L;
+	private final ResourceManager resourceManager;
 
-	protected final transient ResourceManager resourceManager;
-
-	public AbstractEvent(final ResourceManager resourceManager) {
+	/**
+	 * 
+	 */
+	public EventImpl(ResourceManager resourceManager) {
 		// TODO Auto-generated constructor stub
 		this.resourceManager = resourceManager;
 	}
 
 	@Override
 	public ResourceManager getResourceManager() {
+		// TODO Auto-generated method stub
 		return resourceManager;
 	}
 

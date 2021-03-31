@@ -71,4 +71,16 @@ public class ResourceContextImpl implements ResourceContext {
 		return resourceManager;
 	}
 
+	@Override
+	public <T> ResourceEntry<T> getEntry(Object entity) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public <T> void addEntry(ResourceEntry<T> entry) {
+		// TODO Auto-generated method stub
+
+	}
+
 }
