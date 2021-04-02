@@ -9,9 +9,7 @@ package adn.application;
  */
 public class Constants {
 
-	private Constants() {
-
-	}
+	private Constants() {}
 
 	public static final String ROOT_PACKAGE = "adn";
 

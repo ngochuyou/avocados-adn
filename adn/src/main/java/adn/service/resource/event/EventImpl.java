@@ -10,7 +10,7 @@ import adn.service.resource.local.ResourceManager;
  *
  */
 @SuppressWarnings("serial")
-public class EventImpl implements Event {
+public class EventImpl<T> implements Event<T> {
 
 	private final ResourceManager resourceManager;
 

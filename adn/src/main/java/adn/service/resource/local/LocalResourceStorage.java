@@ -3,14 +3,12 @@
  */
 package adn.service.resource.local;
 
-import org.springframework.lang.NonNull;
-
 /**
  * @author Ngoc Huy
  *
  */
-public interface LocalResourceStorage {
+public interface LocalResourceStorage extends Service {
 
-	boolean isFileExists(@NonNull String pathname);
+	boolean isExists(String filename);
 
 }

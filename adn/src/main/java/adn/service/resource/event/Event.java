@@ -11,7 +11,7 @@ import adn.service.resource.local.ResourceManager;
  * @author Ngoc Huy
  *
  */
-public interface Event extends Serializable {
+public interface Event<T> extends Serializable {
 
 	ResourceManager getResourceManager();
 	

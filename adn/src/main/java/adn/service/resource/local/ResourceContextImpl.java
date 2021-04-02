@@ -5,7 +5,11 @@ package adn.service.resource.local;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
+
+import org.hibernate.LockMode;
+import org.hibernate.engine.spi.Status;
 
 /**
  * @author Ngoc Huy
@@ -15,7 +19,9 @@ public class ResourceContextImpl implements ResourceContext {
 
 	private static final int INIT_MAP_SIZE = 8;
 
-	private Map<Serializable, Object> context = new HashMap<>(INIT_MAP_SIZE);
+	private final Map<ResourceKey<?>, Object> context = new HashMap<>(INIT_MAP_SIZE);
+
+	private final Map<Object, ResourceEntry<?>> entryContext = new IdentityHashMap<>(INIT_MAP_SIZE);
 
 	private final ResourceManager resourceManager;
 
@@ -28,23 +34,13 @@ public class ResourceContextImpl implements ResourceContext {
 	}
 
 	@Override
-	public Object find(Serializable pathName) {
+	public Object find(ResourceKey<?> key) {
 		// TODO Auto-generated method stub
 		if (context == null || context.isEmpty()) {
 			return null;
 		}
 
-		return context.getOrDefault(pathName, null);
-	}
-
-	@Override
-	public void add(Serializable pathname, Object resource) {
-		// TODO Auto-generated method stub
-		if (context == null) {
-			context = new HashMap<>(8);
-		}
-
-		context.put(pathname, resource);
+		return context.get(key);
 	}
 
 	@Override
@@ -76,11 +72,49 @@ public class ResourceContextImpl implements ResourceContext {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	// @formatter:off
 
 	@Override
-	public <T> void addEntry(ResourceEntry<T> entry) {
+	public <T> ResourceEntry<T> addEntry(
+			String resourceName,
+			T instance,
+			Status status,
+			Status prevStatus,
+			Object[] loadedState,
+			Object[] deletedState,
+			LockMode lockMode,
+			ResourceKey<T> key,
+			boolean isTransient,
+			ResourceDescriptor<T> descriptor) {
 		// TODO Auto-generated method stub
+		if (!entryContext.containsKey(instance)) {
+			return new ResourceEntryImpl<>(
+					resourceName,
+					key.getIdentifier(),
+					Status.MANAGED,
+					null,
+					null,
+					null,
+					instance,
+					lockMode,
+					isTransient,
+					key.getDescriptor(),
+					key);
+		}
+		
+		return null;
+	}
+	// @formatter:on
 
+	@Override
+	public ResourceEntry<?> addResource(Object instance, Status status, LockMode lockMode, ResourceKey<?> key,
+			ResourceDescriptor<?> descriptor) {
+		// TODO Auto-generated method stub
+		context.computeIfAbsent(key, k -> {
+			return instance;
+		});
+
+		return null;
 	}
 
 }

@@ -270,9 +270,18 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 	}
 
 	@Override
-	public String getName() {
+	public String getResourceName() {
 		// TODO Auto-generated method stub
 		return resourceName;
+	}
+
+	/**
+	 * Final determining level of resource's transience
+	 */
+	@Override
+	public boolean isTransient(T instance) {
+		// TODO Auto-generated method stub
+		return factory.getStorage().isExists(getIdentifier(instance).toString());
 	}
 
 }

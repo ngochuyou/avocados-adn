@@ -31,8 +31,6 @@ public class LocalResourceSession implements ResourceManager {
 
 	private final ResourceManagerFactory resourceManagerFactory;
 
-	private final LocalResourceStorage localStorage;
-
 	private volatile boolean isRollbackOnly = false;
 
 	/**
@@ -41,12 +39,10 @@ public class LocalResourceSession implements ResourceManager {
 	@Autowired
 	public LocalResourceSession(
 	// @formatter:off
-			@NonNull final ResourceManagerFactory resourceManagerFactory,
-			@NonNull final LocalResourceStorage localStorage) {
+			@NonNull final ResourceManagerFactory resourceManagerFactory) {
 	// @formatter:on
 		// TODO Auto-generated constructor stub
 		this.resourceManagerFactory = resourceManagerFactory;
-		this.localStorage = localStorage;
 		resourceContext = createResourceContext();
 	}
 
@@ -63,13 +59,16 @@ public class LocalResourceSession implements ResourceManager {
 	@Override
 	public <T> void manage(T instance, Class<T> type) {
 		// TODO Auto-generated method stub
-//		eventFactory.createManageEvent(instance, type, this).fire();
+		eventFactory.createManageEvent(instance, type, this);
 	}
 
 	@Override
 	public <T> T find(Serializable identifier, Class<T> type) {
 		// TODO Auto-generated method stub
-		Object candidate = resourceContext.contains(identifier) ? resourceContext.find(identifier) : null;
+		Object candidate = resourceContext.contains(identifier)
+				? resourceContext
+						.find(new ResourceKey<>(identifier, getResourceManagerFactory().locateResourceDescriptor(type)))
+				: null;
 
 		return TypeHelper.unwrap(candidate, type);
 	}
@@ -82,12 +81,6 @@ public class LocalResourceSession implements ResourceManager {
 //		eventFactory.createSaveEvent(instance, type, this).fire();
 
 		return resourceManagerFactory.locateResourceDescriptor(type).getIdentifier(instance);
-	}
-
-	@Override
-	public LocalResourceStorage getLocalResourceStorage() {
-		// TODO Auto-generated method stub
-		return localStorage;
 	}
 
 	@Override
@@ -106,6 +99,12 @@ public class LocalResourceSession implements ResourceManager {
 	public ResourceContext getResourceContext() {
 		// TODO Auto-generated method stub
 		return resourceContext;
+	}
+
+	@Override
+	public ActionQueue getActionQueue() {
+		// TODO Auto-generated method stub
+		return actionQueue;
 	}
 
 }

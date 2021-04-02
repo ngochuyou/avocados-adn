@@ -10,7 +10,7 @@ import adn.service.resource.local.ResourceManager;
  * @author Ngoc Huy
  *
  */
-public class PersistentEvent<T> extends EventImpl {
+public class PersistentEvent<T> extends EventImpl<T> {
 
 	protected static final long serialVersionUID = 1L;
 
@@ -27,11 +27,6 @@ public class PersistentEvent<T> extends EventImpl {
 
 	public T getInstance() {
 		return instance;
-	}
-
-	@SuppressWarnings("unchecked")
-	public <E> E getInstanceAndUnwrap() {
-		return (E) instance;
 	}
 
 	public ResourceDescriptor<T> getResourceDescriptor() {

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import adn.service.resource.local.LocalResourceStorageImpl;
 import adn.service.resource.local.ResourceManager;
 import adn.service.resource.models.FileResource;
 import adn.service.services.FileService;
@@ -33,14 +34,11 @@ public class FileController extends BaseController {
 	@Autowired
 	private ResourceManager resourceManager;
 
-	public static final String DEFAULT_USER_PHOTO_NAME = "aad81c87bd8316705c4568e72577eb62476a.jpg";
-
-	public static final String IMAGE_FILE_PATH = "C:\\Users\\Ngoc Huy\\Pictures\\avocados-adn\\";
-
 	protected FileResource toFileResource(String filename, Date timestamp) {
 		String ext = FilenameUtils.getExtension(filename);
 
-		return new FileResource(IMAGE_FILE_PATH, filename.substring(0, filename.indexOf(ext)), ext, timestamp);
+		return new FileResource(LocalResourceStorageImpl.IMAGE_FILE_DIRECTORY, filename.substring(0, filename.indexOf(ext)),
+				ext, timestamp);
 	}
 
 	@GetMapping("/public/image/bytes")

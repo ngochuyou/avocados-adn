@@ -5,6 +5,7 @@ package adn.service.resource.local;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.annotation.Order;
@@ -25,6 +26,9 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 
 	private ContextBuildingService contextBuildingService;
 
+	@Autowired
+	private LocalResourceStorage localStorage;
+
 	@Override
 	public void buildAfterStartUp() throws Exception {
 		// TODO Auto-generated method stub
@@ -37,6 +41,7 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		contextBuildingService.register(Metadata.class, metadata);
 		// register naming-strategy
 		contextBuildingService.register(NamingStrategy.class, NamingStrategy.DEFAULT_NAMING_STRATEGY);
+		contextBuildingService.register(LocalResourceStorage.class, localStorage);
 		// inject ResourceManager bean into ApplicationContext
 		// usages of this bean should be obtained via
 		// ContextProvider.getApplicationContext().getBean(ResourceManager.class.getName());

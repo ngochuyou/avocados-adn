@@ -7,7 +7,7 @@ package adn.service.resource.event;
  * @author Ngoc Huy
  *
  */
-public interface EventExecutor<T extends Event> {
+public interface EventExecutor<E, T extends Event<E>> {
 
 	void execute(T event);
 

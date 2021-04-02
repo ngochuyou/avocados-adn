@@ -13,6 +13,14 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.transaction.Transactional;
+
+import org.hibernate.FlushMode;
+import org.hibernate.SessionFactory;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.Status;
+import org.hibernate.event.internal.EntityState;
+import org.hibernate.internal.SessionImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -37,10 +45,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
-import adn.controller.FileController;
+import adn.application.context.DatabaseInitializer;
 import adn.model.ModelManager;
+import adn.model.entities.Account;
 import adn.model.entities.Admin;
 import adn.security.SecurityConfiguration;
+import adn.service.resource.local.LocalResourceStorageImpl;
 
 /**
  * @author Ngoc Huy
@@ -65,7 +75,7 @@ public class ApplicationIntegrationTest {
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Test
-	public void testGetImageByte() throws Exception {
+	private void testGetImageByte() throws Exception {
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get("/file/public/image/bytes");
 		reqBuilder.queryParam("filename", "IMG_20210301_162741.jpg").with(ADMIN);
 
@@ -76,7 +86,7 @@ public class ApplicationIntegrationTest {
 
 	@Test
 	private void testGetImageBytes() throws Exception {
-		File directory = new File(FileController.IMAGE_FILE_PATH);
+		File directory = new File(LocalResourceStorageImpl.IMAGE_FILE_DIRECTORY);
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
 				.get(MULTITHREADING_ENDPOINT + "/file/public/image/bytes");
 		int amount = directory.listFiles().length;
@@ -125,6 +135,46 @@ public class ApplicationIntegrationTest {
 
 		assertThat(instance != null).isTrue();
 		assertThat(instance.getId()).isEqualTo(id);
+	}
+
+	@Autowired
+	private SessionFactory factory;
+
+	@Autowired
+	private DatabaseInitializer dbInit;
+
+	@Test
+	@Transactional
+	public void entityEntryTest() {
+		SessionImpl session = (SessionImpl) factory.getCurrentSession();
+
+		session.setHibernateFlushMode(FlushMode.MANUAL);
+
+//		Account account = session.find(Account.class, "adn.personnel.manager.0");
+
+		Account account = dbInit.getAdmin();
+		session.persist(account);
+
+		EntityEntry entry = session.getPersistenceContext().getEntry(account);
+		EntityState state = EntityState.getEntityState(account, entry.getEntityName(), entry, session, null);
+
+		assertThat(state == EntityState.PERSISTENT);
+		logger.debug(entry.getStatus().toString());
+		logger.debug(state.toString());
+
+		session.delete(account);
+		state = EntityState.getEntityState(account, entry.getEntityName(), entry, session, null);
+
+		assertThat(entry.getStatus() == Status.DELETED && state == EntityState.DELETED);
+		logger.debug(entry.getStatus().toString());
+		logger.debug(state.toString());
+
+		session.flush();
+
+		assertThat(entry.getStatus() == Status.GONE);
+		assertThat(state == EntityState.TRANSIENT);
+		logger.debug(entry.getStatus().toString());
+		logger.debug(state.toString());
 	}
 
 }

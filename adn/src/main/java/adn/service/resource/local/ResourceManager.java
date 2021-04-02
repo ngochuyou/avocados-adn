@@ -19,12 +19,12 @@ public interface ResourceManager {
 
 	ResourceManagerFactory getResourceManagerFactory();
 
-	LocalResourceStorage getLocalResourceStorage();
-
 	void setRollbackOnly();
 
 	boolean isRollbackOnly();
 
 	ResourceContext getResourceContext();
 
+	ActionQueue getActionQueue();
+	
 }

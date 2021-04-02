@@ -12,11 +12,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 
-import adn.controller.FileController;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Account;
 import adn.model.factory.extraction.AccountExtractor;
+import adn.service.resource.local.LocalResourceStorageImpl;
 import adn.service.services.AccountService;
 import adn.utilities.Gender;
 import adn.utilities.Role;
@@ -55,7 +55,7 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 				: StringHelper.normalizeString(model.getFirstName()));
 		model.setLastName(!StringHelper.hasLength(model.getLastName()) ? AccountService.UNKNOWN_USER_LASTNAME
 				: StringHelper.normalizeString(model.getLastName()));
-		model.setPhoto(!StringHelper.hasLength(model.getPhoto()) ? FileController.DEFAULT_USER_PHOTO_NAME : model.getPhoto());
+		model.setPhoto(!StringHelper.hasLength(model.getPhoto()) ? LocalResourceStorageImpl.DEFAULT_USER_PHOTO_NAME : model.getPhoto());
 
 		return model;
 	}

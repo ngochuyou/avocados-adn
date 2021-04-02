@@ -14,7 +14,7 @@ import org.hibernate.property.access.spi.Setter;
  */
 public interface ResourceDescriptor<T> {
 
-	String getName();
+	String getResourceName();
 
 	Class<T> getType();
 
@@ -35,5 +35,7 @@ public interface ResourceDescriptor<T> {
 	ResourceManagerFactory getResourceManagerFactory();
 
 	void cleanUp();
+
+	boolean isTransient(T instance);
 
 }

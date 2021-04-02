@@ -13,9 +13,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
 import adn.application.context.ContextProvider;
-import adn.controller.FileController;
 import adn.service.Service;
 import adn.service.ServiceResult;
+import adn.service.resource.local.LocalResourceStorageImpl;
 import adn.service.resource.local.ResourceManager;
 import adn.service.resource.local.ResourceManagerFactory;
 import adn.service.resource.models.FileResource;
@@ -48,7 +48,7 @@ public class FileService implements Service {
 
 		try {
 			byte[] bytes = file.getBytes();
-			Path path = Paths.get(FileController.IMAGE_FILE_PATH + filename);
+			Path path = Paths.get(LocalResourceStorageImpl.IMAGE_FILE_DIRECTORY + filename);
 
 			logger.debug("Writing file: " + filename);
 			Files.write(path, bytes);
@@ -66,7 +66,7 @@ public class FileService implements Service {
 			return ServiceResult.bad().body(emptyName);
 		}
 
-		File file = new File(FileController.IMAGE_FILE_PATH + filename);
+		File file = new File(LocalResourceStorageImpl.IMAGE_FILE_DIRECTORY + filename);
 
 		if (!file.exists()) {
 			return ServiceResult.bad().body(fileNotFound);
@@ -80,7 +80,7 @@ public class FileService implements Service {
 
 	public byte[] getImageBytes(String filename) {
 		try {
-			File file = new File(FileController.IMAGE_FILE_PATH + filename);
+			File file = new File(LocalResourceStorageImpl.IMAGE_FILE_DIRECTORY + filename);
 
 			if (!file.exists()) {
 				return null;

@@ -15,9 +15,13 @@ public class ActionQueue {
 		// TODO Auto-generated constructor stub
 		this.resourceManager = resourceManager;
 	}
+	
+	public void removeAction(Action action) {
+		
+	}
 
 	public ResourceManager getResourceManager() {
 		return resourceManager;
 	}
-
+	
 }

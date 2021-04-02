@@ -5,16 +5,26 @@ package adn.service.resource.local;
 
 import java.io.Serializable;
 
+import org.hibernate.LockMode;
+import org.hibernate.engine.spi.Status;
+
 /**
  * @author Ngoc Huy
  *
  */
 public interface ResourceContext {
 
-	Object find(Serializable identifier);
+	Object find(ResourceKey<?> key);
 
-	void add(Serializable identifier, Object resource);
-
+	// @formatter:off
+	ResourceEntry<?> addResource(
+			Object instance,
+			Status status,
+			LockMode lockMode,
+			ResourceKey<?> key,
+			ResourceDescriptor<?> descriptor
+	);
+	// @formatter:on
 	void remove(Serializable identifier);
 
 	void clear();
@@ -25,6 +35,18 @@ public interface ResourceContext {
 
 	<T> ResourceEntry<T> getEntry(Object entity);
 
-	<T> void addEntry(ResourceEntry<T> entry);
+	// @formatter:off
+	<T> ResourceEntry<T> addEntry(
+			String resourceName,
+			T instance,
+			Status status,
+			Status prevStatus,
+			Object[] loadedState,
+			Object[] deletedState,
+			LockMode lockMode,
+			ResourceKey<T> key,
+			boolean isTransient,
+			ResourceDescriptor<T> descriptor);
+	// @formatter:on
 
 }

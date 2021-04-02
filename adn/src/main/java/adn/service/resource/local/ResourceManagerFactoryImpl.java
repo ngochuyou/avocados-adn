@@ -34,6 +34,8 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	private final ResourceManager resourceManager = ContextProvider.getApplicationContext()
 			.getBean(ResourceManager.class);
 
+	private final LocalResourceStorage localStorage;
+
 	/**
 	 * @throws IllegalAccessException
 	 * @throws SecurityException
@@ -47,6 +49,9 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 
 		metadata = serviceContext.getService(Metadata.class);
 		resourceNamingStrategy = serviceContext.getService(NamingStrategy.class);
+		localStorage = serviceContext.getService(LocalResourceStorage.class);
+
+		Assert.notNull(localStorage, "LocalResourceStorage cannot be null");
 
 		Set<Class<?>> modelClassSet = metadata.getModelClassSet();
 
@@ -132,6 +137,12 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 		Assert.notNull(descriptor, "Unable to locate descriptor for resource of type: " + type
 				+ ", provided resource type is not a managed type");
 		Assert.isTrue(descriptor.isInstance(type), "Type check failed. Denied by: " + descriptor.getClass().getName());
+	}
+
+	@Override
+	public LocalResourceStorage getStorage() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

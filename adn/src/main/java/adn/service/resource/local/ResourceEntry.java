@@ -7,7 +7,10 @@ import static adn.service.resource.local.ResourceManagerFactory.unsupportHBN;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.Status;
+import org.hibernate.event.internal.EntityState;
 import org.hibernate.persister.entity.EntityPersister;
 
 /**
@@ -17,13 +20,31 @@ import org.hibernate.persister.entity.EntityPersister;
 public interface ResourceEntry<T> extends EntityEntry {
 
 	@Override
+	@Deprecated
 	default void overwriteLoadedStateCollectionValue(String propertyName, PersistentCollection collection) {
 		// TODO Auto-generated method stub
 		unsupportHBN();
 	}
 
 	@Override
+	@Deprecated
 	default EntityPersister getPersister() {
+		// TODO Auto-generated method stub
+		unsupportHBN();
+		return null;
+	}
+
+	@Override
+	@Deprecated
+	default boolean isNullifiable(boolean earlyInsert, SharedSessionContractImplementor session) {
+		// TODO Auto-generated method stub
+		unsupportHBN();
+		return false;
+	}
+
+	@Override
+	@Deprecated
+	default EntityKey getEntityKey() {
 		// TODO Auto-generated method stub
 		unsupportHBN();
 		return null;
@@ -31,11 +52,20 @@ public interface ResourceEntry<T> extends EntityEntry {
 
 	ResourceDescriptor<T> getDescriptor();
 
-	@Override
-	default boolean isNullifiable(boolean earlyInsert, SharedSessionContractImplementor session) {
-		// TODO Auto-generated method stub
-		unsupportHBN();
-		return false;
+	public static <T> EntityState getEntityState(ResourceEntry<T> entry, T resource, ResourceDescriptor<T> descriptor) {
+		if (entry != null) {
+			// entering this logic determine that resource is either DELETED or PERSISTENT
+			if (entry.getStatus() == Status.DELETED) {
+				return EntityState.DELETED;
+			}
+
+			return EntityState.PERSISTENT;
+		}
+		// either TRANSIENT or DETACHED
+		// descriptor
+		return descriptor.isTransient(resource) ? EntityState.TRANSIENT : EntityState.DETACHED;
 	}
+
+	ResourceKey<T> getResourceKey();
 
 }

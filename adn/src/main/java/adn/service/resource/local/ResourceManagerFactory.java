@@ -22,6 +22,8 @@ public interface ResourceManagerFactory {
 	boolean isLocked(Serializable identifier);
 
 	boolean setLocked(Serializable identifier, boolean isLocked);
+	
+	LocalResourceStorage getStorage();
 
 	public static void unsupportHBN() {
 		throw new UnsupportedOperationException("Some of Hibernate implementations might be unsupported");
