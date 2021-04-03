@@ -3,21 +3,15 @@
  */
 package adn.service.resource.event;
 
-import static adn.service.resource.local.ResourceEntry.getEntityState;
-
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.function.Consumer;
 
-import org.hibernate.LockMode;
-import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.EntityState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adn.service.resource.local.ResourceDescriptor;
-import adn.service.resource.local.ResourceEntry;
-import adn.service.resource.local.ResourceKey;
 
 /**
  * @author Ngoc Huy
@@ -44,11 +38,11 @@ public class PersistEventExecutor<T> implements EventExecutor<T, PersistentEvent
 	public void execute(PersistentEvent<T> event) {
 		// TODO Auto-generated method stub
 		T instance;
-		ResourceEntry<T> entry = event.getResourceManager().getResourceContext()
-				.getEntry(instance = event.getInstance());
-		EntityState state = getEntityState(entry, instance, event.getResourceDescriptor());
+//		ResourceEntry<T> entry = event.getResourceManager().getResourceContext()
+//				.getEntry(instance = event.getInstance());
+//		EntityState state = getEntityState(entry, instance, event.getResourceDescriptor());
 
-		STRATEGIES[state.ordinal()].accept(event);
+//		STRATEGIES[state.ordinal()].accept(event);
 	}
 
 	private void executeWhenPersistent(PersistentEvent<T> event) {
@@ -69,8 +63,8 @@ public class PersistEventExecutor<T> implements EventExecutor<T, PersistentEvent
 							.generateValue(event.getResourceManager().getResourceManagerFactory(), instance));
 		}
 
-		event.getResourceManager().getResourceContext().addResource(instance, Status.MANAGED, LockMode.READ,
-				new ResourceKey<>(identifier, descriptor), descriptor);
+//		event.getResourceManager().getResourceContext().addResource(instance, Status.MANAGED, LockMode.READ,
+//				new ResourceKey<>(identifier, descriptor), descriptor);
 	}
 
 	private void executeWhenDetached(PersistentEvent<T> event) {
@@ -78,8 +72,8 @@ public class PersistEventExecutor<T> implements EventExecutor<T, PersistentEvent
 		T instance;
 
 		logger.trace("Managing DETACHED resource");
-		event.getResourceManager().getResourceContext().addResource(instance = event.getInstance(), Status.MANAGED,
-				LockMode.READ, new ResourceKey<>(descriptor.getIdentifier(instance), descriptor), descriptor);
+//		event.getResourceManager().getResourceContext().addResource(instance = event.getInstance(), Status.MANAGED,
+//				LockMode.READ, new ResourceKey<>(descriptor.getIdentifier(instance), descriptor), descriptor);
 	}
 
 	private void executeWhenDeleted(PersistentEvent<T> event) {

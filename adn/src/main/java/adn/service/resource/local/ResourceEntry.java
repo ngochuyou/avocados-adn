@@ -3,7 +3,7 @@
  */
 package adn.service.resource.local;
 
-import static adn.service.resource.local.ResourceManagerFactory.unsupportHBN;
+import static adn.service.resource.local.ResourceManagerFactory.unsupport;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.EntityEntry;
@@ -23,14 +23,14 @@ public interface ResourceEntry<T> extends EntityEntry {
 	@Deprecated
 	default void overwriteLoadedStateCollectionValue(String propertyName, PersistentCollection collection) {
 		// TODO Auto-generated method stub
-		unsupportHBN();
+		unsupport();
 	}
 
 	@Override
 	@Deprecated
 	default EntityPersister getPersister() {
 		// TODO Auto-generated method stub
-		unsupportHBN();
+		unsupport();
 		return null;
 	}
 
@@ -38,7 +38,7 @@ public interface ResourceEntry<T> extends EntityEntry {
 	@Deprecated
 	default boolean isNullifiable(boolean earlyInsert, SharedSessionContractImplementor session) {
 		// TODO Auto-generated method stub
-		unsupportHBN();
+		unsupport();
 		return false;
 	}
 
@@ -46,7 +46,7 @@ public interface ResourceEntry<T> extends EntityEntry {
 	@Deprecated
 	default EntityKey getEntityKey() {
 		// TODO Auto-generated method stub
-		unsupportHBN();
+		unsupport();
 		return null;
 	}
 

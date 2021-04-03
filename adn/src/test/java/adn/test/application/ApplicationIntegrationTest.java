@@ -159,22 +159,58 @@ public class ApplicationIntegrationTest {
 		EntityState state = EntityState.getEntityState(account, entry.getEntityName(), entry, session, null);
 
 		assertThat(state == EntityState.PERSISTENT);
-		logger.debug(entry.getStatus().toString());
-		logger.debug(state.toString());
-
+		logger.debug("Status: " + entry.getStatus().toString());
+		logger.debug("State: " + state.toString());
+		inspectState(entry);
+		logger.debug("Version: " + entry.getVersion());
+		logger.debug("Exists: " + entry.isExistsInDatabase());
 		session.delete(account);
 		state = EntityState.getEntityState(account, entry.getEntityName(), entry, session, null);
 
 		assertThat(entry.getStatus() == Status.DELETED && state == EntityState.DELETED);
-		logger.debug(entry.getStatus().toString());
-		logger.debug(state.toString());
+		logger.debug("Status: " + entry.getStatus().toString());
+		logger.debug("State: " + state.toString());
+//		inspectState(entry);
+		logger.debug("Version: " + entry.getVersion());
+		logger.debug("Exists: " + entry.isExistsInDatabase());
 
 		session.flush();
 
 		assertThat(entry.getStatus() == Status.GONE);
 		assertThat(state == EntityState.TRANSIENT);
-		logger.debug(entry.getStatus().toString());
-		logger.debug(state.toString());
+		logger.debug("Status: " + entry.getStatus().toString());
+		logger.debug("State: " + state.toString());
+//		inspectState(entry);
+		logger.debug("Version: " + entry.getVersion());
+		logger.debug("Exists: " + entry.isExistsInDatabase());
+	}
+
+	private void inspectState(EntityEntry entry) {
+		if (entry.getLoadedState() != null) {
+			logger.debug("Loaded state");
+
+			for (Object val : entry.getLoadedState()) {
+				if (val == null) {
+					logger.debug("NULL");
+					continue;
+				}
+
+				logger.debug(val.toString());
+			}
+		}
+
+		if (entry.getDeletedState() != null) {
+			logger.debug("Deleted state");
+
+			for (Object val : entry.getDeletedState()) {
+				if (val == null) {
+					logger.debug("NULL");
+					continue;
+				}
+
+				logger.debug(val.toString());
+			}
+		}
 	}
 
 }

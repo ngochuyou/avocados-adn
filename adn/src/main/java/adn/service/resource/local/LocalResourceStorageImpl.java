@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
  * @author Ngoc Huy
  *
  */
+@SuppressWarnings("serial")
 @Component
 public class LocalResourceStorageImpl implements LocalResourceStorage {
 

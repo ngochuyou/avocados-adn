@@ -3,6 +3,8 @@
  */
 package adn.service.resource.local;
 
+import org.hibernate.service.Service;
+
 import adn.utilities.StringHelper;
 
 /**
@@ -16,6 +18,8 @@ public interface NamingStrategy extends Service {
 	String getName(Class<?> clazz);
 
 	class CamelCasedNamingStrategy implements NamingStrategy {
+
+		private static final long serialVersionUID = 1L;
 
 		private CamelCasedNamingStrategy() {
 			// TODO Auto-generated constructor stub

@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import adn.service.resource.local.LocalResourceStorageImpl;
-import adn.service.resource.local.ResourceManager;
 import adn.service.resource.models.FileResource;
 import adn.service.services.FileService;
 
@@ -31,14 +30,11 @@ public class FileController extends BaseController {
 	@Autowired
 	private FileService fileService;
 
-	@Autowired
-	private ResourceManager resourceManager;
-
 	protected FileResource toFileResource(String filename, Date timestamp) {
 		String ext = FilenameUtils.getExtension(filename);
 
-		return new FileResource(LocalResourceStorageImpl.IMAGE_FILE_DIRECTORY, filename.substring(0, filename.indexOf(ext)),
-				ext, timestamp);
+		return new FileResource(LocalResourceStorageImpl.IMAGE_FILE_DIRECTORY,
+				filename.substring(0, filename.indexOf(ext)), ext, timestamp);
 	}
 
 	@GetMapping("/public/image/bytes")
@@ -48,7 +44,7 @@ public class FileController extends BaseController {
 
 		FileResource resource = toFileResource(filename, new Date());
 
-		resourceManager.save(resource);
+//		resourceManager.save(resource);
 
 		if (bytes == null || resource == null) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("FILE NOT FOUND");

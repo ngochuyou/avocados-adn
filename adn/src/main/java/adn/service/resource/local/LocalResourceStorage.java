@@ -3,6 +3,8 @@
  */
 package adn.service.resource.local;
 
+import org.hibernate.service.Service;
+
 /**
  * @author Ngoc Huy
  *

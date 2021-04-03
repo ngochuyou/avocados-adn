@@ -5,13 +5,13 @@ package adn.service.resource.local;
 
 import java.io.Serializable;
 
+import javax.persistence.EntityManagerFactory;
+
 /**
  * @author Ngoc Huy
  *
  */
-public interface ResourceManagerFactory {
-
-	ResourceManager getResourceManager();
+public interface ResourceManagerFactory extends EntityManagerFactory {
 
 	<T> ResourceDescriptor<T> getResourceDescriptor(String name);
 
@@ -22,11 +22,13 @@ public interface ResourceManagerFactory {
 	boolean isLocked(Serializable identifier);
 
 	boolean setLocked(Serializable identifier, boolean isLocked);
-	
+
 	LocalResourceStorage getStorage();
 
-	public static void unsupportHBN() {
-		throw new UnsupportedOperationException("Some of Hibernate implementations might be unsupported");
+	ContextBuildingService getContextBuildingService();
+	
+	public static void unsupport() {
+		throw new UnsupportedOperationException("Some implementations might not be supported");
 	}
 
 }

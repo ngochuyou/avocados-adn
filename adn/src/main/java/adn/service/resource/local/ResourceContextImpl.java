@@ -56,65 +56,85 @@ public class ResourceContextImpl implements ResourceContext {
 	}
 
 	@Override
-	public boolean contains(Serializable pathName) {
-		// TODO Auto-generated method stub
-		return context.containsKey(pathName);
-	}
-
-	@Override
 	public ResourceManager getResourceManager() {
 		// TODO Auto-generated method stub
 		return resourceManager;
 	}
 
+	// @formatter:off
 	@Override
-	public <T> ResourceEntry<T> getEntry(Object entity) {
+	public ResourceEntry<?> addEntry(
+			Object instance,
+			Status status,
+			Object[] loadedState,
+			Serializable id,
+			LockMode lockMode,
+			boolean isTransient,
+			ResourceDescriptor<?> descriptor) {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	// @formatter:off
 
 	@Override
-	public <T> ResourceEntry<T> addEntry(
-			String resourceName,
-			T instance,
+	public ResourceEntry<?> addResource(
+			Object instance,
 			Status status,
-			Status prevStatus,
 			Object[] loadedState,
-			Object[] deletedState,
+			ResourceKey<?> key,
 			LockMode lockMode,
-			ResourceKey<T> key,
 			boolean isTransient,
-			ResourceDescriptor<T> descriptor) {
+			ResourceDescriptor<?> descriptor) {
 		// TODO Auto-generated method stub
-		if (!entryContext.containsKey(instance)) {
-			return new ResourceEntryImpl<>(
-					resourceName,
-					key.getIdentifier(),
-					Status.MANAGED,
-					null,
-					null,
-					null,
-					instance,
-					lockMode,
-					isTransient,
-					key.getDescriptor(),
-					key);
-		}
-		
 		return null;
 	}
 	// @formatter:on
 
 	@Override
-	public ResourceEntry<?> addResource(Object instance, Status status, LockMode lockMode, ResourceKey<?> key,
-			ResourceDescriptor<?> descriptor) {
+	public void setEntryStatus(ResourceEntry<?> entry, Status status) {
 		// TODO Auto-generated method stub
-		context.computeIfAbsent(key, k -> {
-			return instance;
-		});
 
+	}
+
+	@Override
+	public void addResource(ResourceKey<?> key, Object instance) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public Object getResource(ResourceKey<?> key) {
+		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public Object removeResource(ResourceKey<?> key) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ResourceEntry<?> getEntry(Object instance) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ResourceEntry<?> removeEntry(Object instance) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean hasEntry(Object instance) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean contains(ResourceKey<?> key) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 
 }

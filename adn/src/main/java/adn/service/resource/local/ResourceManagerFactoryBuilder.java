@@ -34,7 +34,7 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		// TODO Auto-generated method stub
 		logger.info(getLoggingPrefix(this) + "Building " + this.getClass());
 		// create building service
-		contextBuildingService = new ContextBuildingService();
+		contextBuildingService = ContextBuildingService.createBuildingService();
 		// create Metadata
 		final Metadata metadata = new ClassPathScanningMetadata();
 
@@ -60,7 +60,8 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 //				.getService(PersisterFactory.class);
 	}
 
-	private ResourceManagerFactory build() throws IllegalAccessException, NoSuchMethodException, SecurityException {
+	private ResourceManagerFactory build()
+			throws IllegalAccessException, NoSuchMethodException, SecurityException, NoSuchFieldException {
 		// TODO Auto-generated method stub
 		return new ResourceManagerFactoryImpl(contextBuildingService);
 	}

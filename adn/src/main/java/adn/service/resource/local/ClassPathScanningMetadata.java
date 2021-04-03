@@ -22,6 +22,8 @@ import adn.application.Constants;
  */
 public class ClassPathScanningMetadata implements Metadata {
 
+	private static final long serialVersionUID = 1L;
+
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private Set<Class<?>> modelClassSet = new HashSet<>();
@@ -34,19 +36,17 @@ public class ClassPathScanningMetadata implements Metadata {
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
 		scanner.addIncludeFilter(new AnnotationTypeFilter(Entity.class));
-		modelClassSet = scanner.findCandidateComponents(Constants.RESOURCE_MODEL_PACKAGE)
-			.stream()
-			.map(bean -> {
-				try {
-					logger.debug("Found new resource Model of type: " + bean.getBeanClassName());
-	
-					return Class.forName(bean.getBeanClassName());
-				} catch (ClassNotFoundException e) {
-					// TODO Auto-generated catch block
-					logger.error("Failed to obtain model type: " + bean.getBeanClassName());
-					return null;
-				}
-			}).collect(Collectors.toSet());
+		modelClassSet = scanner.findCandidateComponents(Constants.RESOURCE_MODEL_PACKAGE).stream().map(bean -> {
+			try {
+				logger.debug("Found new resource Model of type: " + bean.getBeanClassName());
+
+				return Class.forName(bean.getBeanClassName());
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				logger.error("Failed to obtain model type: " + bean.getBeanClassName());
+				return null;
+			}
+		}).collect(Collectors.toSet());
 	}
 
 	public Set<Class<?>> getModelClassSet() {
