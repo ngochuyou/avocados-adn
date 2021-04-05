@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.local;
+package adn.service.resource.metamodel;
 
 import java.util.Set;
 
@@ -13,6 +13,10 @@ import org.hibernate.service.Service;
  */
 public interface Metadata extends Service {
 
-	Set<Class<?>> getModelClassSet();
+	<X> ResourceClass<X> getResourceClass(String name);
+
+	Set<String> getImports();
+
+	public void process();
 
 }

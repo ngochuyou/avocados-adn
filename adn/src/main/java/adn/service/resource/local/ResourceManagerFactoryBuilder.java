@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
+import adn.service.resource.metamodel.ClassPathScanningSource;
+import adn.service.resource.metamodel.Metadata;
 
 /**
  * @author Ngoc Huy
@@ -35,13 +37,14 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		logger.info(getLoggingPrefix(this) + "Building " + this.getClass());
 		// create building service
 		contextBuildingService = ContextBuildingService.createBuildingService();
-		// create Metadata
-		final Metadata metadata = new ClassPathScanningMetadata();
-
-		contextBuildingService.register(Metadata.class, metadata);
 		// register naming-strategy
 		contextBuildingService.register(NamingStrategy.class, NamingStrategy.DEFAULT_NAMING_STRATEGY);
 		contextBuildingService.register(LocalResourceStorage.class, localStorage);
+		// create Metadata
+		final Metadata metadata = new ClassPathScanningSource(contextBuildingService);
+		
+		metadata.process();
+		contextBuildingService.register(Metadata.class, metadata);
 		// inject ResourceManager bean into ApplicationContext
 		// usages of this bean should be obtained via
 		// ContextProvider.getApplicationContext().getBean(ResourceManager.class.getName());

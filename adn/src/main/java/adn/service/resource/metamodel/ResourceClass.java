@@ -17,12 +17,12 @@ import org.hibernate.mapping.Property;
  */
 public class ResourceClass<X> implements AttributeContainer {
 
-	private ResourceMappedSuperClass<? super X> superClass;
+	private ResourceClass<? super X> superClass;
 
 	private String resourceName;
 	private Class<X> type;
 
-	private final List<ResourceProperty<X>> properties = new ArrayList<>();
+	private final List<ResourceProperty<X>> declaredProperties = new ArrayList<>();
 
 	private boolean hasIdentifier;
 	private boolean isVersioned;
@@ -68,21 +68,25 @@ public class ResourceClass<X> implements AttributeContainer {
 		this.isAbstract = isAbstract;
 	}
 
-	public ResourceMappedSuperClass<? super X> getSuperClass() {
+	public ResourceClass<? super X> getSuperClass() {
 		return superClass;
 	}
 
-	public void setSuperClass(ResourceMappedSuperClass<? super X> superClass) {
+	public void setSuperClass(ResourceClass<? super X> superClass) {
 		this.superClass = superClass;
 	}
 
-	public List<ResourceProperty<X>> getProperties() {
-		return properties;
+	public List<ResourceProperty<X>> getDeclaredProperties() {
+		return declaredProperties;
 	}
 
-	public void addProperty(ResourceProperty<X> attribute) {
-		properties.add(attribute);
-		attribute.setResourceClass(this);
+	public void addProperty(ResourceProperty<X> other) {
+		if (other.getResourceClass() != null && other.getResourceClass() != this) {
+			throw new IllegalArgumentException("property already belongs to another ResourceClass");
+		}
+
+		declaredProperties.add(other);
+		other.setResourceClass(this);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -91,12 +95,6 @@ public class ResourceClass<X> implements AttributeContainer {
 		// TODO Auto-generated method stub
 		if (!(attribute instanceof ResourceProperty)) {
 			unsupport();
-		}
-
-		ResourceProperty<?> other = (ResourceProperty<?>) attribute;
-
-		if (other.getResourceClass() != null && other.getResourceClass() != this) {
-			throw new IllegalArgumentException("property already belongs to another ResourceClass");
 		}
 
 		addProperty((ResourceProperty<X>) attribute);

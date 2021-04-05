@@ -3,11 +3,7 @@
  */
 package adn.service.resource.metamodel;
 
-import static adn.service.resource.local.ResourceManagerFactory.unsupport;
-
-import java.io.Serializable;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -19,22 +15,14 @@ import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.ManagedType;
 import javax.persistence.metamodel.Metamodel;
 
-import org.hibernate.Session;
-import org.hibernate.tuple.GenerationTiming;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import adn.service.resource.local.AnnotationBasedResourceValueGeneration;
 import adn.service.resource.local.ContextBuildingService;
-import adn.service.resource.local.Metadata;
 import adn.service.resource.local.NamingStrategy;
 import adn.service.resource.local.ResourceDescriptor;
-import adn.service.resource.local.ResourceIdentifier;
 import adn.service.resource.local.ResourceManagerFactory;
-import adn.service.resource.local.ResourcePropertyValueGenerator;
-import adn.service.resource.models.NamedResource;
-import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -67,14 +55,26 @@ public class MetamodelImpl implements Metamodel {
 		this.managerFactory = resourceManagerFactory;
 
 		Metadata metadata = serviceRegistry.getService(Metadata.class);
-		NamingStrategy resourceNamingStrategy = serviceRegistry.getService(NamingStrategy.class);
 
 		Assert.notNull(metadata, "Metadata must not be null");
 
-		Set<Class<?>> modelClassSet = metadata.getModelClassSet();
+		Set<String> modelClassSet = metadata.getImports();
 
-		managedModels = modelClassSet.stream().map(clazz -> resourceNamingStrategy.getName(clazz))
+		Set<ResourceClass<?>> imported = modelClassSet.stream().map(name -> metadata.getResourceClass(name))
 				.collect(Collectors.toSet());
+
+		for (ResourceClass<?> rc : imported) {
+			ResourceClass<?> root = rc;
+			String log = "Imported " + rc.getResourceName();
+
+			while ((root = root.getSuperClass()) != null) {
+				log += " extends " + root.getResourceName();
+			}
+
+			logger.debug(log);
+		}
+
+		managedModels = modelClassSet.stream().map(clazz -> clazz).collect(Collectors.toSet());
 		entitiesByName = new HashMap<>(managedModels.size());
 	}
 
@@ -137,92 +137,6 @@ public class MetamodelImpl implements Metamodel {
 
 	public ResourceManagerFactory getManagerFactory() {
 		return managerFactory;
-	}
-
-	public static class ResourceIdentifierValueGenerator implements ResourcePropertyValueGenerator<Serializable> {
-
-		public static final ResourceIdentifierValueGenerator INSTANCE = new ResourceIdentifierValueGenerator();
-
-		public static final String IDENTIFIER_PARTS_SEPERATOR = "_";
-
-		@Override
-		@Deprecated
-		public Serializable generateValue(Session session, Object owner) {
-			// TODO Auto-generated method stub
-			unsupport();
-			return null;
-		}
-
-		@Override
-		public Serializable generateValue(ResourceManagerFactory factory, Object object) {
-			// TODO Auto-generated method stub
-			if (object instanceof NamedResource) {
-				// @formatter:off
-				NamedResource instance = (NamedResource) object;
-
-				return new StringBuilder(instance.getDirectoryPath())
-						.append(new Date().getTime())
-						.append(IDENTIFIER_PARTS_SEPERATOR)
-						.append(StringHelper.hash(instance.getName()))
-						.append(instance.getExtension())
-						.toString();
-				// @formatter:on
-			}
-
-			return String.valueOf(new Date().getTime());
-		}
-
-	}
-
-	public static class ResourceIdentifierValueGeneration extends AnnotationBasedResourceValueGeneration {
-
-		private static final long serialVersionUID = 1L;
-
-		private final ResourcePropertyValueGenerator<Serializable> generator = ResourceIdentifierValueGenerator.INSTANCE;
-
-		/**
-		 * @param timing
-		 */
-		public ResourceIdentifierValueGeneration(GenerationTiming timing) {
-			super(timing);
-			// TODO Auto-generated constructor stub
-		}
-
-		public ResourceIdentifierValueGeneration(ResourceIdentifierValueGeneration other) {
-			super(GenerationTiming.valueOf(other.timing.toString()));
-		}
-
-		@Override
-		public GenerationTiming getGenerationTiming() {
-			// TODO Auto-generated method stub
-			return timing;
-		}
-
-		@Override
-		public ResourcePropertyValueGenerator<Serializable> getValueGenerator() {
-			// TODO Auto-generated method stub
-			return generator;
-		}
-
-		@Override
-		public boolean referenceColumnInSql() {
-			// TODO Auto-generated method stub
-			unsupport();
-			return false;
-		}
-
-		@Override
-		public String getDatabaseGeneratedReferencedColumnValue() {
-			// TODO Auto-generated method stub
-			unsupport();
-			return null;
-		}
-
-		@Override
-		public void initialize(ResourceIdentifier annotation, Class<?> propertyType) {
-			// TODO Auto-generated method stub
-		}
-
 	}
 
 	@Override
