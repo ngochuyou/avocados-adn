@@ -14,6 +14,8 @@ import org.hibernate.property.access.spi.Setter;
  */
 public interface ResourceDescriptor<T> {
 
+	void build();
+	
 	String getResourceName();
 
 	Class<T> getType();

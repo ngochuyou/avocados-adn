@@ -64,17 +64,13 @@ public interface ContextBuildingService extends ServiceRegistry {
 				return (T) serviceSet.stream().findFirst().orElseThrow();
 			}
 
-			if (serviceSet.isEmpty()) {
-				throw new NoSuchElementException("Could not find Service of type: " + serviceRole);
-			}
-
-			throw new IllegalArgumentException("More than one candidate of type: " + serviceRole + " were found.");
+			throw serviceSet.isEmpty() ? new NoSuchElementException("Could not find Service of type: " + serviceRole)
+					: new IllegalArgumentException("More than one candidate of type: " + serviceRole + " were found.");
 		}
 
 		@Override
 		public void close() {
 			// TODO Auto-generated method stub
-
 		}
 
 		@Override
