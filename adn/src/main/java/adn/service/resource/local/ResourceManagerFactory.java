@@ -26,9 +26,5 @@ public interface ResourceManagerFactory extends EntityManagerFactory {
 	LocalResourceStorage getStorage();
 
 	ContextBuildingService getContextBuildingService();
-	
-	public static void unsupport() {
-		throw new UnsupportedOperationException("Some implementations might not be supported");
-	}
 
 }

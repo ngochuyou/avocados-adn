@@ -3,16 +3,17 @@
  */
 package adn.service.resource.metamodel;
 
-import static adn.service.resource.local.ResourceManagerFactory.unsupport;
-
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
+
+import adn.service.resource.local.ResourceManagerFactoryBuilder;
 
 /**
  * @author Ngoc Huy
  *
  */
 @SuppressWarnings("serial")
+@Deprecated
 public class ResourceProperty<D> extends Property {
 
 	private ResourceClass<D> owner;
@@ -29,7 +30,7 @@ public class ResourceProperty<D> extends Property {
 	@Override
 	public PersistentClass getPersistentClass() {
 		// TODO Auto-generated method stub
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return super.getPersistentClass();
 	}
 

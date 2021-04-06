@@ -3,18 +3,19 @@
  */
 package adn.service.resource.metamodel;
 
-import static adn.service.resource.local.ResourceManagerFactory.unsupport;
-
 import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.mapping.AttributeContainer;
 import org.hibernate.mapping.Property;
 
+import adn.service.resource.local.ResourceManagerFactoryBuilder;
+
 /**
  * @author Ngoc Huy
  *
  */
+@Deprecated
 public class ResourceClass<X> implements AttributeContainer {
 
 	private ResourceClass<? super X> superClass;
@@ -94,7 +95,7 @@ public class ResourceClass<X> implements AttributeContainer {
 	public void addProperty(Property attribute) {
 		// TODO Auto-generated method stub
 		if (!(attribute instanceof ResourceProperty)) {
-			unsupport();
+			ResourceManagerFactoryBuilder.unsupport();
 		}
 
 		addProperty((ResourceProperty<X>) attribute);

@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.hibernate.service.Service;
 import org.hibernate.service.ServiceRegistry;
@@ -47,24 +48,24 @@ public interface ContextBuildingService extends ServiceRegistry {
 		public <T extends Service> T getService(Class<T> serviceRole) {
 			// TODO Auto-generated method stub
 			// @formatter:off
-				Class<?>[] candidateKeys = serviceMap.keySet().stream()
-						.filter(serviceClassKey -> serviceClassKey.isAssignableFrom(serviceRole))
-						.toArray(Class<?>[]::new);
-				
-				Assert.isTrue(candidateKeys.length != 0, "No service class of type: " + serviceRole + " were registered");
-				Assert.isTrue(candidateKeys.length == 1, "More than one service class of type: " + serviceRole + " were registered");
-				
-				Set<Service> serviceSet = serviceMap.get(candidateKeys[0]);
-		
-				candidateKeys = serviceSet.stream()
-						.filter(serviceClassKey -> serviceClassKey.getClass().isAssignableFrom(serviceRole))
-						.toArray(Class<?>[]::new);
-				// @formatter:on
-			if (serviceSet.size() == 1) {
-				return (T) serviceSet.stream().findFirst().orElseThrow();
+			Set<Class<?>> candidateKeys = serviceMap.keySet().stream()
+					.filter(serviceClassKey -> serviceClassKey.isAssignableFrom(serviceRole))
+					.collect(Collectors.toSet());
+			long n = candidateKeys.size();
+			
+			Assert.isTrue(n != 0, "No service class of type: " + serviceRole + " were registered");
+			Assert.isTrue(n == 1, "More than one service class of type: " + serviceRole + " were registered");
+			
+			Set<Service> candidateSet = serviceMap.get(candidateKeys.stream().findFirst().orElseThrow());
+	
+			candidateSet.stream().filter(service -> serviceRole.isAssignableFrom(service.getClass()));
+			n = candidateSet.size();
+			// @formatter:on
+			if (n == 1) {
+				return (T) candidateSet.stream().findFirst().orElseThrow();
 			}
 
-			throw serviceSet.isEmpty() ? new NoSuchElementException("Could not find Service of type: " + serviceRole)
+			throw n == 0 ? new NoSuchElementException("Could not find Service of type: " + serviceRole)
 					: new IllegalArgumentException("More than one candidate of type: " + serviceRole + " were found.");
 		}
 

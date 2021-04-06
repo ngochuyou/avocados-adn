@@ -3,23 +3,38 @@
  */
 package adn.service.resource.metamodel;
 
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
+import javax.persistence.Column;
+import javax.persistence.Id;
+import javax.persistence.PersistenceException;
+import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 import javax.persistence.metamodel.EmbeddableType;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.ManagedType;
-import javax.persistence.metamodel.Metamodel;
 
+import org.hibernate.metamodel.model.domain.internal.BasicTypeImpl;
+import org.hibernate.metamodel.model.domain.internal.PluralAttributeBuilder;
+import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl;
+import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl.Identifier;
+import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl.Version;
+import org.hibernate.metamodel.model.domain.spi.BasicTypeDescriptor;
+import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
+import com.mysql.cj.x.protobuf.MysqlxCrud.Collection;
+
 import adn.service.resource.local.ContextBuildingService;
+import adn.service.resource.local.Metadata;
 import adn.service.resource.local.NamingStrategy;
 import adn.service.resource.local.ResourceDescriptor;
 import adn.service.resource.local.ResourceManagerFactory;
@@ -30,17 +45,12 @@ import adn.service.resource.local.ResourceManagerFactory;
  */
 public class MetamodelImpl implements Metamodel {
 
-	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+	private static final Logger logger = LoggerFactory.getLogger(MetamodelImpl.class);
 
 	private final ResourceManagerFactory managerFactory;
 
-	private final Map<String, ResourceDescriptor<?>> descriptorsByName = new HashMap<>();
-
-	private final Set<String> managedModels;
-
-//	private static final Map<GenerationTiming, ResourceIdentifierValueGeneration> valueGenerationMap = new HashMap<>();
-
 	private final Map<String, EntityType<?>> entitiesByName;
+	private final Map<String, ResourceDescriptor<?>> descriptorsByName;
 
 	/**
 	 * @throws SecurityException
@@ -48,34 +58,12 @@ public class MetamodelImpl implements Metamodel {
 	 * @throws NoSuchFieldException
 	 * 
 	 */
-	public MetamodelImpl(ContextBuildingService serviceRegistry, ResourceManagerFactory resourceManagerFactory)
-			throws NoSuchMethodException, SecurityException, NoSuchFieldException {
+	public MetamodelImpl(ContextBuildingService serviceRegistry, ResourceManagerFactory resourceManagerFactory) {
 		// TODO Auto-generated constructor stub
 		Assert.notNull(resourceManagerFactory, "ResourceManagerFactory must not be null");
 		this.managerFactory = resourceManagerFactory;
-
-		Metadata metadata = serviceRegistry.getService(Metadata.class);
-
-		Assert.notNull(metadata, "Metadata must not be null");
-
-		Set<String> modelClassSet = metadata.getImports();
-
-		Set<ResourceClass<?>> imported = modelClassSet.stream().map(name -> metadata.getResourceClass(name))
-				.collect(Collectors.toSet());
-
-		for (ResourceClass<?> rc : imported) {
-			ResourceClass<?> root = rc;
-			String log = "Imported " + rc.getResourceName();
-
-			while ((root = root.getSuperClass()) != null) {
-				log += " extends " + root.getResourceName();
-			}
-
-			logger.debug(log);
-		}
-
-		managedModels = modelClassSet.stream().map(clazz -> clazz).collect(Collectors.toSet());
-		entitiesByName = new HashMap<>(managedModels.size());
+		this.entitiesByName = new HashMap<>();
+		this.descriptorsByName = new HashMap<>();
 	}
 
 	@Override
@@ -123,7 +111,7 @@ public class MetamodelImpl implements Metamodel {
 	@SuppressWarnings("unchecked")
 	public <T> ResourceDescriptor<T> getResourceDescriptor(String resourceName) {
 		// TODO Auto-generated method stub
-		if (!managedModels.contains(resourceName)) {
+		if (!descriptorsByName.keySet().contains(resourceName)) {
 			return null;
 		}
 
@@ -164,6 +152,204 @@ public class MetamodelImpl implements Metamodel {
 		}
 		// @formatter:on
 		return super.toString();
+	}
+
+	@Override
+	public void prepare() throws PersistenceException {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public void process() throws PersistenceException {
+		// TODO Auto-generated method stub
+		ContextBuildingService contextService = managerFactory.getContextBuildingService();
+		Metadata metadata = contextService.getService(Metadata.class);
+		Map<String, Class<?>> imports = metadata.getImports();
+
+		for (String name : imports.keySet()) {
+			ModelProcessor processor = new ModelProcessor();
+
+			processor.processModel(name, imports.get(name), null, metadata);
+		}
+	}
+
+	@Override
+	public void postProcess() throws PersistenceException {
+		// TODO Auto-generated method stub
+	}
+
+	@SuppressWarnings("unchecked")
+	private static class AttributeFactory {
+
+		static volatile Map<String, BasicTypeDescriptor<?>> typeContainer = new ConcurrentHashMap<>();
+
+		static <D, T> SingularPersistentAttribute<D, T> createIdentifier(EntityTypeImpl<D> owner, Field f) {
+			// TODO Auto-generated method stub
+			return new Identifier<>(owner, f.getName(), resolveType((Class<T>) f.getType()), f,
+					PersistentAttributeType.BASIC);
+		}
+
+		static <D, T> SingularPersistentAttribute<D, T> createVersion(EntityTypeImpl<D> owner, Field f) {
+			return new Version<>(owner, f.getName(), PersistentAttributeType.BASIC, resolveType((Class<T>) f.getType()),
+					f);
+		}
+
+		static <D, T> SingularPersistentAttribute<D, T> createSingularAttribute(EntityTypeImpl<D> owner, Field f,
+				boolean isOptional) {
+
+			return new SingularAttributeImpl<>(owner, f.getName(), PersistentAttributeType.BASIC,
+					resolveType((Class<T>) f.getType()), f, false, false, isOptional);
+		}
+
+		private static String resolveTypeName(Class<?> type) {
+			return type.getName();
+		}
+
+		private static <T> BasicTypeDescriptor<T> resolveType(Class<T> type) {
+			String typeName = resolveTypeName(type);
+
+			if (typeContainer.containsKey(typeName)) {
+				BasicTypeDescriptor<?> candidate = typeContainer.get(typeName);
+
+				if (candidate.getJavaType().equals(type)) {
+					return (BasicTypeDescriptor<T>) candidate;
+				}
+
+				throw new IllegalArgumentException(String.format(
+						"Unable to locate BasicTypeDescriptor due to type confliction. Required type %s, found type %s",
+						type, candidate.getJavaType()));
+			}
+
+			return addType(new BasicTypeImpl<>(type, null));
+		}
+
+		static <T> BasicTypeDescriptor<T> addType(BasicTypeDescriptor<T> newType) {
+			if (typeContainer.containsKey(resolveTypeName(newType.getJavaType()))) {
+				MetamodelImpl.logger.trace(String.format("Ignoring BasicType contribution: [%s, %s]",
+						resolveTypeName(newType.getJavaType()), newType.getJavaType()));
+
+				return newType;
+			}
+
+			typeContainer.put(newType.getTypeName(), newType);
+			MetamodelImpl.logger.trace(String.format("New BasicType contribution: [%s, %s]",
+					resolveTypeName(newType.getJavaType()), newType.getJavaType()));
+
+			return newType;
+		}
+
+	}
+
+	private class ModelProcessor {
+
+		public <J> void processModel(String name, Class<J> type, EntityTypeImpl<? super J> jpaSuperType,
+				Metadata metadata) {
+			if (metadata.isProcessingDone(name)) {
+				return;
+			}
+
+			logger.trace(String.format("Processing model. Name: %s. Type: %s", name, type));
+			// @formatter:off
+			EntityTypeImpl<J> metamodel = new EntityTypeImpl<>(
+					type, name,
+					isIdentifierPresented(type),
+					isVersionPresented(type),
+					jpaSuperType);
+			// @formatter:on
+			processAttributes(metamodel);
+			metadata.markedImportAsDone(name);
+		}
+
+		public <J> void processAttributes(EntityTypeImpl<J> metamodel) {
+			Class<J> clazz = metamodel.getJavaType();
+
+			for (Field f : clazz.getDeclaredFields()) {
+				final AttributeRole role = AttributeRole.getRole(f);
+
+				switch (role) {
+					case IDENTIFIER: {
+						logger.trace("Creating IDENTIFIER for type: " + metamodel.getJavaType());
+						metamodel.getInFlightAccess().addAttribute(AttributeFactory.createIdentifier(metamodel, f));
+						break;
+					}
+					case VERSION: {
+						logger.trace("Creating VERSION for type: " + metamodel.getJavaType());
+						metamodel.getInFlightAccess().addAttribute(AttributeFactory.createVersion(metamodel, f));
+						break;
+					}
+					case PROPERTY: {
+						if (!isAttributePlural(f))  {
+							logger.trace("Creating SingularAttribute for type: " + metamodel.getJavaType());
+							metamodel.getInFlightAccess().addAttribute(
+									AttributeFactory.createSingularAttribute(metamodel, f, isAttributeOptional(f)));	
+							break;
+						}
+						
+//						PluralAttributeBuilder<D, C, E, K>
+						
+						break;
+					}
+				}
+			}
+		}
+
+		private boolean isAttributeOptional(Field f) {
+			Column colAnno = f.getDeclaredAnnotation(Column.class);
+
+			if (colAnno == null) {
+				return false;
+			}
+
+			return colAnno.nullable();
+		}
+
+		private boolean isIdentifierPresented(Class<?> clazz) {
+			// @formatter:off
+			long n = 0;
+			
+			return (n = Stream.of(clazz.getDeclaredFields())
+					.map(field -> field.getDeclaredAnnotation(Id.class) != null)
+					.filter(pred -> pred)
+					.count()) < 2 ? n == 1 : rejectModel("More than one Identifier were found on type: " + clazz);
+			// @formatter:on
+		}
+
+		private boolean isVersionPresented(Class<?> clazz) {
+			// @formatter:off
+			long n = 0;
+			
+			return (n = Stream.of(clazz.getDeclaredFields())
+					.map(field -> field.getDeclaredAnnotation(javax.persistence.Version.class) != null)
+					.filter(pred -> pred)
+					.count()) < 2 ? n == 1 : rejectModel("More than one Version were found on type: " + clazz);
+			// @formatter:on
+		}
+
+		private <T> T rejectModel(String message) {
+			throw new IllegalAccessError(message);
+		}
+
+		private boolean isAttributePlural(Field f) {
+			return Collection.class.isAssignableFrom(f.getType());
+		}
+
+	}
+
+	private static enum AttributeRole {
+
+		IDENTIFIER, VERSION, PROPERTY;
+
+		public static AttributeRole getRole(Field f) {
+			Id idAnno = f.getDeclaredAnnotation(Id.class);
+			javax.persistence.Version versionAnno = f.getDeclaredAnnotation(javax.persistence.Version.class);
+
+			if (idAnno != null && versionAnno != null) {
+				throw new IllegalArgumentException("Id and Version conflicted");
+			}
+
+			return idAnno != null ? IDENTIFIER : versionAnno != null ? VERSION : PROPERTY;
+		}
+
 	}
 
 }

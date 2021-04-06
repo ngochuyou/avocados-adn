@@ -3,15 +3,11 @@
  */
 package adn.service.resource.metamodel;
 
-import static adn.service.resource.local.ResourceManagerFactory.unsupport;
-
 import java.io.Serializable;
 import java.util.Date;
 
-import org.hibernate.Session;
-
+import adn.service.resource.local.ResourceIdentifierGenerator;
 import adn.service.resource.local.ResourceManagerFactory;
-import adn.service.resource.local.ResourcePropertyValueGenerator;
 import adn.service.resource.models.NamedResource;
 import adn.utilities.StringHelper;
 
@@ -19,22 +15,14 @@ import adn.utilities.StringHelper;
  * @author Ngoc Huy
  *
  */
-public class ResourceIdentifierValueGenerator implements ResourcePropertyValueGenerator<Serializable> {
+public class DefaultResourceIdentifierGenerator implements ResourceIdentifierGenerator<Serializable> {
 
-	public static final ResourceIdentifierValueGenerator INSTANCE = new ResourceIdentifierValueGenerator();
+	public static final DefaultResourceIdentifierGenerator INSTANCE = new DefaultResourceIdentifierGenerator();
 
 	public static final String IDENTIFIER_PARTS_SEPERATOR = "_";
 
 	@Override
-	@Deprecated
-	public Serializable generateValue(Session session, Object owner) {
-		// TODO Auto-generated method stub
-		unsupport();
-		return null;
-	}
-
-	@Override
-	public Serializable generateValue(ResourceManagerFactory factory, Object object) {
+	public Serializable generate(ResourceManagerFactory factory, Object object) {
 		// TODO Auto-generated method stub
 		if (object instanceof NamedResource) {
 			// @formatter:off

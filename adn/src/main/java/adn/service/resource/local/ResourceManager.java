@@ -3,8 +3,6 @@
  */
 package adn.service.resource.local;
 
-import static adn.service.resource.local.ResourceManagerFactory.unsupport;
-
 import java.util.List;
 
 import javax.persistence.EntityGraph;
@@ -37,98 +35,98 @@ public interface ResourceManager extends EntityManager {
 	@Override
 	@Deprecated
 	default <T> EntityGraph<T> createEntityGraph(Class<T> rootType) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	};
 
 	@Override
 	@Deprecated
 	default EntityGraph<?> createEntityGraph(String graphName) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default Query createNamedQuery(String name) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default <T> TypedQuery<T> createNamedQuery(String name, Class<T> resultClass) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default StoredProcedureQuery createNamedStoredProcedureQuery(String name) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default Query createNativeQuery(String sqlString) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default Query createNativeQuery(String sqlString, @SuppressWarnings("rawtypes") Class resultClass) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default Query createNativeQuery(String sqlString, String resultSetMapping) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default Query createQuery(@SuppressWarnings("rawtypes") CriteriaDelete deleteQuery) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default <T> TypedQuery<T> createQuery(CriteriaQuery<T> criteriaQuery) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default Query createQuery(@SuppressWarnings("rawtypes") CriteriaUpdate updateQuery) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default Query createQuery(String qlString) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default <T> TypedQuery<T> createQuery(String qlString, Class<T> resultClass) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default StoredProcedureQuery createStoredProcedureQuery(String procedureName) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
@@ -136,42 +134,42 @@ public interface ResourceManager extends EntityManager {
 	@Deprecated
 	default StoredProcedureQuery createStoredProcedureQuery(String procedureName,
 			@SuppressWarnings("rawtypes") Class... resultClasses) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default StoredProcedureQuery createStoredProcedureQuery(String procedureName, String... resultSetMappings) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default CriteriaBuilder getCriteriaBuilder() {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default EntityGraph<?> getEntityGraph(String graphName) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default <T> List<EntityGraph<? super T>> getEntityGraphs(Class<T> entityClass) {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	@Deprecated
 	default Metamodel getMetamodel() {
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 

@@ -3,7 +3,7 @@
  */
 package adn.service.resource.local;
 
-import java.io.Serializable;
+import javax.persistence.GeneratedValue;
 
 import org.hibernate.tuple.AnnotationValueGeneration;
 import org.hibernate.tuple.GenerationTiming;
@@ -12,7 +12,7 @@ import org.hibernate.tuple.GenerationTiming;
  * @author Ngoc Huy
  *
  */
-public abstract class AnnotationBasedResourceValueGeneration implements AnnotationValueGeneration<ResourceIdentifier> {
+public abstract class AnnotationBasedResourceValueGeneration implements AnnotationValueGeneration<GeneratedValue> {
 
 	private static final long serialVersionUID = 1L;
 
@@ -22,9 +22,6 @@ public abstract class AnnotationBasedResourceValueGeneration implements Annotati
 		// TODO Auto-generated constructor stub
 		this.timing = timing;
 	}
-
-	@Override
-	public abstract ResourcePropertyValueGenerator<Serializable> getValueGenerator();
 
 	public GenerationTiming getTiming() {
 		return timing;

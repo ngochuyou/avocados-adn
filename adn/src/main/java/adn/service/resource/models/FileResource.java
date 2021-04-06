@@ -9,7 +9,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
-import adn.service.resource.local.ResourceIdentifier;
+import org.hibernate.annotations.GenericGenerator;
 
 /**
  * @author Ngoc Huy
@@ -20,7 +20,7 @@ public class FileResource implements NamedResource {
 
 	@Id
 	@GeneratedValue
-	@ResourceIdentifier
+	@GenericGenerator(strategy = "resource_identifier", name = "resource_identifier")
 	private String pathname;
 
 	private String name;

@@ -13,11 +13,11 @@ import javax.persistence.PersistenceUnitUtil;
 import javax.persistence.Query;
 import javax.persistence.SynchronizationType;
 import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.metamodel.Metamodel;
 
 import org.springframework.util.Assert;
 
 import adn.application.context.ContextProvider;
+import adn.service.resource.metamodel.Metamodel;
 import adn.service.resource.metamodel.MetamodelImpl;
 
 /**
@@ -30,28 +30,22 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 
 	private final LocalResourceStorage localStorage;
 
-	private final MetamodelImpl metamodel;
+	private final Metamodel metamodel;
 
 	private final ContextBuildingService buildingService;
 
-	/**
-	 * @throws IllegalAccessException
-	 * @throws SecurityException
-	 * @throws NoSuchMethodException
-	 * @throws NoSuchFieldException
-	 * 
-	 */
-	public ResourceManagerFactoryImpl(final ContextBuildingService serviceContext)
-			throws IllegalAccessException, NoSuchMethodException, SecurityException, NoSuchFieldException {
+	public ResourceManagerFactoryImpl(final ContextBuildingService serviceContext) {
 		// TODO Auto-generated constructor stub
 		Assert.notNull(serviceContext, "ContextBuildingService cannot be null");
 
 		buildingService = serviceContext;
 		resourceNamingStrategy = serviceContext.getService(NamingStrategy.class);
 		localStorage = serviceContext.getService(LocalResourceStorage.class);
-		metamodel = new MetamodelImpl(serviceContext, this);
 
 		Assert.notNull(localStorage, "LocalResourceStorage cannot be null");
+
+		metamodel = new MetamodelImpl(serviceContext, this);
+		metamodel.process();
 	}
 
 	@Override
@@ -110,6 +104,7 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	}
 
 	@Override
+	@SuppressWarnings("rawtypes")
 	public EntityManager createEntityManager(Map map) {
 		// TODO Auto-generated method stub
 		return null;
@@ -122,6 +117,7 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	}
 
 	@Override
+	@SuppressWarnings("rawtypes")
 	public EntityManager createEntityManager(SynchronizationType synchronizationType, Map map) {
 		// TODO Auto-generated method stub
 		return null;

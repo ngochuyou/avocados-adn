@@ -3,8 +3,6 @@
  */
 package adn.service.resource.metamodel;
 
-import static adn.service.resource.local.ResourceManagerFactory.unsupport;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,6 +13,8 @@ import org.hibernate.metamodel.model.domain.spi.IdentifiableTypeDescriptor;
 import org.hibernate.property.access.spi.Getter;
 import org.hibernate.property.access.spi.Setter;
 import org.hibernate.tuple.ValueGeneration;
+
+import adn.service.resource.local.ResourceManagerFactoryBuilder;
 
 /**
  * @author Ngoc Huy
@@ -52,6 +52,23 @@ public class EntityTypeImpl<D> extends AbstractIdentifiableType<D> implements En
 				false,
 				typeClass.hasIdentifier(),
 				typeClass.isVersioned(),
+				null
+		);
+	}
+	
+	public EntityTypeImpl(
+		Class<D> entityType,
+		String entityName,
+		boolean hasIdentifier,
+		boolean isVersioned,
+		IdentifiableTypeDescriptor<? super D> superType) {
+		super(
+				entityType,
+				entityName,
+				superType,
+				false,
+				hasIdentifier,
+				isVersioned,
 				null
 		);
 	}
@@ -319,14 +336,14 @@ public class EntityTypeImpl<D> extends AbstractIdentifiableType<D> implements En
 	@Override
 	public <S extends D> SubGraphImplementor<S> makeSubGraph(Class<S> subType) {
 		// TODO Auto-generated method stub
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
 	@Override
 	public SubGraphImplementor<D> makeSubGraph() {
 		// TODO Auto-generated method stub
-		unsupport();
+		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
 
