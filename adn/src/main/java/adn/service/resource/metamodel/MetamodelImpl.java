@@ -170,7 +170,7 @@ public class MetamodelImpl implements Metamodel {
 		ModelProcessor processor = new ModelProcessor();
 
 		for (String name : imports.keySet()) {
-			processor.processModel(name, imports.get(name), metadata);
+			entitiesByName.put(name, processor.processModel(name, imports.get(name), metadata));
 		}
 	}
 
@@ -314,8 +314,9 @@ public class MetamodelImpl implements Metamodel {
 					isVersionPresented(type),
 					type.getSuperclass() != null && type.getSuperclass() != Object.class ? processModel(
 							metadata.getImports()
-								.keySet().stream()
-								.filter(key -> metadata.getImports().get(key).equals(type.getSuperclass()))
+								.entrySet().stream()
+								.filter(entry -> entry.getValue().equals(type.getSuperclass()))
+								.map(entry -> entry.getKey())
 								.findFirst().orElseThrow(),
 							type.getSuperclass(), metadata) : null);
 			// @formatter:on
