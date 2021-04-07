@@ -4,6 +4,8 @@
 package adn.service.resource.metamodel;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,18 +22,18 @@ import javax.persistence.metamodel.EmbeddableType;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.ManagedType;
 
+import org.hibernate.mapping.Property;
 import org.hibernate.metamodel.model.domain.internal.BasicTypeImpl;
 import org.hibernate.metamodel.model.domain.internal.PluralAttributeBuilder;
 import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl;
 import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl.Identifier;
 import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl.Version;
 import org.hibernate.metamodel.model.domain.spi.BasicTypeDescriptor;
+import org.hibernate.metamodel.model.domain.spi.PluralPersistentAttribute;
 import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
-
-import com.mysql.cj.x.protobuf.MysqlxCrud.Collection;
 
 import adn.service.resource.local.ContextBuildingService;
 import adn.service.resource.local.Metadata;
@@ -165,11 +167,10 @@ public class MetamodelImpl implements Metamodel {
 		ContextBuildingService contextService = managerFactory.getContextBuildingService();
 		Metadata metadata = contextService.getService(Metadata.class);
 		Map<String, Class<?>> imports = metadata.getImports();
+		ModelProcessor processor = new ModelProcessor();
 
 		for (String name : imports.keySet()) {
-			ModelProcessor processor = new ModelProcessor();
-
-			processor.processModel(name, imports.get(name), null, metadata);
+			processor.processModel(name, imports.get(name), metadata);
 		}
 	}
 
@@ -183,29 +184,73 @@ public class MetamodelImpl implements Metamodel {
 
 		static volatile Map<String, BasicTypeDescriptor<?>> typeContainer = new ConcurrentHashMap<>();
 
+		private static AttributeFactory INSTANCE = new AttributeFactory();
+
 		static <D, T> SingularPersistentAttribute<D, T> createIdentifier(EntityTypeImpl<D> owner, Field f) {
 			// TODO Auto-generated method stub
-			return new Identifier<>(owner, f.getName(), resolveType((Class<T>) f.getType()), f,
+			return new Identifier<>(owner, f.getName(), INSTANCE.resolveBasicType((Class<T>) f.getType()), f,
 					PersistentAttributeType.BASIC);
 		}
 
 		static <D, T> SingularPersistentAttribute<D, T> createVersion(EntityTypeImpl<D> owner, Field f) {
-			return new Version<>(owner, f.getName(), PersistentAttributeType.BASIC, resolveType((Class<T>) f.getType()),
-					f);
+			return new Version<>(owner, f.getName(), PersistentAttributeType.BASIC,
+					INSTANCE.resolveBasicType((Class<T>) f.getType()), f);
 		}
 
 		static <D, T> SingularPersistentAttribute<D, T> createSingularAttribute(EntityTypeImpl<D> owner, Field f,
 				boolean isOptional) {
-
 			return new SingularAttributeImpl<>(owner, f.getName(), PersistentAttributeType.BASIC,
-					resolveType((Class<T>) f.getType()), f, false, false, isOptional);
+					INSTANCE.resolveBasicType((Class<T>) f.getType()), f, false, false, isOptional);
 		}
 
-		private static String resolveTypeName(Class<?> type) {
+		static <D, C, E> PluralPersistentAttribute<D, C, E> createPluralAttribute(EntityTypeImpl<D> owner, Field f) {
+			if (!Collection.class.isAssignableFrom(f.getType())) {
+				throw new IllegalArgumentException("PluralAttribute describes Collection property only");
+			}
+
+			Class<C> collectionType = (Class<C>) f.getType();
+			PluralAttributeBuilder<D, C, E, ?> builder;
+
+			if (collectionType.equals(Map.class)) {
+				KeyValueContext<E, ?> kvPair = INSTANCE.determineMapGenericType(f);
+
+				builder = new PluralAttributeBuilder<>(owner, INSTANCE.resolveBasicType(kvPair.keyType), collectionType,
+						INSTANCE.resolveBasicType(kvPair.valueType));
+			} else {
+				builder = new PluralAttributeBuilder<>(owner,
+						INSTANCE.resolveBasicType(INSTANCE.determineNonMapGenericType(f)), collectionType, null);
+			}
+
+			Property prop = new Property();
+
+			prop.setName(f.getName());
+			builder.property(prop);
+
+			return builder.build();
+		}
+
+		private <K, V> KeyValueContext<K, V> determineMapGenericType(Field f) {
+			if (Map.class.isAssignableFrom(f.getType())) {
+				throw new IllegalArgumentException("Unable to extract key, value type out of none-Map collection");
+			}
+
+			ParameterizedType paramType = (ParameterizedType) f.getGenericType();
+
+			return new KeyValueContext<>((Class<K>) paramType.getActualTypeArguments()[0],
+					(Class<V>) paramType.getActualTypeArguments()[1]);
+		}
+
+		private <T> Class<T> determineNonMapGenericType(Field f) {
+			ParameterizedType paramType = (ParameterizedType) f.getGenericType();
+
+			return (Class<T>) paramType.getActualTypeArguments()[0];
+		}
+
+		private String resolveTypeName(Class<?> type) {
 			return type.getName();
 		}
 
-		private static <T> BasicTypeDescriptor<T> resolveType(Class<T> type) {
+		private <T> BasicTypeDescriptor<T> resolveBasicType(Class<T> type) {
 			String typeName = resolveTypeName(type);
 
 			if (typeContainer.containsKey(typeName)) {
@@ -224,28 +269,41 @@ public class MetamodelImpl implements Metamodel {
 		}
 
 		static <T> BasicTypeDescriptor<T> addType(BasicTypeDescriptor<T> newType) {
-			if (typeContainer.containsKey(resolveTypeName(newType.getJavaType()))) {
+			if (typeContainer.containsKey(INSTANCE.resolveTypeName(newType.getJavaType()))) {
 				MetamodelImpl.logger.trace(String.format("Ignoring BasicType contribution: [%s, %s]",
-						resolveTypeName(newType.getJavaType()), newType.getJavaType()));
+						INSTANCE.resolveTypeName(newType.getJavaType()), newType.getJavaType()));
 
 				return newType;
 			}
 
 			typeContainer.put(newType.getTypeName(), newType);
 			MetamodelImpl.logger.trace(String.format("New BasicType contribution: [%s, %s]",
-					resolveTypeName(newType.getJavaType()), newType.getJavaType()));
+					INSTANCE.resolveTypeName(newType.getJavaType()), newType.getJavaType()));
 
 			return newType;
+		}
+
+		class KeyValueContext<K, V> {
+
+			Class<K> keyType;
+
+			Class<V> valueType;
+
+			public KeyValueContext(Class<K> keyType, Class<V> valueType) {
+				super();
+				this.keyType = keyType;
+				this.valueType = valueType;
+			}
+
 		}
 
 	}
 
 	private class ModelProcessor {
 
-		public <J> void processModel(String name, Class<J> type, EntityTypeImpl<? super J> jpaSuperType,
-				Metadata metadata) {
+		public <J> EntityTypeImpl<J> processModel(String name, Class<J> type, Metadata metadata) {
 			if (metadata.isProcessingDone(name)) {
-				return;
+				return entity(type);
 			}
 
 			logger.trace(String.format("Processing model. Name: %s. Type: %s", name, type));
@@ -254,10 +312,17 @@ public class MetamodelImpl implements Metamodel {
 					type, name,
 					isIdentifierPresented(type),
 					isVersionPresented(type),
-					jpaSuperType);
+					type.getSuperclass() != null && type.getSuperclass() != Object.class ? processModel(
+							metadata.getImports()
+								.keySet().stream()
+								.filter(key -> metadata.getImports().get(key).equals(type.getSuperclass()))
+								.findFirst().orElseThrow(),
+							type.getSuperclass(), metadata) : null);
 			// @formatter:on
 			processAttributes(metamodel);
 			metadata.markedImportAsDone(name);
+
+			return metamodel;
 		}
 
 		public <J> void processAttributes(EntityTypeImpl<J> metamodel) {
@@ -278,15 +343,16 @@ public class MetamodelImpl implements Metamodel {
 						break;
 					}
 					case PROPERTY: {
-						if (!isAttributePlural(f))  {
+						if (!isAttributePlural(f)) {
 							logger.trace("Creating SingularAttribute for type: " + metamodel.getJavaType());
 							metamodel.getInFlightAccess().addAttribute(
-									AttributeFactory.createSingularAttribute(metamodel, f, isAttributeOptional(f)));	
+									AttributeFactory.createSingularAttribute(metamodel, f, isAttributeOptional(f)));
 							break;
 						}
-						
-//						PluralAttributeBuilder<D, C, E, K>
-						
+
+						logger.trace("Creating PluralAttribute for type: " + metamodel.getJavaType());
+						metamodel.getInFlightAccess()
+								.addAttribute(AttributeFactory.createPluralAttribute(metamodel, f));
 						break;
 					}
 				}
@@ -339,7 +405,7 @@ public class MetamodelImpl implements Metamodel {
 
 		IDENTIFIER, VERSION, PROPERTY;
 
-		public static AttributeRole getRole(Field f) {
+		static AttributeRole getRole(Field f) {
 			Id idAnno = f.getDeclaredAnnotation(Id.class);
 			javax.persistence.Version versionAnno = f.getDeclaredAnnotation(javax.persistence.Version.class);
 
