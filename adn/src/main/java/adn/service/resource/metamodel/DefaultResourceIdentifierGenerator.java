@@ -8,7 +8,7 @@ import java.util.Date;
 
 import adn.service.resource.local.ResourceIdentifierGenerator;
 import adn.service.resource.local.ResourceManagerFactory;
-import adn.service.resource.models.NamedResource;
+import adn.service.resource.models.Resource;
 import adn.utilities.StringHelper;
 
 /**
@@ -24,9 +24,9 @@ public class DefaultResourceIdentifierGenerator implements ResourceIdentifierGen
 	@Override
 	public Serializable generate(ResourceManagerFactory factory, Object object) {
 		// TODO Auto-generated method stub
-		if (object instanceof NamedResource) {
+		if (object instanceof Resource) {
 			// @formatter:off
-			NamedResource instance = (NamedResource) object;
+			Resource instance = (Resource) object;
 
 			return new StringBuilder(instance.getDirectoryPath())
 					.append(new Date().getTime())

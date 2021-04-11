@@ -3,10 +3,26 @@
  */
 package adn.service.resource.metamodel;
 
+import static adn.service.resource.local.ResourceManagerFactoryBuilder.unsupport;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.MonthDay;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.ZonedDateTime;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -15,13 +31,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import javax.persistence.Column;
+import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.PersistenceException;
+import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 import javax.persistence.metamodel.EmbeddableType;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.ManagedType;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.GeneratorType;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.mapping.Property;
 import org.hibernate.metamodel.model.domain.internal.BasicTypeImpl;
 import org.hibernate.metamodel.model.domain.internal.PluralAttributeBuilder;
@@ -29,8 +50,20 @@ import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl;
 import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl.Identifier;
 import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl.Version;
 import org.hibernate.metamodel.model.domain.spi.BasicTypeDescriptor;
+import org.hibernate.metamodel.model.domain.spi.PersistentAttributeDescriptor;
 import org.hibernate.metamodel.model.domain.spi.PluralPersistentAttribute;
 import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
+import org.hibernate.property.access.spi.Getter;
+import org.hibernate.property.access.spi.GetterMethodImpl;
+import org.hibernate.property.access.spi.Setter;
+import org.hibernate.property.access.spi.SetterMethodImpl;
+import org.hibernate.service.Service;
+import org.hibernate.tuple.CreationTimestampGeneration;
+import org.hibernate.tuple.GenerationTiming;
+import org.hibernate.tuple.UpdateTimestampGeneration;
+import org.hibernate.tuple.ValueGeneration;
+import org.hibernate.tuple.ValueGenerator;
+import org.hibernate.tuple.VmValueGeneration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -40,6 +73,7 @@ import adn.service.resource.local.Metadata;
 import adn.service.resource.local.NamingStrategy;
 import adn.service.resource.local.ResourceDescriptor;
 import adn.service.resource.local.ResourceManagerFactory;
+import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -51,7 +85,7 @@ public class MetamodelImpl implements Metamodel {
 
 	private final ResourceManagerFactory managerFactory;
 
-	private final Map<String, EntityType<?>> entitiesByName;
+	private final Map<String, EntityTypeImpl<?>> entitiesByName;
 	private final Map<String, ResourceDescriptor<?>> descriptorsByName;
 
 	/**
@@ -81,7 +115,7 @@ public class MetamodelImpl implements Metamodel {
 	}
 
 	@Override
-	public <X> ManagedType<X> managedType(Class<X> cls) {
+	public <X> EntityTypeImpl<X> managedType(Class<X> cls) {
 		// TODO Auto-generated method stub
 		return entity(cls);
 	}
@@ -159,32 +193,108 @@ public class MetamodelImpl implements Metamodel {
 	@Override
 	public void prepare() throws PersistenceException {
 		// TODO Auto-generated method stub
+		managerFactory.getContextBuildingService().register(AttributeFactory.class, AttributeFactory.INSTANCE);
 	}
 
 	@Override
 	public void process() throws PersistenceException {
 		// TODO Auto-generated method stub
+		try {
+			imports();
+			postImport();
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new PersistenceException(e);
+		}
+	}
+
+	private void postImport() {
+		entitiesByName.entrySet().stream()
+				.map(ele -> ele.getKey() + ": " + (ele.getValue() == null ? "NULL" : ele.getValue().toString()))
+				.forEach(logger::trace);
+
+		logger.trace("Tracing inheritance");
+
+		for (EntityTypeImpl<?> metamodel : entitiesByName.values()) {
+			traceInheritance(metamodel);
+		}
+
+		for (EntityTypeImpl<?> metamodel : entitiesByName.values()) {
+			logger.trace("Tracing identifier of type: " + metamodel.getName());
+			processIdentifier(metamodel);
+		}
+
+	}
+
+	private <X> void processIdentifier(EntityTypeImpl<X> metamodel) {
+		Identifier<?, ?> identifier = locateIdentifier(metamodel);
+
+		if (identifier == null) {
+			throw new IllegalArgumentException(
+					"Unable to locate Identifier of type: " + metamodel.getJavaType().getName());
+		}
+
+//		EntityTypeImpl<?> entity = metamodel;
+	}
+
+	@SuppressWarnings({ "rawtypes" })
+	private Identifier locateIdentifier(EntityType<?> metamodel) {
+		if (metamodel == null) {
+			return null;
+		}
+
+		return metamodel.getAttributes().stream().filter(attr -> attr instanceof Identifier)
+				.map(attr -> (Identifier) attr).findFirst()
+				.orElse(locateIdentifier((EntityType<?>) metamodel.getSupertype()));
+	}
+
+	private <X> void traceInheritance(EntityType<X> metamodel) {
+		if (metamodel.getSupertype() == null) {
+			logger.trace("Found root " + metamodel.getName());
+			return;
+		}
+
+		if (!(metamodel instanceof EntityTypeImpl)) {
+			throw new IllegalArgumentException(
+					"Current architecture supports adn.service.resource.metamodel.EntityTypeImpl only :(");
+		}
+
+		logger.trace(metamodel.getName() + " extends " + ((EntityType<?>) metamodel.getSupertype()).getName());
+	}
+
+	private void imports() throws IllegalAccessException {
 		ContextBuildingService contextService = managerFactory.getContextBuildingService();
 		Metadata metadata = contextService.getService(Metadata.class);
 		Map<String, Class<?>> imports = metadata.getImports();
 		ModelProcessor processor = new ModelProcessor();
 
 		for (String name : imports.keySet()) {
-			entitiesByName.put(name, processor.processModel(name, imports.get(name), metadata));
+			processor.processModel(name, imports.get(name));
 		}
 	}
 
 	@Override
 	public void postProcess() throws PersistenceException {
 		// TODO Auto-generated method stub
+		ContextBuildingService contextService = managerFactory.getContextBuildingService();
+		Metadata metadata = contextService.getService(Metadata.class);
+
+		entitiesByName.values().forEach(metamodel -> {
+			logger.trace("Closing access to " + metamodel.getName() + " metamodel");
+			((EntityTypeImpl<?>) metamodel).closeAccess();
+		});
+
+		Assert.isTrue(metadata.getImports().keySet().stream()
+				.filter(key -> !metadata.isProcessingDone(key) || entity(key) == null).findAny().orElse(null) == null,
+				"Processing is not done, cannot invoke postProcess");
 	}
 
-	@SuppressWarnings("unchecked")
-	private static class AttributeFactory {
+	@SuppressWarnings({ "unchecked", "serial" })
+	public static class AttributeFactory implements Service {
 
 		static volatile Map<String, BasicTypeDescriptor<?>> typeContainer = new ConcurrentHashMap<>();
 
-		private static AttributeFactory INSTANCE = new AttributeFactory();
+		public static AttributeFactory INSTANCE = new AttributeFactory();
 
 		static <D, T> SingularPersistentAttribute<D, T> createIdentifier(EntityTypeImpl<D> owner, Field f) {
 			// TODO Auto-generated method stub
@@ -299,10 +409,52 @@ public class MetamodelImpl implements Metamodel {
 
 	}
 
+	private boolean isProcessingDone(String name) {
+		return getManagerFactory().getContextBuildingService().getService(Metadata.class).isProcessingDone(name);
+	}
+
+	private Map<String, Class<?>> getImports() {
+		return getManagerFactory().getContextBuildingService().getService(Metadata.class).getImports();
+	}
+
+	private void markImportAsDone(String name) {
+		getManagerFactory().getContextBuildingService().getService(Metadata.class).markImportAsDone(name);
+	}
+
+	@SuppressWarnings("serial")
+	protected static final ValueGeneration NOVAL_GENERATION = new ValueGeneration() {
+
+		@Override
+		public boolean referenceColumnInSql() {
+			// TODO Auto-generated method stub
+			unsupport();
+			return false;
+		}
+
+		@Override
+		public ValueGenerator<?> getValueGenerator() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public GenerationTiming getGenerationTiming() {
+			// TODO Auto-generated method stub
+			return GenerationTiming.NEVER;
+		}
+
+		@Override
+		public String getDatabaseGeneratedReferencedColumnValue() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+	};
+
 	private class ModelProcessor {
 
-		public <J> EntityTypeImpl<J> processModel(String name, Class<J> type, Metadata metadata) {
-			if (metadata.isProcessingDone(name)) {
+		public <J> EntityTypeImpl<J> processModel(String name, Class<J> type) throws IllegalAccessException {
+			if (isProcessingDone(name)) {
+				logger.trace("Ignoring import since metamodel process has already been done: " + type.getName());
 				return entity(type);
 			}
 
@@ -313,50 +465,203 @@ public class MetamodelImpl implements Metamodel {
 					isIdentifierPresented(type),
 					isVersionPresented(type),
 					type.getSuperclass() != null && type.getSuperclass() != Object.class ? processModel(
-							metadata.getImports()
+							getImports()
 								.entrySet().stream()
 								.filter(entry -> entry.getValue().equals(type.getSuperclass()))
 								.map(entry -> entry.getKey())
 								.findFirst().orElseThrow(),
-							type.getSuperclass(), metadata) : null);
+							type.getSuperclass()) : null);
 			// @formatter:on
 			processAttributes(metamodel);
-			metadata.markedImportAsDone(name);
+			processMetadata(metamodel);
+			entitiesByName.put(name, metamodel);
+			markImportAsDone(name);
 
 			return metamodel;
 		}
 
-		public <J> void processAttributes(EntityTypeImpl<J> metamodel) {
+		public <J> void processAttributes(EntityTypeImpl<J> metamodel) throws IllegalAccessException {
 			Class<J> clazz = metamodel.getJavaType();
+			int n = clazz.getDeclaredFields().length;
 
-			for (Field f : clazz.getDeclaredFields()) {
+			for (int i = 0; i < n; i++) {
+				final Field f = clazz.getDeclaredFields()[i];
 				final AttributeRole role = AttributeRole.getRole(f);
+				PersistentAttributeDescriptor<J, ?> attribute = null;
 
 				switch (role) {
 					case IDENTIFIER: {
 						logger.trace("Creating IDENTIFIER for type: " + metamodel.getJavaType());
-						metamodel.getInFlightAccess().addAttribute(AttributeFactory.createIdentifier(metamodel, f));
+						attribute = AttributeFactory.createIdentifier(metamodel, f);
 						break;
 					}
 					case VERSION: {
 						logger.trace("Creating VERSION for type: " + metamodel.getJavaType());
-						metamodel.getInFlightAccess().addAttribute(AttributeFactory.createVersion(metamodel, f));
+						attribute = AttributeFactory.createVersion(metamodel, f);
 						break;
 					}
 					case PROPERTY: {
 						if (!isAttributePlural(f)) {
 							logger.trace("Creating SingularAttribute for type: " + metamodel.getJavaType());
-							metamodel.getInFlightAccess().addAttribute(
-									AttributeFactory.createSingularAttribute(metamodel, f, isAttributeOptional(f)));
+							attribute = AttributeFactory.createSingularAttribute(metamodel, f, isAttributeOptional(f));
 							break;
 						}
 
 						logger.trace("Creating PluralAttribute for type: " + metamodel.getJavaType());
-						metamodel.getInFlightAccess()
-								.addAttribute(AttributeFactory.createPluralAttribute(metamodel, f));
+						attribute = AttributeFactory.createPluralAttribute(metamodel, f);
 						break;
 					}
 				}
+
+				if (attribute == null) {
+					throw new IllegalAccessException("Unable to process attribute " + f.getName());
+				}
+
+				metamodel.getInFlightAccess().addAttribute(attribute);
+				metamodel.getInflightAccess().putIndex(i, f.getName());
+				metamodel.getInflightAccess().increasePropertySpan();
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		public <J> void processMetadata(EntityTypeImpl<J> metamodel) throws IllegalAccessException {
+			Attribute<? super J, ?>[] attributes = metamodel.getDeclaredAttributes().toArray(Attribute[]::new);
+			int n = attributes.length;
+			Getter[] getters = new Getter[n];
+			Class<?>[] types = new Class<?>[n];
+
+			for (int i = 0; i < n; i++) {
+				getters[metamodel.getPropertyIndex(attributes[i].getName())] = locateGetter(metamodel, attributes[i]);
+				types[metamodel.getPropertyIndex(attributes[i].getName())] = attributes[i].getJavaType();
+			}
+
+			metamodel.getInflightAccess().setGetters(getters);
+
+			Setter[] setters = new Setter[n];
+
+			for (int i = 0; i < n; i++) {
+				setters[metamodel.getPropertyIndex(attributes[i].getName())] = locateSetter(metamodel, attributes[i]);
+			}
+
+			metamodel.getInflightAccess().setSetters(setters);
+
+			ValueGeneration[] vgs = new ValueGeneration[n];
+
+			for (int i = 0; i < n; i++) {
+				ValueGeneration delegateVGS;
+
+				vgs[metamodel.getPropertyIndex(
+						attributes[i].getName())] = (delegateVGS = locateValueGeneration(metamodel, attributes[i]));
+				logger.trace(
+						String.format("Located valuegeneration of attribute %s. GenerationTiming %s. ValueGenerator %s",
+								attributes[i].getName(), delegateVGS.getGenerationTiming(),
+								delegateVGS.getValueGenerator() != null
+										? delegateVGS.getValueGenerator().getClass().getName()
+										: "NULL"));
+			}
+		}
+
+		private <X> ValueGeneration locateValueGeneration(EntityTypeImpl<X> metamodel, Attribute<?, ?> attribute) {
+			if (attribute instanceof Identifier) {
+				return NOVAL_GENERATION;
+			}
+
+			Field f = (Field) attribute.getJavaMember();
+
+			if (f.getDeclaredAnnotation(CreationTimestamp.class) != null) {
+				if (!doesSupport(f.getType())) {
+					throw new IllegalArgumentException(
+							"Unable to generate non-java.util.Date for CreationTimestamp attributes");
+				}
+
+				CreationTimestampGeneration generation = new CreationTimestampGeneration();
+
+				generation.initialize(f.getDeclaredAnnotation(CreationTimestamp.class), Date.class);
+
+				return generation;
+			}
+
+			if (f.getDeclaredAnnotation(UpdateTimestamp.class) != null) {
+				if (!doesSupport(f.getType())) {
+					throw new IllegalArgumentException(
+							"Unable to generate non-java.util.Date for UpdateTimestamp attributes");
+				}
+
+				UpdateTimestampGeneration generation = new UpdateTimestampGeneration();
+
+				generation.initialize(f.getDeclaredAnnotation(UpdateTimestamp.class), Date.class);
+
+				return generation;
+			}
+
+			if (f.getDeclaredAnnotation(GeneratedValue.class) != null) {
+				GeneratorType gta;
+
+				if ((gta = f.getDeclaredAnnotation(GeneratorType.class)) == null) {
+					throw new IllegalArgumentException("GeneratorType required on GeneratedValue attributes");
+				}
+
+				VmValueGeneration generation = new VmValueGeneration();
+
+				generation.initialize(gta, f.getType());
+
+				return generation;
+			}
+
+			return NOVAL_GENERATION;
+		}
+
+		private boolean doesSupport(Class<?> type) {
+			for (Class<?> supported : new Class<?>[] { Date.class, Calendar.class, java.sql.Date.class, Time.class,
+					Timestamp.class, Instant.class, LocalDate.class, LocalDateTime.class, LocalTime.class,
+					MonthDay.class, OffsetDateTime.class, OffsetTime.class, Year.class, YearMonth.class,
+					ZonedDateTime.class }) {
+				if (supported == type) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		private <X> Getter locateGetter(EntityTypeImpl<X> metamodel, Attribute<?, ?> attr) {
+			Getter getter;
+			String getterName = StringHelper.toCamel("get " + attr.getJavaMember().getName(),
+					StringHelper.MULTIPLE_MATCHES_WHITESPACE_CHARS);
+
+			try {
+				getter = new GetterMethodImpl(metamodel.getJavaType(), attr.getName(),
+						metamodel.getJavaType().getDeclaredMethod(getterName));
+				logger.trace(
+						String.format("Created %s.%s()", getter.getReturnType().getName(), getter.getMethodName()));
+
+				return getter;
+			} catch (NoSuchMethodException | SecurityException e) {
+				// TODO Auto-generated catch block
+				logger.error(e.getMessage());
+				logger.error("Unable to locate " + getterName + " of type: " + metamodel.getJavaType().getName());
+
+				return null;
+			}
+		}
+
+		private <X> Setter locateSetter(EntityTypeImpl<X> metamodel, Attribute<?, ?> attr) {
+			Setter setter;
+			String setterName = StringHelper.toCamel("set " + attr.getJavaMember().getName(),
+					StringHelper.MULTIPLE_MATCHES_WHITESPACE_CHARS);
+
+			try {
+				setter = new SetterMethodImpl(metamodel.getJavaType(), attr.getName(),
+						metamodel.getJavaType().getDeclaredMethod(setterName, attr.getJavaType()));
+				logger.trace(String.format("Created %s(%s)", setter.getMethodName(), attr.getJavaType().getName()));
+
+				return setter;
+			} catch (NoSuchMethodException | SecurityException e) {
+				// TODO Auto-generated catch block
+				logger.error(e.getMessage());
+				logger.error("Unable to locate " + setterName + " of type: " + metamodel.getJavaType().getName());
+
+				return null;
 			}
 		}
 

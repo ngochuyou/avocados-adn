@@ -55,7 +55,7 @@ public class ResourceDescriptorImpl<T> implements ResourceDescriptor<T> {
 						: (AnnotationBasedResourceValueGeneration) metamodel.getIdValueGeneration()
 				: null;
 	}
-	
+
 	@Override
 	public void build() {
 		// TODO Auto-generated method stub

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import adn.service.resource.local.LocalResourceStorageImpl;
-import adn.service.resource.models.FileResource;
+import adn.service.resource.models.FileByBytes;
 import adn.service.services.FileService;
 
 /**
@@ -30,10 +30,10 @@ public class FileController extends BaseController {
 	@Autowired
 	private FileService fileService;
 
-	protected FileResource toFileResource(String filename, Date timestamp) {
+	protected FileByBytes toFileResource(String filename, Date timestamp) {
 		String ext = FilenameUtils.getExtension(filename);
 
-		return new FileResource(LocalResourceStorageImpl.IMAGE_FILE_DIRECTORY,
+		return new FileByBytes(LocalResourceStorageImpl.IMAGE_FILE_DIRECTORY,
 				filename.substring(0, filename.indexOf(ext)), ext, timestamp);
 	}
 
@@ -42,7 +42,7 @@ public class FileController extends BaseController {
 			@RequestParam(name = "filename", required = true) String filename) {
 		byte[] bytes = fileService.getImageBytes(filename);
 
-		FileResource resource = toFileResource(filename, new Date());
+		FileByBytes resource = toFileResource(filename, new Date());
 
 //		resourceManager.save(resource);
 

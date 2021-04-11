@@ -87,10 +87,9 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		ResourceManagerFactory resourceManager = build();
 		ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) ContextProvider
 				.getApplicationContext()).getBeanFactory();
-
+		
 		beanFactory.registerSingleton(resourceManager.getClass().getName(), resourceManager);
 		beanFactory.registerAlias(resourceManager.getClass().getName(), ResourceManagerFactory.class.getName());
-
 		logger.info(getLoggingPrefix(this) + "Finished building " + this.getClass());
 	}
 

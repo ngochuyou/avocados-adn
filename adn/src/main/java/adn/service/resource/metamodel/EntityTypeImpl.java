@@ -39,23 +39,9 @@ public class EntityTypeImpl<D> extends AbstractIdentifiableType<D> implements En
 	private Setter idSetter;
 	private ValueGeneration identifierValueGeneration;
 
+	private InFlightAccess access = new InFlightAccessImpl();
+
 	// @formatter:off
-	public EntityTypeImpl(
-		Class<D> entityType,
-		String entityName,
-		ResourceClass<D> typeClass, 
-		IdentifiableTypeDescriptor<? super D> superType) {
-		super(
-				entityType,
-				entityName,
-				superType,
-				false,
-				typeClass.hasIdentifier(),
-				typeClass.isVersioned(),
-				null
-		);
-	}
-	
 	public EntityTypeImpl(
 		Class<D> entityType,
 		String entityName,
@@ -74,204 +60,23 @@ public class EntityTypeImpl<D> extends AbstractIdentifiableType<D> implements En
 	}
 	// @formatter:on
 
+	public InFlightAccess getInflightAccess() throws IllegalAccessException {
+		if (access == null) {
+			throw new IllegalAccessException("Access to " + this.getClass().getName() + " was closed");
+		}
+
+		return access;
+	}
+
+	public void closeAccess() {
+		access = null;
+	}
+
 	@Override
 	public PersistenceType getPersistenceType() {
 		// TODO Auto-generated method stub
 		return PersistenceType.ENTITY;
 	}
-
-//	@Override
-//	public Set<Attribute<? super D, ?>> getAttributes() {
-//		// TODO Auto-generated method stub
-//		if (getSupertype() != null) {
-//			Set<Attribute<? super D, ?>> attributes = new HashSet<>(getSupertype().getAttributes());
-//
-//			attributes.addAll(getDeclaredAttributes());
-//
-//			return Collections.unmodifiableSet(attributes);
-//		}
-//
-//		return Collections.unmodifiableSet(getDeclaredAttributes());
-//	}
-//
-//	@Override
-//	public Set<Attribute<D, ?>> getDeclaredAttributes() {
-//		// TODO Auto-generated method stub
-//		return Collections.unmodifiableSet(super.getDeclaredAttributes());
-//	}
-
-//	@Override
-//	public Set<SingularAttribute<? super D, ?>> getSingularAttributes() {
-//		// TODO Auto-generated method stub
-//		if (getSupertype() != null) {
-//			Set<SingularAttribute<? super D, ?>> singulars = new HashSet<>(getSupertype().getSingularAttributes());
-//
-//			singulars.addAll(getDeclaredSingularAttributes());
-//
-//			return Collections.unmodifiableSet(singulars);
-//		}
-//
-//		return Collections.unmodifiableSet(getDeclaredSingularAttributes());
-//	}
-
-//	@Override
-//	public Set<SingularAttribute<D, ?>> getDeclaredSingularAttributes() {
-//		// TODO Auto-generated method stub
-//		return Collections.unmodifiableSet(super.getDeclaredSingularAttributes());
-//	}
-
-//	@SuppressWarnings("unchecked")
-//	private <T, G, A extends PluralAttribute<D, T, G>> A locatePluralAttribute(String name, Class<A> attributeType,
-//			Class<T> collectionType, Class<G> elementType) {
-//		// @formatter:off
-//		A candidate = (A) pluralAttributeMap
-//				.values().stream()
-//				.filter(attr -> attr.getClass().equals(attributeType)
-//						&& attr.getJavaType().equals(collectionType)
-//						&& ( attr.getElementType().getJavaType().equals(elementType)
-//								|| elementType.isAssignableFrom(attr.getElementType().getJavaType()))
-//						&& attr.getName() == name)
-//				.findFirst().orElse(null);
-//		// @formatter:on
-//		return candidate;
-//	}
-
-//	@Override
-//	@SuppressWarnings("unchecked")
-//	public <E> CollectionAttribute<D, E> getDeclaredCollection(String name, Class<E> elementType) {
-//		// TODO Auto-generated method stub
-//		return locatePluralAttribute(name, CollectionAttribute.class, Collection.class, elementType);
-//	}
-
-//	@Override
-//	public <E> SetAttribute<? super D, E> getSet(String name, Class<E> elementType) {
-//		// TODO Auto-generated method stub
-//		SetAttribute<? super D, E> candidate = getDeclaredSet(name, elementType);
-//
-//		if (candidate == null && getSuperType() != null) {
-//			return getSupertype().getSet(name, elementType);
-//		}
-//
-//		return candidate;
-//	}
-//
-//	@Override
-//	@SuppressWarnings("unchecked")
-//	public <E> SetAttribute<D, E> getDeclaredSet(String name, Class<E> elementType) {
-//		// TODO Auto-generated method stub
-//		return locatePluralAttribute(name, SetAttribute.class, Set.class, elementType);
-//	}
-//
-//	@Override
-//	public <E> ListAttribute<? super D, E> getList(String name, Class<E> elementType) {
-//		// TODO Auto-generated method stub
-//		ListAttribute<? super D, E> candidate = getDeclaredList(name, elementType);
-//
-//		if (candidate == null && getSupertype() != null) {
-//			return getSupertype().getList(name, elementType);
-//		}
-//
-//		return candidate;
-//	}
-//
-//	@Override
-//	@SuppressWarnings("unchecked")
-//	public <E> ListAttribute<D, E> getDeclaredList(String name, Class<E> elementType) {
-//		// TODO Auto-generated method stub
-//		return locatePluralAttribute(name, ListAttribute.class, List.class, elementType);
-//	}
-//
-//	@SuppressWarnings("unchecked")
-//	private <K, G> MapAttribute<D, K, G> locateMapAttribute(String name, Class<K> keyType, Class<G> elementType) {
-//		MapAttribute<D, ?, G> candidate = locatePluralAttribute(name, MapAttribute.class, Map.class, elementType);
-//
-//		if (candidate.getKeyType().getJavaType().equals(keyType)) {
-//			return (MapAttribute<D, K, G>) candidate;
-//		}
-//
-//		return null;
-//	}
-//
-//	@Override
-//	public <K, V> MapAttribute<? super D, K, V> getMap(String name, Class<K> keyType, Class<V> valueType) {
-//		// TODO Auto-generated method stub
-//		MapAttribute<? super D, K, V> candidate = getDeclaredMap(name, keyType, valueType);
-//
-//		if (candidate == null && getSupertype() != null) {
-//			return getSupertype().getMap(name, keyType, valueType);
-//		}
-//
-//		return candidate;
-//	}
-//
-//	@Override
-//	public <K, V> MapAttribute<D, K, V> getDeclaredMap(String name, Class<K> keyType, Class<V> valueType) {
-//		// TODO Auto-generated method stub
-//		return locateMapAttribute(name, keyType, valueType);
-//	}
-//
-//	@Override
-//	public Set<PluralAttribute<? super D, ?, ?>> getPluralAttributes() {
-//		// TODO Auto-generated method stub
-//		if (getSupertype() != null) {
-//			Set<PluralAttribute<? super D, ?, ?>> candidates = new HashSet<>(getSupertype().getPluralAttributes());
-//
-//			candidates.addAll(getDeclaredPluralAttributes());
-//
-//			return Collections.unmodifiableSet(candidates);
-//		}
-//
-//		return Collections.unmodifiableSet(getDeclaredPluralAttributes());
-//	}
-//
-//	@Override
-//	public Set<PluralAttribute<D, ?, ?>> getDeclaredPluralAttributes() {
-//		// TODO Auto-generated method stub
-//		return Collections.unmodifiableSet(new HashSet<>(pluralAttributeMap.values()));
-//	}
-//
-//	@Override
-//	public SingularAttribute<? super D, ?> getSingularAttribute(String name) {
-//		// TODO Auto-generated method stub
-//		return singularAttributeMap.get(name);
-//	}
-//
-//	@Override
-//	public SingularAttribute<D, ?> getDeclaredSingularAttribute(String name) {
-//		// TODO Auto-generated method stub
-//		return singularAttributeMap.get(name);
-//	}
-//
-//	@Override
-//	public CollectionAttribute<? super D, ?> getCollection(String name) {
-//		// TODO Auto-generated method stub
-//		CollectionAttribute<? super D, ?> candidate = getDeclaredCollection(name);
-//
-//		if (candidate == null && getSupertype() != null) {
-//			candidate = getSupertype().getCollection(name);
-//		}
-//
-//		return candidate;
-//	}
-//
-//	@SuppressWarnings("unchecked")
-//	@Override
-//	public CollectionAttribute<D, ?> getDeclaredCollection(String name) {
-//		// TODO Auto-generated method stub
-//		return locatePluralAttribute(name, CollectionAttribute.class, Collection.class, Object.class);
-//	}
-
-	@Override
-	public boolean hasSingleIdAttribute() {
-		// TODO Auto-generated method stub
-		return !super.hasIdClass();
-	}
-
-//	@Override
-//	public boolean hasVersionAttribute() {
-//		// TODO Auto-generated method stub
-//		return version != null;
-//	}
 
 	@Override
 	public BindableType getBindableType() {
@@ -285,8 +90,32 @@ public class EntityTypeImpl<D> extends AbstractIdentifiableType<D> implements En
 		return getJavaType();
 	}
 
+	private EntityTypeImpl<? super D> locateSuperType() {
+		return (EntityTypeImpl<? super D>) getSupertype();
+	}
+
+	public int getPropertyIndex(String propertyName) {
+		if (indexMap.keySet().contains(propertyName)) {
+			return indexMap.get(propertyName);
+		}
+
+		if (getSupertype() != null) {
+			return locateSuperType().getPropertyIndex(propertyName);
+		}
+
+		throw new IllegalArgumentException("Unable to locate property " + propertyName);
+	}
+
 	public Class<?> getPropertyType(String propertyName) {
-		return propertyTypes[indexMap.get(propertyName)];
+		if (indexMap.keySet().contains(propertyName)) {
+			return propertyTypes[indexMap.get(propertyName)];
+		}
+
+		if (getSupertype() != null) {
+			return locateSuperType().getPropertyType(propertyName);
+		}
+
+		throw new IllegalArgumentException("Unable to locate type of property " + propertyName);
 	}
 
 	public Getter[] getGetters() {
@@ -298,11 +127,27 @@ public class EntityTypeImpl<D> extends AbstractIdentifiableType<D> implements En
 	}
 
 	public Getter getGetter(String propertyName) {
-		return getters[indexMap.get(propertyName)];
+		if (indexMap.keySet().contains(propertyName)) {
+			return getters[indexMap.get(propertyName)];
+		}
+
+		if (getSupertype() != null) {
+			return locateSuperType().getGetter(propertyName);
+		}
+
+		throw new IllegalArgumentException("Unable to locate getter of property " + propertyName);
 	}
 
 	public Setter getSetter(String propertyName) {
-		return setters[indexMap.get(propertyName)];
+		if (indexMap.keySet().contains(propertyName)) {
+			return setters[indexMap.get(propertyName)];
+		}
+
+		if (getSupertype() != null) {
+			return locateSuperType().getSetter(propertyName);
+		}
+
+		throw new IllegalArgumentException("Unable to locate setter of property " + propertyName);
 	}
 
 	public Getter getIdGetter() {
@@ -325,12 +170,16 @@ public class EntityTypeImpl<D> extends AbstractIdentifiableType<D> implements En
 		return autoGeneratedMarkers;
 	}
 
-	public int getPropertyIndex(String propertyName) {
-		return indexMap.get(propertyName);
-	}
-
 	public ValueGeneration getPropertyValueGeneration(String propertyName) {
-		return valueGenerations[indexMap.get(propertyName)];
+		if (indexMap.keySet().contains(propertyName)) {
+			return valueGenerations[indexMap.get(propertyName)];
+		}
+
+		if (getSupertype() != null) {
+			return locateSuperType().getPropertyValueGeneration(propertyName);
+		}
+
+		throw new IllegalArgumentException("Unable to locate valuegeneration of property " + propertyName);
 	}
 
 	@Override
@@ -345,6 +194,89 @@ public class EntityTypeImpl<D> extends AbstractIdentifiableType<D> implements En
 		// TODO Auto-generated method stub
 		ResourceManagerFactoryBuilder.unsupport();
 		return null;
+	}
+
+	public ValueGeneration getIdentifierValueGeneration() {
+		return identifierValueGeneration;
+	}
+
+	interface InFlightAccess {
+
+		void setIdGetter(Getter getter);
+
+		void setIdSetter(Setter setter);
+
+		void setIdentifierValueGeneration(ValueGeneration valueGeneration);
+
+		void setGetters(Getter[] getters);
+
+		void setSetters(Setter[] setters);
+
+		void setValueGenerations(ValueGeneration[] valueGenerations);
+
+		void setPropertyTypes(Class<?>[] types);
+
+		void putIndex(int index, String propertyName);
+
+		void increasePropertySpan();
+
+	}
+
+	private class InFlightAccessImpl implements InFlightAccess {
+
+		@Override
+		public void setIdGetter(Getter getter) {
+			// TODO Auto-generated method stub
+			idGetter = getter;
+		}
+
+		@Override
+		public void setIdSetter(Setter setter) {
+			// TODO Auto-generated method stub
+			idSetter = setter;
+		}
+
+		@Override
+		public void setIdentifierValueGeneration(ValueGeneration valueGeneration) {
+			// TODO Auto-generated method stub
+			identifierValueGeneration = valueGeneration;
+		}
+
+		@Override
+		public void setGetters(Getter[] gettersArg) {
+			// TODO Auto-generated method stub
+			getters = gettersArg;
+		}
+
+		@Override
+		public void setSetters(Setter[] settersArg) {
+			// TODO Auto-generated method stub
+			setters = settersArg;
+		}
+
+		@Override
+		public void putIndex(int index, String propertyName) {
+			// TODO Auto-generated method stub
+			indexMap.put(propertyName, index);
+		}
+
+		@Override
+		public void increasePropertySpan() {
+			propertySpan++;
+		}
+
+		@Override
+		public void setValueGenerations(ValueGeneration[] valueGenerationsArg) {
+			// TODO Auto-generated method stub
+			valueGenerations = valueGenerationsArg;
+		}
+
+		@Override
+		public void setPropertyTypes(Class<?>[] types) {
+			// TODO Auto-generated method stub
+			propertyTypes = types;
+		}
+
 	}
 
 }

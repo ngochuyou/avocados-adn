@@ -4,12 +4,12 @@
 package adn.service.resource.models;
 
 import java.util.Date;
-import java.util.Set;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
 
 /**
@@ -17,7 +17,7 @@ import org.hibernate.annotations.GenericGenerator;
  *
  */
 @Entity
-public class FileResource implements NamedResource {
+public class FileResource implements Resource {
 
 	@Id
 	@GeneratedValue
@@ -26,13 +26,12 @@ public class FileResource implements NamedResource {
 
 	private String name;
 
+	@CreationTimestamp
 	private Date timestamp;
 
 	private String directoryPath;
 
 	private String extension;
-
-	private Set<String> versions;
 
 	/**
 	 * 
@@ -75,7 +74,6 @@ public class FileResource implements NamedResource {
 		this.timestamp = timestamp;
 	}
 
-	@Override
 	public String getDirectoryPath() {
 		return directoryPath;
 	}
@@ -84,21 +82,12 @@ public class FileResource implements NamedResource {
 		this.directoryPath = directoryPath;
 	}
 
-	@Override
 	public String getExtension() {
 		return extension;
 	}
 
 	public void setExtension(String extension) {
 		this.extension = extension;
-	}
-
-	public Set<String> getVersions() {
-		return versions;
-	}
-
-	public void setVersions(Set<String> versions) {
-		this.versions = versions;
 	}
 
 }

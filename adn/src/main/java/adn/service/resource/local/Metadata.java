@@ -29,7 +29,7 @@ public class Metadata implements Service {
 		return imports;
 	}
 	
-	public void markedImportAsDone(String importName) {
+	public void markImportAsDone(String importName) {
 		processedImports.add(importName);
 	}
 	

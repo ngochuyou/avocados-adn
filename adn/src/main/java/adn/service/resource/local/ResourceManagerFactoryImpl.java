@@ -45,7 +45,9 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 		Assert.notNull(localStorage, "LocalResourceStorage cannot be null");
 
 		metamodel = new MetamodelImpl(serviceContext, this);
+		metamodel.prepare();
 		metamodel.process();
+		metamodel.postProcess();
 	}
 
 	@Override

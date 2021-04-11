@@ -7,11 +7,11 @@ package adn.service.resource.models;
  * @author Ngoc Huy
  *
  */
-public interface NamedResource {
-
-	String getDirectoryPath();
+public interface Resource {
 
 	String getName();
+
+	String getDirectoryPath();
 
 	String getExtension();
 
