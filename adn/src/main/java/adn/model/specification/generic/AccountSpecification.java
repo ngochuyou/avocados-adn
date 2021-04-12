@@ -11,11 +11,11 @@ import org.hibernate.Session;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
+import adn.helpers.StringHelper;
 import adn.model.Genetized;
 import adn.model.Result;
 import adn.model.entities.Account;
 import adn.model.specification.TransactionalSpecification;
-import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy

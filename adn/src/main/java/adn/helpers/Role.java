@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.utilities;
+package adn.helpers;
 
 /**
  * @author Ngoc Huy

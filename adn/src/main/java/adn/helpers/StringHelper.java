@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.utilities;
+package adn.helpers;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

@@ -19,6 +19,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.factory.IdentifierGeneratorFactory;
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
+import org.hibernate.type.BasicTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,7 @@ import org.springframework.util.Assert;
 
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
+import adn.service.resource.local.ResourceManagerFactory.ServiceWrapper;
 import adn.service.resource.metamodel.DefaultResourceIdentifierGenerator;
 
 /**
@@ -68,15 +70,21 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		contextBuildingService.register(Metadata.class, new Metadata());
 		// obtain MutableIdentifierGeneratorFactory from Hibernate service
 		// @formatter:off
-		MutableIdentifierGeneratorFactory idGeneratorFactory = ContextProvider.getApplicationContext()
+		SessionFactoryImplementor sfi = ContextProvider.getApplicationContext()
 				.getBean(SessionFactory.class)
-				.unwrap(SessionFactoryImplementor.class)
+				.unwrap(SessionFactoryImplementor.class);
+		MutableIdentifierGeneratorFactory idGeneratorFactory = sfi
 				.getServiceRegistry()
 				.getService(MutableIdentifierGeneratorFactory.class);
 		
 		Assert.notNull(idGeneratorFactory, "Unable to locate IdentifierGeneratorFactory");
-		
 		contextBuildingService.register(IdentifierGeneratorFactory.class, idGeneratorFactory);
+		
+		BasicTypeRegistry basicTypeRegistry = sfi.getMetamodel().getTypeConfiguration().getBasicTypeRegistry();
+
+		Assert.notNull(basicTypeRegistry, "Unable to locate BasicTypeRegistry");
+		contextBuildingService.register(ServiceWrapper.class, new ServiceWrapperImpl<>(basicTypeRegistry));
+
 		prepare();
 		// @formatter:on
 		// inject ResourceManager bean into ApplicationContext
@@ -87,7 +95,7 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		ResourceManagerFactory resourceManager = build();
 		ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) ContextProvider
 				.getApplicationContext()).getBeanFactory();
-		
+
 		beanFactory.registerSingleton(resourceManager.getClass().getName(), resourceManager);
 		beanFactory.registerAlias(resourceManager.getClass().getName(), ResourceManagerFactory.class.getName());
 		logger.info(getLoggingPrefix(this) + "Finished building " + this.getClass());
@@ -205,6 +213,25 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 
 	public static void unsupport() {
 		throw new UnsupportedOperationException("Some implementations might not be supported");
+	}
+
+	@SuppressWarnings("serial")
+	public class ServiceWrapperImpl<T> implements ServiceWrapper<T> {
+
+		private final T instance;
+
+		public ServiceWrapperImpl(T instance) {
+			// TODO Auto-generated constructor stub
+			Assert.notNull(instance, "Cannot wrap a null instance in ServiceWrapper");
+			this.instance = instance;
+		}
+
+		@Override
+		public T unwrap() {
+			// TODO Auto-generated method stub
+			return instance;
+		}
+
 	}
 
 }

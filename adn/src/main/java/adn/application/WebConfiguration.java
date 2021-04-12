@@ -30,7 +30,7 @@ import org.springframework.web.servlet.view.JstlView;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import adn.utilities.Role;
+import adn.helpers.Role;
 
 /**
  * @author Ngoc Huy

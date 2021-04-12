@@ -12,15 +12,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 
+import adn.helpers.Gender;
+import adn.helpers.Role;
+import adn.helpers.StringHelper;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Account;
 import adn.model.factory.extraction.AccountExtractor;
 import adn.service.resource.local.LocalResourceStorageImpl;
 import adn.service.services.AccountService;
-import adn.utilities.Gender;
-import adn.utilities.Role;
-import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy

@@ -2,12 +2,12 @@ package adn.service.services;
 
 import java.util.Map;
 
+import adn.helpers.Role;
 import adn.model.entities.Account;
 import adn.model.entities.Admin;
 import adn.model.entities.Customer;
 import adn.model.entities.Personnel;
 import adn.service.Service;
-import adn.utilities.Role;
 
 @org.springframework.stereotype.Service
 public class AccountService implements Service {

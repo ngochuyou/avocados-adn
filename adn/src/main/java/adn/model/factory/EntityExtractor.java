@@ -4,9 +4,9 @@
 package adn.model.factory;
 
 import adn.application.context.ContextProvider;
+import adn.helpers.TypeHelper;
 import adn.model.entities.Entity;
 import adn.model.models.Model;
-import adn.utilities.TypeHelper;
 
 /**
  * @author Ngoc Huy

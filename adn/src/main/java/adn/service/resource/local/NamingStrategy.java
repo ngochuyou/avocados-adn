@@ -5,7 +5,7 @@ package adn.service.resource.local;
 
 import org.hibernate.service.Service;
 
-import adn.utilities.StringHelper;
+import adn.helpers.StringHelper;
 
 /**
  * @author Ngoc Huy

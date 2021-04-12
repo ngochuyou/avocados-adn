@@ -20,11 +20,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Repository;
 
 import adn.dao.generic.EntityGeneBuilder;
+import adn.helpers.TypeHelper;
 import adn.model.Result;
 import adn.model.entities.Entity;
 import adn.model.specification.Specification;
 import adn.model.specification.SpecificationFactory;
-import adn.utilities.TypeHelper;
 
 /**
  * @author Ngoc Huy

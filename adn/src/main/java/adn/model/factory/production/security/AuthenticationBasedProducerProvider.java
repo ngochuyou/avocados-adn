@@ -15,13 +15,13 @@ import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
 import adn.application.context.ContextProvider;
+import adn.helpers.Role;
+import adn.helpers.TypeHelper;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
 import adn.model.factory.ModelProducerProvider;
 import adn.model.models.Model;
-import adn.utilities.Role;
-import adn.utilities.TypeHelper;
 
 @Component(Constants.DEFAULT_MODEL_PRODUCER_PROVIDER_NAME)
 @Order(value = 5)

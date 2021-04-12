@@ -3,8 +3,6 @@
  */
 package adn.test.application;
 
-import adn.service.resource.models.BufferedFile;
-
 /**
  * @author Ngoc Huy
  *
@@ -18,7 +16,6 @@ public class Solution {
 	 */
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException {
 		// TODO Auto-generated method stub
-		System.out.println(BufferedFile.class.getDeclaredMethod("getTimestamp"));
 	}
 
 }

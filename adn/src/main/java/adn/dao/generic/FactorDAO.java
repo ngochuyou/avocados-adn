@@ -8,9 +8,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Repository;
 
+import adn.helpers.StringHelper;
 import adn.model.Genetized;
 import adn.model.entities.Factor;
-import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy

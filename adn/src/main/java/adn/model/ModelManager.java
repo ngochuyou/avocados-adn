@@ -35,8 +35,8 @@ import org.springframework.stereotype.Component;
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
+import adn.helpers.TypeHelper;
 import adn.model.models.Model;
-import adn.utilities.TypeHelper;
 
 /**
  * @author Ngoc Huy

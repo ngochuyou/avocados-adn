@@ -23,6 +23,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import adn.application.context.ContextProvider;
+import adn.helpers.Role;
+import adn.helpers.TypeHelper;
 import adn.model.Result;
 import adn.model.entities.Account;
 import adn.model.factory.extraction.AccountRoleExtractor;
@@ -30,8 +32,6 @@ import adn.model.models.AccountModel;
 import adn.service.resource.local.LocalResourceStorageImpl;
 import adn.service.services.AccountService;
 import adn.service.services.FileService;
-import adn.utilities.Role;
-import adn.utilities.TypeHelper;
 
 @Controller
 @RequestMapping("/account")

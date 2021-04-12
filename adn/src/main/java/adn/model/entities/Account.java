@@ -14,8 +14,8 @@ import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.Table;
 
-import adn.utilities.Gender;
-import adn.utilities.Role;
+import adn.helpers.Gender;
+import adn.helpers.Role;
 
 /**
  * @author Ngoc Huy

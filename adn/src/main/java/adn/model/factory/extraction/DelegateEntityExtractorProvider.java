@@ -14,13 +14,13 @@ import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
 import adn.application.context.ContextProvider;
+import adn.helpers.StringHelper;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractor;
 import adn.model.factory.EntityExtractorProvider;
 import adn.model.models.Model;
-import adn.utilities.StringHelper;
 
 @Component(Constants.DEFAULT_ENTITY_EXTRACTOR_PROVIDER_NAME)
 @Order(value = 4)

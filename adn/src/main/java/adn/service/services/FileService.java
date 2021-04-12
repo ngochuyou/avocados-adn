@@ -12,10 +12,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
+import adn.helpers.StringHelper;
 import adn.service.Service;
 import adn.service.ServiceResult;
 import adn.service.resource.local.LocalResourceStorageImpl;
-import adn.utilities.StringHelper;
 
 @org.springframework.stereotype.Service
 public class FileService implements Service {

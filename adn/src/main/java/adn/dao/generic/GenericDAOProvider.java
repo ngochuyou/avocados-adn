@@ -21,10 +21,10 @@ import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
 import adn.dao.GenericDAO;
+import adn.helpers.StringHelper;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
-import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy

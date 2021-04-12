@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.context.ContextProvider;
+import adn.helpers.Role;
+import adn.helpers.StringHelper;
 import adn.model.entities.Account;
-import adn.utilities.Role;
-import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy

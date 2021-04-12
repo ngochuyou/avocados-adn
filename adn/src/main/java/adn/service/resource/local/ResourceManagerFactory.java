@@ -7,6 +7,8 @@ import java.io.Serializable;
 
 import javax.persistence.EntityManagerFactory;
 
+import org.hibernate.service.Service;
+
 /**
  * @author Ngoc Huy
  *
@@ -26,5 +28,11 @@ public interface ResourceManagerFactory extends EntityManagerFactory {
 	LocalResourceStorage getStorage();
 
 	ContextBuildingService getContextBuildingService();
+
+	public interface ServiceWrapper<T> extends Service {
+
+		T unwrap();
+
+	}
 
 }

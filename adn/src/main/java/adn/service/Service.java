@@ -1,7 +1,7 @@
 package adn.service;
 
 import adn.application.context.ContextProvider;
-import adn.utilities.TypeHelper;
+import adn.helpers.TypeHelper;
 
 public interface Service {
 

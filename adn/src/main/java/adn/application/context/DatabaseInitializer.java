@@ -13,12 +13,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import adn.helpers.Gender;
+import adn.helpers.Role;
 import adn.model.entities.Admin;
 import adn.model.entities.Customer;
 import adn.model.entities.Personnel;
 import adn.service.resource.local.LocalResourceStorageImpl;
-import adn.utilities.Gender;
-import adn.utilities.Role;
 
 /**
  * @author Ngoc Huy

@@ -2,11 +2,11 @@ package adn.model.factory.production.security;
 
 import org.springframework.stereotype.Component;
 
+import adn.helpers.Role;
 import adn.model.Genetized;
 import adn.model.entities.Personnel;
 import adn.model.models.PersonnelModel;
 import adn.security.SecuredFor;
-import adn.utilities.Role;
 
 @Component
 @Genetized(modelGene = PersonnelModel.class)

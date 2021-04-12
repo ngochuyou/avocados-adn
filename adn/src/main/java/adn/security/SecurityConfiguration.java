@@ -30,8 +30,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import adn.application.Constants;
+import adn.helpers.StringHelper;
 import adn.service.services.AuthenticationService;
-import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy

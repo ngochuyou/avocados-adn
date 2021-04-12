@@ -6,10 +6,10 @@ package adn.service.resource.metamodel;
 import java.io.Serializable;
 import java.util.Date;
 
+import adn.helpers.StringHelper;
 import adn.service.resource.local.ResourceIdentifierGenerator;
 import adn.service.resource.local.ResourceManagerFactory;
 import adn.service.resource.models.Resource;
-import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.utilities;
+package adn.helpers;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -88,21 +88,6 @@ public class TypeHelper {
 		}
 
 		return false;
-	}
-
-	@SuppressWarnings("unchecked")
-	public static <T> Class<T> unwrapType(Class<?> type) {
-
-		return (Class<T>) type;
-	}
-
-	@SuppressWarnings("unchecked")
-	public static <T> T unwrap(Object instance, Class<T> type) {
-		if (instance == null || !instance.getClass().equals(type) || !type.isAssignableFrom(instance.getClass())) {
-			return null;
-		}
-
-		return (T) instance;
 	}
 
 	public static boolean isImplementedFrom(Class<?> clazz, Class<?> superClass) {

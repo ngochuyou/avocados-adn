@@ -7,9 +7,9 @@ import javax.transaction.Transactional;
 
 import org.springframework.stereotype.Repository;
 
+import adn.helpers.StringHelper;
 import adn.model.Genetized;
 import adn.model.entities.Customer;
-import adn.utilities.StringHelper;
 
 /**
  * @author Ngoc Huy

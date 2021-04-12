@@ -18,10 +18,10 @@ import org.springframework.stereotype.Component;
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
+import adn.helpers.TypeHelper;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
-import adn.utilities.TypeHelper;
 
 /**
  * @author Ngoc Huy
