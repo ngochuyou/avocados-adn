@@ -19,6 +19,7 @@ import org.hibernate.property.access.spi.Setter;
 import org.hibernate.tuple.ValueGeneration;
 
 import adn.service.resource.local.ResourceManagerFactoryBuilder;
+import adn.service.resource.metamodel.MetamodelImpl.IdentifierGenerationHolder;
 
 /**
  * @author Ngoc Huy
@@ -40,6 +41,8 @@ public class EntityTypeImpl<D> extends AbstractIdentifiableType<D> implements En
 	private IdentifierGenerator identifierGenerator;
 
 	private InFlightAccess access = new InFlightAccessImpl();
+
+	private final ResourceTuplizer tuplizer = null;
 
 	// @formatter:off
 	public EntityTypeImpl(
@@ -295,7 +298,8 @@ public class EntityTypeImpl<D> extends AbstractIdentifiableType<D> implements En
 
 	}
 
-	public String log() {
+	@Override
+	public String toString() {
 		// @formatter:off
 		return String.format("Metamodel: %s\n"
 				+ "\t-propertySpan: %d\n"
