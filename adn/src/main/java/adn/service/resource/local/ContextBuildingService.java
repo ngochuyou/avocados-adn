@@ -69,26 +69,9 @@ public interface ContextBuildingService extends ServiceRegistry {
 							.stream().map(service -> (ServiceWrapper<S>) service).filter(discriminator).findFirst());
 		}
 
-//		@SuppressWarnings("unchecked")
-//		@Override
-//		public <T extends Service> T getService(Class<T> serviceRole, Predicate<? super Service> discriminator,
-//				Function<Optional<T>, T> resultResolver) {
-//			// TODO Auto-generated method stub
-//			Assert.notNull(serviceRole, "Service role must not be null");
-//			Assert.notNull(discriminator, "Predicate must not be null");
-//			Assert.notNull(resultResolver, "Resolver must not be null");
-//
-//			Set<Class<?>> candidateKeys = getCandidateKeys(serviceRole);
-//
-//			assertUnique(candidateKeys, serviceRole);
-//
-//			return resultResolver.apply((Optional<T>) serviceMap.get(candidateKeys.stream().findFirst().orElseThrow())
-//					.stream().filter(discriminator).findFirst());
-//		}
-
 		private <T> Set<Class<?>> getCandidateKeys(Class<T> serviceRole) {
-			return serviceMap.keySet().stream().filter(serviceClassKey -> serviceClassKey.isAssignableFrom(serviceRole))
-					.collect(Collectors.toSet());
+			return serviceMap.keySet().stream().filter(serviceClassKey -> serviceClassKey.isAssignableFrom(serviceRole)
+					|| serviceRole.equals(serviceClassKey)).collect(Collectors.toSet());
 		}
 
 		private <T> void assertUnique(Set<Class<?>> candidateKeys, Class<T> serviceRole) {

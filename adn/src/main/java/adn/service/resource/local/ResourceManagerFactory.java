@@ -7,6 +7,7 @@ import java.io.Serializable;
 
 import javax.persistence.EntityManagerFactory;
 
+import org.hibernate.id.factory.IdentifierGeneratorFactory;
 import org.hibernate.service.Service;
 
 /**
@@ -15,11 +16,11 @@ import org.hibernate.service.Service;
  */
 public interface ResourceManagerFactory extends EntityManagerFactory {
 
-	<T> ResourceDescriptor<T> getResourceDescriptor(String name);
+	<T> ResourcePersister<T> getResourceDescriptor(String name);
 
-	<T> ResourceDescriptor<T> getResourceDescriptor(Class<T> clazz);
+	<T> ResourcePersister<T> getResourceDescriptor(Class<T> clazz);
 
-	<T> ResourceDescriptor<T> locateResourceDescriptor(Class<T> clazz) throws IllegalArgumentException;
+	<T> ResourcePersister<T> locateResourceDescriptor(Class<T> clazz) throws IllegalArgumentException;
 
 	boolean isLocked(Serializable identifier);
 
@@ -29,6 +30,8 @@ public interface ResourceManagerFactory extends EntityManagerFactory {
 
 	ContextBuildingService getContextBuildingService();
 
+	SharedIdentifierGeneratorFactory getIdentifierGeneratorFactory();
+	
 	public interface ServiceWrapper<T> extends Service {
 
 		T unwrap();

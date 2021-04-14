@@ -19,14 +19,14 @@ public class ResourceEntryImpl<T> extends AbstractEntityEntry implements Resourc
 
 	private static final long serialVersionUID = 1L;
 
-	private final transient ResourceDescriptor<T> descriptor;
+	private final transient ResourcePersister<T> descriptor;
 
 	private final ResourceKey<T> key;
 
 	private ResourceEntryImpl(SessionFactoryImplementor factory, String entityName, Serializable id, Status status,
 			Status previousStatus, Object[] loadedState, Object[] deletedState, Object version, LockMode lockMode,
 			boolean existsInDatabase, boolean isBeingReplicated, PersistenceContext persistenceContext,
-			ResourceDescriptor<T> descriptor, ResourceKey<T> key) {
+			ResourcePersister<T> descriptor, ResourceKey<T> key) {
 		super(factory, entityName, id, status, previousStatus, loadedState, deletedState, version, lockMode,
 				existsInDatabase, isBeingReplicated, persistenceContext);
 		this.descriptor = descriptor;
@@ -44,7 +44,7 @@ public class ResourceEntryImpl<T> extends AbstractEntityEntry implements Resourc
 			Object version,
 			LockMode lockMode,
 			boolean existsInDatabase,
-			ResourceDescriptor<T> descriptor,
+			ResourcePersister<T> descriptor,
 			ResourceKey<T> key) {
 		// TODO Auto-generated constructor stub
 		this(
@@ -66,7 +66,7 @@ public class ResourceEntryImpl<T> extends AbstractEntityEntry implements Resourc
 	// @formatter:on
 
 	@Override
-	public ResourceDescriptor<T> getDescriptor() {
+	public ResourcePersister<T> getDescriptor() {
 		// TODO Auto-generated method stub
 		return descriptor;
 	}

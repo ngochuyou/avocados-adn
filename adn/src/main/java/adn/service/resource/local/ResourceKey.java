@@ -20,11 +20,11 @@ public class ResourceKey<T> implements Serializable {
 
 	private final Serializable identifier;
 
-	private final ResourceDescriptor<T> descriptor;
+	private final ResourcePersister<T> descriptor;
 
 	private final int hashCode;
 
-	public ResourceKey(Serializable identifier, ResourceDescriptor<T> descriptor) {
+	public ResourceKey(Serializable identifier, ResourcePersister<T> descriptor) {
 		super();
 		this.identifier = identifier;
 		Assert.notNull(descriptor, "Resource descriptor can not be NULL");
@@ -35,10 +35,10 @@ public class ResourceKey<T> implements Serializable {
 	private int getHashCode() {
 		int result = 17;
 
-		String resourceName = descriptor.getResourceName();
-
-		result = 37 * result + (resourceName != null ? resourceName.hashCode() : 0);
-		result = 37 * result + descriptor.getIdentifierGetter().getReturnType().hashCode();
+//		String resourceName = descriptor.getResourceName();
+//
+//		result = 37 * result + (resourceName != null ? resourceName.hashCode() : 0);
+//		result = 37 * result + descriptor.getIdentifierGetter().getReturnType().hashCode();
 
 		return result;
 	}
@@ -59,15 +59,16 @@ public class ResourceKey<T> implements Serializable {
 
 		ResourceKey entry = (ResourceKey<T>) other;
 
-		return entry.identifier == identifier && (entry.descriptor == descriptor
-				|| entry.descriptor.getResourceName().equals(descriptor.getResourceName()));
+//		return entry.identifier == identifier && (entry.descriptor == descriptor
+//				|| entry.descriptor.getResourceName().equals(descriptor.getResourceName()));
+		return false;
 	}
 
 	public Serializable getIdentifier() {
 		return identifier;
 	}
 
-	public ResourceDescriptor<T> getDescriptor() {
+	public ResourcePersister<T> getDescriptor() {
 		return descriptor;
 	}
 

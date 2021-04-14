@@ -17,7 +17,6 @@ import org.hibernate.SessionFactory;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.id.IdentifierGenerator;
-import org.hibernate.id.factory.IdentifierGeneratorFactory;
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
 import org.hibernate.type.BasicTypeRegistry;
 import org.slf4j.Logger;
@@ -64,27 +63,24 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		identifierGenerators = new HashSet<>();
 		// create building service
 		contextBuildingService = ContextBuildingService.createBuildingService();
-		// register naming-strategy
-		contextBuildingService.register(NamingStrategy.class, NamingStrategy.DEFAULT_NAMING_STRATEGY);
-		contextBuildingService.register(LocalResourceStorage.class, localStorage);
-		contextBuildingService.register(Metadata.class, new Metadata());
 		// obtain MutableIdentifierGeneratorFactory from Hibernate service
-		// @formatter:off
-		SessionFactoryImplementor sfi = ContextProvider.getApplicationContext()
-				.getBean(SessionFactory.class)
+		SessionFactoryImplementor sfi = ContextProvider.getApplicationContext().getBean(SessionFactory.class)
 				.unwrap(SessionFactoryImplementor.class);
-		MutableIdentifierGeneratorFactory idGeneratorFactory = sfi
-				.getServiceRegistry()
+		MutableIdentifierGeneratorFactory idGeneratorFactory = sfi.getServiceRegistry()
 				.getService(MutableIdentifierGeneratorFactory.class);
-		
+
 		Assert.notNull(idGeneratorFactory, "Unable to locate IdentifierGeneratorFactory");
-		contextBuildingService.register(IdentifierGeneratorFactory.class, idGeneratorFactory);
-		
+		contextBuildingService.register(MutableIdentifierGeneratorFactory.class, idGeneratorFactory);
+
 		BasicTypeRegistry basicTypeRegistry = sfi.getMetamodel().getTypeConfiguration().getBasicTypeRegistry();
 
 		Assert.notNull(basicTypeRegistry, "Unable to locate BasicTypeRegistry");
 		contextBuildingService.register(ServiceWrapper.class, new ServiceWrapperImpl<>(basicTypeRegistry));
-
+		// register naming-strategy
+		contextBuildingService.register(NamingStrategy.class, NamingStrategy.DEFAULT_NAMING_STRATEGY);
+		contextBuildingService.register(LocalResourceStorage.class, localStorage);
+		contextBuildingService.register(Metadata.class, new Metadata());
+		// @formatter:off
 		prepare();
 		// @formatter:on
 		// inject ResourceManager bean into ApplicationContext

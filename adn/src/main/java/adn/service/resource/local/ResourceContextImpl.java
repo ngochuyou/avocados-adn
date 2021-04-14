@@ -70,7 +70,7 @@ public class ResourceContextImpl implements ResourceContext {
 			Serializable id,
 			LockMode lockMode,
 			boolean isTransient,
-			ResourceDescriptor<?> descriptor) {
+			ResourcePersister<?> descriptor) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -83,7 +83,7 @@ public class ResourceContextImpl implements ResourceContext {
 			ResourceKey<?> key,
 			LockMode lockMode,
 			boolean isTransient,
-			ResourceDescriptor<?> descriptor) {
+			ResourcePersister<?> descriptor) {
 		// TODO Auto-generated method stub
 		return null;
 	}

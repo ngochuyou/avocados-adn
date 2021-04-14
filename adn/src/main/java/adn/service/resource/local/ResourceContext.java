@@ -24,7 +24,7 @@ public interface ResourceContext {
 			Serializable id,
 			LockMode lockMode,
 			boolean isTransient,
-			ResourceDescriptor<?> descriptor);
+			ResourcePersister<?> descriptor);
 	// @formatter:on
 	// @formatter:off
 	ResourceEntry<?> addResource(
@@ -34,7 +34,7 @@ public interface ResourceContext {
 			ResourceKey<?> key,
 			LockMode lockMode,
 			boolean isTransient,
-			ResourceDescriptor<?> descriptor);
+			ResourcePersister<?> descriptor);
 	// @formatter:on
 
 	void setEntryStatus(ResourceEntry<?> entry, Status status);

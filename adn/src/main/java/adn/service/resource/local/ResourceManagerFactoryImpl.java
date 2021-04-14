@@ -34,6 +34,8 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 
 	private final ContextBuildingService buildingService;
 
+	private final SharedIdentifierGeneratorFactory sharedIdentifierGeneratorFactory;
+
 	public ResourceManagerFactoryImpl(final ContextBuildingService serviceContext) {
 		// TODO Auto-generated constructor stub
 		Assert.notNull(serviceContext, "ContextBuildingService cannot be null");
@@ -41,6 +43,7 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 		buildingService = serviceContext;
 		resourceNamingStrategy = serviceContext.getService(NamingStrategy.class);
 		localStorage = serviceContext.getService(LocalResourceStorage.class);
+		sharedIdentifierGeneratorFactory = new SharedIdentifierGeneratorFactory(serviceContext);
 
 		Assert.notNull(localStorage, "LocalResourceStorage cannot be null");
 
@@ -63,25 +66,25 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	}
 
 	@Override
-	public <T> ResourceDescriptor<T> getResourceDescriptor(Class<T> resourceClass) {
+	public <T> ResourcePersister<T> getResourceDescriptor(Class<T> resourceClass) {
 		// TODO Auto-generated method stub
 		return getResourceDescriptor(resourceNamingStrategy.getName(resourceClass));
 	}
 
 	@Override
-	public <T> ResourceDescriptor<T> getResourceDescriptor(String resourceName) {
+	public <T> ResourcePersister<T> getResourceDescriptor(String resourceName) {
 		// TODO Auto-generated method stub
 		return metamodel.getResourceDescriptor(resourceName);
 	}
 
-	public <T> ResourceDescriptor<T> locateResourceDescriptor(Class<T> type) {
+	public <T> ResourcePersister<T> locateResourceDescriptor(Class<T> type) {
 		supportCheck(type);
 
 		return getResourceDescriptor(type);
 	}
 
 	private <T> void supportCheck(Class<T> type) throws IllegalArgumentException {
-		ResourceDescriptor<T> descriptor = getResourceDescriptor(type);
+		ResourcePersister<T> descriptor = getResourceDescriptor(type);
 
 		Assert.notNull(descriptor, "Unable to locate descriptor for resource of type: " + type
 				+ ", provided resource type is not a managed type");
@@ -183,6 +186,12 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	public ContextBuildingService getContextBuildingService() {
 		// TODO Auto-generated method stub
 		return buildingService;
+	}
+
+	@Override
+	public SharedIdentifierGeneratorFactory getIdentifierGeneratorFactory() {
+		// TODO Auto-generated method stub
+		return sharedIdentifierGeneratorFactory;
 	}
 
 }

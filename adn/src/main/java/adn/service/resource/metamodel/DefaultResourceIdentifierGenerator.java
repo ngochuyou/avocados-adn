@@ -5,6 +5,12 @@ package adn.service.resource.metamodel;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Properties;
+
+import org.hibernate.MappingException;
+import org.hibernate.id.Configurable;
+import org.hibernate.service.ServiceRegistry;
+import org.hibernate.type.Type;
 
 import adn.helpers.StringHelper;
 import adn.service.resource.local.ResourceIdentifierGenerator;
@@ -15,7 +21,7 @@ import adn.service.resource.models.Resource;
  * @author Ngoc Huy
  *
  */
-public class DefaultResourceIdentifierGenerator implements ResourceIdentifierGenerator<Serializable> {
+public class DefaultResourceIdentifierGenerator implements ResourceIdentifierGenerator<Serializable>, Configurable {
 
 	public static final DefaultResourceIdentifierGenerator INSTANCE = new DefaultResourceIdentifierGenerator();
 
@@ -38,6 +44,11 @@ public class DefaultResourceIdentifierGenerator implements ResourceIdentifierGen
 		}
 
 		return String.valueOf(new Date().getTime());
+	}
+
+	@Override
+	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) throws MappingException {
+		// TODO Auto-generated method stub
 	}
 
 }

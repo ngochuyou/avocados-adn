@@ -3,7 +3,7 @@
  */
 package adn.service.resource.event;
 
-import adn.service.resource.local.ResourceDescriptor;
+import adn.service.resource.local.ResourcePersister;
 import adn.service.resource.local.ResourceManager;
 
 /**
@@ -16,7 +16,7 @@ public class PersistentEvent<T> extends EventImpl<T> {
 
 	protected final T instance;
 
-	protected final ResourceDescriptor<T> resourceDescriptor;
+	protected final ResourcePersister<T> resourceDescriptor;
 
 	PersistentEvent(T instance, Class<T> type, ResourceManager resourceManager) {
 		// TODO Auto-generated constructor stub
@@ -29,7 +29,7 @@ public class PersistentEvent<T> extends EventImpl<T> {
 		return instance;
 	}
 
-	public ResourceDescriptor<T> getResourceDescriptor() {
+	public ResourcePersister<T> getResourceDescriptor() {
 		return resourceDescriptor;
 	}
 

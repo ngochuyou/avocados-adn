@@ -48,9 +48,9 @@ public interface ResourceEntry<T> extends EntityEntry {
 		return null;
 	}
 
-	ResourceDescriptor<T> getDescriptor();
+	ResourcePersister<T> getDescriptor();
 
-	public static <T> EntityState getEntityState(ResourceEntry<T> entry, T resource, ResourceDescriptor<T> descriptor) {
+	public static <T> EntityState getEntityState(ResourceEntry<T> entry, T resource, ResourcePersister<T> descriptor) {
 		if (entry != null) {
 			// entering this logic determine that resource is either DELETED or PERSISTENT
 			if (entry.getStatus() == Status.DELETED) {
@@ -61,7 +61,8 @@ public interface ResourceEntry<T> extends EntityEntry {
 		}
 		// either TRANSIENT or DETACHED
 		// descriptor
-		return descriptor.isTransient(resource) ? EntityState.TRANSIENT : EntityState.DETACHED;
+//		return descriptor.isTransient(resource) ? EntityState.TRANSIENT : EntityState.DETACHED;
+		return null;
 	}
 
 	ResourceKey<T> getResourceKey();

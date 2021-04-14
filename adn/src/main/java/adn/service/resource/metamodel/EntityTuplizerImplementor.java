@@ -17,7 +17,7 @@ import org.hibernate.tuple.entity.EntityTuplizer;
  * @author Ngoc Huy
  *
  */
-public interface ResourceTuplizer extends EntityTuplizer {
+public interface EntityTuplizerImplementor<D> extends EntityTuplizer {
 
 	@Override
 	default void afterInitialize(Object entity, SharedSessionContractImplementor session) {

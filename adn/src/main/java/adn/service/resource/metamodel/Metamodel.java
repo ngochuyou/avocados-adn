@@ -5,7 +5,7 @@ package adn.service.resource.metamodel;
 
 import javax.persistence.PersistenceException;
 
-import adn.service.resource.local.ResourceDescriptor;
+import adn.service.resource.local.ResourcePersister;
 
 /**
  * @author Ngoc Huy
@@ -13,7 +13,7 @@ import adn.service.resource.local.ResourceDescriptor;
  */
 public interface Metamodel extends javax.persistence.metamodel.Metamodel {
 
-	<T> ResourceDescriptor<T> getResourceDescriptor(String name);
+	<T> ResourcePersister<T> getResourceDescriptor(String name);
 
 	void prepare() throws PersistenceException;
 
