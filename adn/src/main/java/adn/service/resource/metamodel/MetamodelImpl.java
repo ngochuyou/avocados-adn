@@ -12,9 +12,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +29,8 @@ import javax.persistence.metamodel.EmbeddableType;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.ManagedType;
 
+import org.hibernate.EntityNameResolver;
+import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.mapping.Property;
 import org.hibernate.metamodel.model.domain.internal.BasicTypeImpl;
 import org.hibernate.metamodel.model.domain.internal.PluralAttributeBuilder;
@@ -33,17 +38,22 @@ import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl;
 import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl.Identifier;
 import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl.Version;
 import org.hibernate.metamodel.model.domain.spi.BasicTypeDescriptor;
+import org.hibernate.metamodel.model.domain.spi.EmbeddedTypeDescriptor;
 import org.hibernate.metamodel.model.domain.spi.PersistentAttributeDescriptor;
 import org.hibernate.metamodel.model.domain.spi.PluralPersistentAttribute;
 import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
+import org.hibernate.persister.collection.CollectionPersister;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.service.Service;
 import org.hibernate.tuple.GenerationTiming;
 import org.hibernate.tuple.ValueGeneration;
 import org.hibernate.tuple.ValueGenerator;
+import org.hibernate.type.spi.TypeConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
+import adn.helpers.ReflectHelper;
 import adn.service.resource.local.ContextBuildingService;
 import adn.service.resource.local.Metadata;
 import adn.service.resource.local.NamingStrategy;
@@ -55,21 +65,26 @@ import adn.service.resource.local.ResourcePersisterImpl;
  * @author Ngoc Huy
  *
  */
-public class MetamodelImpl implements Metamodel {
+public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 	private static final Logger logger = LoggerFactory.getLogger(MetamodelImpl.class);
 
 	private final ResourceManagerFactory managerFactory;
 
-	private final Map<String, ResourceType<?>> entitiesByName;
+	private final Map<String, String> importedClassNames;
+	private final Map<String, ResourceType<?>> resourceTypesByName;
 	private final Map<String, ResourcePersister<?>> persistersByName;
+
+	private final Set<EntityNameResolver> resourceNameResolvers;
 
 	public MetamodelImpl(ContextBuildingService serviceRegistry, ResourceManagerFactory resourceManagerFactory) {
 		// TODO Auto-generated constructor stub
 		Assert.notNull(resourceManagerFactory, "ResourceManagerFactory must not be null");
 		this.managerFactory = resourceManagerFactory;
-		this.entitiesByName = new HashMap<>();
+		this.resourceTypesByName = new HashMap<>();
 		this.persistersByName = new HashMap<>();
+		this.resourceNameResolvers = new HashSet<>();
+		this.importedClassNames = new HashMap<>();
 	}
 
 	@Override
@@ -81,7 +96,7 @@ public class MetamodelImpl implements Metamodel {
 	@SuppressWarnings("unchecked")
 	public <X> ResourceType<X> entity(String name) {
 		// TODO Auto-generated method stub
-		return (ResourceType<X>) entitiesByName.get(name);
+		return (ResourceType<X>) resourceTypesByName.get(name);
 	}
 
 	@Override
@@ -91,7 +106,7 @@ public class MetamodelImpl implements Metamodel {
 	}
 
 	@Override
-	public <X> EmbeddableType<X> embeddable(Class<X> cls) {
+	public <X> EmbeddedTypeDescriptor<X> embeddable(Class<X> cls) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -99,13 +114,13 @@ public class MetamodelImpl implements Metamodel {
 	@Override
 	public Set<ManagedType<?>> getManagedTypes() {
 		// TODO Auto-generated method stub
-		return Collections.unmodifiableSet(new HashSet<>(entitiesByName.values()));
+		return Collections.unmodifiableSet(new HashSet<>(resourceTypesByName.values()));
 	}
 
 	@Override
 	public Set<EntityType<?>> getEntities() {
 		// TODO Auto-generated method stub
-		return Collections.unmodifiableSet(new HashSet<>(entitiesByName.values()));
+		return Collections.unmodifiableSet(new HashSet<>(resourceTypesByName.values()));
 	}
 
 	@Override
@@ -137,6 +152,7 @@ public class MetamodelImpl implements Metamodel {
 	public void prepare() throws PersistenceException {
 		// TODO Auto-generated method stub
 		managerFactory.getContextBuildingService().register(AttributeFactory.class, AttributeFactory.INSTANCE);
+		resourceNameResolvers.add(managerFactory.getContextBuildingService().getService(NamingStrategy.class));
 	}
 
 	@Override
@@ -152,10 +168,53 @@ public class MetamodelImpl implements Metamodel {
 		}
 	}
 
+	@Override
+	public void postProcess() throws PersistenceException {
+		// TODO Auto-generated method stub
+		ContextBuildingService contextService = managerFactory.getContextBuildingService();
+		Metadata metadata = contextService.getService(Metadata.class);
+
+		resourceTypesByName.values().forEach(metamodel -> {
+			logger.trace("Closing access to " + metamodel.getName() + " metamodel");
+			((ResourceType<?>) metamodel).getInFlightAccess().finishUp();
+		});
+
+		Assert.isTrue(metadata.getImports().keySet().stream()
+				.filter(key -> !metadata.isProcessingDone(key) || entity(key) == null).findAny().orElse(null) == null,
+				"Processing is not done, cannot invoke postProcess");
+
+		logger.trace("Metamodel building summary:\n"
+				+ persistersByName.values().stream().map(ele -> ele.toString()).collect(Collectors.joining("\n")));
+	}
+
+	private void imports() throws IllegalAccessException {
+		ContextBuildingService contextService = managerFactory.getContextBuildingService();
+		Metadata metadata = contextService.getService(Metadata.class);
+		Map<String, Class<?>> imports = metadata.getImports();
+		ModelProcessor modelProcessor = new ModelProcessor();
+
+		for (Map.Entry<String, Class<?>> entry : imports.entrySet()) {
+			modelProcessor.processModel(entry.getKey(), entry.getValue(), null);
+		}
+	}
+
+	private void postImport() throws IllegalAccessException {
+		logger.trace("Post import");
+
+		for (ResourceType<?> metamodel : resourceTypesByName.values()) {
+			visitInheritance(metamodel);
+		}
+
+		for (ResourceType<?> metamodel : resourceTypesByName.values()) {
+			logger.trace("Tracing identifier of type: " + metamodel.getName());
+			resolveIdentifierAndVersion(metamodel);
+		}
+	}
+
 	private void resolvePersisters() {
 		logger.trace("Resolving persisters");
 
-		for (ResourceType<?> metamodel : entitiesByName.values()) {
+		for (ResourceType<?> metamodel : resourceTypesByName.values()) {
 			ResourcePersister<?> persister;
 
 			persistersByName.put(metamodel.getName(), persister = createPersister(metamodel));
@@ -164,20 +223,8 @@ public class MetamodelImpl implements Metamodel {
 		}
 	}
 
-	private void postImport() throws IllegalAccessException {
-		entitiesByName.entrySet().stream()
-				.map(ele -> ele.getKey() + ": " + (ele.getValue() == null ? "NULL" : ele.getValue().getName()))
-				.forEach(logger::trace);
-		logger.trace("Post import. Tracing inheritance");
-
-		for (ResourceType<?> metamodel : entitiesByName.values()) {
-			visitInheritance(metamodel);
-		}
-
-		for (ResourceType<?> metamodel : entitiesByName.values()) {
-			logger.trace("Tracing identifier of type: " + metamodel.getName());
-			resolveIdentifierAndVersion(metamodel);
-		}
+	private <T> ResourcePersister<T> createPersister(ResourceType<T> metamodel) {
+		return new ResourcePersisterImpl<>(managerFactory, metamodel);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -193,6 +240,8 @@ public class MetamodelImpl implements Metamodel {
 			}
 
 			if (rawIdentifier.getDeclaringType().equals(metamodel)) {
+				logger.trace("Applying IDENTIFIER " + rawIdentifier.getName() + " on " + metamodel.getName() + " type "
+						+ rawIdentifier.getType().getTypeName());
 				metamodel.getInFlightAccess().applyIdAttribute((SingularPersistentAttribute<X, ?>) rawIdentifier);
 			}
 		}
@@ -233,40 +282,6 @@ public class MetamodelImpl implements Metamodel {
 		}
 
 		logger.trace(metamodel.getName() + " extends " + ((EntityType<?>) metamodel.getSupertype()).getName());
-	}
-
-	private void imports() throws IllegalAccessException {
-		ContextBuildingService contextService = managerFactory.getContextBuildingService();
-		Metadata metadata = contextService.getService(Metadata.class);
-		Map<String, Class<?>> imports = metadata.getImports();
-		ModelProcessor modelProcessor = new ModelProcessor();
-
-		for (Map.Entry<String, Class<?>> entry : imports.entrySet()) {
-			modelProcessor.processModel(entry.getKey(), entry.getValue());
-		}
-	}
-
-	private <T> ResourcePersister<T> createPersister(ResourceType<T> metamodel) {
-		return new ResourcePersisterImpl<>(managerFactory, metamodel);
-	}
-
-	@Override
-	public void postProcess() throws PersistenceException {
-		// TODO Auto-generated method stub
-		ContextBuildingService contextService = managerFactory.getContextBuildingService();
-		Metadata metadata = contextService.getService(Metadata.class);
-
-		entitiesByName.values().forEach(metamodel -> {
-			logger.trace("Closing access to " + metamodel.getName() + " metamodel");
-			((ResourceType<?>) metamodel).getInFlightAccess().finishUp();
-		});
-
-		Assert.isTrue(metadata.getImports().keySet().stream()
-				.filter(key -> !metadata.isProcessingDone(key) || entity(key) == null).findAny().orElse(null) == null,
-				"Processing is not done, cannot invoke postProcess");
-
-		logger.trace("Metamodel building summary:\n"
-				+ persistersByName.values().stream().map(ele -> ele.toString()).collect(Collectors.joining("\n")));
 	}
 
 	@SuppressWarnings({ "unchecked", "serial" })
@@ -403,9 +418,16 @@ public class MetamodelImpl implements Metamodel {
 
 	private class ModelProcessor {
 
-		public <J> ResourceType<J> processModel(String name, Class<J> type) throws IllegalAccessException {
+		public <J> ResourceType<J> processModel(String name, Class<J> type, Consumer<ResourceType<J>> childCallback)
+				throws IllegalAccessException {
 			if (isProcessingDone(name)) {
-				logger.trace("Ignoring import since metamodel process has already been done: " + type.getName());
+				logger.trace("Ignoring import since metamodel process has already been done: " + type.getName()
+						+ ", executing childCallback");
+
+				if (childCallback != null) {
+					childCallback.accept(entity(name));
+				}
+
 				return entity(type);
 			}
 
@@ -422,13 +444,25 @@ public class MetamodelImpl implements Metamodel {
 								.map(entry -> entry.getKey())
 								.findFirst()
 								.orElseThrow(() -> new IllegalArgumentException("Unable to obtain supertype of " + type)),
-							type.getSuperclass()) : null);
+							type.getSuperclass(), (parent) -> parent.getInFlightAccess().addSubclassName(name)) : null,
+					isRoot(type));
 			// @formatter:on
 			processAttributes(metamodel);
-			entitiesByName.put(name, metamodel);
+			resourceTypesByName.put(name, metamodel);
+			importedClassNames.put(type.getName(), name);
 			markImportAsDone(name);
 
+			if (childCallback != null) {
+				childCallback.accept(metamodel);
+			}
+
 			return metamodel;
+		}
+
+		private boolean isRoot(Class<?> type) {
+
+			return managerFactory.getMetadata().getImports().values().stream()
+					.filter(imported -> ReflectHelper.isParentOf(type, imported)).count() != 0;
 		}
 
 		public <J> void processAttributes(ResourceType<J> metamodel) throws IllegalAccessException {
@@ -594,6 +628,132 @@ public class MetamodelImpl implements Metamodel {
 			return null;
 		}
 
+	}
+
+	@Override
+	public TypeConfiguration getTypeConfiguration() {
+		// TODO Auto-generated method stub
+		return managerFactory.getTypeConfiguration();
+	}
+
+	@Override
+	public Collection<EntityNameResolver> getEntityNameResolvers() {
+		// TODO Auto-generated method stub
+		return resourceNameResolvers;
+	}
+
+	@Override
+	public Map<String, EntityPersister> entityPersisters() {
+		// TODO Auto-generated method stub
+		return Collections.unmodifiableMap(new HashMap<>(persistersByName));
+	}
+
+	@Override
+	public CollectionPersister collectionPersister(String role) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Map<String, CollectionPersister> collectionPersisters() {
+		// TODO Auto-generated method stub
+		return Collections.emptyMap();
+	}
+
+	@Override
+	public Set<String> getCollectionRolesByEntityParticipant(String entityName) {
+		// TODO Auto-generated method stub
+		return Collections.emptySet();
+	}
+
+	@Override
+	public String[] getAllEntityNames() {
+		// TODO Auto-generated method stub
+		return managerFactory.getMetadata().getProcessedImports().toArray(String[]::new);
+	}
+
+	@Override
+	public String[] getAllCollectionRoles() {
+		// TODO Auto-generated method stub
+		return new String[0];
+	}
+
+	@Override
+	public <T> void addNamedEntityGraph(String graphName, RootGraphImplementor<T> entityGraph) {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public <T> RootGraphImplementor<T> findEntityGraphByName(String name) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public <T> List<RootGraphImplementor<? super T>> findEntityGraphsByJavaType(Class<T> entityClass) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void close() {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public String getImportedClassName(String className) {
+		// TODO Auto-generated method stub
+		return importedClassNames.get(className);
+	}
+
+	@Override
+	public String[] getImplementors(String entityName) {
+		// TODO Auto-generated method stub
+		return new String[0];
+	}
+
+	@Override
+	@SuppressWarnings({ "rawtypes", "unlikely-arg-type" })
+	public ResourcePersister<?> entityPersister(Class entityClass) {
+		// TODO Auto-generated method stub
+		String resourceName = importedClassNames.get(entityClass);
+
+		if (resourceName != null) {
+			return persistersByName.get(resourceName);
+		}
+
+		Assert.isTrue(!resourceNameResolvers.isEmpty(), "Unable to locate name resolver");
+		resourceName = resourceNameResolvers.stream().findFirst().orElseThrow().resolveEntityName(entityClass);
+
+		return Optional.ofNullable(entityPersister(resourceName)).orElse(null);
+	}
+
+	@Override
+	public ResourcePersister<?> entityPersister(String entityName) {
+		// TODO Auto-generated method stub
+		return persistersByName.get(entityName);
+	}
+
+	@Override
+	public ResourcePersister<?> locateEntityPersister(@SuppressWarnings("rawtypes") Class byClass) {
+		// TODO Auto-generated method stub
+		String resourceName = importedClassNames.get(byClass.getName());
+
+		return Optional.ofNullable(persistersByName.get(resourceName))
+				.orElseThrow(() -> new IllegalArgumentException("Could not locate ResourcePersister by " + byClass));
+	}
+
+	@Override
+	public ResourcePersister<?> locateEntityPersister(String byName) {
+		// TODO Auto-generated method stub
+		return Optional.ofNullable(persistersByName.get(byName)).orElseThrow(
+				() -> new IllegalArgumentException("Could not locate ResourcePersister by name " + byName));
+	}
+
+	@SuppressWarnings("unchecked")
+	public <E extends Metamodel> E unwrap(Class<? super E> type) {
+		return (E) this;
 	}
 
 }

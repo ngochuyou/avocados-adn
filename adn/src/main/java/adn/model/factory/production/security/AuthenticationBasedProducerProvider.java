@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 import adn.application.Constants;
 import adn.application.context.ContextProvider;
 import adn.helpers.Role;
-import adn.helpers.TypeHelper;
+import adn.helpers.ReflectHelper;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
@@ -115,28 +115,28 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 	public <T extends Entity, M extends Model> M produceForAdmin(T entity, Class<M> clazz) {
 
 		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-				.produceForAdminAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
+				.produceForAdminAuthentication(entity, ReflectHelper.newModelOrAbstract(clazz));
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produceForCustomer(T entity, Class<M> clazz) {
 
 		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-				.produceForCustomerAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
+				.produceForCustomerAuthentication(entity, ReflectHelper.newModelOrAbstract(clazz));
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produceForPersonnel(T entity, Class<M> clazz) {
 
 		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-				.produceForPersonnelAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
+				.produceForPersonnelAuthentication(entity, ReflectHelper.newModelOrAbstract(clazz));
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produce(T entity, Class<M> clazz) {
 		// TODO Auto-generated method stub
 		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz)).produce(entity,
-				TypeHelper.newModelOrAbstract(clazz));
+				ReflectHelper.newModelOrAbstract(clazz));
 	}
 
 	@SuppressWarnings("unchecked")

@@ -20,7 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Repository;
 
 import adn.dao.generic.EntityGeneBuilder;
-import adn.helpers.TypeHelper;
+import adn.helpers.ReflectHelper;
 import adn.model.Result;
 import adn.model.entities.Entity;
 import adn.model.specification.Specification;
@@ -35,7 +35,7 @@ import adn.model.specification.SpecificationFactory;
 public class BaseDAO {
 
 	@Autowired
-	protected TypeHelper reflector;
+	protected ReflectHelper reflector;
 
 	@Autowired
 	protected SessionFactory sessionFactory;
@@ -126,9 +126,9 @@ public class BaseDAO {
 	public <T extends Entity, A extends T> Result<A> updateDType(A instance, Class<T> clazz) {
 		Session session = sessionFactory.getCurrentSession();
 		Query<?> query = session.createNativeQuery(
-				"UPDATE " + TypeHelper.getTableName(clazz) + " e SET DTYPE = :type WHERE e.id = :id");
+				"UPDATE " + ReflectHelper.getTableName(clazz) + " e SET DTYPE = :type WHERE e.id = :id");
 
-		query.setParameter("type", TypeHelper.getEntityName(instance.getClass()));
+		query.setParameter("type", ReflectHelper.getEntityName(instance.getClass()));
 		query.setParameter("id", instance.getId());
 
 		int result = query.executeUpdate();

@@ -19,6 +19,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
 import org.hibernate.type.BasicTypeRegistry;
+import org.hibernate.type.spi.TypeConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,7 +89,7 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		// ContextProvider.getApplicationContext().getBean(ResourceManager.class.getName());
 		// or
 		// ContextProvider.getApplicationContext().getBean([Explicit bean name]);
-		ResourceManagerFactory resourceManager = build();
+		ResourceManagerFactory resourceManager = build(sfi.getMetamodel().getTypeConfiguration());
 		ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) ContextProvider
 				.getApplicationContext()).getBeanFactory();
 
@@ -201,10 +202,10 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 				"Failed to register IdentifierGenerators");
 	}
 
-	private ResourceManagerFactory build()
+	private ResourceManagerFactory build(TypeConfiguration typeConfig)
 			throws IllegalAccessException, NoSuchMethodException, SecurityException, NoSuchFieldException {
 		// TODO Auto-generated method stub
-		return new ResourceManagerFactoryImpl(contextBuildingService);
+		return new ResourceManagerFactoryImpl(contextBuildingService, typeConfig);
 	}
 
 	public static void unsupport() {

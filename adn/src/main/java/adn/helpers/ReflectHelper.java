@@ -30,9 +30,9 @@ import adn.model.models.Model;
  *
  */
 @Component
-public class TypeHelper {
+public class ReflectHelper {
 
-	private TypeHelper() {};
+	private ReflectHelper() {};
 
 	public static <T extends Entity> String getEntityName(Class<T> clazz) {
 		javax.persistence.Entity anno = clazz.getDeclaredAnnotation(javax.persistence.Entity.class);
@@ -171,6 +171,18 @@ public class TypeHelper {
 		}
 
 		return fields.toArray(new Field[fields.size()]);
+	}
+
+	public static boolean isParentOf(Class<?> possibleParent, Class<?> child) {
+		Stack<Class<?>> classStack = getClassStack(child);
+
+		while (!classStack.isEmpty()) {
+			if (classStack.pop().equals(possibleParent)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 }

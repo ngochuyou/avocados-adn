@@ -6,6 +6,8 @@ package adn.service.resource.metamodel;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 
+import adn.service.resource.local.ResourcePersister;
+
 /**
  * @author Ngoc Huy
  *
@@ -13,12 +15,12 @@ import org.hibernate.persister.entity.EntityPersister;
 public interface EntityPersisterImplementor<T> extends EntityPersister {
 
 	@Override
-	EntityPersisterImplementor<T> getSubclassEntityPersister(Object instance, SessionFactoryImplementor factory);
+	ResourcePersister<T> getSubclassEntityPersister(Object instance, SessionFactoryImplementor factory);
 
 	@Override
-	EntityPersisterImplementor<T> getEntityPersister();
+	ResourcePersister<T> getEntityPersister();
 
 	@Override
 	EntityTuplizerImplementor<T> getEntityTuplizer();
-
+	
 }

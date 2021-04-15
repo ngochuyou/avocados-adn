@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
-import adn.helpers.TypeHelper;
+import adn.helpers.ReflectHelper;
 import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Entity;
@@ -60,7 +60,7 @@ public class SpecificationFactory implements ContextBuilder {
 						throw new Exception(Genetized.class.getName() + " not found on" + bean.getBeanClassName());
 					}
 
-					specificationMap.put(anno.entityGene(), (Specification<?>) ContextProvider.getApplicationContext().getBean(TypeHelper.getComponentName(clazz)));
+					specificationMap.put(anno.entityGene(), (Specification<?>) ContextProvider.getApplicationContext().getBean(ReflectHelper.getComponentName(clazz)));
 				} catch (Exception e) {
 					e.printStackTrace();
 					SpringApplication.exit(ContextProvider.getApplicationContext());

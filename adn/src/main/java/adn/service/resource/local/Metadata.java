@@ -18,9 +18,11 @@ import org.hibernate.service.Service;
 public class Metadata implements Service {
 
 	private final Map<String, Class<?>> imports = new HashMap<>();
-	
+
 	private volatile Set<String> processedImports = new HashSet<>();
-	
+
+	private volatile boolean allDone = processedImports.size() != imports.size();
+
 	public void addImport(String name, Class<?> type) {
 		imports.put(name, type);
 	}
@@ -28,13 +30,25 @@ public class Metadata implements Service {
 	public Map<String, Class<?>> getImports() {
 		return imports;
 	}
-	
+
 	public void markImportAsDone(String importName) {
 		processedImports.add(importName);
+
+		if (processedImports.size() == imports.size()) {
+			allDone = true;
+		}
 	}
-	
+
 	public synchronized boolean isProcessingDone(String importName) {
 		return processedImports.contains(importName);
+	}
+
+	public Set<String> getProcessedImports() {
+		return processedImports;
+	}
+
+	public boolean isAllDone() {
+		return allDone;
 	}
 
 }

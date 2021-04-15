@@ -14,11 +14,13 @@ import javax.persistence.Query;
 import javax.persistence.SynchronizationType;
 import javax.persistence.criteria.CriteriaBuilder;
 
+import org.hibernate.type.spi.TypeConfiguration;
 import org.springframework.util.Assert;
 
 import adn.application.context.ContextProvider;
 import adn.service.resource.metamodel.Metamodel;
 import adn.service.resource.metamodel.MetamodelImpl;
+import adn.service.resource.metamodel.MetamodelImplementor;
 
 /**
  * @author Ngoc Huy
@@ -36,10 +38,21 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 
 	private final SharedIdentifierGeneratorFactory sharedIdentifierGeneratorFactory;
 
-	public ResourceManagerFactoryImpl(final ContextBuildingService serviceContext) {
+	private final TypeConfiguration typeConfiguration;
+
+	private final Metadata metadata;
+
+	public ResourceManagerFactoryImpl(final ContextBuildingService serviceContext,
+			final TypeConfiguration typeConfiguration) {
 		// TODO Auto-generated constructor stub
 		Assert.notNull(serviceContext, "ContextBuildingService cannot be null");
 
+		Metadata metadata = serviceContext.getService(Metadata.class);
+
+		Assert.notNull(metadata, "Metadata must not be null");
+
+		this.metadata = metadata;
+		this.typeConfiguration = typeConfiguration;
 		buildingService = serviceContext;
 		resourceNamingStrategy = serviceContext.getService(NamingStrategy.class);
 		localStorage = serviceContext.getService(LocalResourceStorage.class);
@@ -98,8 +111,8 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	}
 
 	@Override
-	public Metamodel getMetamodel() {
-		return metamodel;
+	public MetamodelImplementor getMetamodel() {
+		return metamodel.unwrap(MetamodelImplementor.class);
 	}
 
 	@Override
@@ -192,6 +205,18 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	public SharedIdentifierGeneratorFactory getIdentifierGeneratorFactory() {
 		// TODO Auto-generated method stub
 		return sharedIdentifierGeneratorFactory;
+	}
+
+	@Override
+	public TypeConfiguration getTypeConfiguration() {
+		// TODO Auto-generated method stub
+		return typeConfiguration;
+	}
+
+	@Override
+	public Metadata getMetadata() {
+		// TODO Auto-generated method stub
+		return metadata;
 	}
 
 }

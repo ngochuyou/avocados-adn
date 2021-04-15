@@ -7,8 +7,10 @@ import java.io.Serializable;
 
 import javax.persistence.EntityManagerFactory;
 
-import org.hibernate.id.factory.IdentifierGeneratorFactory;
 import org.hibernate.service.Service;
+import org.hibernate.type.spi.TypeConfiguration;
+
+import adn.service.resource.metamodel.MetamodelImplementor;
 
 /**
  * @author Ngoc Huy
@@ -31,7 +33,14 @@ public interface ResourceManagerFactory extends EntityManagerFactory {
 	ContextBuildingService getContextBuildingService();
 
 	SharedIdentifierGeneratorFactory getIdentifierGeneratorFactory();
-	
+
+	TypeConfiguration getTypeConfiguration();
+
+	Metadata getMetadata();
+
+	@Override
+	MetamodelImplementor getMetamodel();
+
 	public interface ServiceWrapper<T> extends Service {
 
 		T unwrap();
