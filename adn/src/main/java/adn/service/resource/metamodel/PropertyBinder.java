@@ -3,7 +3,10 @@
  */
 package adn.service.resource.metamodel;
 
+import static adn.helpers.FunctionHelper.reject;
+
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -17,9 +20,14 @@ import java.time.Year;
 import java.time.YearMonth;
 import java.time.ZonedDateTime;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
+import java.util.stream.Stream;
 
+import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import javax.persistence.metamodel.Attribute;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -34,6 +42,8 @@ import org.hibernate.tuple.UpdateTimestampGeneration;
 import org.hibernate.tuple.ValueGeneration;
 import org.hibernate.tuple.VmValueGeneration;
 
+import adn.service.resource.local.ManagerFactoryEventListener;
+import adn.service.resource.local.ResourceManagerFactory;
 import adn.service.resource.metamodel.MetamodelImpl.IdentifierGenerationHolder;
 import adn.service.resource.metamodel.MetamodelImpl.NoValueGeneration;
 
@@ -41,15 +51,26 @@ import adn.service.resource.metamodel.MetamodelImpl.NoValueGeneration;
  * @author Ngoc Huy
  *
  */
-public class PropertyHelper {
+public class PropertyBinder implements ManagerFactoryEventListener {
 
 	private PropertyAccessStrategy fieldAccess = new PropertyAccessStrategyFieldImpl();
-	
+
+	public static PropertyBinder INSTANCE = new PropertyBinder();
+
+	private PropertyBinder() {}
+
+	@Override
+	public void postBuild(ResourceManagerFactory managerFactory) {
+		// TODO Auto-generated method stub
+		logger.trace("Cleaning up INSTANCE of type " + this.getClass().getName());
+		PropertyBinder.INSTANCE = null;
+	}
+
 	public PropertyAccess createPropertyAccess(Class<?> containerJavaType, String propertyName) {
-		
+
 		return fieldAccess.buildPropertyAccess(containerJavaType, propertyName);
 	}
-	
+
 	public <X> ValueGeneration resolveValueGeneration(ResourceType<X> metamodel, Attribute<?, ?> attribute) {
 		Field f = (Field) attribute.getJavaMember();
 
@@ -110,6 +131,85 @@ public class PropertyHelper {
 		}
 
 		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	public <K, V> KeyValueContext<K, V> determineMapGenericType(Field f) {
+		if (Map.class.isAssignableFrom(f.getType())) {
+			throw new IllegalArgumentException("Unable to extract key, value type out of none-Map collection");
+		}
+
+		ParameterizedType paramType = (ParameterizedType) f.getGenericType();
+
+		return new KeyValueContext<>((Class<K>) paramType.getActualTypeArguments()[0],
+				(Class<V>) paramType.getActualTypeArguments()[1]);
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T> Class<T> determineNonMapGenericType(Field f) {
+		ParameterizedType paramType = (ParameterizedType) f.getGenericType();
+
+		return (Class<T>) paramType.getActualTypeArguments()[0];
+	}
+
+	class KeyValueContext<K, V> {
+
+		Class<K> keyType;
+
+		Class<V> valueType;
+
+		public KeyValueContext(Class<K> keyType, Class<V> valueType) {
+			super();
+			this.keyType = keyType;
+			this.valueType = valueType;
+		}
+
+	}
+
+	public boolean isOptional(Field f) {
+		Column colAnno = f.getDeclaredAnnotation(Column.class);
+
+		if (colAnno == null) {
+			return false;
+		}
+
+		return colAnno.nullable();
+	}
+
+	public boolean isIdentifierPresented(Class<?> clazz) throws SecurityException, IllegalAccessException {
+		// @formatter:off
+		long n = 0;
+		
+		return (n = Stream.of(clazz.getDeclaredFields())
+				.map(field -> field.getDeclaredAnnotation(Id.class) != null)
+				.filter(pred -> pred)
+				.count()) < 2 ? n == 1 : reject("More than one @Id were found in type: " + clazz);
+		// @formatter:on
+	}
+
+	public boolean isVersionPresented(Class<?> clazz) throws SecurityException, IllegalAccessException {
+		// @formatter:off
+		long n = 0;
+		
+		return (n = Stream.of(clazz.getDeclaredFields())
+				.map(field -> field.getDeclaredAnnotation(javax.persistence.Version.class) != null)
+				.filter(pred -> pred)
+				.count()) < 2 ? n == 1 : reject("More than one @Version were found in type: " + clazz);
+		// @formatter:on
+	}
+
+	public boolean isPlural(Field f) {
+		return Collection.class.isAssignableFrom(f.getType());
+	}
+
+	public boolean isUpdatable(Field f) {
+		Column colAnno = f.getDeclaredAnnotation(Column.class);
+
+		if (colAnno == null) {
+			return false;
+		}
+
+		return colAnno.updatable();
 	}
 
 }

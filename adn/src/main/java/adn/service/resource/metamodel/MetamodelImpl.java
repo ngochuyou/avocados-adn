@@ -3,11 +3,9 @@
  */
 package adn.service.resource.metamodel;
 
-import static adn.helpers.FunctionHelper.reject;
 import static adn.service.resource.local.ResourceManagerFactoryBuilder.unsupport;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,9 +17,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import javax.persistence.Column;
 import javax.persistence.Id;
 import javax.persistence.PersistenceException;
 import javax.persistence.metamodel.Attribute.PersistentAttributeType;
@@ -60,6 +56,7 @@ import adn.service.resource.local.NamingStrategy;
 import adn.service.resource.local.ResourceManagerFactory;
 import adn.service.resource.local.ResourcePersister;
 import adn.service.resource.local.ResourcePersisterImpl;
+import adn.service.resource.metamodel.PropertyBinder.KeyValueContext;
 
 /**
  * @author Ngoc Huy
@@ -215,12 +212,22 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 		logger.trace("Resolving persisters");
 
 		for (ResourceType<?> metamodel : resourceTypesByName.values()) {
-			ResourcePersister<?> persister;
+			if (metamodel.getSupertype() == null) {
+				fromRoot(metamodel, (node) -> {
+					ResourcePersister<?> persister;
 
-			persistersByName.put(metamodel.getName(), persister = createPersister(metamodel));
-			persister.generateEntityDefinition();
-			persister.postInstantiate();
+					persistersByName.put(node.getName(), persister = createPersister(node));
+					persister.generateEntityDefinition();
+					persister.postInstantiate();
+				});
+			}
 		}
+	}
+
+	private <T> void fromRoot(ResourceType<? extends T> root, Consumer<ResourceType<? extends T>> consumer) {
+		consumer.accept(root);
+
+		root.getSubclassNames().forEach(name -> fromRoot(entity(name), consumer));
 	}
 
 	private <T> ResourcePersister<T> createPersister(ResourceType<T> metamodel) {
@@ -240,8 +247,8 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 			}
 
 			if (rawIdentifier.getDeclaringType().equals(metamodel)) {
-				logger.trace("Applying IDENTIFIER " + rawIdentifier.getName() + " on " + metamodel.getName() + " type "
-						+ rawIdentifier.getType().getTypeName());
+				logger.trace("Applying IDENTIFIER " + rawIdentifier.getName() + " type "
+						+ rawIdentifier.getType().getTypeName() + " on " + metamodel.getName());
 				metamodel.getInFlightAccess().applyIdAttribute((SingularPersistentAttribute<X, ?>) rawIdentifier);
 			}
 		}
@@ -317,13 +324,14 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 			PluralAttributeBuilder<D, C, E, ?> builder;
 
 			if (collectionType.equals(Map.class)) {
-				KeyValueContext<E, ?> kvPair = INSTANCE.determineMapGenericType(f);
+				KeyValueContext<E, ?> kvPair = PropertyBinder.INSTANCE.determineMapGenericType(f);
 
 				builder = new PluralAttributeBuilder<>(owner, INSTANCE.resolveBasicType(kvPair.keyType), collectionType,
 						INSTANCE.resolveBasicType(kvPair.valueType));
 			} else {
 				builder = new PluralAttributeBuilder<>(owner,
-						INSTANCE.resolveBasicType(INSTANCE.determineNonMapGenericType(f)), collectionType, null);
+						INSTANCE.resolveBasicType(PropertyBinder.INSTANCE.determineNonMapGenericType(f)),
+						collectionType, null);
 			}
 
 			Property prop = new Property();
@@ -332,23 +340,6 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 			builder.property(prop);
 
 			return builder.build();
-		}
-
-		private <K, V> KeyValueContext<K, V> determineMapGenericType(Field f) {
-			if (Map.class.isAssignableFrom(f.getType())) {
-				throw new IllegalArgumentException("Unable to extract key, value type out of none-Map collection");
-			}
-
-			ParameterizedType paramType = (ParameterizedType) f.getGenericType();
-
-			return new KeyValueContext<>((Class<K>) paramType.getActualTypeArguments()[0],
-					(Class<V>) paramType.getActualTypeArguments()[1]);
-		}
-
-		private <T> Class<T> determineNonMapGenericType(Field f) {
-			ParameterizedType paramType = (ParameterizedType) f.getGenericType();
-
-			return (Class<T>) paramType.getActualTypeArguments()[0];
 		}
 
 		private String resolveTypeName(Class<?> type) {
@@ -388,20 +379,6 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 			return newType;
 		}
 
-		class KeyValueContext<K, V> {
-
-			Class<K> keyType;
-
-			Class<V> valueType;
-
-			public KeyValueContext(Class<K> keyType, Class<V> valueType) {
-				super();
-				this.keyType = keyType;
-				this.valueType = valueType;
-			}
-
-		}
-
 	}
 
 	private boolean isProcessingDone(String name) {
@@ -435,8 +412,8 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 			// @formatter:off
 			ResourceType<J> metamodel = new ResourceType<>(
 					type, name,
-					isIdentifierPresented(type),
-					isVersionPresented(type),
+					PropertyBinder.INSTANCE.isIdentifierPresented(type),
+					PropertyBinder.INSTANCE.isVersionPresented(type),
 					type.getSuperclass() != null && type.getSuperclass() != Object.class ? processModel(
 							getImports()
 								.entrySet().stream()
@@ -486,9 +463,10 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 						break;
 					}
 					case PROPERTY: {
-						if (!isPlural(f)) {
+						if (!PropertyBinder.INSTANCE.isPlural(f)) {
 							logger.trace("Creating SingularAttribute for type: " + metamodel.getJavaType());
-							attribute = AttributeFactory.createSingularAttribute(metamodel, f, isAttributeOptional(f));
+							attribute = AttributeFactory.createSingularAttribute(metamodel, f,
+									PropertyBinder.INSTANCE.isOptional(f));
 							break;
 						}
 
@@ -504,42 +482,6 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 				metamodel.getInFlightAccess().addAttribute(attribute);
 			}
-		}
-
-		private boolean isAttributeOptional(Field f) {
-			Column colAnno = f.getDeclaredAnnotation(Column.class);
-
-			if (colAnno == null) {
-				return false;
-			}
-
-			return colAnno.nullable();
-		}
-
-		private boolean isIdentifierPresented(Class<?> clazz) throws SecurityException, IllegalAccessException {
-			// @formatter:off
-			long n = 0;
-			
-			return (n = Stream.of(clazz.getDeclaredFields())
-					.map(field -> field.getDeclaredAnnotation(Id.class) != null)
-					.filter(pred -> pred)
-					.count()) < 2 ? n == 1 : reject("More than one @Id were found in type: " + clazz);
-			// @formatter:on
-		}
-
-		private boolean isVersionPresented(Class<?> clazz) throws SecurityException, IllegalAccessException {
-			// @formatter:off
-			long n = 0;
-			
-			return (n = Stream.of(clazz.getDeclaredFields())
-					.map(field -> field.getDeclaredAnnotation(javax.persistence.Version.class) != null)
-					.filter(pred -> pred)
-					.count()) < 2 ? n == 1 : reject("More than one @Version were found in type: " + clazz);
-			// @formatter:on
-		}
-
-		private boolean isPlural(Field f) {
-			return Collection.class.isAssignableFrom(f.getType());
 		}
 
 	}

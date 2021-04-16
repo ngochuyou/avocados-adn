@@ -14,6 +14,8 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.model.domain.NavigableRole;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.property.access.spi.PropertyAccess;
+import org.hibernate.tuple.ValueGeneration;
 import org.hibernate.tuple.entity.EntityMetamodel;
 
 /**
@@ -142,8 +144,6 @@ public interface ResourcePersister<T> extends EntityPersister {
 		// TODO Auto-generated method stub
 		return EntityMode.POJO;
 	}
-	
-
 
 	@Override
 	@Deprecated
@@ -152,7 +152,19 @@ public interface ResourcePersister<T> extends EntityPersister {
 		unsupport();
 		return null;
 	}
-	
+
 	<E extends ResourcePersister<T>> E unwrap(Class<? super E> type);
+
+	PropertyAccess getPropertyAccess(String propertyName);
+
+	PropertyAccess getPropertyAccess(int propertyIndex);
+
+	PropertyAccess locatePropertyAccess(String propertyName);
+
+	ValueGeneration getValueGeneration(String propertyName);
+
+	ValueGeneration getValueGeneration(int propertyIndex);
+
+	ValueGeneration locateValueGeneration(String propertyName);
 
 }

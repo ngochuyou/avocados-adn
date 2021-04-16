@@ -5,7 +5,6 @@ package adn.service.resource.metamodel;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import org.hibernate.graph.spi.SubGraphImplementor;
 import org.hibernate.metamodel.model.domain.internal.AbstractIdentifiableType;
@@ -166,14 +165,6 @@ public class ResourceType<D> extends AbstractIdentifiableType<D> implements Enti
 		// TODO Auto-generated method stub
 		ResourceManagerFactoryBuilder.unsupport();
 		return null;
-	}
-
-	public void consumeEach(Consumer<ResourceType<? super D>> consumer) {
-		ResourceType<? super D> type = this;
-
-		do {
-			consumer.accept(type);
-		} while ((type = type.locateRootType()) != null);
 	}
 
 }

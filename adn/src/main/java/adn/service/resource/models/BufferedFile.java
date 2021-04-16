@@ -6,6 +6,7 @@ package adn.service.resource.models;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 
 /**
@@ -15,8 +16,10 @@ import javax.persistence.Entity;
 @Entity
 public class BufferedFile extends FileResource {
 
+	@Column(nullable = true)
 	private BufferedOutputStream os;
 
+	@Column(nullable = true)
 	private BufferedInputStream is;
 
 	public BufferedFile(BufferedOutputStream os, BufferedInputStream is) {

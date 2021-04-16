@@ -36,6 +36,8 @@ import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
 import adn.service.resource.local.ResourceManagerFactory.ServiceWrapper;
 import adn.service.resource.metamodel.DefaultResourceIdentifierGenerator;
+import adn.service.resource.metamodel.EntityBinder;
+import adn.service.resource.metamodel.PropertyBinder;
 
 /**
  * @author Ngoc Huy
@@ -56,10 +58,15 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 
 	private Set<String> identifierGenerators;
 
+	private Set<ManagerFactoryEventListener> eventListeners = new HashSet<>();
+
 	@Override
 	public void buildAfterStartUp() throws Exception {
 		// TODO Auto-generated method stub
 		logger.info(getLoggingPrefix(this) + "Building " + this.getClass());
+		// register STATIC services
+		eventListeners.add(PropertyBinder.INSTANCE);
+		eventListeners.add(EntityBinder.INSTANCE);
 		// init identifierGenerators
 		identifierGenerators = new HashSet<>();
 		// create building service
@@ -93,6 +100,8 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) ContextProvider
 				.getApplicationContext()).getBeanFactory();
 
+		postBuild();
+
 		beanFactory.registerSingleton(resourceManager.getClass().getName(), resourceManager);
 		beanFactory.registerAlias(resourceManager.getClass().getName(), ResourceManagerFactory.class.getName());
 		logger.info(getLoggingPrefix(this) + "Finished building " + this.getClass());
@@ -102,7 +111,6 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		importIdentifierGenerator();
 		importDeclaredIdentifierGenerator();
 		importResourceClass();
-		postBuildAssert();
 	}
 
 	private void importResourceClass() {
@@ -193,13 +201,14 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		return true;
 	}
 
-	private void postBuildAssert() {
+	private void postBuild() {
 		Assert.isTrue(
 				Stream.of(identifierGenerators.toArray(String[]::new))
 						.map(strategy -> contextBuildingService.getService(MutableIdentifierGeneratorFactory.class)
 								.getIdentifierGeneratorClass(strategy) == null)
 						.filter(ele -> ele).findAny().isEmpty(),
 				"Failed to register IdentifierGenerators");
+		eventListeners.forEach(listener -> listener.postBuild(null));
 	}
 
 	private ResourceManagerFactory build(TypeConfiguration typeConfig)

@@ -10,6 +10,7 @@ import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
 import org.springframework.util.Assert;
 
+import adn.service.resource.local.ManagerFactoryEventListener;
 import adn.service.resource.local.ResourceManagerFactory;
 import adn.service.resource.local.SharedIdentifierGeneratorFactory;
 
@@ -17,7 +18,18 @@ import adn.service.resource.local.SharedIdentifierGeneratorFactory;
  * @author Ngoc Huy
  *
  */
-public class EntityHelper {
+public class EntityBinder implements ManagerFactoryEventListener {
+
+	public static EntityBinder INSTANCE = new EntityBinder();
+
+	private EntityBinder() {}
+
+	@Override
+	public void postBuild(ResourceManagerFactory managerFactory) {
+		// TODO Auto-generated method stub
+		logger.trace("Cleaning up INSTANCE of type " + this.getClass().getName());
+		EntityBinder.INSTANCE = null;
+	}
 
 	public <X, T> IdentifierGenerator locateIdentifierGenerator(ResourceType<X> metamodel,
 			ResourceManagerFactory managerFactory) throws IllegalAccessException {
