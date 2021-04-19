@@ -4,6 +4,7 @@
 package adn.service.resource.models;
 
 import java.util.Date;
+import java.util.Set;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -32,6 +33,8 @@ public class FileResource implements Resource {
 	private String directoryPath;
 
 	private String extension;
+
+	private Set<String> alias;
 
 	/**
 	 * 
@@ -88,6 +91,14 @@ public class FileResource implements Resource {
 
 	public void setExtension(String extension) {
 		this.extension = extension;
+	}
+
+	public Set<String> getAlias() {
+		return alias;
+	}
+
+	public void setAlias(Set<String> alias) {
+		this.alias = alias;
 	}
 
 }

@@ -24,7 +24,6 @@ public class ResourceType<D> extends AbstractIdentifiableType<D> implements Enti
 
 	private final boolean hasSubclasses;
 	private final Set<String> subclassNames;
-
 	// @formatter:off
 	public ResourceType(
 		Class<D> entityType,
@@ -166,5 +165,7 @@ public class ResourceType<D> extends AbstractIdentifiableType<D> implements Enti
 		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
+	
+	
 
 }

@@ -5,7 +5,9 @@ package adn.service.resource.metamodel;
 
 import static adn.helpers.FunctionHelper.reject;
 
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
 import java.lang.reflect.ParameterizedType;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -23,12 +25,15 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.metamodel.Attribute;
+import javax.persistence.metamodel.Attribute.PersistentAttributeType;
+import javax.persistence.metamodel.PluralAttribute;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GeneratorType;
@@ -53,7 +58,7 @@ import adn.service.resource.metamodel.MetamodelImpl.NoValueGeneration;
  */
 public class PropertyBinder implements ManagerFactoryEventListener {
 
-	private PropertyAccessStrategy fieldAccess = new PropertyAccessStrategyFieldImpl();
+	private final PropertyAccessStrategy fieldAccess = new PropertyAccessStrategyFieldImpl();
 
 	public static PropertyBinder INSTANCE = new PropertyBinder();
 
@@ -76,6 +81,10 @@ public class PropertyBinder implements ManagerFactoryEventListener {
 
 		if (attribute instanceof Identifier && f.getDeclaredAnnotation(GeneratedValue.class) != null) {
 			return IdentifierGenerationHolder.INSTANCE;
+		}
+
+		if (attribute instanceof PluralAttribute) {
+			return NoValueGeneration.INSTANCE;
 		}
 
 		if (f.getDeclaredAnnotation(CreationTimestamp.class) != null) {
@@ -166,8 +175,12 @@ public class PropertyBinder implements ManagerFactoryEventListener {
 
 	}
 
-	public boolean isOptional(Field f) {
-		Column colAnno = f.getDeclaredAnnotation(Column.class);
+	public boolean isOptional(Member f) {
+		if (!(f instanceof AccessibleObject)) {
+			throw new IllegalArgumentException("Invalid member " + f.getName());
+		}
+
+		Column colAnno = ((AccessibleObject) f).getDeclaredAnnotation(Column.class);
 
 		if (colAnno == null) {
 			return false;
@@ -198,8 +211,11 @@ public class PropertyBinder implements ManagerFactoryEventListener {
 		// @formatter:on
 	}
 
-	public boolean isPlural(Field f) {
-		return Collection.class.isAssignableFrom(f.getType());
+	public PersistentAttributeType determineNonBasicType(Class<?> type) {
+		return Optional
+				.ofNullable(Collection.class.isAssignableFrom(type) ? PersistentAttributeType.ELEMENT_COLLECTION
+						: PersistentAttributeType.ONE_TO_ONE)
+				.orElseThrow(() -> new IllegalArgumentException("Unable to determine type of " + type.getName()));
 	}
 
 	public boolean isUpdatable(Field f) {
@@ -210,6 +226,24 @@ public class PropertyBinder implements ManagerFactoryEventListener {
 		}
 
 		return colAnno.updatable();
+	}
+
+	enum AttributeRole {
+
+		IDENTIFIER, VERSION, PROPERTY;
+
+		static AttributeRole getRole(Field f) {
+			Id idAnno = f.getDeclaredAnnotation(Id.class);
+			javax.persistence.Version versionAnno = f.getDeclaredAnnotation(javax.persistence.Version.class);
+
+			if (idAnno != null && versionAnno != null) {
+				throw new IllegalArgumentException(
+						"@Id and @Version collision on " + f.getDeclaringClass() + "." + f.getName());
+			}
+
+			return idAnno != null ? IDENTIFIER : versionAnno != null ? VERSION : PROPERTY;
+		}
+
 	}
 
 }

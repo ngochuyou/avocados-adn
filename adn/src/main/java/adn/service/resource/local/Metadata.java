@@ -20,7 +20,6 @@ public class Metadata implements Service {
 	private final Map<String, Class<?>> imports = new HashMap<>();
 
 	private volatile Set<String> processedImports = new HashSet<>();
-
 	private volatile boolean allDone = processedImports.size() != imports.size();
 
 	public void addImport(String name, Class<?> type) {
@@ -31,7 +30,7 @@ public class Metadata implements Service {
 		return imports;
 	}
 
-	public void markImportAsDone(String importName) {
+	public synchronized void markImportAsDone(String importName) {
 		processedImports.add(importName);
 
 		if (processedImports.size() == imports.size()) {

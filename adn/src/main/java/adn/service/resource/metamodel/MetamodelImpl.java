@@ -14,36 +14,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import javax.persistence.Id;
 import javax.persistence.PersistenceException;
-import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 import javax.persistence.metamodel.EmbeddableType;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.ManagedType;
 
 import org.hibernate.EntityNameResolver;
 import org.hibernate.graph.spi.RootGraphImplementor;
-import org.hibernate.mapping.Property;
-import org.hibernate.metamodel.model.domain.internal.BasicTypeImpl;
-import org.hibernate.metamodel.model.domain.internal.PluralAttributeBuilder;
-import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl;
 import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl.Identifier;
 import org.hibernate.metamodel.model.domain.internal.SingularAttributeImpl.Version;
-import org.hibernate.metamodel.model.domain.spi.BasicTypeDescriptor;
 import org.hibernate.metamodel.model.domain.spi.EmbeddedTypeDescriptor;
 import org.hibernate.metamodel.model.domain.spi.PersistentAttributeDescriptor;
-import org.hibernate.metamodel.model.domain.spi.PluralPersistentAttribute;
 import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.service.Service;
 import org.hibernate.tuple.GenerationTiming;
 import org.hibernate.tuple.ValueGeneration;
 import org.hibernate.tuple.ValueGenerator;
+import org.hibernate.type.BasicTypeRegistry;
 import org.hibernate.type.spi.TypeConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +47,7 @@ import adn.service.resource.local.NamingStrategy;
 import adn.service.resource.local.ResourceManagerFactory;
 import adn.service.resource.local.ResourcePersister;
 import adn.service.resource.local.ResourcePersisterImpl;
-import adn.service.resource.metamodel.PropertyBinder.KeyValueContext;
+import adn.service.resource.metamodel.PropertyBinder.AttributeRole;
 
 /**
  * @author Ngoc Huy
@@ -93,6 +84,10 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	@SuppressWarnings("unchecked")
 	public <X> ResourceType<X> entity(String name) {
 		// TODO Auto-generated method stub
+		if (!resourceTypesByName.containsKey(name)) {
+			return null;
+		}
+
 		return (ResourceType<X>) resourceTypesByName.get(name);
 	}
 
@@ -148,7 +143,13 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	@Override
 	public void prepare() throws PersistenceException {
 		// TODO Auto-generated method stub
-		managerFactory.getContextBuildingService().register(AttributeFactory.class, AttributeFactory.INSTANCE);
+		BasicTypeRegistry typeRegistry = managerFactory.getContextBuildingService().getServiceWrapper(
+				BasicTypeRegistry.class, wrapper -> wrapper.unwrap().getClass().equals(BasicTypeRegistry.class),
+				wrapper -> wrapper.orElseThrow().unwrap());
+
+		Assert.notNull(typeRegistry, "BasicTypeRegistry must not be null");
+		managerFactory.getContextBuildingService().register(CentricAttributeContext.class,
+				new CentricAttributeContext.CentricAttributeContextImpl(typeRegistry, this));
 		resourceNameResolvers.add(managerFactory.getContextBuildingService().getService(NamingStrategy.class));
 	}
 
@@ -187,8 +188,11 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	private void imports() throws IllegalAccessException {
 		ContextBuildingService contextService = managerFactory.getContextBuildingService();
 		Metadata metadata = contextService.getService(Metadata.class);
+
+		Assert.notNull(metadata, "Unable to locate Metadata");
+
 		Map<String, Class<?>> imports = metadata.getImports();
-		ModelProcessor modelProcessor = new ModelProcessor();
+		ModelProcessor modelProcessor = new ModelProcessor(contextService.getService(CentricAttributeContext.class));
 
 		for (Map.Entry<String, Class<?>> entry : imports.entrySet()) {
 			modelProcessor.processModel(entry.getKey(), entry.getValue(), null);
@@ -291,96 +295,6 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 		logger.trace(metamodel.getName() + " extends " + ((EntityType<?>) metamodel.getSupertype()).getName());
 	}
 
-	@SuppressWarnings({ "unchecked", "serial" })
-	public static class AttributeFactory implements Service {
-
-		static volatile Map<String, BasicTypeDescriptor<?>> TYPE_CONTAINER = new ConcurrentHashMap<>();
-
-		public static AttributeFactory INSTANCE = new AttributeFactory();
-
-		static <D, T> SingularPersistentAttribute<D, T> createIdentifier(ResourceType<D> owner, Field f) {
-			// TODO Auto-generated method stub
-			return new Identifier<>(owner, f.getName(), INSTANCE.resolveBasicType((Class<T>) f.getType()), f,
-					PersistentAttributeType.BASIC);
-		}
-
-		static <D, T> SingularPersistentAttribute<D, T> createVersion(ResourceType<D> owner, Field f) {
-			return new Version<>(owner, f.getName(), PersistentAttributeType.BASIC,
-					INSTANCE.resolveBasicType((Class<T>) f.getType()), f);
-		}
-
-		static <D, T> SingularPersistentAttribute<D, T> createSingularAttribute(ResourceType<D> owner, Field f,
-				boolean isOptional) {
-			return new SingularAttributeImpl<>(owner, f.getName(), PersistentAttributeType.BASIC,
-					INSTANCE.resolveBasicType((Class<T>) f.getType()), f, false, false, isOptional);
-		}
-
-		static <D, C, E> PluralPersistentAttribute<D, C, E> createPluralAttribute(ResourceType<D> owner, Field f) {
-			if (!Collection.class.isAssignableFrom(f.getType())) {
-				throw new IllegalArgumentException("PluralAttribute describes Collection property only");
-			}
-
-			Class<C> collectionType = (Class<C>) f.getType();
-			PluralAttributeBuilder<D, C, E, ?> builder;
-
-			if (collectionType.equals(Map.class)) {
-				KeyValueContext<E, ?> kvPair = PropertyBinder.INSTANCE.determineMapGenericType(f);
-
-				builder = new PluralAttributeBuilder<>(owner, INSTANCE.resolveBasicType(kvPair.keyType), collectionType,
-						INSTANCE.resolveBasicType(kvPair.valueType));
-			} else {
-				builder = new PluralAttributeBuilder<>(owner,
-						INSTANCE.resolveBasicType(PropertyBinder.INSTANCE.determineNonMapGenericType(f)),
-						collectionType, null);
-			}
-
-			Property prop = new Property();
-
-			prop.setName(f.getName());
-			builder.property(prop);
-
-			return builder.build();
-		}
-
-		private String resolveTypeName(Class<?> type) {
-			return type.getName();
-		}
-
-		private <T> BasicTypeDescriptor<T> resolveBasicType(Class<T> type) {
-			String typeName = resolveTypeName(type);
-
-			if (TYPE_CONTAINER.containsKey(typeName)) {
-				BasicTypeDescriptor<?> candidate = TYPE_CONTAINER.get(typeName);
-
-				if (candidate.getJavaType().equals(type)) {
-					return (BasicTypeDescriptor<T>) candidate;
-				}
-
-				throw new IllegalArgumentException(String.format(
-						"Unable to locate BasicTypeDescriptor due to type confliction. Required type %s, found type %s",
-						type, candidate.getJavaType()));
-			}
-
-			return addType(new BasicTypeImpl<>(type, null));
-		}
-
-		static <T> BasicTypeDescriptor<T> addType(BasicTypeDescriptor<T> newType) {
-			if (TYPE_CONTAINER.containsKey(INSTANCE.resolveTypeName(newType.getJavaType()))) {
-				MetamodelImpl.logger.trace(String.format("Ignoring BasicType contribution: [%s, %s]",
-						INSTANCE.resolveTypeName(newType.getJavaType()), newType.getJavaType()));
-
-				return newType;
-			}
-
-			TYPE_CONTAINER.put(newType.getTypeName(), newType);
-			MetamodelImpl.logger.trace(String.format("New BasicType contribution: [%s, %s]",
-					INSTANCE.resolveTypeName(newType.getJavaType()), newType.getJavaType()));
-
-			return newType;
-		}
-
-	}
-
 	private boolean isProcessingDone(String name) {
 		return getManagerFactory().getContextBuildingService().getService(Metadata.class).isProcessingDone(name);
 	}
@@ -395,6 +309,14 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 	private class ModelProcessor {
 
+		private final CentricAttributeContext attributeContext;
+
+		private ModelProcessor(CentricAttributeContext attributeContext) {
+			// TODO Auto-generated constructor stub
+			Assert.notNull(attributeContext, "CentricAttributeContext must not be null");
+			this.attributeContext = attributeContext;
+		}
+
 		public <J> ResourceType<J> processModel(String name, Class<J> type, Consumer<ResourceType<J>> childCallback)
 				throws IllegalAccessException {
 			if (isProcessingDone(name)) {
@@ -405,7 +327,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 					childCallback.accept(entity(name));
 				}
 
-				return entity(type);
+				return entity(name);
 			}
 
 			logger.trace(String.format("Processing model. Name: %s. Type: %s", name, type));
@@ -414,7 +336,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 					type, name,
 					PropertyBinder.INSTANCE.isIdentifierPresented(type),
 					PropertyBinder.INSTANCE.isVersionPresented(type),
-					type.getSuperclass() != null && type.getSuperclass() != Object.class ? processModel(
+					ReflectHelper.hasSuperClass(type) ? processModel(
 							getImports()
 								.entrySet().stream()
 								.filter(entry -> entry.getValue().equals(type.getSuperclass()))
@@ -437,7 +359,6 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 		}
 
 		private boolean isRoot(Class<?> type) {
-
 			return managerFactory.getMetadata().getImports().values().stream()
 					.filter(imported -> ReflectHelper.isParentOf(type, imported)).count() != 0;
 		}
@@ -453,25 +374,33 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 				switch (role) {
 					case IDENTIFIER: {
+						if (!attributeContext.isBasic(f.getType())) {
+							throw new IllegalArgumentException("IDENTIFIER type must be basic type");
+						}
+
 						logger.trace("Creating IDENTIFIER for type: " + metamodel.getJavaType());
-						attribute = AttributeFactory.createIdentifier(metamodel, f);
+						attribute = attributeContext.createIdentifier(metamodel, f);
 						break;
 					}
 					case VERSION: {
+						if (!attributeContext.isBasic(f.getType())) {
+							throw new IllegalArgumentException("VERSION type must be basic type");
+						}
+
 						logger.trace("Creating VERSION for type: " + metamodel.getJavaType());
-						attribute = AttributeFactory.createVersion(metamodel, f);
+						attribute = attributeContext.createVersion(metamodel, f);
 						break;
 					}
 					case PROPERTY: {
-						if (!PropertyBinder.INSTANCE.isPlural(f)) {
+						if (!attributeContext.isPlural(f.getType())) {
 							logger.trace("Creating SingularAttribute for type: " + metamodel.getJavaType());
-							attribute = AttributeFactory.createSingularAttribute(metamodel, f,
+							attribute = attributeContext.createSingularAttribute(metamodel, f,
 									PropertyBinder.INSTANCE.isOptional(f));
 							break;
 						}
 
 						logger.trace("Creating PluralAttribute for type: " + metamodel.getJavaType());
-						attribute = AttributeFactory.createPluralAttribute(metamodel, f);
+						attribute = attributeContext.createPluralAttribute(metamodel, f);
 						break;
 					}
 				}
@@ -482,24 +411,6 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 				metamodel.getInFlightAccess().addAttribute(attribute);
 			}
-		}
-
-	}
-
-	private static enum AttributeRole {
-
-		IDENTIFIER, VERSION, PROPERTY;
-
-		static AttributeRole getRole(Field f) {
-			Id idAnno = f.getDeclaredAnnotation(Id.class);
-			javax.persistence.Version versionAnno = f.getDeclaredAnnotation(javax.persistence.Version.class);
-
-			if (idAnno != null && versionAnno != null) {
-				throw new IllegalArgumentException(
-						"@Id and @Version collision on " + f.getDeclaringClass() + "." + f.getName());
-			}
-
-			return idAnno != null ? IDENTIFIER : versionAnno != null ? VERSION : PROPERTY;
 		}
 
 	}
@@ -640,7 +551,6 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	@Override
 	public void close() {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -680,9 +590,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	@Override
 	public ResourcePersister<?> locateEntityPersister(@SuppressWarnings("rawtypes") Class byClass) {
 		// TODO Auto-generated method stub
-		String resourceName = importedClassNames.get(byClass.getName());
-
-		return Optional.ofNullable(persistersByName.get(resourceName))
+		return Optional.ofNullable(locateEntityPersister(importedClassNames.get(byClass.getName())))
 				.orElseThrow(() -> new IllegalArgumentException("Could not locate ResourcePersister by " + byClass));
 	}
 

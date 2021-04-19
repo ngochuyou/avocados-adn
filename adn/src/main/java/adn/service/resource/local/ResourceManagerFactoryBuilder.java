@@ -65,8 +65,6 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		// TODO Auto-generated method stub
 		logger.info(getLoggingPrefix(this) + "Building " + this.getClass());
 		// register STATIC services
-		eventListeners.add(PropertyBinder.INSTANCE);
-		eventListeners.add(EntityBinder.INSTANCE);
 		// init identifierGenerators
 		identifierGenerators = new HashSet<>();
 		// create building service
@@ -84,6 +82,8 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 
 		Assert.notNull(basicTypeRegistry, "Unable to locate BasicTypeRegistry");
 		contextBuildingService.register(ServiceWrapper.class, new ServiceWrapperImpl<>(basicTypeRegistry));
+		eventListeners.add(PropertyBinder.INSTANCE);
+		eventListeners.add(EntityBinder.INSTANCE);
 		// register naming-strategy
 		contextBuildingService.register(NamingStrategy.class, NamingStrategy.DEFAULT_NAMING_STRATEGY);
 		contextBuildingService.register(LocalResourceStorage.class, localStorage);

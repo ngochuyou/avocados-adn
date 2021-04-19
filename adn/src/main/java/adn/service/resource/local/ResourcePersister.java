@@ -17,6 +17,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.tuple.ValueGeneration;
 import org.hibernate.tuple.entity.EntityMetamodel;
+import org.hibernate.type.Type;
 
 /**
  * @author Ngoc Huy
@@ -166,5 +167,7 @@ public interface ResourcePersister<T> extends EntityPersister {
 	ValueGeneration getValueGeneration(int propertyIndex);
 
 	ValueGeneration locateValueGeneration(String propertyName);
+
+	Type locatePropertyType(String properyName);
 
 }

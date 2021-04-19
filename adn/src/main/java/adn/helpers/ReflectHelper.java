@@ -3,12 +3,6 @@
  */
 package adn.helpers;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -145,23 +139,6 @@ public class ReflectHelper {
 		return (M) target;
 	}
 
-	public static <T extends Serializable> byte[] serialize(T instance) throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		ObjectOutputStream dos = new ObjectOutputStream(baos);
-
-		dos.writeObject(instance);
-		dos.close();
-
-		return baos.toByteArray();
-	}
-
-	@SuppressWarnings("unchecked")
-	public static <T> T deserialize(byte[] serialized, Class<T> clazz) throws IOException, ClassNotFoundException {
-		ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(serialized));
-
-		return (T) ois.readObject();
-	}
-
 	public static Field[] getAllFields(Class<?> type) {
 		List<Field> fields = new ArrayList<>();
 		Stack<Class<?>> classStack = getClassStack(type);
@@ -183,6 +160,10 @@ public class ReflectHelper {
 		}
 
 		return false;
+	}
+	
+	public static boolean hasSuperClass(Class<?> clz) {
+		return clz.getSuperclass() != null && clz.getSuperclass() != Object.class;
 	}
 
 }
