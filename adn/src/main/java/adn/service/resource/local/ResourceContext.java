@@ -6,13 +6,14 @@ package adn.service.resource.local;
 import java.io.Serializable;
 
 import org.hibernate.LockMode;
+import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.Status;
 
 /**
  * @author Ngoc Huy
  *
  */
-public interface ResourceContext {
+public interface ResourceContext extends PersistenceContext {
 
 	Object find(ResourceKey<?> key);
 
@@ -50,7 +51,7 @@ public interface ResourceContext {
 	ResourceEntry<?> removeEntry(Object instance);
 
 	boolean hasEntry(Object instance);
-	
+
 	void remove(Serializable identifier);
 
 	void clear();

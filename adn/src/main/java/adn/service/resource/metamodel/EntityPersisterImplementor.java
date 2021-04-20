@@ -22,5 +22,5 @@ public interface EntityPersisterImplementor<T> extends EntityPersister {
 
 	@Override
 	EntityTuplizerImplementor<T> getEntityTuplizer();
-	
+
 }

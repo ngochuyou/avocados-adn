@@ -78,7 +78,7 @@ public class PersistEventExecutor<T> implements EventExecutor<T, PersistentEvent
 
 	private void executeWhenDeleted(PersistentEvent<T> event) {
 		logger.trace("Removing DELETE-ACTION from ActionQueue");
-		event.getResourceManager().getActionQueue();
+//		event.getResourceManager().getActionQueue();
 	}
 
 }

@@ -5,6 +5,8 @@ package adn.service.resource.local;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +24,7 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
+import org.hibernate.dialect.lock.LockingStrategy;
 import org.hibernate.engine.internal.MutableEntityEntryFactory;
 import org.hibernate.engine.spi.CascadeStyle;
 import org.hibernate.engine.spi.EntityEntryFactory;
@@ -30,7 +33,10 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.ValueInclusion;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.internal.FilterAliasGenerator;
+import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.metadata.ClassMetadata;
+import org.hibernate.persister.entity.Loadable;
+import org.hibernate.persister.entity.Lockable;
 import org.hibernate.persister.entity.MultiLoadOptions;
 import org.hibernate.persister.walking.spi.AttributeDefinition;
 import org.hibernate.persister.walking.spi.EntityIdentifierDefinition;
@@ -61,7 +67,8 @@ import adn.service.resource.metamodel.ResourceType;
  * @author Ngoc Huy
  *
  */
-public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPersisterImplementor<D>, ClassMetadata {
+public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPersisterImplementor<D>, ClassMetadata,
+		SharedSessionUnwrapper, Lockable, Loadable {
 
 	private final Logger logger = LoggerFactory.getLogger(MetamodelImpl.class);
 
@@ -85,6 +92,8 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	private Instantiator instantiator;
 	// Every resource instances is mutable
 	private final EntityEntryFactory entryFactory = MutableEntityEntryFactory.INSTANCE;
+
+	private final Map<LockMode, LockingStrategy> lockingStrategyMap = new HashMap<>();
 
 	public ResourcePersisterImpl(ResourceManagerFactory managerFactory, ResourceType<D> metamodel) {
 		// TODO Auto-generated constructor stub
@@ -115,6 +124,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 				.getService(CentricAttributeContext.class);
 
 		Assert.notNull(attributeContext, "Unable to locate CentricAttributeContext");
+
 		for (int i = 0; i < propertySpan; i++) {
 			Attribute<D, ?> attr = attributes[i];
 
@@ -180,6 +190,10 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 		return metamodel.getDeclaredAttributes().size() + determinePropertySpan(metamodel.locateSuperType());
 	}
 
+	private LockingStrategy createLockingStrategy(LockMode lockMode) {
+		return managerFactory.getDialect().getLockingStrategy(this, lockMode);
+	}
+
 	@Override
 	public void postInstantiate() throws MappingException {
 		// TODO Auto-generated method stub
@@ -207,7 +221,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	@Override
 	public boolean isSubclassEntityName(String entityName) {
 		// TODO Auto-generated method stub
-		return false;
+		return metamodel.getSubclassNames().contains(entityName);
 	}
 
 	@Override
@@ -295,19 +309,42 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	public int[] findDirty(Object[] currentState, Object[] previousState, Object owner,
 			SharedSessionContractImplementor session) {
 		// TODO Auto-generated method stub
-		return null;
+		int[] indices = null;
+		int count = 0;
+
+		for (int i = 0; i < propertySpan; i++) {
+			if (propertyTypes[i].isDirty(previousState[i], currentState[i], session)) {
+				indices = nullableGet(indices, count, i);
+			}
+		}
+
+		return indices == null ? null : ArrayHelper.trim(indices, count);
+	}
+
+	private int[] nullableGet(int[] indices, int index, int val) {
+		if (indices == null) {
+			indices = new int[propertySpan];
+
+			indices[0] = val;
+
+			return indices;
+		}
+
+		indices[index] = val;
+
+		return indices;
 	}
 
 	@Override
 	public int[] findModified(Object[] old, Object[] current, Object object, SharedSessionContractImplementor session) {
 		// TODO Auto-generated method stub
-		return null;
+		return findDirty(current, current, object, session);
 	}
 
 	@Override
 	public boolean hasIdentifierProperty() {
 		// TODO Auto-generated method stub
-		return identifierAccess != null;
+		return metamodel.hasSingleIdAttribute();
 	}
 
 	@Override
@@ -378,24 +415,38 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 		return false;
 	}
 
+	private void assertNaturalId(Object[] values) {
+		Assert.isTrue(values.length == 1, "Plural value id is not supported");
+		Assert.isTrue(values[0] instanceof Serializable, "Natural id value must be Serializable");
+	}
+
 	@Override
 	public Serializable loadEntityIdByNaturalId(Object[] naturalIdValues, LockOptions lockOptions,
 			SharedSessionContractImplementor session) {
 		// TODO Auto-generated method stub
-		return null;
+		assertNaturalId(naturalIdValues);
+		// directly load from storage
+		Object instance = getManagerFactory().getStorage().select((Serializable) naturalIdValues[0]);
+
+		if (instance == null) {
+			return null;
+		}
+
+		return (Serializable) getIdentifierType().resolve(getIdentifier(instance), session, instance);
 	}
 
 	@Override
 	public Object load(Serializable id, Object optionalObject, LockMode lockMode,
 			SharedSessionContractImplementor session) throws HibernateException {
 		// TODO Auto-generated method stub
-		return null;
+		return load(id, optionalObject, new LockOptions().setLockMode(lockMode), null);
 	}
 
 	@Override
 	public Object load(Serializable id, Object optionalObject, LockOptions lockOptions,
 			SharedSessionContractImplementor session) throws HibernateException {
 		// TODO Auto-generated method stub
+
 		return null;
 	}
 
@@ -410,13 +461,18 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	public void lock(Serializable id, Object version, Object object, LockMode lockMode,
 			SharedSessionContractImplementor session) throws HibernateException {
 		// TODO Auto-generated method stub
+		locateLockingStrategy(lockMode).lock(id, version, object, LockOptions.WAIT_FOREVER, session);
 	}
 
 	@Override
 	public void lock(Serializable id, Object version, Object object, LockOptions lockOptions,
 			SharedSessionContractImplementor session) throws HibernateException {
 		// TODO Auto-generated method stub
+		locateLockingStrategy(lockOptions.getLockMode()).lock(id, version, object, lockOptions.getTimeOut(), session);
+	}
 
+	private LockingStrategy locateLockingStrategy(LockMode lockMode) {
+		return lockingStrategyMap.computeIfAbsent(lockMode, this::createLockingStrategy);
 	}
 
 	@Override
@@ -1015,6 +1071,120 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 		return managerFactory.getMetamodel().entityPersister(metamodel.locateSuperType().getName())
 				.locateValueGeneration(propertyName);
+	}
+
+	@Override
+	public String getRootTableName() {
+		// TODO Auto-generated method stub
+		return metamodel.locateRootType().getName();
+	}
+
+	@Override
+	public String getRootTableAlias(String drivingAlias) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String[] getRootTableIdentifierColumnNames() {
+		// TODO Auto-generated method stub
+		return new String[] { metamodel.locateRootType().locateIdAttribute().getName() };
+	}
+
+	@Override
+	public String getVersionColumnName() {
+		// TODO Auto-generated method stub
+		if (!isVersioned()) {
+			return null;
+		}
+
+		return getPropertyNames()[getVersionProperty()];
+	}
+
+	@Override
+	public Type getDiscriminatorType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object getDiscriminatorValue() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getSubclassForDiscriminatorValue(Object value) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String[] getIdentifierColumnNames() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String[] getIdentifierAliases(String suffix) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String[] getPropertyAliases(String suffix, int i) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String[] getPropertyColumnNames(int i) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getDiscriminatorAlias(String suffix) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getDiscriminatorColumnName() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean hasRowId() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public Object[] hydrate(ResultSet rs, Serializable id, Object object, Loadable rootLoadable,
+			String[][] suffixedPropertyColumns, boolean allProperties, SharedSessionContractImplementor session)
+			throws SQLException, HibernateException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean isAbstract() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void registerAffectingFetchProfile(String fetchProfileName) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public String getTableAliasForColumn(String columnName, String rootAlias) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

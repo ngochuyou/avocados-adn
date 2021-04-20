@@ -7,6 +7,7 @@ import java.io.Serializable;
 
 import javax.persistence.EntityManagerFactory;
 
+import org.hibernate.dialect.Dialect;
 import org.hibernate.service.Service;
 import org.hibernate.type.spi.TypeConfiguration;
 
@@ -40,6 +41,8 @@ public interface ResourceManagerFactory extends EntityManagerFactory {
 
 	@Override
 	MetamodelImplementor getMetamodel();
+
+	Dialect getDialect();
 
 	public interface ServiceWrapper<T> extends Service {
 

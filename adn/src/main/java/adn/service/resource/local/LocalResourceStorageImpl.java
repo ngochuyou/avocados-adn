@@ -4,6 +4,7 @@
 package adn.service.resource.local;
 
 import java.io.File;
+import java.io.Serializable;
 
 import org.springframework.stereotype.Component;
 
@@ -32,6 +33,12 @@ public class LocalResourceStorageImpl implements LocalResourceStorage {
 	private File obtainImage(String filename) {
 
 		return new File(IMAGE_FILE_DIRECTORY + filename);
+	}
+
+	@Override
+	public <T> T select(Serializable identifier) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

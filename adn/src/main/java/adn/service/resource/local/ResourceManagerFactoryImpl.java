@@ -14,6 +14,7 @@ import javax.persistence.Query;
 import javax.persistence.SynchronizationType;
 import javax.persistence.criteria.CriteriaBuilder;
 
+import org.hibernate.dialect.Dialect;
 import org.hibernate.type.spi.TypeConfiguration;
 import org.springframework.util.Assert;
 
@@ -42,6 +43,8 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 
 	private final Metadata metadata;
 
+	private final Dialect dialect;
+
 	public ResourceManagerFactoryImpl(final ContextBuildingService serviceContext,
 			final TypeConfiguration typeConfiguration) {
 		// TODO Auto-generated constructor stub
@@ -57,6 +60,7 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 		resourceNamingStrategy = serviceContext.getService(NamingStrategy.class);
 		localStorage = serviceContext.getService(LocalResourceStorage.class);
 		sharedIdentifierGeneratorFactory = new SharedIdentifierGeneratorFactory(serviceContext);
+		dialect = serviceContext.getServiceWrapper(Dialect.class, wrapper -> wrapper.orElseThrow().unwrap());
 
 		Assert.notNull(localStorage, "LocalResourceStorage cannot be null");
 
@@ -107,7 +111,7 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	@Override
 	public LocalResourceStorage getStorage() {
 		// TODO Auto-generated method stub
-		return null;
+		return localStorage;
 	}
 
 	@Override
@@ -116,16 +120,17 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	}
 
 	@Override
-	public ResourceManager createEntityManager() {
+	public EntityManager createEntityManager() {
 		// TODO Auto-generated method stub
-		return ContextProvider.getApplicationContext().getBean(ResourceManager.class);
+		return ((ResourceManager) ContextProvider.getApplicationContext().getBean(ResourceManager.class.getName()))
+				.unwrapManager(EntityManager.class);
 	}
 
 	@Override
 	@SuppressWarnings("rawtypes")
 	public EntityManager createEntityManager(Map map) {
 		// TODO Auto-generated method stub
-		return null;
+		return createEntityManager();
 	}
 
 	@Override
@@ -217,6 +222,12 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	public Metadata getMetadata() {
 		// TODO Auto-generated method stub
 		return metadata;
+	}
+
+	@Override
+	public Dialect getDialect() {
+		// TODO Auto-generated method stub
+		return dialect;
 	}
 
 }

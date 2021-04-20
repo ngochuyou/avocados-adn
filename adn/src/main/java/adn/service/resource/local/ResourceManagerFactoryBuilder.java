@@ -15,6 +15,7 @@ import javax.persistence.GeneratedValue;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
@@ -82,6 +83,12 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 
 		Assert.notNull(basicTypeRegistry, "Unable to locate BasicTypeRegistry");
 		contextBuildingService.register(ServiceWrapper.class, new ServiceWrapperImpl<>(basicTypeRegistry));
+		
+		Dialect dialect = sfi.getJdbcServices().getDialect();
+		
+		Assert.notNull(basicTypeRegistry, "Unable to locate Dialect");
+		contextBuildingService.register(ServiceWrapper.class, new ServiceWrapperImpl<>(dialect));
+		
 		eventListeners.add(PropertyBinder.INSTANCE);
 		eventListeners.add(EntityBinder.INSTANCE);
 		// register naming-strategy
@@ -99,9 +106,8 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		ResourceManagerFactory resourceManager = build(sfi.getMetamodel().getTypeConfiguration());
 		ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) ContextProvider
 				.getApplicationContext()).getBeanFactory();
-
+		
 		postBuild();
-
 		beanFactory.registerSingleton(resourceManager.getClass().getName(), resourceManager);
 		beanFactory.registerAlias(resourceManager.getClass().getName(), ResourceManagerFactory.class.getName());
 		logger.info(getLoggingPrefix(this) + "Finished building " + this.getClass());

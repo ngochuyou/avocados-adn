@@ -35,7 +35,6 @@ public class SharedIdentifierGeneratorFactory implements IdentifierGeneratorFact
 	public SharedIdentifierGeneratorFactory(ContextBuildingService contextService) {
 		this.contextService = contextService;
 		typeRegistry = contextService.getServiceWrapper(BasicTypeRegistry.class,
-				wrapper -> wrapper.unwrap().getClass().equals(BasicTypeRegistry.class),
 				wrapper -> wrapper.orElseThrow().unwrap());
 	}
 

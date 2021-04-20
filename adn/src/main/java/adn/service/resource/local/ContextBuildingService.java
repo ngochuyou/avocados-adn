@@ -11,7 +11,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.hibernate.service.Service;
@@ -34,8 +33,7 @@ public interface ContextBuildingService extends ServiceRegistry {
 
 	void register(Class<?> type, Service newService);
 
-	<S> S getServiceWrapper(Class<S> serviceRole, Predicate<? super ServiceWrapper<S>> discriminator,
-			Function<Optional<ServiceWrapper<S>>, S> optionObjectHandler);
+	<S> S getServiceWrapper(Class<S> serviceRole, Function<Optional<ServiceWrapper<S>>, S> optionObjectHandler);
 
 	static class BuildingService implements ContextBuildingService {
 
@@ -53,11 +51,10 @@ public interface ContextBuildingService extends ServiceRegistry {
 
 		@SuppressWarnings("unchecked")
 		@Override
-		public <S> S getServiceWrapper(Class<S> serviceRole, Predicate<? super ServiceWrapper<S>> discriminator,
+		public <S> S getServiceWrapper(Class<S> serviceRole,
 				Function<Optional<ServiceWrapper<S>>, S> optionObjectHandler) {
 			// TODO Auto-generated method stub
 			Assert.notNull(serviceRole, "Service role must not be null");
-			Assert.notNull(discriminator, "Predicate must not be null");
 			Assert.notNull(optionObjectHandler, "Resolver must not be null");
 
 			Set<Class<?>> candidateKeys = getCandidateKeys(ServiceWrapper.class);
@@ -66,7 +63,10 @@ public interface ContextBuildingService extends ServiceRegistry {
 
 			return optionObjectHandler.apply(
 					(Optional<ServiceWrapper<S>>) serviceMap.get(candidateKeys.stream().findFirst().orElseThrow())
-							.stream().map(service -> (ServiceWrapper<S>) service).filter(discriminator).findFirst());
+							.stream().map(service -> (ServiceWrapper<S>) service)
+							.filter(service -> service.unwrap().getClass().equals(serviceRole)
+									|| serviceRole.isAssignableFrom(service.unwrap().getClass()))
+							.findFirst());
 		}
 
 		private <T> Set<Class<?>> getCandidateKeys(Class<T> serviceRole) {

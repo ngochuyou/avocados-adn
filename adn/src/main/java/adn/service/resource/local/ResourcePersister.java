@@ -138,8 +138,6 @@ public interface ResourcePersister<T> extends EntityPersister {
 		return false;
 	}
 
-	ResourceManagerFactory getManagerFactory();
-
 	@Override
 	default EntityMode getEntityMode() {
 		// TODO Auto-generated method stub
@@ -169,5 +167,7 @@ public interface ResourcePersister<T> extends EntityPersister {
 	ValueGeneration locateValueGeneration(String propertyName);
 
 	Type locatePropertyType(String properyName);
+
+	ResourceManagerFactory getManagerFactory();
 
 }

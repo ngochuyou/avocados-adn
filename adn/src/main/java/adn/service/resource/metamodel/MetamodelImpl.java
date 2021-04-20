@@ -143,9 +143,8 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	@Override
 	public void prepare() throws PersistenceException {
 		// TODO Auto-generated method stub
-		BasicTypeRegistry typeRegistry = managerFactory.getContextBuildingService().getServiceWrapper(
-				BasicTypeRegistry.class, wrapper -> wrapper.unwrap().getClass().equals(BasicTypeRegistry.class),
-				wrapper -> wrapper.orElseThrow().unwrap());
+		BasicTypeRegistry typeRegistry = managerFactory.getContextBuildingService()
+				.getServiceWrapper(BasicTypeRegistry.class, wrapper -> wrapper.orElseThrow().unwrap());
 
 		Assert.notNull(typeRegistry, "BasicTypeRegistry must not be null");
 		managerFactory.getContextBuildingService().register(CentricAttributeContext.class,
