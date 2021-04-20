@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import adn.service.resource.local.LocalResourceStorageImpl;
 import adn.service.resource.models.FileByBytes;
+import adn.service.resource.storage.LocalResourceStorageImpl;
 import adn.service.services.FileService;
 
 /**

@@ -9,7 +9,6 @@ import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.EntityState;
-import org.hibernate.persister.entity.EntityPersister;
 
 /**
  * @author Ngoc Huy
@@ -25,12 +24,7 @@ public interface ResourceEntry<T> extends EntityEntry {
 	}
 
 	@Override
-	@Deprecated
-	default EntityPersister getPersister() {
-		// TODO Auto-generated method stub
-		ResourceManagerFactoryBuilder.unsupport();
-		return null;
-	}
+	ResourcePersister<T> getPersister();
 
 	@Override
 	@Deprecated
@@ -47,8 +41,6 @@ public interface ResourceEntry<T> extends EntityEntry {
 		ResourceManagerFactoryBuilder.unsupport();
 		return null;
 	}
-
-	ResourcePersister<T> getDescriptor();
 
 	public static <T> EntityState getEntityState(ResourceEntry<T> entry, T resource, ResourcePersister<T> descriptor) {
 		if (entry != null) {

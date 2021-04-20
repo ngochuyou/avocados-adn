@@ -152,7 +152,7 @@ public interface ResourcePersister<T> extends EntityPersister {
 		return null;
 	}
 
-	<E extends ResourcePersister<T>> E unwrap(Class<? super E> type);
+	<E> E unwrap(Class<E> type);
 
 	PropertyAccess getPropertyAccess(String propertyName);
 

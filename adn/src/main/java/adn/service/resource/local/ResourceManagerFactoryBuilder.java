@@ -39,6 +39,7 @@ import adn.service.resource.local.ResourceManagerFactory.ServiceWrapper;
 import adn.service.resource.metamodel.DefaultResourceIdentifierGenerator;
 import adn.service.resource.metamodel.EntityBinder;
 import adn.service.resource.metamodel.PropertyBinder;
+import adn.service.resource.storage.LocalResourceStorage;
 
 /**
  * @author Ngoc Huy

@@ -20,33 +20,20 @@ public class ResourceKey<T> implements Serializable {
 
 	private final Serializable identifier;
 
-	private final ResourcePersister<T> descriptor;
+	private final ResourcePersister<T> persister;
 
 	private final int hashCode;
 
-	public ResourceKey(Serializable identifier, ResourcePersister<T> descriptor) {
+	public ResourceKey(Serializable identifier, ResourcePersister<T> persister) {
 		super();
 		this.identifier = identifier;
-		Assert.notNull(descriptor, "Resource descriptor can not be NULL");
-		this.descriptor = descriptor;
+		Assert.notNull(persister, "Resource persister can not be NULL");
+		this.persister = persister;
 		this.hashCode = getHashCode();
 	}
 
 	private int getHashCode() {
-		int result = 17;
-
-//		String resourceName = descriptor.getResourceName();
-//
-//		result = 37 * result + (resourceName != null ? resourceName.hashCode() : 0);
-//		result = 37 * result + descriptor.getIdentifierGetter().getReturnType().hashCode();
-
-		return result;
-	}
-
-	@Override
-	public int hashCode() {
-		// TODO Auto-generated method stub
-		return hashCode;
+		return 37 * 17 + persister.getIdentifierType().getReturnedClass().hashCode();
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -59,17 +46,20 @@ public class ResourceKey<T> implements Serializable {
 
 		ResourceKey entry = (ResourceKey<T>) other;
 
-//		return entry.identifier == identifier && (entry.descriptor == descriptor
-//				|| entry.descriptor.getResourceName().equals(descriptor.getResourceName()));
-		return false;
+		return entry.identifier == identifier && entry.persister == persister;
 	}
 
 	public Serializable getIdentifier() {
 		return identifier;
 	}
 
-	public ResourcePersister<T> getDescriptor() {
-		return descriptor;
+	public ResourcePersister<T> getPersister() {
+		return persister;
+	}
+
+	public int getHashcode() {
+		// TODO Auto-generated method stub
+		return hashCode;
 	}
 
 }

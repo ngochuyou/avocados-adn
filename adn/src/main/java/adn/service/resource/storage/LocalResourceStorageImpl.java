@@ -1,10 +1,11 @@
 /**
  * 
  */
-package adn.service.resource.local;
+package adn.service.resource.storage;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.List;
 
 import org.springframework.stereotype.Component;
 
@@ -39,6 +40,18 @@ public class LocalResourceStorageImpl implements LocalResourceStorage {
 	public <T> T select(Serializable identifier) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public <T> List<T> select(Serializable[] identifier) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void lock(Serializable identifier) {
+		// TODO Auto-generated method stub
+
 	}
 
 }

@@ -18,7 +18,7 @@ import adn.helpers.Role;
 import adn.model.entities.Admin;
 import adn.model.entities.Customer;
 import adn.model.entities.Personnel;
-import adn.service.resource.local.LocalResourceStorageImpl;
+import adn.service.resource.storage.LocalResourceStorageImpl;
 
 /**
  * @author Ngoc Huy

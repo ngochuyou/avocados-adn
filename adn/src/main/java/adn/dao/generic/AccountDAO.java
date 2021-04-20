@@ -19,7 +19,7 @@ import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Account;
 import adn.model.factory.extraction.AccountExtractor;
-import adn.service.resource.local.LocalResourceStorageImpl;
+import adn.service.resource.storage.LocalResourceStorageImpl;
 import adn.service.services.AccountService;
 
 /**

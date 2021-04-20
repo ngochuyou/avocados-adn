@@ -22,6 +22,7 @@ import adn.application.context.ContextProvider;
 import adn.service.resource.metamodel.Metamodel;
 import adn.service.resource.metamodel.MetamodelImpl;
 import adn.service.resource.metamodel.MetamodelImplementor;
+import adn.service.resource.storage.LocalResourceStorage;
 
 /**
  * @author Ngoc Huy

@@ -34,6 +34,7 @@ import org.hibernate.engine.spi.ValueInclusion;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.internal.FilterAliasGenerator;
 import org.hibernate.internal.util.collections.ArrayHelper;
+import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.persister.entity.Loadable;
 import org.hibernate.persister.entity.Lockable;
@@ -94,6 +95,8 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	private final EntityEntryFactory entryFactory = MutableEntityEntryFactory.INSTANCE;
 
 	private final Map<LockMode, LockingStrategy> lockingStrategyMap = new HashMap<>();
+
+	private UniqueEntityLoader resourceLoader;
 
 	public ResourcePersisterImpl(ResourceManagerFactory managerFactory, ResourceType<D> metamodel) {
 		// TODO Auto-generated constructor stub
@@ -180,6 +183,8 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 				SpringApplication.exit(ContextProvider.getApplicationContext());
 			}
 		}
+
+		resourceLoader = new ResourceLoader(this);
 	}
 
 	private int determinePropertySpan(ResourceType<? super D> metamodel) {
@@ -592,12 +597,20 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	@Override
 	public Type getIdentifierType() {
 		// TODO Auto-generated method stub
-		return propertyTypes[indexMap.get(metamodel.locateIdAttribute().getName())];
+		if (!hasIdentifierProperty()) {
+			return null;
+		}
+
+		return propertyTypes[indexMap.get(getIdentifierPropertyName())];
 	}
 
 	@Override
 	public String getIdentifierPropertyName() {
 		// TODO Auto-generated method stub
+		if (!hasIdentifierProperty()) {
+			return null;
+		}
+
 		return metamodel.locateIdAttribute().getName();
 	}
 
@@ -847,6 +860,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 		// TODO Auto-generated method stub
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public EntityTuplizerImplementor<D> getEntityTuplizer() {
 		// TODO Auto-generated method stub
@@ -926,7 +940,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <E extends ResourcePersister<D>> E unwrap(Class<? super E> type) {
+	public <E> E unwrap(Class<E> type) {
 		// TODO Auto-generated method stub
 		return (E) this;
 	}

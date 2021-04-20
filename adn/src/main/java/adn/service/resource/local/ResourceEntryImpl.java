@@ -19,21 +19,31 @@ public class ResourceEntryImpl<T> extends AbstractEntityEntry implements Resourc
 
 	private static final long serialVersionUID = 1L;
 
-	private final transient ResourcePersister<T> descriptor;
+	private final transient ResourcePersister<T> persister;
 
 	private final ResourceKey<T> key;
 
-	private ResourceEntryImpl(SessionFactoryImplementor factory, String entityName, Serializable id, Status status,
-			Status previousStatus, Object[] loadedState, Object[] deletedState, Object version, LockMode lockMode,
-			boolean existsInDatabase, boolean isBeingReplicated, PersistenceContext persistenceContext,
-			ResourcePersister<T> descriptor, ResourceKey<T> key) {
+	// @formatter:off
+	private ResourceEntryImpl(
+			SessionFactoryImplementor factory,
+			String entityName,
+			Serializable id, Status status,
+			Status previousStatus,
+			Object[] loadedState,
+			Object[] deletedState,
+			Object version,
+			LockMode lockMode,
+			boolean existsInDatabase,
+			boolean isBeingReplicated,
+			PersistenceContext persistenceContext,
+			ResourcePersister<T> persister,
+			ResourceKey<T> key) {
 		super(factory, entityName, id, status, previousStatus, loadedState, deletedState, version, lockMode,
 				existsInDatabase, isBeingReplicated, persistenceContext);
-		this.descriptor = descriptor;
+		this.persister = persister;
 		this.key = key;
 	}
-
-	// @formatter:off
+	
 	public ResourceEntryImpl(
 			String entityName,
 			Serializable id,
@@ -44,7 +54,8 @@ public class ResourceEntryImpl<T> extends AbstractEntityEntry implements Resourc
 			Object version,
 			LockMode lockMode,
 			boolean existsInDatabase,
-			ResourcePersister<T> descriptor,
+			ResourceContext context,
+			ResourcePersister<T> persister,
 			ResourceKey<T> key) {
 		// TODO Auto-generated constructor stub
 		this(
@@ -59,16 +70,16 @@ public class ResourceEntryImpl<T> extends AbstractEntityEntry implements Resourc
 			lockMode,	
 			existsInDatabase,
 			false,
-			null,
-			descriptor,
+			context,
+			persister,
 			key);
 	}
 	// @formatter:on
 
 	@Override
-	public ResourcePersister<T> getDescriptor() {
+	public ResourcePersister<T> getPersister() {
 		// TODO Auto-generated method stub
-		return descriptor;
+		return persister;
 	}
 
 	@Override

@@ -58,6 +58,7 @@ import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionEventListenerManager;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.event.spi.EventSource;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.persister.entity.EntityPersister;
@@ -86,7 +87,7 @@ import adn.service.resource.metamodel.Metamodel;
 @RequestScope
 @Lazy
 @SuppressWarnings("serial")
-public class LocalResourceSession implements SessionImplementor, ResourceManager {
+public class LocalResourceSession implements SessionImplementor, ResourceManager, EventSource {
 
 	private final EventFactory eventFactory = EventFactory.INSTANCE;
 
@@ -574,7 +575,7 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 	@Override
 	public boolean isEventSource() {
 		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 
 	@Override

@@ -12,6 +12,7 @@ import org.hibernate.service.Service;
 import org.hibernate.type.spi.TypeConfiguration;
 
 import adn.service.resource.metamodel.MetamodelImplementor;
+import adn.service.resource.storage.LocalResourceStorage;
 
 /**
  * @author Ngoc Huy
