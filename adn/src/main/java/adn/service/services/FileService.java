@@ -15,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import adn.helpers.StringHelper;
 import adn.service.Service;
 import adn.service.ServiceResult;
-import adn.service.resource.storage.LocalResourceStorageImpl;
+import adn.service.resource.storage.LocalResourceStorage;
 
 @org.springframework.stereotype.Service
 public class FileService implements Service {
@@ -36,7 +36,7 @@ public class FileService implements Service {
 
 		try {
 			byte[] bytes = file.getBytes();
-			Path path = Paths.get(LocalResourceStorageImpl.IMAGE_FILE_DIRECTORY + filename);
+			Path path = Paths.get(LocalResourceStorage.IMAGE_FILE_DIRECTORY + filename);
 
 			logger.debug("Writing file: " + filename);
 			Files.write(path, bytes);
@@ -51,7 +51,7 @@ public class FileService implements Service {
 
 	public byte[] getImageBytes(String filename) {
 		try {
-			File file = new File(LocalResourceStorageImpl.IMAGE_FILE_DIRECTORY + filename);
+			File file = new File(LocalResourceStorage.IMAGE_FILE_DIRECTORY + filename);
 
 			if (!file.exists()) {
 				return null;

@@ -18,6 +18,10 @@ public class FileByBytes extends FileResource {
 	@Column(nullable = false)
 	private byte[] content;
 
+	public FileByBytes() {
+		super();
+	}
+
 	public FileByBytes(String directoryPath, String name, String extension, Date timestamp) {
 		super(directoryPath, name, extension, timestamp);
 	}

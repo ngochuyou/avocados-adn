@@ -22,6 +22,10 @@ public class BufferedFile extends FileResource {
 	@Column(nullable = true)
 	private BufferedInputStream is;
 
+	public BufferedFile() {
+		super();
+	}
+
 	public BufferedFile(BufferedOutputStream os, BufferedInputStream is) {
 		super();
 		this.os = os;

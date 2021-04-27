@@ -29,7 +29,6 @@ public interface ResourcePersister<T> extends EntityPersister {
 	@Deprecated
 	default SessionFactoryImplementor getFactory() {
 		// TODO Auto-generated method stub
-		unsupport();
 		return null;
 	}
 

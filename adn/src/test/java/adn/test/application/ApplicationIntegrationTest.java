@@ -50,7 +50,7 @@ import adn.model.ModelManager;
 import adn.model.entities.Account;
 import adn.model.entities.Admin;
 import adn.security.SecurityConfiguration;
-import adn.service.resource.storage.LocalResourceStorageImpl;
+import adn.service.resource.storage.LocalResourceStorage;
 
 /**
  * @author Ngoc Huy
@@ -86,7 +86,7 @@ public class ApplicationIntegrationTest {
 
 	@Test
 	private void testGetImageBytes() throws Exception {
-		File directory = new File(LocalResourceStorageImpl.IMAGE_FILE_DIRECTORY);
+		File directory = new File(LocalResourceStorage.IMAGE_FILE_DIRECTORY);
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
 				.get(MULTITHREADING_ENDPOINT + "/file/public/image/bytes");
 		int amount = directory.listFiles().length;

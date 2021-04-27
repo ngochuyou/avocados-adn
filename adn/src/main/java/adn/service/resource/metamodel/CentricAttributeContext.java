@@ -34,6 +34,7 @@ import org.hibernate.type.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import adn.service.resource.local.IdentifierStringType;
 import adn.service.resource.metamodel.PropertyBinder.KeyValueContext;
 
 /**
@@ -81,6 +82,8 @@ public interface CentricAttributeContext extends Service {
 			// TODO Auto-generated constructor stub
 			this.typeRegistry = typeRegistry;
 			this.metamodel = metamodel;
+
+			typeRegistry.register(IdentifierStringType.INSTANCE);
 		}
 
 		@Override
@@ -96,17 +99,19 @@ public interface CentricAttributeContext extends Service {
 		}
 
 		@Override
-		public <D> Type resolveType(ResourceType<D> owner, Attribute<D, ?> f) {
+		public <D> Type resolveType(ResourceType<D> owner, Attribute<D, ?> attr) {
 			// TODO Auto-generated method stub
-			if (!isPlural(f.getJavaType())) {
-				if (isAny(f.getJavaType())) {
+			if (!isPlural(attr.getJavaType())) {
+				if (isAny(attr.getJavaType())) {
 					return ObjectType.INSTANCE;
 				}
 
-				return typeRegistry.getRegisteredType(f.getJavaType().getName());
+				return attr instanceof Identifier
+						? typeRegistry.getRegisteredType(IdentifierStringType.class.getSimpleName())
+						: typeRegistry.getRegisteredType(attr.getJavaType().getName());
 			}
 
-			return resolveCollectionType(owner, f.getJavaType(), f.getName());
+			return resolveCollectionType(owner, attr.getJavaType(), attr.getName());
 		}
 
 		@Override

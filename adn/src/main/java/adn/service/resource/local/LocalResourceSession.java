@@ -94,7 +94,7 @@ import adn.service.resource.metamodel.Metamodel;
 @Component
 @RequestScope
 @Lazy
-@SuppressWarnings("serial")
+@SuppressWarnings({ "serial", "rawtypes", "deprecation", "unchecked" })
 public class LocalResourceSession implements SessionImplementor, ResourceManager, EventSource {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -1446,7 +1446,6 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 //		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T unwrap(Class<T> cls) {
 		// TODO Auto-generated method stub
@@ -1458,7 +1457,6 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 		private final ResourcePersister<T> resourcePersister;
 
 		private LockOptions lockOptions;
-		private Integer batchSize;
 
 		IdentifierLoadAccessImpl(ResourcePersister<T> resourcePersister) {
 			// TODO Auto-generated constructor stub
@@ -1486,7 +1484,6 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 			return this;
 		}
 
-		@SuppressWarnings("unchecked")
 		@Override
 		public T getReference(Serializable id) {
 			// TODO Auto-generated method stub
@@ -1520,7 +1517,6 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 			}
 		}
 
-		@SuppressWarnings("unchecked")
 		@Override
 		public T load(Serializable id) {
 			// TODO Auto-generated method stub

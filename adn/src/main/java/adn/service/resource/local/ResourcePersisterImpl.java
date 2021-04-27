@@ -16,10 +16,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import javax.el.PropertyNotFoundException;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.SingularAttribute;
 
 import org.hibernate.HibernateException;
+import org.hibernate.InstantiationException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
@@ -120,6 +122,13 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 		propertyNullabilities = new boolean[propertySpan];
 		propertyUpdatabilities = new boolean[propertySpan];
 		instantiator = new PojoInstantiator(metamodel.getJavaType(), null);
+
+		try {
+			instantiator.instantiate();
+		} catch (InstantiationException ie) {
+			throw new PropertyNotFoundException(
+					"Resource of type " + getEntityName() + " must define a default constructor");
+		}
 
 		@SuppressWarnings("unchecked")
 		Attribute<D, ?>[] attributes = metamodel.getAttributes().toArray(Attribute[]::new);
@@ -1205,7 +1214,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 			throws SQLException, HibernateException {
 		// TODO Auto-generated method stub
 		logger.debug(String.format("[Row-Hydrate] Row type: %s", row.getClass()));
-		
+
 		Type[] types = getPropertyTypes();
 		int n = types.length;
 		Object[] values = new Object[n];

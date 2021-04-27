@@ -26,6 +26,8 @@ import org.hibernate.type.VersionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import adn.service.resource.storage.LocalResourceStorage.ResourceResultSet;
+
 /**
  * @author Ngoc Huy
  *
@@ -72,37 +74,38 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 
 	private List<Object> getResults(Serializable[] ids, ResourcePersister<?> persister, ResourceManager manager,
 			LockOptions lockOptions, RowSelection selection) throws HibernateException, SQLException {
-		List<Object> result;
+		ResourceResultSet result;
 		int maxRows = selection != null ? selection.getMaxRows() : Integer.MAX_VALUE; // best not be INTEGER.MAX_VALUE
 		List<AfterLoadAction> afterLoadActions = new ArrayList<>();
 
 		try {
 			applyLock(ids, lockOptions, manager, afterLoadActions);
 			result = manager.getResourceManagerFactory().getStorage().select(ids);
-			processResults(result, manager, maxRows, lockOptions.getLockMode());
 
-			return result;
+			return processResults(result, manager, maxRows, lockOptions.getLockMode());
 		} finally {
 			// cleanups, informs if needed
 		}
 	}
 
-	private void processResults(List<Object> resultSet, ResourceManager resourceManager, int maxRow, LockMode lockMode)
-			throws HibernateException, SQLException {
+	private List<Object> processResults(ResourceResultSet resultSet, ResourceManager resourceManager, int maxRow,
+			LockMode lockMode) throws HibernateException, SQLException {
 		PersistenceContext context = resourceManager.getPersistenceContext();
 		ResourcePersister<?> persister = getPersister();
 		EntityKey[] keys = generateKeys(resultSet);
 		List<Object> results = new ArrayList<>();
 
-		for (int i = 0; i < maxRow && i < resultSet.size(); i++) {
+		for (int i = 0; i < maxRow && i < resultSet.getFetchSize(); i++) {
 			if (context.containsEntity(keys[i])) {
-				results.add(doWhenInContext(persister.unwrap(Loadable.class), resultSet.get(i), keys[i], lockMode,
+				results.add(doWhenInContext(persister.unwrap(Loadable.class), resultSet.getObject(i), keys[i], lockMode,
 						resourceManager));
 				continue;
 			}
 
-			results.add(doWhenNotInContext(persister, resultSet.get(i), keys[i], lockMode, resourceManager));
+			results.add(doWhenNotInContext(persister, resultSet.getObject(i), keys[i], lockMode, resourceManager));
 		}
+
+		return results;
 	}
 
 	private Object doWhenNotInContext(ResourcePersister<?> persister, Object object, EntityKey key,
@@ -182,22 +185,22 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 		}
 	}
 
-	private EntityKey[] generateKeys(List<Object> instances) throws HibernateException, SQLException {
+	private EntityKey[] generateKeys(ResourceResultSet resultSet) throws HibernateException, SQLException {
+		List<Object> instances = resultSet.getAll();
 		EntityKey[] keys = new EntityKey[instances.size()];
-		int i = 0;
 
-		for (Object o : instances) {
-			keys[i++] = produceResourceKey(o);
+		for (int i = 0; i < instances.size(); i++) {
+			keys[i++] = produceResourceKey(resultSet);
 		}
 
 		return keys;
 	}
 
-	private EntityKey produceResourceKey(Object o) throws HibernateException, SQLException {
+	private EntityKey produceResourceKey(ResourceResultSet resultSet) throws HibernateException, SQLException {
 		ResourcePersister<?> persister;
 
 		return new EntityKey(
-				(Serializable) (persister = getPersister()).getIdentifierType().hydrate(null, null, null, o),
+				(Serializable) (persister = getPersister()).getIdentifierType().hydrate(resultSet, null, null, null),
 				persister);
 	}
 
