@@ -5,7 +5,6 @@ package adn.service.resource.local;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.EntityState;
@@ -34,14 +33,6 @@ public interface ResourceEntry<T> extends EntityEntry {
 		return false;
 	}
 
-	@Override
-	@Deprecated
-	default EntityKey getEntityKey() {
-		// TODO Auto-generated method stub
-		ResourceManagerFactoryBuilder.unsupport();
-		return null;
-	}
-
 	public static <T> EntityState getEntityState(ResourceEntry<T> entry, T resource, ResourcePersister<T> descriptor) {
 		if (entry != null) {
 			// entering this logic determine that resource is either DELETED or PERSISTENT
@@ -56,7 +47,5 @@ public interface ResourceEntry<T> extends EntityEntry {
 //		return descriptor.isTransient(resource) ? EntityState.TRANSIENT : EntityState.DETACHED;
 		return null;
 	}
-
-	ResourceKey<T> getResourceKey();
 
 }

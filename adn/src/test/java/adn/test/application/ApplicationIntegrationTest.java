@@ -145,7 +145,7 @@ public class ApplicationIntegrationTest {
 
 	@Test
 	@Transactional
-	public void entityEntryTest() {
+	private void entityEntryTest() {
 		SessionImpl session = (SessionImpl) factory.getCurrentSession();
 
 		session.setHibernateFlushMode(FlushMode.MANUAL);
@@ -211,6 +211,15 @@ public class ApplicationIntegrationTest {
 				logger.debug(val.toString());
 			}
 		}
+	}
+
+	@Test
+	public void sessionLoadTest() throws Exception {
+		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get(PREFIX + "/file/public/image/session-load");
+
+		mock.perform(reqBuilder).andExpect(status().isOk()).andDo(result -> {
+			logger.debug(result.getResponse().getContentAsString());
+		});
 	}
 
 }

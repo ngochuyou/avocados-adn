@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -34,6 +35,7 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MultiIdentifierLoadAccess;
 import org.hibernate.NaturalIdLoadAccess;
+import org.hibernate.ObjectNotFoundException;
 import org.hibernate.ReplicationMode;
 import org.hibernate.ScrollMode;
 import org.hibernate.SessionEventListener;
@@ -54,11 +56,16 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.ExceptionConverter;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
+import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionEventListenerManager;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.event.spi.LoadEvent;
+import org.hibernate.event.spi.LoadEventListener;
+import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.loader.custom.CustomQuery;
 import org.hibernate.persister.entity.EntityPersister;
@@ -70,13 +77,14 @@ import org.hibernate.resource.jdbc.spi.JdbcSessionContext;
 import org.hibernate.resource.transaction.spi.TransactionCoordinator;
 import org.hibernate.stat.SessionStatistics;
 import org.hibernate.type.descriptor.sql.SqlTypeDescriptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
-import adn.service.resource.event.EventFactory;
 import adn.service.resource.metamodel.Metamodel;
 
 /**
@@ -89,9 +97,9 @@ import adn.service.resource.metamodel.Metamodel;
 @SuppressWarnings("serial")
 public class LocalResourceSession implements SessionImplementor, ResourceManager, EventSource {
 
-	private final EventFactory eventFactory = EventFactory.INSTANCE;
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private final ResourceContext resourceContext;
+	private final PersistenceContext resourceContext;
 
 	private final ResourceManagerFactory resourceManagerFactory;
 
@@ -110,7 +118,7 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 		resourceContext = createResourceContext();
 	}
 
-	private ResourceContext createResourceContext() {
+	private PersistenceContext createResourceContext() {
 		return new ResourceContextImpl(this);
 	}
 
@@ -408,7 +416,7 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 	@Override
 	public EntityKey generateEntityKey(Serializable id, EntityPersister persister) {
 		// TODO Auto-generated method stub
-		return null;
+		return new EntityKey(id, persister);
 	}
 
 	@Override
@@ -646,7 +654,7 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 	}
 
 	@Override
-	public ResourceContext getPersistenceContextInternal() {
+	public PersistenceContext getPersistenceContextInternal() {
 		// TODO Auto-generated method stub
 		return resourceContext;
 	}
@@ -868,7 +876,7 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 	}
 
 	@Override
-	public ResourceContext getPersistenceContext() {
+	public PersistenceContext getPersistenceContext() {
 		// TODO Auto-generated method stub
 		return resourceContext;
 	}
@@ -978,13 +986,13 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 	@Override
 	public <T> T load(Class<T> theClass, Serializable id) {
 		// TODO Auto-generated method stub
-		return null;
+		return byId(theClass).getReference(id);
 	}
 
 	@Override
 	public Object load(String entityName, Serializable id) {
 		// TODO Auto-generated method stub
-		return null;
+		return byId(entityName).getReference(id);
 	}
 
 	@Override
@@ -1122,7 +1130,7 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 	@Override
 	public <T> T get(Class<T> entityType, Serializable id) {
 		// TODO Auto-generated method stub
-		return null;
+		return byId(entityType).load(id);
 	}
 
 	@Override
@@ -1140,7 +1148,7 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 	@Override
 	public Object get(String entityName, Serializable id) {
 		// TODO Auto-generated method stub
-		return null;
+		return byId(entityName).load(id);
 	}
 
 	@Override
@@ -1162,9 +1170,9 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 	}
 
 	@Override
-	public IdentifierLoadAccess byId(String entityName) {
+	public IdentifierLoadAccess<?> byId(String entityName) {
 		// TODO Auto-generated method stub
-		return null;
+		return new IdentifierLoadAccessImpl<>(locatePersister(entityName));
 	}
 
 	@Override
@@ -1182,7 +1190,7 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 	@Override
 	public <T> IdentifierLoadAccess<T> byId(Class<T> entityClass) {
 		// TODO Auto-generated method stub
-		return null;
+		return new IdentifierLoadAccessImpl<>(locatePersister(entityClass));
 	}
 
 	@Override
@@ -1431,11 +1439,122 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 	}
 
+	public void afterOperation(boolean success) {
+		logger.debug("Operation status: " + success);
+//		if (!isTransactionInProgress()) {
+//			getJdbcCoordinator().afterTransaction();
+//		}
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T unwrap(Class<T> cls) {
 		// TODO Auto-generated method stub
 		return (T) this;
+	}
+
+	private class IdentifierLoadAccessImpl<T> implements IdentifierLoadAccess<T> {
+
+		private final ResourcePersister<T> resourcePersister;
+
+		private LockOptions lockOptions;
+		private Integer batchSize;
+
+		IdentifierLoadAccessImpl(ResourcePersister<T> resourcePersister) {
+			// TODO Auto-generated constructor stub
+			this.resourcePersister = resourcePersister;
+		}
+
+		@Override
+		public IdentifierLoadAccess<T> with(LockOptions lockOptions) {
+			// TODO Auto-generated method stub
+			this.lockOptions = lockOptions;
+			return this;
+		}
+
+		@Override
+		@Deprecated
+		public IdentifierLoadAccess<T> with(CacheMode cacheMode) {
+			// TODO Auto-generated method stub
+			return this;
+		}
+
+		@Override
+		@Deprecated
+		public IdentifierLoadAccess<T> with(RootGraph<T> graph, GraphSemantic semantic) {
+			// TODO Auto-generated method stub
+			return this;
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public T getReference(Serializable id) {
+			// TODO Auto-generated method stub
+			if (this.lockOptions != null) {
+				LoadEvent event = new LoadEvent(id, resourcePersister.getEntityName(), lockOptions,
+						LocalResourceSession.this, false);
+
+				getResourceManagerFactory().getLoadEventListener().onLoad(event, LoadEventListener.IMMEDIATE_LOAD);
+
+				return (T) event.getResult();
+			}
+
+			boolean success = false;
+
+			try {
+				LoadEvent event = new LoadEvent(id, resourcePersister.getEntityName(), false, LocalResourceSession.this,
+						false);
+
+				getResourceManagerFactory().getLoadEventListener().onLoad(event, LoadEventListener.IMMEDIATE_LOAD);
+
+				if (event.getResult() == null) {
+					getResourceManagerFactory().getResourceNotFoundHandler()
+							.handleEntityNotFound(resourcePersister.getEntityName(), id);
+				}
+
+				success = true;
+
+				return (T) event.getResult();
+			} finally {
+				afterOperation(success);
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public T load(Serializable id) {
+			// TODO Auto-generated method stub
+			if (this.lockOptions != null) {
+				LoadEvent event = new LoadEvent(id, resourcePersister.getEntityName(), lockOptions,
+						LocalResourceSession.this, false);
+
+				getResourceManagerFactory().getLoadEventListener().onLoad(event, LoadEventListener.IMMEDIATE_LOAD);
+
+				return (T) event.getResult();
+			}
+
+			LoadEvent event = new LoadEvent(id, resourcePersister.getEntityName(), false, LocalResourceSession.this,
+					false);
+			boolean success = false;
+
+			try {
+				getResourceManagerFactory().getLoadEventListener().onLoad(event, LoadEventListener.IMMEDIATE_LOAD);
+				success = true;
+			} catch (ObjectNotFoundException onfe) {
+
+			} finally {
+				afterOperation(success);
+			}
+
+			return (T) event.getResult();
+		}
+
+		@Override
+		public Optional<T> loadOptional(Serializable id) {
+			// TODO Auto-generated method stub
+			return Optional.ofNullable(getReference(id));
+		}
+
 	}
 
 	private class LockRequestImpl implements LockRequest {
@@ -1496,6 +1615,14 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 			// TODO Auto-generated method stub
 		}
 
+	}
+
+	private <T> ResourcePersister<T> locatePersister(Class<T> clazz) {
+		return getResourceManagerFactory().getResourcePersister(clazz);
+	}
+
+	private <T> ResourcePersister<T> locatePersister(String name) {
+		return getResourceManagerFactory().getResourcePersister(name);
 	}
 
 }

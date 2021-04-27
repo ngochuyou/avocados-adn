@@ -16,10 +16,10 @@ public interface LocalResourceStorage extends Service {
 
 	boolean isExists(String filename);
 
-	<T> T select(Serializable identifier);
-	
-	<T> List<T> select(Serializable[] identifier);
+	Object select(Serializable identifier);
+
+	List<Object> select(Serializable[] identifier);
 
 	void lock(Serializable identifier);
-	
+
 }

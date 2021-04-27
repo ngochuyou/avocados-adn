@@ -122,7 +122,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T> ResourcePersister<T> getResourceDescriptor(String resourceName) {
+	public <T> ResourcePersister<T> getResourcePersister(String resourceName) {
 		// TODO Auto-generated method stub
 		if (!persistersByName.keySet().contains(resourceName)) {
 			return null;
@@ -598,6 +598,13 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 		// TODO Auto-generated method stub
 		return Optional.ofNullable(persistersByName.get(byName)).orElseThrow(
 				() -> new IllegalArgumentException("Could not locate ResourcePersister by name " + byName));
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T> ResourcePersister<T> getResourcePersister(Class<T> type) {
+		// TODO Auto-generated method stub
+		return (ResourcePersister<T>) locateEntityPersister(type);
 	}
 
 	@SuppressWarnings("unchecked")

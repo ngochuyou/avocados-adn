@@ -6,17 +6,19 @@ package adn.service.resource.local;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.MappingException;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.internal.EntityEntryContext;
 import org.hibernate.engine.loading.internal.LoadContexts;
 import org.hibernate.engine.spi.BatchFetchQueue;
 import org.hibernate.engine.spi.CollectionEntry;
@@ -24,136 +26,36 @@ import org.hibernate.engine.spi.CollectionKey;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.EntityUniqueKey;
+import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Ngoc Huy
  *
  */
-public class ResourceContextImpl implements ResourceContext {
+public class ResourceContextImpl implements PersistenceContext {
+
+	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private static final int INIT_MAP_SIZE = 8;
 
-	private final Map<ResourceKey<?>, Object> context = new HashMap<>(INIT_MAP_SIZE);
-
-	private final Map<Object, ResourceEntry<?>> entryContext = new IdentityHashMap<>(INIT_MAP_SIZE);
+	private final Map<EntityKey, Object> context = new HashMap<>(INIT_MAP_SIZE);
+	private EntityEntryContext entryContext;
 
 	private final ResourceManager resourceManager;
+	private boolean hasNonReadOnlyEntities;
 
-	/**
-	 * 
-	 */
+	private final Observer observer = new Observer();
+
 	public ResourceContextImpl(ResourceManager resourceManager) {
 		// TODO Auto-generated constructor stub
 		this.resourceManager = resourceManager;
-	}
-
-	@Override
-	public Object find(ResourceKey<?> key) {
-		// TODO Auto-generated method stub
-		if (context == null || context.isEmpty()) {
-			return null;
-		}
-
-		return context.get(key);
-	}
-
-	@Override
-	public void remove(Serializable pathName) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void clear() {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public ResourceManager getResourceManager() {
-		// TODO Auto-generated method stub
-		return resourceManager;
-	}
-
-	// @formatter:off
-	@Override
-	public ResourceEntry<?> addEntry(
-			Object instance,
-			Status status,
-			Object[] loadedState,
-			Serializable id,
-			LockMode lockMode,
-			boolean isTransient,
-			ResourcePersister<?> descriptor) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public ResourceEntry<?> addResource(
-			Object instance,
-			Status status,
-			Object[] loadedState,
-			ResourceKey<?> key,
-			LockMode lockMode,
-			boolean isTransient,
-			ResourcePersister<?> descriptor) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	// @formatter:on
-
-	@Override
-	public void setEntryStatus(ResourceEntry<?> entry, Status status) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void addResource(ResourceKey<?> key, Object instance) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public Object getResource(ResourceKey<?> key) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Object removeResource(ResourceKey<?> key) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public ResourceEntry<?> getEntry(Object instance) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public ResourceEntry<?> removeEntry(Object instance) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public boolean hasEntry(Object instance) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean contains(ResourceKey<?> key) {
-		// TODO Auto-generated method stub
-		return false;
 	}
 
 	@Override
@@ -193,9 +95,21 @@ public class ResourceContextImpl implements ResourceContext {
 	}
 
 	@Override
+	public void clear() {
+		// TODO Auto-generated method stub
+
+	}
+
+	private void setHasNonReadOnlyEnties(Status status) {
+		if (status == Status.DELETED || status == Status.MANAGED || status == Status.SAVING) {
+			hasNonReadOnlyEntities = true;
+		}
+	}
+
+	@Override
 	public boolean hasNonReadOnlyEntities() {
 		// TODO Auto-generated method stub
-		return false;
+		return hasNonReadOnlyEntities;
 	}
 
 	@Override
@@ -265,6 +179,18 @@ public class ResourceContextImpl implements ResourceContext {
 	}
 
 	@Override
+	public EntityEntry getEntry(Object entity) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public EntityEntry removeEntry(Object entity) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
 	public boolean isEntryFor(Object entity) {
 		// TODO Auto-generated method stub
 		return false;
@@ -285,11 +211,18 @@ public class ResourceContextImpl implements ResourceContext {
 	}
 
 	@Override
-	public EntityEntry addEntry(Object entity, Status status, Object[] loadedState, Object rowId, Serializable id,
+	public ResourceEntry<?> addEntry(Object entity, Status status, Object[] loadedState, Object rowId, Serializable id,
 			Object version, LockMode lockMode, boolean existsInDatabase, EntityPersister persister,
 			boolean disableVersionIncrement) {
 		// TODO Auto-generated method stub
-		return null;
+		ResourceEntry<?> entry = (ResourceEntry<?>) persister.getEntityEntryFactory().createEntityEntry(status,
+				loadedState, rowId, id, version, lockMode, existsInDatabase, persister, disableVersionIncrement, this);
+
+		entryContext.addEntityEntry(entity, entry);
+		setHasNonReadOnlyEnties(status);
+		observer.onChange();
+
+		return entry;
 	}
 
 	@Override
@@ -711,6 +644,20 @@ public class ResourceContextImpl implements ResourceContext {
 	public NaturalIdHelper getNaturalIdHelper() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	private class Observer {
+
+		void onChange() {
+			// @formatter:off
+			logger.debug(String.format("PersistenceContext has changed\n"
+					+ "Entries: \n%s",
+					Stream.of(context)
+						.map(instance -> entryContext.getEntityEntry(instance))
+						.map(entry -> "\t" + entry.toString()).collect(Collectors.joining("\n"))));
+			// @formatter:on
+		}
+
 	}
 
 }

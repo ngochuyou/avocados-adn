@@ -14,8 +14,10 @@ import adn.service.resource.local.ResourcePersister;
  */
 public interface Metamodel extends org.hibernate.Metamodel {
 
-	<T> ResourcePersister<T> getResourceDescriptor(String name);
+	<T> ResourcePersister<T> getResourcePersister(String name);
 
+	<T> ResourcePersister<T> getResourcePersister(Class<T> type);
+	
 	void prepare() throws PersistenceException;
 
 	void process() throws PersistenceException;

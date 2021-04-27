@@ -6,6 +6,8 @@ package adn.service.resource.storage;
 import java.io.File;
 import java.io.Serializable;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Component;
 
@@ -37,15 +39,16 @@ public class LocalResourceStorageImpl implements LocalResourceStorage {
 	}
 
 	@Override
-	public <T> T select(Serializable identifier) {
+	public Object select(Serializable identifier) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public <T> List<T> select(Serializable[] identifier) {
+	public List<Object> select(Serializable[] identifiers) {
 		// TODO Auto-generated method stub
-		return null;
+		return Stream.of(identifiers).map(id -> new File(IMAGE_FILE_DIRECTORY + identifiers))
+				.collect(Collectors.toList());
 	}
 
 	@Override

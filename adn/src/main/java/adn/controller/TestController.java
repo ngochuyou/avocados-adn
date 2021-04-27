@@ -31,6 +31,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 import adn.security.SecurityConfiguration;
+import adn.service.resource.local.LocalResourceSession;
+import adn.service.resource.models.FileByBytes;
 
 /**
  * @author Ngoc Huy
@@ -61,13 +63,15 @@ public class TestController extends BaseController {
 
 		private volatile boolean isTimedOut = false;
 
-		/**
-		 * 
-		 */
-		public ConsumeAndReduce(T arg, BiConsumer<ResponseEntity<?>, T> reducer,
-				Function<T, ResponseEntity<?>> consumer, Consumer<Exception> exceptionConsumer, CountDownLatch signal,
+		// @formatter:off
+		public ConsumeAndReduce(
+				T arg,
+				BiConsumer<ResponseEntity<?>, T> reducer,
+				Function<T, ResponseEntity<?>> consumer,
+				Consumer<Exception> exceptionConsumer,
+				CountDownLatch signal,
 				long timeout) {
-			// TODO Auto-generated constructor stub
+		// @formatter:on
 			this.arg = arg;
 			this.producer = consumer;
 			this.reducer = reducer;
@@ -190,6 +194,14 @@ public class TestController extends BaseController {
 			this.done = done;
 		}
 
+	}
+
+	@Autowired
+	private LocalResourceSession session;
+
+	@GetMapping("/file/public/image/session-load")
+	public @ResponseBody ResponseEntity<?> testGetImageBytes() {
+		return ResponseEntity.ok(session.load(FileByBytes.class, "IMG_20210301_162741.jpg"));
 	}
 
 }

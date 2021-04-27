@@ -4,9 +4,13 @@
 package adn.service.resource.local;
 
 import java.io.Serializable;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.hibernate.LockMode;
 import org.hibernate.engine.internal.AbstractEntityEntry;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.Status;
@@ -21,7 +25,7 @@ public class ResourceEntryImpl<T> extends AbstractEntityEntry implements Resourc
 
 	private final transient ResourcePersister<T> persister;
 
-	private final ResourceKey<T> key;
+	private final EntityKey key;
 
 	// @formatter:off
 	private ResourceEntryImpl(
@@ -37,7 +41,7 @@ public class ResourceEntryImpl<T> extends AbstractEntityEntry implements Resourc
 			boolean isBeingReplicated,
 			PersistenceContext persistenceContext,
 			ResourcePersister<T> persister,
-			ResourceKey<T> key) {
+			EntityKey key) {
 		super(factory, entityName, id, status, previousStatus, loadedState, deletedState, version, lockMode,
 				existsInDatabase, isBeingReplicated, persistenceContext);
 		this.persister = persister;
@@ -54,9 +58,9 @@ public class ResourceEntryImpl<T> extends AbstractEntityEntry implements Resourc
 			Object version,
 			LockMode lockMode,
 			boolean existsInDatabase,
-			ResourceContext context,
+			PersistenceContext context,
 			ResourcePersister<T> persister,
-			ResourceKey<T> key) {
+			EntityKey key) {
 		// TODO Auto-generated constructor stub
 		this(
 			null,
@@ -74,6 +78,26 @@ public class ResourceEntryImpl<T> extends AbstractEntityEntry implements Resourc
 			persister,
 			key);
 	}
+
+	@SuppressWarnings("unchecked")
+	public ResourceEntryImpl(EntityEntry entry, PersistenceContext context, Status previousState) {
+		this(
+			null,
+			entry.getEntityName(),
+			entry.getId(),
+			entry.getStatus(),
+			previousState,
+			entry.getLoadedState(),
+			entry.getDeletedState(),
+			entry.getVersion(),
+			entry.getLockMode(),	
+			entry.isExistsInDatabase(),
+			false,
+			context,
+			(ResourcePersister<T>) entry.getPersister(),
+			entry.getEntityKey()
+				);
+	}
 	// @formatter:on
 
 	@Override
@@ -83,9 +107,32 @@ public class ResourceEntryImpl<T> extends AbstractEntityEntry implements Resourc
 	}
 
 	@Override
-	public ResourceKey<T> getResourceKey() {
+	public EntityKey getEntityKey() {
 		// TODO Auto-generated method stub
 		return key;
+	}
+
+	@Override
+	public String toString() {
+		// @formatter:off
+		return String.format("[entityName: %s|"
+				+ "id: %s|"
+				+ "status: %s|"
+				+ "loadedState: %s|"
+				+ "deletedState: %s|"
+				+ "version: %s|"
+				+ "lockMode: %s|"
+				+ "entityKey: %s"
+				+ "]",
+				getEntityName(),
+				getEntityKey().getIdentifier(),
+				getStatus(),
+				getLoadedState() != null ? "[" + Stream.of(getLoadedState()).map(val -> val.toString()).collect(Collectors.joining(", ")) + "]" : "NULL",
+				getDeletedState() != null ? "[" + Stream.of(getDeletedState()).map(val -> val.toString()).collect(Collectors.joining(", ")) + "]" : "NULL",
+				getVersion().toString(),
+				getLockMode().toString(),
+				getEntityKey().toString());
+		// @formatter:on
 	}
 
 }

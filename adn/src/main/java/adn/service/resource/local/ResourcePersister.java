@@ -58,10 +58,8 @@ public interface ResourcePersister<T> extends EntityPersister {
 	}
 
 	@Override
-	@Deprecated
 	default boolean canReadFromCache() {
-		// TODO Auto-generated method stub
-		unsupport();
+		// caching is currently not supported
 		return false;
 	}
 
@@ -151,6 +149,8 @@ public interface ResourcePersister<T> extends EntityPersister {
 		unsupport();
 		return null;
 	}
+
+	void hydrate(Object[] hydratedValues, Object instance);
 
 	<E> E unwrap(Class<E> type);
 

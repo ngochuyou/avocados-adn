@@ -4,11 +4,18 @@
 package adn.service.resource.local;
 
 import java.io.Serializable;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
+import org.hibernate.engine.internal.TwoPhaseLoad;
+import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.RowSelection;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -45,7 +52,7 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 	}
 
 	protected List<?> doLoad(Serializable id, ResourceManager manager, ResourcePersister<?> persister,
-			LockOptions lockOptions) {
+			LockOptions lockOptions) throws HibernateException, SQLException {
 		logger.debug(String.format("Loading resource %s", id));
 
 		List<?> result = null;
@@ -53,7 +60,7 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 		manager.getPersistenceContext().beforeLoad();
 
 		try {
-			result = getResults(id, manager, lockOptions, null);
+			result = getResults(new Serializable[] { id }, persister, manager, lockOptions, null);
 		} finally {
 			manager.getPersistenceContext().afterLoad();
 		}
@@ -63,15 +70,15 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 		return result;
 	}
 
-	private List<?> getResults(Serializable id, ResourceManager manager, LockOptions lockOptions,
-			RowSelection selection) {
-		List<?> result;
+	private List<Object> getResults(Serializable[] ids, ResourcePersister<?> persister, ResourceManager manager,
+			LockOptions lockOptions, RowSelection selection) throws HibernateException, SQLException {
+		List<Object> result;
 		int maxRows = selection != null ? selection.getMaxRows() : Integer.MAX_VALUE; // best not be INTEGER.MAX_VALUE
 		List<AfterLoadAction> afterLoadActions = new ArrayList<>();
 
 		try {
-			applyLock(id, lockOptions, manager, afterLoadActions);
-			result = manager.getResourceManagerFactory().getStorage().select(id);
+			applyLock(ids, lockOptions, manager, afterLoadActions);
+			result = manager.getResourceManagerFactory().getStorage().select(ids);
 			processResults(result, manager, maxRows, lockOptions.getLockMode());
 
 			return result;
@@ -80,30 +87,58 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 		}
 	}
 
-	private void processResults(List<?> results, ResourceManager resourceManager, int maxRow, LockMode lockMode) {
-		ResourceContext context = resourceManager.getPersistenceContext();
-		Loadable persister = getPersister().unwrap(Loadable.class);
-		Object instance;
-		ResourceKey<?>[] keys = getResourceKeys(results);
+	private void processResults(List<Object> resultSet, ResourceManager resourceManager, int maxRow, LockMode lockMode)
+			throws HibernateException, SQLException {
+		PersistenceContext context = resourceManager.getPersistenceContext();
+		ResourcePersister<?> persister = getPersister();
+		EntityKey[] keys = generateKeys(resultSet);
+		List<Object> results = new ArrayList<>();
 
-		for (int i = 0; i < maxRow && i < results.size(); i++) {
-			instance = results.get(i);
-
-			if (context.contains(keys[i])) {
-				doWhenInContext(persister, instance, keys[i], lockMode, resourceManager);
+		for (int i = 0; i < maxRow && i < resultSet.size(); i++) {
+			if (context.containsEntity(keys[i])) {
+				results.add(doWhenInContext(persister.unwrap(Loadable.class), resultSet.get(i), keys[i], lockMode,
+						resourceManager));
 				continue;
 			}
 
-			doWhenNotInContext(persister, instance, keys[i], lockMode, resourceManager);
+			results.add(doWhenNotInContext(persister, resultSet.get(i), keys[i], lockMode, resourceManager));
 		}
 	}
 
-	private void doWhenNotInContext(Loadable persister, Object instance, ResourceKey<?> key, LockMode requestedLockMode,
-			ResourceManager manager) {
+	private Object doWhenNotInContext(ResourcePersister<?> persister, Object object, EntityKey key,
+			LockMode requestedLockMode, ResourceManager manager) throws HibernateException, SQLException {
+		Object instanceObject = persister.instantiate(key.getIdentifier(), manager);
 
+		return hydrateEntity(key, object, instanceObject, persister.unwrap(Loadable.class), manager,
+				requestedLockMode == LockMode.NONE ? LockMode.READ : requestedLockMode);
 	}
 
-	private void doWhenInContext(Loadable persister, Object instance, ResourceKey<?> key, LockMode requestedLockMode,
+	private Object hydrateEntity(EntityKey key, Object row, Object instance, Loadable persister,
+			ResourceManager manager, LockMode requiredLockMode) throws HibernateException, SQLException {
+		Serializable id = key.getIdentifier();
+		Object[] hydratedValues = hydrateRowValues(key, row, persister, manager, requiredLockMode);
+
+		logger.debug("%s#%s Hydrated values [%s]", persister.getEntityName(), key.getIdentifier(),
+				Stream.of(hydratedValues.toString()).collect(Collectors.joining(", ")));
+		// add entry
+		TwoPhaseLoad.addUninitializedEntity(key, instance, persister, requiredLockMode, manager);
+		// actually hydrate the entity
+		((ResourcePersister<?>) persister).hydrate(hydratedValues, instance);
+		// update entry
+		TwoPhaseLoad.postHydrate(persister, id, hydratedValues, null, instance, requiredLockMode, manager);
+
+		return instance;
+	}
+
+	private Object[] hydrateRowValues(EntityKey key, Object row, Loadable persister, ResourceManager manager,
+			LockMode requestedLockMode) throws HibernateException, SQLException {
+		Serializable id = key.getIdentifier();
+
+		return persister.hydrate(null, id, row, manager.getResourceManagerFactory().getMetamodel()
+				.entityPersister(persister.getRootEntityName()).unwrap(Loadable.class), null, true, manager);
+	}
+
+	private Object doWhenInContext(Loadable persister, Object instance, EntityKey key, LockMode requestedLockMode,
 			ResourceManager manager) {
 		if (!persister.isInstance(instance)) {
 			throw new IllegalStateException(
@@ -113,10 +148,10 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 
 		if (requestedLockMode == LockMode.NONE) {
 			// exit if locked with NONE
-			return;
+			return manager.getPersistenceContext().getEntity(key);
 		}
 
-		ResourceEntry<?> entry = manager.getPersistenceContext().getEntry(instance);
+		ResourceEntry<?> entry = (ResourceEntry<?>) manager.getPersistenceContext().getEntry(instance);
 
 		if (entry.getLockMode().lessThan(requestedLockMode)) {
 			// upgrade lock mode
@@ -126,12 +161,14 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 
 			entry.setLockMode(requestedLockMode);
 		}
+
+		return manager.getPersistenceContext().getEntity(key);
 	}
 
 	private void versionCheck(ResourceEntry<?> entry, Object instance, ResourceManager manager) {
 		Object managedVersion = entry.getVersion();
 
-		logger.debug("Checking version of resource " + entry.getResourceKey().getIdentifier());
+		logger.debug("Checking version of resource " + entry.getEntityKey().getIdentifier());
 
 		if (managedVersion != null) {
 			Object loadedVersion = entry.getPersister().getVersion(instance);
@@ -145,21 +182,31 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 		}
 	}
 
-	private ResourceKey<?>[] getResourceKeys(List<?> instances) {
-		return instances.stream().map(this::produceResourceKey).toArray(ResourceKey<?>[]::new);
+	private EntityKey[] generateKeys(List<Object> instances) throws HibernateException, SQLException {
+		EntityKey[] keys = new EntityKey[instances.size()];
+		int i = 0;
+
+		for (Object o : instances) {
+			keys[i++] = produceResourceKey(o);
+		}
+
+		return keys;
 	}
 
-	private ResourceKey<?> produceResourceKey(Object o) {
+	private EntityKey produceResourceKey(Object o) throws HibernateException, SQLException {
 		ResourcePersister<?> persister;
 
-		return new ResourceKey<>((persister = getPersister()).getIdentifier(o, null), persister);
+		return new EntityKey(
+				(Serializable) (persister = getPersister()).getIdentifierType().hydrate(null, null, null, o),
+				persister);
 	}
 
 	protected void applyLock(Serializable id, LockOptions lockOptions, ResourceManager manager,
 			List<AfterLoadAction> afterLoadActions) {
 		if (lockOptions == null || lockOptions.getLockMode() == LockMode.NONE
 				|| lockOptions.getLockMode() == LockMode.UPGRADE_SKIPLOCKED) {
-			// no action
+			logger.debug(String.format("Skipping %s on %s", LockMode.NONE, id.toString()));
+
 			return;
 		}
 
@@ -176,5 +223,7 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 	}
 
 	abstract public ResourcePersister<?> getPersister();
+
+	abstract public String[] getIdentifierValueNames();
 
 }

@@ -14,7 +14,10 @@ import javax.persistence.Query;
 import javax.persistence.SynchronizationType;
 import javax.persistence.criteria.CriteriaBuilder;
 
+import org.hibernate.boot.internal.StandardEntityNotFoundDelegate;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.event.spi.LoadEventListener;
+import org.hibernate.proxy.EntityNotFoundDelegate;
 import org.hibernate.type.spi.TypeConfiguration;
 import org.springframework.util.Assert;
 
@@ -30,8 +33,6 @@ import adn.service.resource.storage.LocalResourceStorage;
  */
 public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 
-	private final NamingStrategy resourceNamingStrategy;
-
 	private final LocalResourceStorage localStorage;
 
 	private final Metamodel metamodel;
@@ -46,6 +47,10 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 
 	private final Dialect dialect;
 
+	private final LoadEventListener loadEventListener = new DefaultLoadEventListenerImplementor();
+
+	private final EntityNotFoundDelegate eNFD = new StandardEntityNotFoundDelegate();
+
 	public ResourceManagerFactoryImpl(final ContextBuildingService serviceContext,
 			final TypeConfiguration typeConfiguration) {
 		// TODO Auto-generated constructor stub
@@ -58,7 +63,6 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 		this.metadata = metadata;
 		this.typeConfiguration = typeConfiguration;
 		buildingService = serviceContext;
-		resourceNamingStrategy = serviceContext.getService(NamingStrategy.class);
 		localStorage = serviceContext.getService(LocalResourceStorage.class);
 		sharedIdentifierGeneratorFactory = new SharedIdentifierGeneratorFactory(serviceContext);
 		dialect = serviceContext.getServiceWrapper(Dialect.class, wrapper -> wrapper.orElseThrow().unwrap());
@@ -84,25 +88,26 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	}
 
 	@Override
-	public <T> ResourcePersister<T> getResourceDescriptor(Class<T> resourceClass) {
+	public <T> ResourcePersister<T> getResourcePersister(Class<T> resourceClass) {
 		// TODO Auto-generated method stub
-		return getResourceDescriptor(resourceNamingStrategy.getName(resourceClass));
+		return metamodel.getResourcePersister(resourceClass);
 	}
 
 	@Override
-	public <T> ResourcePersister<T> getResourceDescriptor(String resourceName) {
+	public <T> ResourcePersister<T> getResourcePersister(String resourceName) {
 		// TODO Auto-generated method stub
-		return metamodel.getResourceDescriptor(resourceName);
+		return metamodel.getResourcePersister(resourceName);
 	}
 
-	public <T> ResourcePersister<T> locateResourceDescriptor(Class<T> type) {
+	@Override
+	public <T> ResourcePersister<T> locateResourcePersister(Class<T> type) {
 		supportCheck(type);
 
-		return getResourceDescriptor(type);
+		return getResourcePersister(type);
 	}
 
 	private <T> void supportCheck(Class<T> type) throws IllegalArgumentException {
-		ResourcePersister<T> descriptor = getResourceDescriptor(type);
+		ResourcePersister<T> descriptor = getResourcePersister(type);
 
 		Assert.notNull(descriptor, "Unable to locate descriptor for resource of type: " + type
 				+ ", provided resource type is not a managed type");
@@ -229,6 +234,18 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	public Dialect getDialect() {
 		// TODO Auto-generated method stub
 		return dialect;
+	}
+
+	@Override
+	public LoadEventListener getLoadEventListener() {
+		// TODO Auto-generated method stub
+		return loadEventListener;
+	}
+
+	@Override
+	public EntityNotFoundDelegate getResourceNotFoundHandler() {
+		// TODO Auto-generated method stub
+		return eNFD;
 	}
 
 }

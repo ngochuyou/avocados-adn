@@ -17,9 +17,6 @@ public interface ResourceManager extends SharedSessionContractImplementor {
 
 	boolean isRollbackOnly();
 
-	@Override
-	ResourceContext getPersistenceContext();
-
 	@SuppressWarnings("unchecked")
 	default <E extends ResourceManager> E unwrapManager(Class<? super E> type) {
 		return (E) this;
