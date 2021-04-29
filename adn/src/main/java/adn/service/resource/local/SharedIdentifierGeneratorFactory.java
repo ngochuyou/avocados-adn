@@ -75,7 +75,7 @@ public class SharedIdentifierGeneratorFactory implements IdentifierGeneratorFact
 	@Override
 	public Class<?> getIdentifierGeneratorClass(String strategy) {
 		// TODO Auto-generated method stub
-		return null;
+		return contextService.getService(MutableIdentifierGeneratorFactory.class).getIdentifierGeneratorClass(strategy);
 	}
 
 	@Override

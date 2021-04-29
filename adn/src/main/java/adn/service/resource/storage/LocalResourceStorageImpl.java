@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -21,6 +22,16 @@ import org.springframework.stereotype.Component;
 public class LocalResourceStorageImpl implements LocalResourceStorage {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+	@Autowired
+	public LocalResourceStorageImpl() throws IllegalAccessException {
+		// TODO Auto-generated constructor stub
+		logger.trace("Registering supported Resource types returned by the " + LocalResourceStorage.class);
+		logger.trace("Adding " + File.class);
+		SupportedResourceContext.INSTANCE.contribute(File.class);
+		logger.trace("Closing type contributions");
+		SupportedResourceContext.INSTANCE.close();
+	}
 
 	@Override
 	public boolean isExists(String filename) {
@@ -59,7 +70,12 @@ public class LocalResourceStorageImpl implements LocalResourceStorage {
 	@Override
 	public void lock(Serializable identifier) {
 		// TODO Auto-generated method stub
+	}
 
+	@Override
+	public boolean isResourceTypeSupported(Class<?> type) {
+		// TODO Auto-generated method stub
+		return SupportedResourceContext.INSTANCE.isSupported(type);
 	}
 
 }

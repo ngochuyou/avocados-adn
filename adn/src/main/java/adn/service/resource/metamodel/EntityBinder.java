@@ -56,7 +56,6 @@ public class EntityBinder implements ManagerFactoryEventListener {
 
 		generator = generator != null ? generator
 				: igFactory.createIdentifierGenerator(generatorName, idAttribute.getJavaType());
-
 		Assert.notNull(generator, "Unable to locate IdentifierGenrator for " + idAttribute.getName());
 
 		return generator;

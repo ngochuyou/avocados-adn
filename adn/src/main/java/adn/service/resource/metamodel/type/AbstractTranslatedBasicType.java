@@ -1,111 +1,88 @@
 /**
  * 
  */
-package adn.service.resource.local;
+package adn.service.resource.metamodel.type;
 
-import static adn.helpers.FunctionHelper.reject;
-
-import java.io.File;
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.function.Function;
 
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
-import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.Size;
 import org.hibernate.engine.spi.Mapping;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.type.BasicType;
-import org.hibernate.type.DiscriminatorType;
 import org.hibernate.type.ForeignKeyDirection;
-import org.hibernate.type.StringType;
 import org.hibernate.type.Type;
+import org.springframework.util.Assert;
 
-import adn.service.resource.storage.LocalResourceStorage;
 import adn.service.resource.storage.LocalResourceStorage.ResourceResultSet;
-import adn.service.resource.storage.LocalResourceStorage.SingleResourceResultSet;
 
 /**
  * @author Ngoc Huy
  *
  */
 @SuppressWarnings("serial")
-public class IdentifierStringType implements BasicType, DiscriminatorType<String> {
+public abstract class AbstractTranslatedBasicType implements BasicType {
 
-	public static final IdentifierStringType INSTANCE = new IdentifierStringType(StringType.INSTANCE);
+	protected final BasicType basicType;
 
-	private final StringType stringType;
-
-	private final Map<Class<?>, Function<Object, String>> hydrateFunctions = Map.of(File.class, this::fromFile);
-
-	private IdentifierStringType(StringType stringType) {
-		super();
-		this.stringType = stringType;
-	}
-
-	private String fromFile(Object resource) {
-		File file = (File) resource;
-
-		return file.getPath().substring(LocalResourceStorage.IMAGE_FILE_DIRECTORY.length());
-	}
-
-	@Override
-	public String stringToObject(String xml) throws Exception {
-		// TODO Auto-generated method stub
-		return stringType.stringToObject(xml);
+	protected AbstractTranslatedBasicType(BasicType basicType) {
+		// TODO Auto-generated constructor stub
+		Assert.notNull(basicType, "BasicType must not be null");
+		this.basicType = basicType;
 	}
 
 	@Override
 	public boolean isAssociationType() {
 		// TODO Auto-generated method stub
-		return stringType.isAssociationType();
+		return basicType.isAssociationType();
 	}
 
 	@Override
 	public boolean isCollectionType() {
 		// TODO Auto-generated method stub
-		return stringType.isCollectionType();
+		return basicType.isCollectionType();
 	}
 
 	@Override
 	public boolean isEntityType() {
 		// TODO Auto-generated method stub
-		return stringType.isEntityType();
+		return basicType.isEntityType();
 	}
 
 	@Override
 	public boolean isAnyType() {
 		// TODO Auto-generated method stub
-		return stringType.isAnyType();
+		return basicType.isAnyType();
 	}
 
 	@Override
 	public boolean isComponentType() {
 		// TODO Auto-generated method stub
-		return stringType.isComponentType();
+		return basicType.isComponentType();
 	}
 
 	@Override
 	public int getColumnSpan(Mapping mapping) throws MappingException {
 		// TODO Auto-generated method stub
-		return stringType.getColumnSpan(mapping);
+		return basicType.getColumnSpan(mapping);
 	}
 
 	@Override
 	public int[] sqlTypes(Mapping mapping) throws MappingException {
 		// TODO Auto-generated method stub
-		return stringType.sqlTypes(mapping);
+		return basicType.sqlTypes(mapping);
 	}
 
 	@Override
 	public Size[] dictatedSizes(Mapping mapping) throws MappingException {
 		// TODO Auto-generated method stub
-		return stringType.dictatedSizes(mapping);
+		return basicType.dictatedSizes(mapping);
 	}
 
 	@Override
@@ -117,184 +94,163 @@ public class IdentifierStringType implements BasicType, DiscriminatorType<String
 	@Override
 	public Class<?> getReturnedClass() {
 		// TODO Auto-generated method stub
-		return stringType.getReturnedClass();
+		return basicType.getReturnedClass();
 	}
 
 	@Override
 	public boolean isSame(Object x, Object y) throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.isSame(x, y);
+		return basicType.isSame(x, y);
 	}
 
 	@Override
 	public boolean isEqual(Object x, Object y) throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.isEqual(x, y);
+		return basicType.isEqual(x, y);
 	}
 
 	@Override
 	public boolean isEqual(Object x, Object y, SessionFactoryImplementor factory) throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.isEqual(x, y, factory);
+		return basicType.isEqual(x, y, factory);
 	}
 
 	@Override
 	public int getHashCode(Object x) throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.getHashCode(x);
+		return basicType.getHashCode(x);
 	}
 
 	@Override
 	public int getHashCode(Object x, SessionFactoryImplementor factory) throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.getHashCode(x, factory);
+		return basicType.getHashCode(x, factory);
 	}
 
 	@Override
 	public int compare(Object x, Object y) {
 		// TODO Auto-generated method stub
-		return stringType.compare(x, y);
+		return basicType.compare(x, y);
 	}
 
 	@Override
 	public boolean isDirty(Object old, Object current, SharedSessionContractImplementor session)
 			throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.isDirty(old, current, session);
+		return basicType.isDirty(old, current, session);
 	}
 
 	@Override
 	public boolean isDirty(Object oldState, Object currentState, boolean[] checkable,
 			SharedSessionContractImplementor session) throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.isDirty(oldState, currentState, session);
+		return basicType.isDirty(oldState, currentState, session);
 	}
 
 	@Override
 	public boolean isModified(Object dbState, Object currentState, boolean[] checkable,
 			SharedSessionContractImplementor session) throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.isModified(dbState, currentState, checkable, session);
+		return basicType.isModified(dbState, currentState, checkable, session);
 	}
 
 	@Override
 	public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
 			throws HibernateException, SQLException {
 		// TODO Auto-generated method stub
-		return stringType.nullSafeGet(rs, getName(), session, owner);
+		return basicType.nullSafeGet(rs, getName(), session, owner);
 	}
 
 	@Override
 	public Object nullSafeGet(ResultSet rs, String name, SharedSessionContractImplementor session, Object owner)
 			throws HibernateException, SQLException {
 		// TODO Auto-generated method stub
-		return stringType.nullSafeGet(rs, name, session, owner);
+		return basicType.nullSafeGet(rs, name, session, owner);
 	}
 
 	@Override
 	public void nullSafeSet(PreparedStatement st, Object value, int index, boolean[] settable,
 			SharedSessionContractImplementor session) throws HibernateException, SQLException {
 		// TODO Auto-generated method stub
-		stringType.nullSafeSet(st, value, index, settable, session);
+		basicType.nullSafeSet(st, value, index, settable, session);
 	}
 
 	@Override
 	public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session)
 			throws HibernateException, SQLException {
 		// TODO Auto-generated method stub
-		stringType.nullSafeSet(null, value, getName(), session);
+		basicType.nullSafeSet(st, value, index, session);
 	}
 
 	@Override
 	public String toLoggableString(Object value, SessionFactoryImplementor factory) throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.toLoggableString(value, factory);
+		return basicType.toLoggableString(value, factory);
 	}
 
 	@Override
 	public String getName() {
 		// TODO Auto-generated method stub
-		return stringType.getName();
+		return basicType.getName();
 	}
 
 	@Override
 	public Object deepCopy(Object value, SessionFactoryImplementor factory) throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.deepCopy(value, factory);
+		return basicType.deepCopy(value, factory);
 	}
 
 	@Override
 	public boolean isMutable() {
 		// TODO Auto-generated method stub
-		return stringType.isMutable();
+		return basicType.isMutable();
 	}
 
 	@Override
 	public Serializable disassemble(Object value, SharedSessionContractImplementor session, Object owner)
 			throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.disassemble(value, session, owner);
+		return basicType.disassemble(value, session, owner);
 	}
 
 	@Override
 	public Object assemble(Serializable cached, SharedSessionContractImplementor session, Object owner)
 			throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.assemble(cached, session, owner);
+		return basicType.assemble(cached, session, owner);
 	}
 
 	@Override
 	public void beforeAssemble(Serializable cached, SharedSessionContractImplementor session) {
 		// TODO Auto-generated method stub
-		stringType.beforeAssemble(cached, session);
-	}
-
-	@Override
-	public Object hydrate(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
-			throws HibernateException, SQLException {
-		// TODO Auto-generated method stub
-		if (rs instanceof ResourceResultSet) {
-			ResourceResultSet resultSet = (ResourceResultSet) rs;
-			Object row = resultSet instanceof SingleResourceResultSet
-					? ((SingleResourceResultSet) resultSet).getObject(0)
-					: resultSet.getCurrent();
-
-			return hydrateFunctions.containsKey(resultSet.getResourceType())
-					? hydrateFunctions.get(resultSet.getResourceType()).apply(row)
-					: reject(new HibernateException(
-							"Unable to hydrate identifier due to resource type is not supported: "
-									+ resultSet.getResourceType()),
-							HibernateException.class);
-		}
-
-		throw new HibernateException("ResultSet must be instance of " + ResourceResultSet.class);
+		basicType.beforeAssemble(cached, session);
 	}
 
 	@Override
 	public Object resolve(Object value, SharedSessionContractImplementor session, Object owner)
 			throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.resolve(value, session, owner);
+		return basicType.resolve(value, session, owner);
 	}
 
 	@Override
 	public Object semiResolve(Object value, SharedSessionContractImplementor session, Object owner)
 			throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.semiResolve(value, session, owner);
+		return basicType.semiResolve(value, session, owner);
 	}
 
 	@Override
 	public Type getSemiResolvedType(SessionFactoryImplementor factory) {
 		// TODO Auto-generated method stub
-		return stringType.getSemiResolvedType(factory);
+		return basicType.getSemiResolvedType(factory);
 	}
 
 	@Override
 	public Object replace(Object original, Object target, SharedSessionContractImplementor session, Object owner,
 			@SuppressWarnings("rawtypes") Map copyCache) throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.replace(original, target, session, owner, copyCache);
+		return basicType.replace(original, target, session, owner, copyCache);
 	}
 
 	@Override
@@ -302,25 +258,21 @@ public class IdentifierStringType implements BasicType, DiscriminatorType<String
 			@SuppressWarnings("rawtypes") Map copyCache, ForeignKeyDirection foreignKeyDirection)
 			throws HibernateException {
 		// TODO Auto-generated method stub
-		return stringType.replace(original, target, session, owner, copyCache, foreignKeyDirection);
+		return basicType.replace(original, target, session, owner, copyCache, foreignKeyDirection);
 	}
 
 	@Override
 	public boolean[] toColumnNullness(Object value, Mapping mapping) {
 		// TODO Auto-generated method stub
-		return stringType.toColumnNullness(value, mapping);
+		return basicType.toColumnNullness(value, mapping);
 	}
 
-	@Override
-	public String objectToSQLString(String value, Dialect dialect) throws Exception {
-		// TODO Auto-generated method stub
-		return stringType.objectToSQLString(value, dialect);
-	}
+	protected ResourceResultSet assertResultSet(ResultSet rs) throws HibernateException {
+		if (rs instanceof ResourceResultSet) {
+			return (ResourceResultSet) rs;
+		}
 
-	@Override
-	public String[] getRegistrationKeys() {
-		// TODO Auto-generated method stub
-		return new String[] { this.getClass().getSimpleName() };
+		throw new HibernateException("ResultSet must be instance of " + ResourceResultSet.class);
 	}
 
 }

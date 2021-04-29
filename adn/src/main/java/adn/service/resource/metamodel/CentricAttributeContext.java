@@ -4,6 +4,7 @@
 package adn.service.resource.metamodel;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -14,6 +15,8 @@ import java.util.Set;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.mapping.Property;
 import org.hibernate.metamodel.model.domain.internal.BasicTypeImpl;
 import org.hibernate.metamodel.model.domain.internal.PluralAttributeBuilder;
@@ -25,17 +28,21 @@ import org.hibernate.metamodel.model.domain.spi.PluralPersistentAttribute;
 import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
 import org.hibernate.service.Service;
 import org.hibernate.type.ArrayType;
+import org.hibernate.type.BasicType;
 import org.hibernate.type.BasicTypeRegistry;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.MapType;
 import org.hibernate.type.ObjectType;
 import org.hibernate.type.SetType;
 import org.hibernate.type.Type;
+import org.hibernate.type.VersionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import adn.service.resource.local.IdentifierStringType;
 import adn.service.resource.metamodel.PropertyBinder.KeyValueContext;
+import adn.service.resource.metamodel.type.CreationTimeStampType;
+import adn.service.resource.metamodel.type.IdentifierStringType;
+import adn.service.resource.metamodel.type.UpdateTimeStampType;
 
 /**
  * @author Ngoc Huy
@@ -82,8 +89,9 @@ public interface CentricAttributeContext extends Service {
 			// TODO Auto-generated constructor stub
 			this.typeRegistry = typeRegistry;
 			this.metamodel = metamodel;
-
 			typeRegistry.register(IdentifierStringType.INSTANCE);
+			typeRegistry.register(CreationTimeStampType.INSTANCE);
+			typeRegistry.register(UpdateTimeStampType.INSTANCE);
 		}
 
 		@Override
@@ -108,10 +116,49 @@ public interface CentricAttributeContext extends Service {
 
 				return attr instanceof Identifier
 						? typeRegistry.getRegisteredType(IdentifierStringType.class.getSimpleName())
-						: typeRegistry.getRegisteredType(attr.getJavaType().getName());
+						: attr instanceof Version ? resolveVersionType(owner, attr)
+								: Optional.ofNullable(findSpecificCases(owner, attr))
+										.orElse(typeRegistry.getRegisteredType(attr.getJavaType().getName()));
 			}
 
 			return resolveCollectionType(owner, attr.getJavaType(), attr.getName());
+		}
+
+		private <D, T> Type findSpecificCases(ResourceType<D> owner, Attribute<D, T> attribute) {
+			Member member = attribute.getJavaMember();
+
+			if (member instanceof Field) {
+				Field f = (Field) member;
+
+				if (f.getDeclaredAnnotation(CreationTimestamp.class) != null) {
+					return typeRegistry.getRegisteredType(CreationTimestamp.class.getName());
+				}
+			}
+
+			return null;
+		}
+
+		@SuppressWarnings("unchecked")
+		private <D, T> VersionType<T> resolveVersionType(ResourceType<D> owner, Attribute<D, T> attribute) {
+			Member member = attribute.getJavaMember();
+
+			if (member instanceof Field) {
+				Field f = (Field) member;
+
+				if (f.getDeclaredAnnotation(UpdateTimestamp.class) != null) {
+					return (VersionType<T>) typeRegistry.getRegisteredType(UpdateTimestamp.class.getName());
+				}
+			}
+
+			BasicType candidate = typeRegistry.getRegisteredType(attribute.getJavaType().getName());
+
+			return (VersionType<T>) Optional
+					.ofNullable(candidate instanceof VersionType
+							? candidate.getReturnedClass().equals(attribute.getJavaType()) ? candidate : null
+							: null)
+					.orElseThrow(() -> new IllegalArgumentException(String.format(
+							"The obtained JavaType from the Type descriptor and JavaType from the attribute do not match. [%s><%s]]",
+							candidate.getReturnedClass(), attribute.getJavaType())));
 		}
 
 		@Override

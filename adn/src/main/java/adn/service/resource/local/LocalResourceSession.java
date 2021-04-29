@@ -1436,7 +1436,6 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 	@Override
 	public void removeOrphanBeforeUpdates(String entityName, Object child) {
 		// TODO Auto-generated method stub
-
 	}
 
 	public void afterOperation(boolean success) {

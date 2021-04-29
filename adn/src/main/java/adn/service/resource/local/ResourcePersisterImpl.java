@@ -1,6 +1,3 @@
-/**
- * 
- */
 package adn.service.resource.local;
 
 import java.io.Serializable;
@@ -60,11 +57,11 @@ import adn.service.resource.metamodel.CentricAttributeContext;
 import adn.service.resource.metamodel.EntityBinder;
 import adn.service.resource.metamodel.EntityPersisterImplementor;
 import adn.service.resource.metamodel.EntityTuplizerImplementor;
-import adn.service.resource.metamodel.MetamodelImpl;
 import adn.service.resource.metamodel.MetamodelImpl.IdentifierGenerationHolder;
 import adn.service.resource.metamodel.MetamodelImpl.NoValueGeneration;
 import adn.service.resource.metamodel.PropertyBinder;
 import adn.service.resource.metamodel.ResourceType;
+import adn.service.resource.storage.LocalResourceStorage.ResourceResultSet;
 
 /**
  * @author Ngoc Huy
@@ -73,7 +70,7 @@ import adn.service.resource.metamodel.ResourceType;
 public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPersisterImplementor<D>, ClassMetadata,
 		SharedSessionUnwrapper, Lockable, Loadable {
 
-	private final Logger logger = LoggerFactory.getLogger(MetamodelImpl.class);
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private final ResourceManagerFactory managerFactory;
 	private final ResourceType<D> metamodel;
@@ -110,7 +107,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public void generateEntityDefinition() {
-		// TODO Auto-generated method stub
+
 		mappedClass = metamodel.getJavaType();
 		logger.trace("Generating entity definition of type " + mappedClass.getName());
 		entityName = metamodel.getName();
@@ -146,7 +143,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 			if (!attr.getDeclaringType().equals(metamodel)) {
 				logger.trace(
-						String.format("%s.%s: locating metadata from super type", metamodel.getName(), attr.getName()));
+						String.format("Locating metadata from super type %s.%s", metamodel.getName(), attr.getName()));
 				propertyAccesses[i] = locatePropertyAccess(attr.getName());
 				valueGenerations[i] = (delegateGeneration = locateValueGeneration(attr.getName()));
 				propertyTypes[i] = locatePropertyType(attr.getName());
@@ -192,11 +189,14 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 				throw new IllegalArgumentException("Unable to locate identifier access for type " + entityName);
 			}
 
+			logger.trace("Inheriting IdentifierAccess from root named " + root.getName());
 			identifierAccess = managerFactory.getResourcePersister(root.getName())
 					.getPropertyAccess(getIdentifierPropertyName());
 		} else {
+			logger.trace("Creating IdentifierAccess");
 			identifierAccess = propertyAccesses[indexMap
 					.get(metamodel.getId(metamodel.getIdType().getJavaType()).getName())];
+
 			try {
 				identifierGenerator = EntityBinder.INSTANCE.locateIdentifierGenerator(metamodel, managerFactory);
 			} catch (IllegalAccessException e) {
@@ -223,105 +223,105 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public void postInstantiate() throws MappingException {
-		// TODO Auto-generated method stub
+
 		logger.trace("Finished instantiating ResourcePersister for resource named " + getEntityName());
 	}
 
 	@Override
 	public EntityEntryFactory getEntityEntryFactory() {
-		// TODO Auto-generated method stub
+
 		return entryFactory;
 	}
 
 	@Override
 	public String getRootEntityName() {
-		// TODO Auto-generated method stub
+
 		return metamodel.locateRootType().getName();
 	}
 
 	@Override
 	public String getEntityName() {
-		// TODO Auto-generated method stub
+
 		return entityName;
 	}
 
 	@Override
 	public boolean isSubclassEntityName(String entityName) {
-		// TODO Auto-generated method stub
+
 		return metamodel.getSubclassNames().contains(entityName);
 	}
 
 	@Override
 	public Serializable[] getPropertySpaces() {
-		// TODO Auto-generated method stub
+
 		return new Serializable[0];
 	}
 
 	@Override
 	public Serializable[] getQuerySpaces() {
-		// TODO Auto-generated method stub
+
 		return new Serializable[0];
 	}
 
 	@Override
 	public boolean hasProxy() {
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
 	@Override
 	public boolean hasCollections() {
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
 	@Override
 	public boolean hasMutableProperties() {
-		// TODO Auto-generated method stub
+
 		return IntStream.range(0, propertySpan).mapToObj(index -> propertyUpdatabilities[index])
 				.filter(pred -> pred == true).count() > 0;
 	}
 
 	@Override
 	public boolean hasSubselectLoadableCollections() {
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
 	@Override
 	public boolean hasCascades() {
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
 	@Override
 	public boolean isMutable() {
-		// TODO Auto-generated method stub
+
 		return entryFactory.getClass().equals(MutableEntityEntryFactory.class);
 	}
 
 	@Override
 	public boolean isInherited() {
-		// TODO Auto-generated method stub
+
 		return metamodel.getSuperType() != null;
 	}
 
 	@Override
 	public boolean isIdentifierAssignedByInsert() {
-		// TODO Auto-generated method stub
+
 		return identifierGenerator != null && getValueGeneration(metamodel.locateIdAttribute().getName())
 				.getGenerationTiming() == GenerationTiming.INSERT;
 	}
 
 	@Override
 	public Type getPropertyType(String propertyName) throws MappingException {
-		// TODO Auto-generated method stub
+
 		return propertyTypes[indexMap.get(propertyName)];
 	}
 
 	@Override
 	public Type locatePropertyType(String properyName) {
-		// TODO Auto-generated method stub
+
 		Type candidate = getPropertyType(properyName);
 
 		if (candidate != null) {
@@ -335,7 +335,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	@Override
 	public int[] findDirty(Object[] currentState, Object[] previousState, Object owner,
 			SharedSessionContractImplementor session) {
-		// TODO Auto-generated method stub
+
 		int[] indices = null;
 		int count = 0;
 
@@ -364,31 +364,31 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public int[] findModified(Object[] old, Object[] current, Object object, SharedSessionContractImplementor session) {
-		// TODO Auto-generated method stub
+
 		return findDirty(current, current, object, session);
 	}
 
 	@Override
 	public boolean hasIdentifierProperty() {
-		// TODO Auto-generated method stub
+
 		return metamodel.hasSingleIdAttribute();
 	}
 
 	@Override
 	public boolean canExtractIdOutOfEntity() {
-		// TODO Auto-generated method stub
+
 		return identifierAccess != null;
 	}
 
 	@Override
 	public boolean isVersioned() {
-		// TODO Auto-generated method stub
+
 		return metamodel.hasVersionAttribute();
 	}
 
 	@Override
 	public VersionType<?> getVersionType() {
-		// TODO Auto-generated method stub
+
 		if (!isVersioned()) {
 			return null;
 		}
@@ -404,19 +404,19 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public int getVersionProperty() {
-		// TODO Auto-generated method stub
+
 		return indexMap.get(metamodel.locateVersionAttribute().getName());
 	}
 
 	@Override
 	public boolean hasNaturalIdentifier() {
-		// TODO Auto-generated method stub
+
 		return identifierGenerator == null;
 	}
 
 	@Override
 	public int[] getNaturalIdentifierProperties() {
-		// TODO Auto-generated method stub
+
 		if (!hasNaturalIdentifier()) {
 			return null;
 		}
@@ -426,19 +426,19 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public Object[] getNaturalIdentifierSnapshot(Serializable id, SharedSessionContractImplementor session) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public IdentifierGenerator getIdentifierGenerator() {
-		// TODO Auto-generated method stub
+
 		return identifierGenerator;
 	}
 
 	@Override
 	public boolean hasLazyProperties() {
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
@@ -450,7 +450,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	@Override
 	public Serializable loadEntityIdByNaturalId(Object[] naturalIdValues, LockOptions lockOptions,
 			SharedSessionContractImplementor session) {
-		// TODO Auto-generated method stub
+
 		assertNaturalId(naturalIdValues);
 		// directly load from storage
 		Object instance = getManagerFactory().getStorage().select((Serializable) naturalIdValues[0]);
@@ -465,35 +465,35 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	@Override
 	public Object load(Serializable id, Object optionalObject, LockMode lockMode,
 			SharedSessionContractImplementor session) throws HibernateException {
-		// TODO Auto-generated method stub
+
 		return load(id, optionalObject, new LockOptions().setLockMode(lockMode), null);
 	}
 
 	@Override
 	public Object load(Serializable id, Object optionalObject, LockOptions lockOptions,
 			SharedSessionContractImplementor session) throws HibernateException {
-		// TODO Auto-generated method stub
+
 		return resourceLoader.load(id, null, session, lockOptions);
 	}
 
 	@Override
 	public List<?> multiLoad(Serializable[] ids, SharedSessionContractImplementor session,
 			MultiLoadOptions loadOptions) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public void lock(Serializable id, Object version, Object object, LockMode lockMode,
 			SharedSessionContractImplementor session) throws HibernateException {
-		// TODO Auto-generated method stub
+
 		locateLockingStrategy(lockMode).lock(id, version, object, LockOptions.WAIT_FOREVER, session);
 	}
 
 	@Override
 	public void lock(Serializable id, Object version, Object object, LockOptions lockOptions,
 			SharedSessionContractImplementor session) throws HibernateException {
-		// TODO Auto-generated method stub
+
 		locateLockingStrategy(lockOptions.getLockMode()).lock(id, version, object, lockOptions.getTimeOut(), session);
 	}
 
@@ -504,21 +504,19 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	@Override
 	public void insert(Serializable id, Object[] fields, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public Serializable insert(Object[] fields, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public void delete(Serializable id, Object version, Object object, SharedSessionContractImplementor session)
 			throws HibernateException {
-		// TODO Auto-generated method stub
 
 	}
 
@@ -526,24 +524,24 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	public void update(Serializable id, Object[] fields, int[] dirtyFields, boolean hasDirtyCollection,
 			Object[] oldFields, Object oldVersion, Object object, Object rowId,
 			SharedSessionContractImplementor session) throws HibernateException {
-		// TODO Auto-generated method stub
+
 	}
 
 	@Override
 	public Type[] getPropertyTypes() {
-		// TODO Auto-generated method stub
+
 		return propertyTypes;
 	}
 
 	@Override
 	public String[] getPropertyNames() {
-		// TODO Auto-generated method stub
+
 		return indexMap.keySet().toArray(String[]::new);
 	}
 
 	@Override
 	public boolean[] getPropertyInsertability() {
-		// TODO Auto-generated method stub
+
 		boolean[] arr = new boolean[propertySpan];
 
 		Arrays.fill(arr, true);
@@ -553,7 +551,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public ValueInclusion[] getPropertyInsertGenerationInclusions() {
-		// TODO Auto-generated method stub
+
 		ValueInclusion[] arr = new ValueInclusion[propertySpan];
 
 		Arrays.fill(arr, ValueInclusion.FULL);
@@ -563,7 +561,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public ValueInclusion[] getPropertyUpdateGenerationInclusions() {
-		// TODO Auto-generated method stub
+
 		return Stream.of(valueGenerations)
 				.map(vg -> vg != NoValueGeneration.INSTANCE && vg.getGenerationTiming().equals(GenerationTiming.ALWAYS)
 						? ValueInclusion.FULL
@@ -573,13 +571,13 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public boolean[] getPropertyUpdateability() {
-		// TODO Auto-generated method stub
+
 		return propertyUpdatabilities;
 	}
 
 	@Override
 	public boolean[] getPropertyCheckability() {
-		// TODO Auto-generated method stub
+
 		boolean[] arr = new boolean[propertySpan];
 
 		Arrays.fill(arr, true);
@@ -589,19 +587,19 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public boolean[] getPropertyNullability() {
-		// TODO Auto-generated method stub
+
 		return propertyNullabilities;
 	}
 
 	@Override
 	public boolean[] getPropertyVersionability() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public boolean[] getPropertyLaziness() {
-		// TODO Auto-generated method stub
+
 		boolean[] arr = new boolean[propertySpan];
 
 		Arrays.fill(arr, false);
@@ -611,13 +609,13 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public CascadeStyle[] getPropertyCascadeStyles() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Type getIdentifierType() {
-		// TODO Auto-generated method stub
+
 		if (!hasIdentifierProperty()) {
 			return locateSuperPersister().getIdentifierType();
 		}
@@ -637,7 +635,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public String getIdentifierPropertyName() {
-		// TODO Auto-generated method stub
+
 		if (!hasIdentifierProperty()) {
 			return metamodel.getSuperType() == null ? null
 					: managerFactory.getResourcePersister(metamodel.locateSuperType().getName())
@@ -649,135 +647,132 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public ClassMetadata getClassMetadata() {
-		// TODO Auto-generated method stub
+
 		return this;
 	}
 
 	@Override
 	public boolean isBatchLoadable() {
-		// TODO Auto-generated method stub
+
 		return true;
 	}
 
 	@Override
 	public boolean isSelectBeforeUpdateRequired() {
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
 	@Override
 	public Object[] getDatabaseSnapshot(Serializable id, SharedSessionContractImplementor session)
 			throws HibernateException {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Serializable getIdByUniqueKey(Serializable key, String uniquePropertyName,
 			SharedSessionContractImplementor session) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Object getCurrentVersion(Serializable id, SharedSessionContractImplementor session)
 			throws HibernateException {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Object forceVersionIncrement(Serializable id, Object currentVersion,
 			SharedSessionContractImplementor session) throws HibernateException {
-		// TODO Auto-generated method stub
+
 		return valueGenerations[getVersionProperty()].getGenerationTiming() == GenerationTiming.ALWAYS;
 	}
 
 	@Override
 	public boolean isInstrumented() {
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
 	@Override
 	public boolean hasInsertGeneratedProperties() {
-		// TODO Auto-generated method stub
+
 		return Stream.of(valueGenerations).filter(vg -> vg.getGenerationTiming() == GenerationTiming.INSERT)
 				.count() != 0;
 	}
 
 	@Override
 	public boolean hasUpdateGeneratedProperties() {
-		// TODO Auto-generated method stub
+
 		return Stream.of(valueGenerations).filter(vg -> vg.getGenerationTiming() == GenerationTiming.ALWAYS)
 				.count() != 0;
 	}
 
 	@Override
 	public boolean isVersionPropertyGenerated() {
-		// TODO Auto-generated method stub
+
 		return valueGenerations[getVersionProperty()] != NoValueGeneration.INSTANCE;
 	}
 
 	@Override
 	public void afterInitialize(Object entity, SharedSessionContractImplementor session) {
-		// TODO Auto-generated method stub
+
 	}
 
 	@Override
 	public void afterReassociate(Object entity, SharedSessionContractImplementor session) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public Object createProxy(Serializable id, SharedSessionContractImplementor session) throws HibernateException {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Boolean isTransient(Object object, SharedSessionContractImplementor session) throws HibernateException {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Object[] getPropertyValuesToInsert(Object object, @SuppressWarnings("rawtypes") Map mergeMap,
 			SharedSessionContractImplementor session) throws HibernateException {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public void processInsertGeneratedProperties(Serializable id, Object entity, Object[] state,
 			SharedSessionContractImplementor session) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void processUpdateGeneratedProperties(Serializable id, Object entity, Object[] state,
 			SharedSessionContractImplementor session) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public Class<D> getMappedClass() {
-		// TODO Auto-generated method stub
+
 		return mappedClass;
 	}
 
 	@Override
 	public boolean implementsLifecycle() {
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
 	@Override
 	public Class<?> getConcreteProxyClass() {
-		// TODO Auto-generated method stub
+
 		return mappedClass;
 	}
 
@@ -787,7 +782,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public void setPropertyValues(Object object, Object[] values) {
-		// TODO Auto-generated method stub
+
 		assertInput(values);
 
 		for (int i = 0; i < propertySpan; i++) {
@@ -809,33 +804,33 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public void setPropertyValue(Object object, int i, Object value) {
-		// TODO Auto-generated method stub
+
 		assertValue(i, value);
 		propertyAccesses[i].getSetter().set(object, value, null);
 	}
 
 	@Override
 	public Object[] getPropertyValues(Object object) {
-		// TODO Auto-generated method stub
+
 		return Stream.of(propertyAccesses).map(pa -> pa.getGetter().get(object)).toArray();
 	}
 
 	@Override
 	public Object getPropertyValue(Object object, int i) throws HibernateException {
-		// TODO Auto-generated method stub
+
 		assertIndex(i);
 		return propertyAccesses[i].getGetter().get(object);
 	}
 
 	@Override
 	public Object getPropertyValue(Object object, String propertyName) {
-		// TODO Auto-generated method stub
+
 		return getPropertyValue(object, indexMap.get(propertyName));
 	}
 
 	@Override
 	public Serializable getIdentifier(Object object) throws HibernateException {
-		// TODO Auto-generated method stub
+
 		if (canExtractIdOutOfEntity()) {
 			return (Serializable) identifierAccess.getGetter().get(object);
 		}
@@ -845,7 +840,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public Serializable getIdentifier(Object entity, SharedSessionContractImplementor session) {
-		// TODO Auto-generated method stub
+
 		return getIdentifier(entity);
 	}
 
@@ -858,63 +853,63 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public void setIdentifier(Object entity, Serializable id, SharedSessionContractImplementor session) {
-		// TODO Auto-generated method stub
+
 		assertIdValue(id);
 		identifierAccess.getSetter().set(entity, id, null);
 	}
 
 	@Override
 	public Object getVersion(Object object) throws HibernateException {
-		// TODO Auto-generated method stub
+
 		return propertyAccesses[getVersionProperty()].getGetter().get(object);
 	}
 
 	@Override
 	public Object instantiate(Serializable id, SharedSessionContractImplementor session) {
-		// TODO Auto-generated method stub
+
 		return instantiator.instantiate(id);
 	}
 
 	@Override
 	public boolean isInstance(Object object) {
-		// TODO Auto-generated method stub
+
 		return instantiator.isInstance(object);
 	}
 
 	@Override
 	public boolean hasUninitializedLazyProperties(Object object) {
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
 	@Override
 	public void resetIdentifier(Object entity, Serializable currentId, Object currentVersion,
 			SharedSessionContractImplementor session) {
-		// TODO Auto-generated method stub
+
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public EntityTuplizerImplementor<D> getEntityTuplizer() {
-		// TODO Auto-generated method stub
+
 		return this.unwrap(EntityTuplizerImplementor.class);
 	}
 
 	@Override
 	public BytecodeEnhancementMetadata getInstrumentationMetadata() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public FilterAliasGenerator getFilterAliasGenerator(String rootAlias) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public int[] resolveAttributeIndexes(String[] attributeNames) {
-		// TODO Auto-generated method stub
+
 		Assert.isTrue(attributeNames.length <= propertySpan, "Property span exceeded");
 		int[] arr = new int[attributeNames.length];
 		int i = 0;
@@ -928,20 +923,20 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public EntityIdentifierDefinition getEntityKeyDefinition() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Iterable<AttributeDefinition> getAttributes() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public ResourcePersister<D> getSubclassEntityPersister(Object instance, SessionFactoryImplementor factory) {
-		// TODO Auto-generated method stub
+
 		return (ResourcePersister<D>) metamodel.getSubclassNames().stream()
 				.map(name -> managerFactory.getMetamodel().entityPersister(name))
 				.filter(persister -> persister.isInstance(factory)).findFirst().orElse(null);
@@ -949,32 +944,32 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public ResourcePersister<D> getEntityPersister() {
-		// TODO Auto-generated method stub
+
 		return this;
 	}
 
 	@Override
 	public ResourceManagerFactory getManagerFactory() {
-		// TODO Auto-generated method stub
+
 		return managerFactory;
 	}
 
 	@Override
 	public boolean hasSubclasses() {
-		// TODO Auto-generated method stub
+
 		return metamodel.hasSubclasses();
 	}
 
 	@Override
 	public void setPropertyValue(Object object, String propertyName, Object value) throws HibernateException {
-		// TODO Auto-generated method stub
+
 		setPropertyValue(object, indexMap.get(propertyName), value);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public <E> E unwrap(Class<E> type) {
-		// TODO Auto-generated method stub
+
 		return (E) this;
 	}
 
@@ -1040,13 +1035,15 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 						+ "\t\t-declaringType: %s\n"
 						+ "\t\t-javaMember: %s\n"
 						+ "\t\t-isAssociation: %b\n"
-						+ "\t\t-isCollection: %b",
+						+ "\t\t-isCollection: %b\n"
+						+ "\t\t-typeDescriptorClass: %s",
 						ele.getName(),
 						ele.getPersistentAttributeType(),
 						ele.getDeclaringType().getJavaType(),
 						ele.getJavaMember().getName(),
 						ele.isAssociation(),
-						ele.isCollection())).collect(Collectors.joining("\n\t\t--------------------\n")),
+						ele.isCollection(),
+						getPropertyType(ele.getName()).getClass())).collect(Collectors.joining("\n\t\t--------------------\n")),
 				metamodel.getDeclaredSingularAttributes().stream().map(ele -> String.format("\t\t-name: %s\n"
 						+ "\t\t-isId: %b\n"
 						+ "\t\t-isVersion: %b\n"
@@ -1073,13 +1070,13 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public PropertyAccess getPropertyAccess(String propertyName) {
-		// TODO Auto-generated method stub
+
 		return propertyAccesses[indexMap.get(propertyName)];
 	}
 
 	@Override
 	public PropertyAccess getPropertyAccess(int propertyIndex) {
-		// TODO Auto-generated method stub
+
 		return propertyAccesses[propertyIndex];
 	}
 
@@ -1097,19 +1094,19 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public ValueGeneration getValueGeneration(int propertyIndex) {
-		// TODO Auto-generated method stub
+
 		return valueGenerations[propertyIndex];
 	}
 
 	@Override
 	public ValueGeneration getValueGeneration(String propertyName) {
-		// TODO Auto-generated method stub
+
 		return valueGenerations[indexMap.get(propertyName)];
 	}
 
 	@Override
 	public ValueGeneration locateValueGeneration(String propertyName) {
-		// TODO Auto-generated method stub
+
 		ValueGeneration candidate = getValueGeneration(propertyName);
 
 		if (candidate != null) {
@@ -1122,25 +1119,25 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public String getRootTableName() {
-		// TODO Auto-generated method stub
+
 		return metamodel.locateRootType().getName();
 	}
 
 	@Override
 	public String getRootTableAlias(String drivingAlias) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public String[] getRootTableIdentifierColumnNames() {
-		// TODO Auto-generated method stub
+
 		return new String[] { metamodel.locateRootType().locateIdAttribute().getName() };
 	}
 
 	@Override
 	public String getVersionColumnName() {
-		// TODO Auto-generated method stub
+
 		if (!isVersioned()) {
 			return null;
 		}
@@ -1150,70 +1147,84 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public Type getDiscriminatorType() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Object getDiscriminatorValue() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public String getSubclassForDiscriminatorValue(Object value) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public String[] getIdentifierColumnNames() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public String[] getIdentifierAliases(String suffix) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public String[] getPropertyAliases(String suffix, int i) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public String[] getPropertyColumnNames(int i) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public String getDiscriminatorAlias(String suffix) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public String getDiscriminatorColumnName() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public boolean hasRowId() {
-		// TODO Auto-generated method stub
+
 		return false;
+	}
+
+	private ResourceResultSet assertResultSet(ResultSet rs) {
+		Assert.isTrue(rs instanceof ResourceResultSet, "ResultSet must be type of " + ResourceResultSet.class);
+
+		ResourceResultSet resultSet = (ResourceResultSet) rs;
+
+		Assert.isTrue(managerFactory.getStorage().isResourceTypeSupported(resultSet.getResourceType()),
+				"Unsupported ResultSet row type " + resultSet.getResourceType());
+
+		return resultSet;
 	}
 
 	@Override
 	public Object[] hydrate(ResultSet rs, Serializable id, Object row, Loadable rootLoadable,
 			String[][] suffixedPropertyColumns, boolean allProperties, SharedSessionContractImplementor session)
 			throws SQLException, HibernateException {
-		// TODO Auto-generated method stub
-		logger.debug(String.format("[Row-Hydrate] Row type: %s", row.getClass()));
+
+		ResourceResultSet resultSet = assertResultSet(rs);
+		Class<?> rowType = resultSet.getResourceType();
+
+		logger.debug(String.format("[Row-Hydrate] Row type: %s", rowType));
 
 		Type[] types = getPropertyTypes();
 		int n = types.length;
@@ -1222,7 +1233,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 		for (int i = 0; i < n; i++) {
 			Object value;
 
-			values[i] = (value = getPropertyAccess(i).getGetter().get(row));
+			values[i] = (value = getPropertyTypes()[i].hydrate(rs, null, session, this));
 
 			if (value == null && !getPropertyNullability()[i]) {
 				throw new HibernateException(
@@ -1243,25 +1254,27 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public boolean isAbstract() {
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
 	@Override
 	public void registerAffectingFetchProfile(String fetchProfileName) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public String getTableAliasForColumn(String columnName, String rootAlias) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
+	/**
+	 * Basically inject the hydrated values into the instance, include
+	 * type-checking, index-checking
+	 */
 	@Override
 	public void hydrate(Object[] hydratedValues, Object instance) {
-		// TODO Auto-generated method stub
 		setPropertyValues(instance, hydratedValues);
 	}
 

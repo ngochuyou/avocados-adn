@@ -52,6 +52,8 @@ public interface LocalResourceStorage extends Service {
 
 	void lock(Serializable identifier);
 
+	boolean isResourceTypeSupported(Class<?> type);
+
 	public static class ResourceResultSet implements ResultSet {
 
 		protected static final Logger logger = LoggerFactory.getLogger(ResourceResultSet.class);
