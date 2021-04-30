@@ -5,7 +5,16 @@ package adn.service.resource.metamodel;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +47,7 @@ import org.hibernate.type.Type;
 import org.hibernate.type.VersionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
 import adn.service.resource.metamodel.PropertyBinder.KeyValueContext;
 import adn.service.resource.metamodel.type.CreationTimeStampType;
@@ -124,6 +134,14 @@ public interface CentricAttributeContext extends Service {
 			return resolveCollectionType(owner, attr.getJavaType(), attr.getName());
 		}
 
+		private void assertTimeStampType(Class<?> attributeType) {
+			Assert.isTrue(attributeType == Date.class || attributeType == Instant.class
+					|| attributeType == LocalDateTime.class || attributeType == LocalDate.class
+					|| attributeType == LocalTime.class || attributeType == OffsetTime.class
+					|| attributeType == OffsetDateTime.class || attributeType == ZonedDateTime.class
+					|| attributeType == Calendar.class, "Invalid timestamp type " + attributeType);
+		}
+
 		private <D, T> Type findSpecificCases(ResourceType<D> owner, Attribute<D, T> attribute) {
 			Member member = attribute.getJavaMember();
 
@@ -131,6 +149,8 @@ public interface CentricAttributeContext extends Service {
 				Field f = (Field) member;
 
 				if (f.getDeclaredAnnotation(CreationTimestamp.class) != null) {
+					assertTimeStampType(f.getType());
+
 					return typeRegistry.getRegisteredType(CreationTimestamp.class.getName());
 				}
 			}
@@ -146,6 +166,8 @@ public interface CentricAttributeContext extends Service {
 				Field f = (Field) member;
 
 				if (f.getDeclaredAnnotation(UpdateTimestamp.class) != null) {
+					assertTimeStampType(f.getType());
+
 					return (VersionType<T>) typeRegistry.getRegisteredType(UpdateTimestamp.class.getName());
 				}
 			}

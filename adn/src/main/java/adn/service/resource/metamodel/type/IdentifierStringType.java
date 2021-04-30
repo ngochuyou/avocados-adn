@@ -16,7 +16,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.type.IdentifierType;
 import org.hibernate.type.StringType;
 
-import adn.service.resource.storage.LocalResourceStorage;
 import adn.service.resource.storage.LocalResourceStorage.ResourceResultSet;
 import adn.service.resource.storage.LocalResourceStorage.SingleResourceResultSet;
 
@@ -62,7 +61,7 @@ public class IdentifierStringType extends AbstractTranslatedBasicType implements
 
 	private String fromFile(Object resource) {
 
-		return ((File) resource).getPath().substring(LocalResourceStorage.IMAGE_FILE_DIRECTORY.length());
+		return ((File) resource).getName();
 	}
 
 }

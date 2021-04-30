@@ -26,8 +26,10 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.el.PropertyNotFoundException;
 import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -47,6 +49,7 @@ import org.hibernate.tuple.UpdateTimestampGeneration;
 import org.hibernate.tuple.ValueGeneration;
 import org.hibernate.tuple.VmValueGeneration;
 
+import adn.helpers.StringHelper;
 import adn.service.resource.local.ManagerFactoryEventListener;
 import adn.service.resource.local.ResourceManagerFactory;
 import adn.service.resource.metamodel.MetamodelImpl.IdentifierGenerationHolder;
@@ -71,7 +74,20 @@ public class PropertyBinder implements ManagerFactoryEventListener {
 		PropertyBinder.INSTANCE = null;
 	}
 
-	public PropertyAccess createPropertyAccess(Class<?> containerJavaType, String propertyName) {
+	public PropertyAccess createPropertyAccess(Class<?> containerJavaType, String propertyName, Class<?> returnedType)
+			throws PropertyNotFoundException {
+		try {
+			logger.trace("Locating camel-cased getter " + StringHelper.toCamel("get " + propertyName, " ")
+					+ " return type " + returnedType);
+			logger.trace("Locating camel-cased setter " + StringHelper.toCamel("set " + propertyName, " "));
+			containerJavaType.getDeclaredMethod(StringHelper.toCamel("get " + propertyName, " "));
+			containerJavaType.getDeclaredMethod(StringHelper.toCamel("set " + propertyName, " "), returnedType);
+		} catch (NoSuchMethodException | SecurityException e) {
+			logger.trace(
+					Stream.of(e.getStackTrace()).map(trace -> trace.toString()).collect(Collectors.joining("\n\t")));
+			throw new PropertyNotFoundException("Resource of type " + containerJavaType
+					+ " must declare camel-cased getter and setter for property " + propertyName);
+		}
 
 		return fieldAccess.buildPropertyAccess(containerJavaType, propertyName);
 	}

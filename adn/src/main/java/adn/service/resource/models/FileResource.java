@@ -9,9 +9,11 @@ import java.util.Set;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Version;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.UpdateTimestamp;
 
 /**
  * @author Ngoc Huy
@@ -29,6 +31,10 @@ public class FileResource implements Resource {
 
 	@CreationTimestamp
 	private Date timestamp;
+
+	@Version
+	@UpdateTimestamp
+	private Date lastModified;
 
 	private String directoryPath;
 
@@ -99,6 +105,14 @@ public class FileResource implements Resource {
 
 	public void setAlias(Set<String> alias) {
 		this.alias = alias;
+	}
+
+	public Date getLastModified() {
+		return lastModified;
+	}
+
+	public void setLastModified(Date lastModified) {
+		this.lastModified = lastModified;
 	}
 
 }

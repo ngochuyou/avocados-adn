@@ -20,7 +20,9 @@ import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.Type;
 import org.springframework.util.Assert;
 
+import adn.service.resource.local.ResourceManager;
 import adn.service.resource.storage.LocalResourceStorage.ResourceResultSet;
+import adn.service.resource.storage.LocalResourceStorage.SingleResourceResultSet;
 
 /**
  * @author Ngoc Huy
@@ -273,6 +275,24 @@ public abstract class AbstractTranslatedBasicType implements BasicType {
 		}
 
 		throw new HibernateException("ResultSet must be instance of " + ResourceResultSet.class);
+	}
+
+	protected ResourceManager assertSession(SharedSessionContractImplementor session) {
+		if (session instanceof ResourceManager) {
+			return (ResourceManager) session;
+		}
+
+		throw new HibernateException("session must be instanceof " + ResourceManager.class);
+	}
+
+	protected Object getCurrentRow(ResultSet rs) throws SQLException {
+		ResourceResultSet resultSet = assertResultSet(rs);
+
+		if (resultSet instanceof SingleResourceResultSet) {
+			return resultSet.getObject(0);
+		}
+
+		return resultSet.getCurrent();
 	}
 
 }

@@ -107,7 +107,6 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public void generateEntityDefinition() {
-
 		mappedClass = metamodel.getJavaType();
 		logger.trace("Generating entity definition of type " + mappedClass.getName());
 		entityName = metamodel.getName();
@@ -148,7 +147,8 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 				valueGenerations[i] = (delegateGeneration = locateValueGeneration(attr.getName()));
 				propertyTypes[i] = locatePropertyType(attr.getName());
 			} else {
-				propertyAccesses[i] = PropertyBinder.INSTANCE.createPropertyAccess(mappedClass, attr.getName());
+				propertyAccesses[i] = PropertyBinder.INSTANCE.createPropertyAccess(mappedClass, attr.getName(),
+						attr.getJavaType());
 				valueGenerations[i] = (delegateGeneration = PropertyBinder.INSTANCE.resolveValueGeneration(metamodel,
 						attr));
 				propertyTypes[i] = attributeContext.resolveType(metamodel, attr);
@@ -1220,7 +1220,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	public Object[] hydrate(ResultSet rs, Serializable id, Object row, Loadable rootLoadable,
 			String[][] suffixedPropertyColumns, boolean allProperties, SharedSessionContractImplementor session)
 			throws SQLException, HibernateException {
-
+		// TODO: hydrate
 		ResourceResultSet resultSet = assertResultSet(rs);
 		Class<?> rowType = resultSet.getResourceType();
 
