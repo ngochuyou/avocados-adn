@@ -26,6 +26,8 @@ public class CreationTimeStampType extends AbstractTimestampType {
 
 	public static final CreationTimeStampType INSTANCE = new CreationTimeStampType(TimestampType.INSTANCE);
 
+	private final String[] regKeys = new String[] { CreationTimestamp.class.getName() };
+
 	private CreationTimeStampType(TimestampType basicType) {
 		super(basicType);
 	}
@@ -38,7 +40,7 @@ public class CreationTimeStampType extends AbstractTimestampType {
 
 		if (row instanceof File) {
 			if (owner instanceof ResourcePersister) {
-				return fromFile(rs, (ResourcePersister<?>) owner, rm);
+				return getDateFromFile(rs, (ResourcePersister<?>) owner, rm);
 			}
 
 			throw new HibernateException("Owner type must be instance of " + ResourcePersister.class);
@@ -49,10 +51,10 @@ public class CreationTimeStampType extends AbstractTimestampType {
 
 	@Override
 	public String[] getRegistrationKeys() {
-		return new String[] { CreationTimestamp.class.getName() };
+		return regKeys;
 	}
 
-	private Date fromFile(ResultSet rs, ResourcePersister<?> persister, ResourceManager manager)
+	private Date getDateFromFile(ResultSet rs, ResourcePersister<?> persister, ResourceManager manager)
 			throws HibernateException, SQLException {
 		Object identifier = persister.getIdentifierType().hydrate(rs, null, manager, persister);
 

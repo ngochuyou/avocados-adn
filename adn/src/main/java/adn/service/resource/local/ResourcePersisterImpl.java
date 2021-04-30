@@ -53,7 +53,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.util.Assert;
 
 import adn.application.context.ContextProvider;
-import adn.service.resource.metamodel.CentricAttributeContext;
+import adn.service.resource.metamodel.CentralAttributeContext;
 import adn.service.resource.metamodel.EntityBinder;
 import adn.service.resource.metamodel.EntityPersisterImplementor;
 import adn.service.resource.metamodel.EntityTuplizerImplementor;
@@ -128,8 +128,8 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 		@SuppressWarnings("unchecked")
 		Attribute<D, ?>[] attributes = metamodel.getAttributes().toArray(Attribute[]::new);
-		CentricAttributeContext attributeContext = managerFactory.getContextBuildingService()
-				.getService(CentricAttributeContext.class);
+		CentralAttributeContext attributeContext = managerFactory.getContextBuildingService()
+				.getService(CentralAttributeContext.class);
 
 		Assert.notNull(attributeContext, "Unable to locate CentricAttributeContext");
 
@@ -141,18 +141,26 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 			ValueGeneration delegateGeneration;
 
 			if (!attr.getDeclaringType().equals(metamodel)) {
-				logger.trace(
-						String.format("Locating metadata from super type %s.%s", metamodel.getName(), attr.getName()));
+				logger.trace(String.format("Locating metadata from super type %s.%s",
+						metamodel.getSupertype().getName(), attr.getName()));
 				propertyAccesses[i] = locatePropertyAccess(attr.getName());
 				valueGenerations[i] = (delegateGeneration = locateValueGeneration(attr.getName()));
 				propertyTypes[i] = locatePropertyType(attr.getName());
 			} else {
+				logger.trace(String.format("Creating metadata for %s.%s", metamodel.getName(), attr.getName()));
 				propertyAccesses[i] = PropertyBinder.INSTANCE.createPropertyAccess(mappedClass, attr.getName(),
 						attr.getJavaType());
 				valueGenerations[i] = (delegateGeneration = PropertyBinder.INSTANCE.resolveValueGeneration(metamodel,
 						attr));
 				propertyTypes[i] = attributeContext.resolveType(metamodel, attr);
 			}
+
+			Assert.notNull(propertyAccesses[i],
+					String.format("%s Unable to locate PropertyAccess for property %s", entityName, attr.getName()));
+			Assert.notNull(valueGenerations[i],
+					String.format("%s Unable to locate ValueGeneration for property %s", entityName, attr.getName()));
+			Assert.notNull(propertyTypes[i],
+					String.format("%s Unable to locate %s for property %s", entityName, Type.class, attr.getName()));
 
 			propertyNullabilities[i] = attr instanceof SingularAttribute
 					? ((SingularAttribute<? super D, ?>) attr).isOptional()
@@ -320,16 +328,19 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	}
 
 	@Override
-	public Type locatePropertyType(String properyName) {
-
-		Type candidate = getPropertyType(properyName);
+	public Type locatePropertyType(String propertyName) {
+		Type candidate = getPropertyType(propertyName);
 
 		if (candidate != null) {
 			return candidate;
 		}
 
+		if (metamodel.getSupertype() == null) {
+			return null;
+		}
+
 		return managerFactory.getMetamodel().entityPersister(metamodel.locateSuperType().getName())
-				.locatePropertyType(properyName);
+				.locatePropertyType(propertyName);
 	}
 
 	@Override
@@ -1088,6 +1099,10 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 			return candidate;
 		}
 
+		if (metamodel.getSupertype() == null) {
+			return null;
+		}
+
 		return managerFactory.getMetamodel().entityPersister(metamodel.locateSuperType().getName())
 				.locatePropertyAccess(propertyName);
 	}
@@ -1106,11 +1121,14 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public ValueGeneration locateValueGeneration(String propertyName) {
-
 		ValueGeneration candidate = getValueGeneration(propertyName);
 
 		if (candidate != null) {
 			return candidate;
+		}
+
+		if (metamodel.getSupertype() == null) {
+			return null;
 		}
 
 		return managerFactory.getMetamodel().entityPersister(metamodel.locateSuperType().getName())

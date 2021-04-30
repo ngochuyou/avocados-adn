@@ -32,7 +32,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 import adn.security.SecurityConfiguration;
 import adn.service.resource.local.LocalResourceSession;
-import adn.service.resource.models.FileByBytes;
+import adn.service.resource.model.models.FileByBytes;
 
 /**
  * @author Ngoc Huy

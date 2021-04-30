@@ -147,8 +147,8 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 				.getServiceWrapper(BasicTypeRegistry.class, wrapper -> wrapper.orElseThrow().unwrap());
 
 		Assert.notNull(typeRegistry, "BasicTypeRegistry must not be null");
-		managerFactory.getContextBuildingService().register(CentricAttributeContext.class,
-				new CentricAttributeContext.CentricAttributeContextImpl(typeRegistry, this));
+		managerFactory.getContextBuildingService().register(CentralAttributeContext.class,
+				new CentralAttributeContext.CentralAttributeContextImpl(typeRegistry, this));
 		resourceNameResolvers.add(managerFactory.getContextBuildingService().getService(NamingStrategy.class));
 	}
 
@@ -191,7 +191,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 		Assert.notNull(metadata, "Unable to locate Metadata");
 
 		Map<String, Class<?>> imports = metadata.getImports();
-		ModelProcessor modelProcessor = new ModelProcessor(contextService.getService(CentricAttributeContext.class));
+		ModelProcessor modelProcessor = new ModelProcessor(contextService.getService(CentralAttributeContext.class));
 
 		for (Map.Entry<String, Class<?>> entry : imports.entrySet()) {
 			modelProcessor.processModel(entry.getKey(), entry.getValue(), null);
@@ -308,9 +308,9 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 	private class ModelProcessor {
 
-		private final CentricAttributeContext attributeContext;
+		private final CentralAttributeContext attributeContext;
 
-		private ModelProcessor(CentricAttributeContext attributeContext) {
+		private ModelProcessor(CentralAttributeContext attributeContext) {
 			// TODO Auto-generated constructor stub
 			Assert.notNull(attributeContext, "CentricAttributeContext must not be null");
 			this.attributeContext = attributeContext;

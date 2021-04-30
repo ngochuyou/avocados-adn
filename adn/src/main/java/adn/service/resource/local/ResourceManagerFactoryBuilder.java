@@ -3,14 +3,11 @@
  */
 package adn.service.resource.local;
 
-import static org.springframework.util.StringUtils.hasLength;
-
 import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 
 import org.hibernate.SessionFactory;
@@ -35,6 +32,7 @@ import org.springframework.util.Assert;
 
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
+import adn.helpers.StringHelper;
 import adn.service.resource.local.ResourceManagerFactory.ServiceWrapper;
 import adn.service.resource.metamodel.DefaultResourceIdentifierGenerator;
 import adn.service.resource.metamodel.EntityBinder;
@@ -56,7 +54,7 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 	@Autowired
 	private LocalResourceStorage localStorage;
 
-	public static final String MODEL_PACKAGE = "adn.service.resource.models";
+	public static final String MODEL_PACKAGE = "adn.service.resource.model.models";
 
 	private Set<String> identifierGenerators;
 
@@ -84,12 +82,12 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 
 		Assert.notNull(basicTypeRegistry, "Unable to locate BasicTypeRegistry");
 		contextBuildingService.register(ServiceWrapper.class, new ServiceWrapperImpl<>(basicTypeRegistry));
-		
+
 		Dialect dialect = sfi.getJdbcServices().getDialect();
-		
+
 		Assert.notNull(basicTypeRegistry, "Unable to locate Dialect");
 		contextBuildingService.register(ServiceWrapper.class, new ServiceWrapperImpl<>(dialect));
-		
+
 		eventListeners.add(PropertyBinder.INSTANCE);
 		eventListeners.add(EntityBinder.INSTANCE);
 		// register naming-strategy
@@ -107,7 +105,7 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		ResourceManagerFactory resourceManager = build(sfi.getMetamodel().getTypeConfiguration());
 		ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) ContextProvider
 				.getApplicationContext()).getBeanFactory();
-		
+
 		postBuild();
 		beanFactory.registerSingleton(resourceManager.getClass().getName(), resourceManager);
 		beanFactory.registerAlias(resourceManager.getClass().getName(), ResourceManagerFactory.class.getName());
@@ -125,12 +123,14 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		NamingStrategy namingStrategy = contextBuildingService.getService(NamingStrategy.class);
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
-		scanner.addIncludeFilter(new AnnotationTypeFilter(Entity.class));
+		scanner.addIncludeFilter(new AnnotationTypeFilter(LocalResource.class));
 		scanner.findCandidateComponents(MODEL_PACKAGE).forEach(bean -> {
 			try {
 				Class<?> clazz = Class.forName(bean.getBeanClassName());
+				LocalResource anno = clazz.getDeclaredAnnotation(LocalResource.class);
 
-				metadata.addImport(namingStrategy.getName(clazz), clazz);
+				metadata.addImport(StringHelper.hasLength(anno.name()) ? anno.name() : namingStrategy.getName(clazz),
+						clazz);
 			} catch (ClassNotFoundException cnfe) {
 				cnfe.printStackTrace();
 				SpringApplication.exit(ContextProvider.getApplicationContext());
@@ -152,7 +152,7 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		MutableIdentifierGeneratorFactory idGeneratorFactory = contextBuildingService
 				.getService(MutableIdentifierGeneratorFactory.class);
 
-		scanner.addIncludeFilter(new AnnotationTypeFilter(Entity.class));
+		scanner.addIncludeFilter(new AnnotationTypeFilter(LocalResource.class));
 		scanner.findCandidateComponents(MODEL_PACKAGE).stream().map(bean -> {
 			try {
 				return Class.forName(bean.getBeanClassName());
@@ -201,7 +201,8 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 			return false;
 		}
 
-		if (!hasLength(ggAnno.name()) || !hasLength(ggAnno.strategy()) || ggAnno.parameters() == null) {
+		if (!StringHelper.hasLength(ggAnno.name()) || !StringHelper.hasLength(ggAnno.strategy())
+				|| ggAnno.parameters() == null) {
 			throw new IllegalArgumentException("Invalid GenericGenerator, mandatory fields are empty");
 		}
 

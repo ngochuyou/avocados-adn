@@ -113,7 +113,11 @@ public interface ContextBuildingService extends ServiceRegistry {
 		public void register(Class<?> clazz, Service service) {
 			// TODO Auto-generated method stub
 			if (serviceMap.containsKey(clazz)) {
-				logger.debug("Registering new service with type collision: " + clazz);
+				logger.debug(String.format(
+						"Registering new service with type collision %s"
+								+ (service instanceof ServiceWrapper ? ", wrapped instance is type of %s" : ""),
+						clazz, (service instanceof ServiceWrapper ? ((ServiceWrapper<?>) service).unwrap().getClass()
+								: null)));
 				serviceMap.compute(clazz, (key, oldSet) -> {
 					HashSet<Service> newSet = new HashSet<>();
 
@@ -125,7 +129,11 @@ public interface ContextBuildingService extends ServiceRegistry {
 				return;
 			}
 
-			logger.debug("Registering new service: " + clazz);
+			logger.debug(String.format(
+					"Registering new service %s"
+							+ (service instanceof ServiceWrapper ? ", wrapped instance is type of %s" : ""),
+					clazz,
+					(service instanceof ServiceWrapper ? ((ServiceWrapper<?>) service).unwrap().getClass() : null)));
 			serviceMap.put(clazz, new HashSet<>(Arrays.asList(service)));
 		}
 

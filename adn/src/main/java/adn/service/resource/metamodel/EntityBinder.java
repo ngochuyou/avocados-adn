@@ -8,6 +8,8 @@ import java.lang.reflect.Field;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import adn.service.resource.local.ManagerFactoryEventListener;
@@ -20,6 +22,8 @@ import adn.service.resource.local.SharedIdentifierGeneratorFactory;
  */
 public class EntityBinder implements ManagerFactoryEventListener {
 
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
+
 	public static EntityBinder INSTANCE = new EntityBinder();
 
 	private EntityBinder() {}
@@ -29,6 +33,7 @@ public class EntityBinder implements ManagerFactoryEventListener {
 		// TODO Auto-generated method stub
 		logger.trace("Cleaning up INSTANCE of type " + this.getClass().getName());
 		EntityBinder.INSTANCE = null;
+		logger = null;
 	}
 
 	public <X, T> IdentifierGenerator locateIdentifierGenerator(ResourceType<X> metamodel,
@@ -54,8 +59,8 @@ public class EntityBinder implements ManagerFactoryEventListener {
 		SharedIdentifierGeneratorFactory igFactory = managerFactory.getIdentifierGeneratorFactory();
 		IdentifierGenerator generator = igFactory.obtainGenerator(generatorName);
 
-		generator = generator != null ? generator
-				: igFactory.createIdentifierGenerator(generatorName, idAttribute.getJavaType());
+		generator = (generator != null ? generator
+				: igFactory.createIdentifierGenerator(generatorName, idAttribute.getJavaType()));
 		Assert.notNull(generator, "Unable to locate IdentifierGenrator for " + idAttribute.getName());
 
 		return generator;

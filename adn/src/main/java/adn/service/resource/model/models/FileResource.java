@@ -1,12 +1,10 @@
 /**
  * 
  */
-package adn.service.resource.models;
+package adn.service.resource.model.models;
 
 import java.util.Date;
-import java.util.Set;
 
-import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Version;
@@ -15,11 +13,13 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import adn.service.resource.local.LocalResource;
+
 /**
  * @author Ngoc Huy
  *
  */
-@Entity
+@LocalResource
 public class FileResource implements Resource {
 
 	@Id
@@ -27,36 +27,25 @@ public class FileResource implements Resource {
 	@GenericGenerator(strategy = "resource_identifier", name = "resource_identifier")
 	private String pathname;
 
-	private String name;
-
 	@CreationTimestamp
-	private Date timestamp;
+	private Date createdDate;
 
 	@Version
 	@UpdateTimestamp
 	private Date lastModified;
 
-	private String directoryPath;
-
 	private String extension;
 
-	private Set<String> alias;
+	public FileResource() {}
 
-	/**
-	 * 
-	 */
-	public FileResource() {
-		// TODO Auto-generated constructor stub
-	}
-
-	public FileResource(String directoryPath, String name, String extension, Date timestamp) {
+	public FileResource(String pathname, String extension, Date timestamp) {
 		super();
-		this.name = name;
-		this.timestamp = timestamp;
-		this.directoryPath = directoryPath;
+		this.pathname = pathname;
+		this.createdDate = timestamp;
 		this.extension = "." + extension;
 	}
 
+	@Override
 	public String getPathname() {
 		return pathname;
 	}
@@ -65,30 +54,12 @@ public class FileResource implements Resource {
 		this.pathname = pathname;
 	}
 
-	@Override
-	public String getName() {
-		// TODO Auto-generated method stub
-		return name;
+	public Date getCreatedDate() {
+		return createdDate;
 	}
 
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public Date getTimestamp() {
-		return timestamp;
-	}
-
-	public void setTimestamp(Date timestamp) {
-		this.timestamp = timestamp;
-	}
-
-	public String getDirectoryPath() {
-		return directoryPath;
-	}
-
-	public void setDirectoryPath(String directoryPath) {
-		this.directoryPath = directoryPath;
+	public void setCreatedDate(Date createdDate) {
+		this.createdDate = createdDate;
 	}
 
 	public String getExtension() {
@@ -97,14 +68,6 @@ public class FileResource implements Resource {
 
 	public void setExtension(String extension) {
 		this.extension = extension;
-	}
-
-	public Set<String> getAlias() {
-		return alias;
-	}
-
-	public void setAlias(Set<String> alias) {
-		this.alias = alias;
 	}
 
 	public Date getLastModified() {

@@ -17,7 +17,7 @@ import org.hibernate.type.Type;
 import org.springframework.util.Assert;
 
 import adn.helpers.StringHelper;
-import adn.service.resource.models.Resource;
+import adn.service.resource.model.models.Resource;
 
 /**
  * @author Ngoc Huy
@@ -33,25 +33,22 @@ public class DefaultResourceIdentifierGenerator implements IdentifierGenerator, 
 
 	@Override
 	public Serializable generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
+		// @formatter:off
 		if (object instanceof Resource) {
-			// @formatter:off
 			Resource instance = (Resource) object;
 
 			return new StringBuilder(String.valueOf(new Date().getTime()))
 					.append(IDENTIFIER_PARTS_SEPERATOR)
-					.append(StringHelper.hash(instance.getName()))
+					.append(StringHelper.hash(instance.getPathname()))
 					.append(instance.getExtension())
 					.toString();
-			// @formatter:on
 		}
-
+		// @formatter:on
 		return String.valueOf(new Date().getTime());
 	}
 
 	@Override
-	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) throws MappingException {
-		// TODO Auto-generated method stub
-	}
+	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) throws MappingException {}
 
 	public static enum ResourceIdentifierPart {
 

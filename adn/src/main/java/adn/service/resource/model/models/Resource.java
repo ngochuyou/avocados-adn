@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.models;
+package adn.service.resource.model.models;
 
 /**
  * @author Ngoc Huy
@@ -9,9 +9,7 @@ package adn.service.resource.models;
  */
 public interface Resource {
 
-	String getName();
-
-	String getDirectoryPath();
+	String getPathname();
 
 	String getExtension();
 

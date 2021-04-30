@@ -48,6 +48,8 @@ import org.hibernate.tuple.CreationTimestampGeneration;
 import org.hibernate.tuple.UpdateTimestampGeneration;
 import org.hibernate.tuple.ValueGeneration;
 import org.hibernate.tuple.VmValueGeneration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import adn.helpers.StringHelper;
 import adn.service.resource.local.ManagerFactoryEventListener;
@@ -61,7 +63,9 @@ import adn.service.resource.metamodel.MetamodelImpl.NoValueGeneration;
  */
 public class PropertyBinder implements ManagerFactoryEventListener {
 
-	private final PropertyAccessStrategy fieldAccess = new PropertyAccessStrategyFieldImpl();
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+	private PropertyAccessStrategy fieldAccess = new PropertyAccessStrategyFieldImpl();
 
 	public static PropertyBinder INSTANCE = new PropertyBinder();
 
@@ -72,6 +76,8 @@ public class PropertyBinder implements ManagerFactoryEventListener {
 		// TODO Auto-generated method stub
 		logger.trace("Cleaning up INSTANCE of type " + this.getClass().getName());
 		PropertyBinder.INSTANCE = null;
+		fieldAccess = null;
+		logger = null;
 	}
 
 	public PropertyAccess createPropertyAccess(Class<?> containerJavaType, String propertyName, Class<?> returnedType)

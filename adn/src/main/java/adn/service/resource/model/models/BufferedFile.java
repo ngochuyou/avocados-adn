@@ -1,19 +1,20 @@
 /**
  * 
  */
-package adn.service.resource.models;
+package adn.service.resource.model.models;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 
 import javax.persistence.Column;
-import javax.persistence.Entity;
+
+import adn.service.resource.local.LocalResource;
 
 /**
  * @author Ngoc Huy
  *
  */
-@Entity
+@LocalResource
 public class BufferedFile extends FileResource {
 
 	@Column(nullable = true)

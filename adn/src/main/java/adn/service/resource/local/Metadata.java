@@ -9,15 +9,16 @@ import java.util.Map;
 import java.util.Set;
 
 import org.hibernate.service.Service;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Ngoc Huy
  *
  */
 @SuppressWarnings("serial")
-public class Metadata implements Service {
+public class Metadata implements Service, ManagerFactoryEventListener {
 
-	private final Map<String, Class<?>> imports = new HashMap<>();
+	private Map<String, Class<?>> imports = new HashMap<>();
 
 	private volatile Set<String> processedImports = new HashSet<>();
 	private volatile boolean allDone = processedImports.size() != imports.size();
@@ -48,6 +49,12 @@ public class Metadata implements Service {
 
 	public boolean isAllDone() {
 		return allDone;
+	}
+
+	@Override
+	public void postBuild(ResourceManagerFactory managerFactory) {
+		LoggerFactory.getLogger(this.getClass()).trace("Cleaning up " + this.getClass());
+		processedImports = null;
 	}
 
 }

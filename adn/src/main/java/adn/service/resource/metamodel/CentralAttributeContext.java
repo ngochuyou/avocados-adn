@@ -24,6 +24,8 @@ import java.util.Set;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 
+import org.hibernate.HibernateException;
+import org.hibernate.MappingException;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.mapping.Property;
@@ -36,6 +38,8 @@ import org.hibernate.metamodel.model.domain.spi.BasicTypeDescriptor;
 import org.hibernate.metamodel.model.domain.spi.PluralPersistentAttribute;
 import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
 import org.hibernate.service.Service;
+import org.hibernate.tuple.Instantiator;
+import org.hibernate.tuple.PojoInstantiator;
 import org.hibernate.type.ArrayType;
 import org.hibernate.type.BasicType;
 import org.hibernate.type.BasicTypeRegistry;
@@ -49,8 +53,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
+import adn.helpers.FunctionHelper.HandledFunction;
 import adn.service.resource.metamodel.PropertyBinder.KeyValueContext;
+import adn.service.resource.metamodel.type.ByteArrayType;
 import adn.service.resource.metamodel.type.CreationTimeStampType;
+import adn.service.resource.metamodel.type.ExplicitlyHydratedType;
+import adn.service.resource.metamodel.type.FileExtensionType;
 import adn.service.resource.metamodel.type.IdentifierStringType;
 import adn.service.resource.metamodel.type.UpdateTimeStampType;
 
@@ -58,7 +66,7 @@ import adn.service.resource.metamodel.type.UpdateTimeStampType;
  * @author Ngoc Huy
  *
  */
-public interface CentricAttributeContext extends Service {
+public interface CentralAttributeContext extends Service {
 
 	MetamodelImplementor getMetamodelImplementor();
 
@@ -86,7 +94,7 @@ public interface CentricAttributeContext extends Service {
 	boolean isBasic(Class<?> type);
 
 	@SuppressWarnings("serial")
-	public class CentricAttributeContextImpl implements CentricAttributeContext {
+	public class CentralAttributeContextImpl implements CentralAttributeContext {
 
 		private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -95,13 +103,15 @@ public interface CentricAttributeContext extends Service {
 
 		private final Map<String, BasicTypeDescriptor<?>> basicTypeDescriptorMap = new HashMap<>();
 
-		public CentricAttributeContextImpl(BasicTypeRegistry typeRegistry, MetamodelImplementor metamodel) {
+		public CentralAttributeContextImpl(BasicTypeRegistry typeRegistry, MetamodelImplementor metamodel) {
 			// TODO Auto-generated constructor stub
 			this.typeRegistry = typeRegistry;
 			this.metamodel = metamodel;
+			typeRegistry.register(ByteArrayType.INSTANCE);
 			typeRegistry.register(IdentifierStringType.INSTANCE);
 			typeRegistry.register(CreationTimeStampType.INSTANCE);
 			typeRegistry.register(UpdateTimeStampType.INSTANCE);
+			typeRegistry.register(FileExtensionType.INSTANCE);
 		}
 
 		@Override
@@ -124,10 +134,9 @@ public interface CentricAttributeContext extends Service {
 					return ObjectType.INSTANCE;
 				}
 
-				return attr instanceof Identifier
-						? typeRegistry.getRegisteredType(IdentifierStringType.class.getSimpleName())
+				return attr instanceof Identifier ? typeRegistry.getRegisteredType(IdentifierStringType.class.getName())
 						: attr instanceof Version ? resolveVersionType(owner, attr)
-								: Optional.ofNullable(findSpecificCases(owner, attr))
+								: Optional.ofNullable(resolveSpecificCases(owner, attr))
 										.orElse(typeRegistry.getRegisteredType(attr.getJavaType().getName()));
 			}
 
@@ -142,16 +151,39 @@ public interface CentricAttributeContext extends Service {
 					|| attributeType == Calendar.class, "Invalid timestamp type " + attributeType);
 		}
 
-		private <D, T> Type findSpecificCases(ResourceType<D> owner, Attribute<D, T> attribute) {
+		@SuppressWarnings("unchecked")
+		private <D, T> Type resolveSpecificCases(ResourceType<D> owner, Attribute<D, T> attribute) {
 			Member member = attribute.getJavaMember();
 
 			if (member instanceof Field) {
 				Field f = (Field) member;
 
-				if (f.getDeclaredAnnotation(CreationTimestamp.class) != null) {
+				if (f.isAnnotationPresent(CreationTimestamp.class)) {
 					assertTimeStampType(f.getType());
 
 					return typeRegistry.getRegisteredType(CreationTimestamp.class.getName());
+				}
+
+				if (f.isAnnotationPresent(Extension.class)) {
+					if (f.getType().equals(String.class) || String.class.isAssignableFrom(f.getType())) {
+						return typeRegistry.getRegisteredType(Extension.class.getName());
+					}
+
+					throw new MappingException("Resource extension must be type of String");
+				}
+
+				ExplicitlyHydrated anno;
+
+				if ((anno = f.getDeclaredAnnotation(ExplicitlyHydrated.class)) != null) {
+					Assert.notNull(anno.byFunction(),
+							String.format("Explicit hydrate function must not be null, provided null on %s.%s",
+									owner.getName(), attribute.getName()));
+
+					Instantiator instantiator = new PojoInstantiator(anno.byFunction(), null);
+
+					return new ExplicitlyHydratedType<T, HibernateException>(
+							typeRegistry.getRegisteredType(attribute.getJavaType().getName()), attribute.getJavaType(),
+							(HandledFunction<Object, T, HibernateException>) instantiator.instantiate());
 				}
 			}
 

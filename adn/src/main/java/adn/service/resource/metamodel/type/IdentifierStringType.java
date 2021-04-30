@@ -13,7 +13,7 @@ import java.util.function.Function;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.type.IdentifierType;
+import org.hibernate.type.DiscriminatorType;
 import org.hibernate.type.StringType;
 
 import adn.service.resource.storage.LocalResourceStorage.ResourceResultSet;
@@ -24,20 +24,16 @@ import adn.service.resource.storage.LocalResourceStorage.SingleResourceResultSet
  *
  */
 @SuppressWarnings("serial")
-public class IdentifierStringType extends AbstractTranslatedBasicType implements IdentifierType<String> {
+public class IdentifierStringType extends AbstractTranslatedBasicType implements DiscriminatorTypeImplementor<String> {
 
 	public static final IdentifierStringType INSTANCE = new IdentifierStringType(StringType.INSTANCE);
 
 	private final Map<Class<?>, Function<Object, String>> hydrateFunctions = Map.of(File.class, this::fromFile);
 
+	private final String[] regKeys = new String[] { this.getClass().getName() };
+
 	private IdentifierStringType(StringType stringType) {
 		super(stringType);
-	}
-
-	@Override
-	public String stringToObject(String xml) throws Exception {
-		// TODO Auto-generated method stub
-		return ((StringType) basicType).stringToObject(xml);
 	}
 
 	@Override
@@ -56,12 +52,19 @@ public class IdentifierStringType extends AbstractTranslatedBasicType implements
 	@Override
 	public String[] getRegistrationKeys() {
 		// TODO Auto-generated method stub
-		return new String[] { this.getClass().getSimpleName() };
+		return regKeys;
 	}
 
 	private String fromFile(Object resource) {
 
 		return ((File) resource).getName();
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public DiscriminatorType<String> getDiscriminatorType() {
+		// TODO Auto-generated method stub
+		return (DiscriminatorType<String>) basicType;
 	}
 
 }
