@@ -19,7 +19,7 @@ import adn.service.resource.metamodel.Extension;
  *
  */
 @SuppressWarnings("serial")
-public class FileExtensionType extends AbstractSynthesizedBasicType implements DiscriminatorTypeImplementor<String> {
+public class FileExtensionType extends AbstractSyntheticBasicType implements DiscriminatorTypeImplementor<String> {
 
 	public static final FileExtensionType INSTANCE = new FileExtensionType(StringType.INSTANCE);
 

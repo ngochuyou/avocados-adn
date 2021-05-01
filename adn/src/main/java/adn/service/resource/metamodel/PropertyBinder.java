@@ -199,6 +199,10 @@ public class PropertyBinder implements ManagerFactoryEventListener {
 
 	}
 
+	public boolean isExpllicitlyHydrated(Field f) {
+		return f.isAnnotationPresent(ExplicitlyHydrated.class);
+	}
+
 	public boolean isOptional(Member f) {
 		if (!(f instanceof AccessibleObject)) {
 			throw new IllegalArgumentException("Invalid member " + f.getName());

@@ -18,7 +18,7 @@ import adn.service.resource.metamodel.DefaultResourceIdentifierGenerator.Resourc
  *
  */
 @SuppressWarnings("serial")
-public class CreationTimeStampType extends AbstractTimestampType {
+public class CreationTimeStampType extends AbstractSyntheticBasicType {
 
 	public static final CreationTimeStampType INSTANCE = new CreationTimeStampType(TimestampType.INSTANCE);
 

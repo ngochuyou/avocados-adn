@@ -29,11 +29,11 @@ import adn.service.resource.storage.ResourceResultSet;
  *
  */
 @SuppressWarnings("serial")
-public abstract class AbstractSynthesizedBasicType implements BasicType {
+public abstract class AbstractSyntheticBasicType implements BasicType {
 
 	protected final BasicType basicType;
 
-	protected AbstractSynthesizedBasicType(BasicType basicType) {
+	protected AbstractSyntheticBasicType(BasicType basicType) {
 		// TODO Auto-generated constructor stub
 		Assert.notNull(basicType, "BasicType must not be null");
 		this.basicType = basicType;
@@ -160,7 +160,7 @@ public abstract class AbstractSynthesizedBasicType implements BasicType {
 	public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
 			throws HibernateException, SQLException {
 		// TODO Auto-generated method stub
-		return basicType.nullSafeGet(rs, getName(), session, owner);
+		return basicType.nullSafeGet(rs, names, session, owner);
 	}
 
 	@Override

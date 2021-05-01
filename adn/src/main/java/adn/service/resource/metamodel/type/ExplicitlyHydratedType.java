@@ -18,7 +18,7 @@ import adn.helpers.FunctionHelper.HandledFunction;
  *
  */
 @SuppressWarnings("serial")
-public class ExplicitlyHydratedType<T, E extends HibernateException> extends AbstractSynthesizedBasicType {
+public class ExplicitlyHydratedType<T, E extends HibernateException> extends AbstractSyntheticBasicType {
 
 	private final String[] regKeys = new String[] { };
 

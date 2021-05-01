@@ -9,7 +9,7 @@ import javax.persistence.Column;
 
 import adn.service.resource.local.LocalResource;
 import adn.service.resource.metamodel.ExplicitlyHydrated;
-import adn.service.resource.model.hydrate.HydrateByteArrayFunction;
+import adn.service.resource.model.hydrate.ByteArrayHydrateFunction;
 
 /**
  * @author Ngoc Huy
@@ -19,7 +19,7 @@ import adn.service.resource.model.hydrate.HydrateByteArrayFunction;
 public class FileByBytes extends FileResource {
 
 	@Column(nullable = false)
-	@ExplicitlyHydrated(byFunction = HydrateByteArrayFunction.class)
+	@ExplicitlyHydrated(byFunction = ByteArrayHydrateFunction.class)
 	private byte[] content;
 
 	public FileByBytes() {

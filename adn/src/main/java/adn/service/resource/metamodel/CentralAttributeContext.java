@@ -27,7 +27,6 @@ import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.mapping.Property;
 import org.hibernate.metamodel.model.domain.internal.BasicTypeImpl;
 import org.hibernate.metamodel.model.domain.internal.PluralAttributeBuilder;
@@ -55,11 +54,9 @@ import org.springframework.util.Assert;
 
 import adn.helpers.FunctionHelper.HandledFunction;
 import adn.service.resource.metamodel.PropertyBinder.KeyValueContext;
-import adn.service.resource.metamodel.type.ByteArrayType;
 import adn.service.resource.metamodel.type.CreationTimeStampType;
 import adn.service.resource.metamodel.type.ExplicitlyHydratedType;
 import adn.service.resource.metamodel.type.FileExtensionType;
-import adn.service.resource.metamodel.type.UpdateTimestampType;
 
 /**
  * @author Ngoc Huy
@@ -106,9 +103,8 @@ public interface CentralAttributeContext extends Service {
 			// TODO Auto-generated constructor stub
 			this.typeRegistry = typeRegistry;
 			this.metamodel = metamodel;
-			typeRegistry.register(ByteArrayType.INSTANCE);
+
 			typeRegistry.register(CreationTimeStampType.INSTANCE);
-			typeRegistry.register(UpdateTimestampType.INSTANCE);
 			typeRegistry.register(FileExtensionType.INSTANCE);
 		}
 
@@ -129,7 +125,10 @@ public interface CentralAttributeContext extends Service {
 			// TODO Auto-generated method stub
 			if (!isPlural(attr.getJavaType())) {
 				if (isAny(attr.getJavaType())) {
-					return ObjectType.INSTANCE;
+					if (attr.getJavaMember() instanceof Field
+							&& !PropertyBinder.INSTANCE.isExpllicitlyHydrated((Field) attr.getJavaMember())) {
+						return ObjectType.INSTANCE;
+					}
 				}
 
 				return attr instanceof Version ? resolveVersionType(owner, attr)
@@ -177,7 +176,9 @@ public interface CentralAttributeContext extends Service {
 									owner.getName(), attribute.getName()));
 
 					return new ExplicitlyHydratedType<T, HibernateException>(
-							typeRegistry.getRegisteredType(attribute.getJavaType().getName()), attribute.getJavaType(),
+							isAny(attribute.getJavaType()) ? ObjectType.INSTANCE
+									: typeRegistry.getRegisteredType(attribute.getJavaType().getName()),
+							attribute.getJavaType(),
 							(HandledFunction<Object, T, HibernateException>) new PojoInstantiator(anno.byFunction(),
 									null).instantiate());
 				}
@@ -188,18 +189,6 @@ public interface CentralAttributeContext extends Service {
 
 		@SuppressWarnings("unchecked")
 		private <D, T> VersionType<T> resolveVersionType(ResourceType<D> owner, Attribute<D, T> attribute) {
-			Member member = attribute.getJavaMember();
-
-			if (member instanceof Field) {
-				Field f = (Field) member;
-
-				if (f.getDeclaredAnnotation(UpdateTimestamp.class) != null) {
-					assertTimeStampType(f.getType());
-
-					return (VersionType<T>) typeRegistry.getRegisteredType(UpdateTimestamp.class.getName());
-				}
-			}
-
 			BasicType candidate = typeRegistry.getRegisteredType(attribute.getJavaType().getName());
 
 			return (VersionType<T>) Optional
