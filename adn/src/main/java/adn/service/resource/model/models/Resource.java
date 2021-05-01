@@ -9,7 +9,7 @@ package adn.service.resource.model.models;
  */
 public interface Resource {
 
-	String getPathname();
+	String getName();
 
 	String getExtension();
 

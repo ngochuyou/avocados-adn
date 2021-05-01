@@ -21,19 +21,19 @@ import org.hibernate.type.Type;
 import org.springframework.util.Assert;
 
 import adn.service.resource.local.ResourceManager;
-import adn.service.resource.storage.LocalResourceStorage.ResourceResultSet;
-import adn.service.resource.storage.LocalResourceStorage.SingleResourceResultSet;
+import adn.service.resource.local.ResourcePersister;
+import adn.service.resource.storage.ResourceResultSet;
 
 /**
  * @author Ngoc Huy
  *
  */
 @SuppressWarnings("serial")
-public abstract class AbstractTranslatedBasicType implements BasicType {
+public abstract class AbstractSynthesizedBasicType implements BasicType {
 
 	protected final BasicType basicType;
 
-	protected AbstractTranslatedBasicType(BasicType basicType) {
+	protected AbstractSynthesizedBasicType(BasicType basicType) {
 		// TODO Auto-generated constructor stub
 		Assert.notNull(basicType, "BasicType must not be null");
 		this.basicType = basicType;
@@ -285,14 +285,12 @@ public abstract class AbstractTranslatedBasicType implements BasicType {
 		throw new HibernateException("session must be instanceof " + ResourceManager.class);
 	}
 
-	protected Object getCurrentRow(ResultSet rs) throws SQLException {
-		ResourceResultSet resultSet = assertResultSet(rs);
-
-		if (resultSet instanceof SingleResourceResultSet) {
-			return resultSet.getObject(0);
+	protected ResourcePersister<?> assertPersister(Object owner) {
+		if (owner instanceof ResourcePersister) {
+			return (ResourcePersister<?>) owner;
 		}
 
-		return resultSet.getCurrent();
+		throw new HibernateException("owner must be instanceof " + ResourcePersister.class);
 	}
 
 }

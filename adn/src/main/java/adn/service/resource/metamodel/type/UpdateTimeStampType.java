@@ -3,77 +3,74 @@
  */
 package adn.service.resource.metamodel.type;
 
-import static adn.helpers.FunctionHelper.reject;
-
-import java.io.File;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.Map;
-import java.util.function.Function;
 
 import org.hibernate.HibernateException;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.type.LiteralType;
 import org.hibernate.type.TimestampType;
 import org.hibernate.type.VersionType;
-
-import adn.service.resource.storage.LocalResourceStorage.ResourceResultSet;
 
 /**
  * @author Ngoc Huy
  *
  */
 @SuppressWarnings("serial")
-public class UpdateTimeStampType extends AbstractTimestampType implements VersionType<Date> {
+public class UpdateTimestampType extends AbstractTimestampType implements VersionType<Date>, LiteralType<Date> {
 
-	public static final UpdateTimeStampType INSTANCE = new UpdateTimeStampType(TimestampType.INSTANCE);
-
-	private final Map<Class<?>, Function<Object, Date>> hydrateFunctions = Map.of(File.class, this::fromFile);
+	public static final UpdateTimestampType INSTANCE = new UpdateTimestampType(TimestampType.INSTANCE);
 
 	private final String[] regKeys = new String[] { UpdateTimestamp.class.getName() };
 
-	private UpdateTimeStampType(TimestampType basicType) {
+	private UpdateTimestampType(TimestampType basicType) {
 		super(basicType);
+		// TODO Auto-generated constructor stub
 	}
 
 	@Override
 	public Object hydrate(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
 			throws HibernateException, SQLException {
-		ResourceResultSet resultSet = assertResultSet(rs);
-		Object row = getCurrentRow(rs);
-
-		return hydrateFunctions.containsKey(resultSet.getResourceType())
-				? hydrateFunctions.get(resultSet.getResourceType()).apply(row)
-				: reject(new HibernateException(
-						"Unable to hydrate UpdateTimeStamp due to resource type is not supported: "
-								+ resultSet.getResourceType()),
-						HibernateException.class);
-	}
-
-	private Date fromFile(Object o) {
-		return new Date(((File) o).lastModified());
+		// TODO Auto-generated method stub
+		return basicType.hydrate(rs, names, session, owner);
 	}
 
 	@Override
 	public String[] getRegistrationKeys() {
+		// TODO Auto-generated method stub
 		return regKeys;
 	}
 
+	@SuppressWarnings("unchecked")
+	@Override
+	public String objectToSQLString(Date value, Dialect dialect) throws Exception {
+		// TODO Auto-generated method stub
+		return ((LiteralType<Date>) basicType).objectToSQLString(value, dialect);
+	}
+
+	@SuppressWarnings("unchecked")
 	@Override
 	public Date seed(SharedSessionContractImplementor session) {
-		return ((TimestampType) basicType).seed(session);
+		// TODO Auto-generated method stub
+		return ((VersionType<Date>) basicType).seed(session);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Date next(Date current, SharedSessionContractImplementor session) {
-		return ((TimestampType) basicType).next(current, session);
+		// TODO Auto-generated method stub
+		return ((VersionType<Date>) basicType).next(current, session);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Comparator<Date> getComparator() {
-		return ((TimestampType) basicType).getComparator();
+		// TODO Auto-generated method stub
+		return ((VersionType<Date>) basicType).getComparator();
 	}
 
 }

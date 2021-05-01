@@ -35,9 +35,9 @@ import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
 import adn.service.resource.local.ResourceManagerFactory.ServiceWrapper;
 import adn.service.resource.metamodel.DefaultResourceIdentifierGenerator;
-import adn.service.resource.metamodel.EntityBinder;
-import adn.service.resource.metamodel.PropertyBinder;
 import adn.service.resource.storage.LocalResourceStorage;
+import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplementor;
+import adn.service.resource.storage.ResultSetMetaDataImpl;
 
 /**
  * @author Ngoc Huy
@@ -88,12 +88,13 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		Assert.notNull(basicTypeRegistry, "Unable to locate Dialect");
 		contextBuildingService.register(ServiceWrapper.class, new ServiceWrapperImpl<>(dialect));
 
-		eventListeners.add(PropertyBinder.INSTANCE);
-		eventListeners.add(EntityBinder.INSTANCE);
 		// register naming-strategy
 		contextBuildingService.register(NamingStrategy.class, NamingStrategy.DEFAULT_NAMING_STRATEGY);
 		contextBuildingService.register(LocalResourceStorage.class, localStorage);
 		contextBuildingService.register(Metadata.class, new Metadata());
+		Assert.notNull(ResultSetMetaDataImpl.INSTANCE,
+				"Unable to locate instance of " + ResultSetMetaDataImplementor.class);
+		contextBuildingService.register(ResultSetMetaDataImplementor.class, ResultSetMetaDataImpl.INSTANCE);
 		// @formatter:off
 		prepare();
 		// @formatter:on
@@ -207,6 +208,15 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		}
 
 		return true;
+	}
+
+	public void addEventListener(ManagerFactoryEventListener listener) {
+		if (eventListeners.contains(listener)) {
+			throw new IllegalArgumentException("Duplicate event listener instance of type " + listener.getClass());
+		}
+
+		logger.trace("Adding new event listener of type " + listener.getClass());
+		eventListeners.add(listener);
 	}
 
 	private void postBuild() {

@@ -6,6 +6,7 @@ package adn.service.resource.local;
 import java.io.Serializable;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,7 +27,7 @@ import org.hibernate.type.VersionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import adn.service.resource.storage.LocalResourceStorage.ResourceResultSet;
+import adn.service.resource.storage.LocalResourceStorage.ResultSetImplementor;
 
 /**
  * @author Ngoc Huy
@@ -74,7 +75,7 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 
 	private List<Object> getResults(Serializable[] ids, ResourcePersister<?> persister, ResourceManager manager,
 			LockOptions lockOptions, RowSelection selection) throws HibernateException, SQLException {
-		ResourceResultSet result;
+		ResultSetImplementor result;
 		int maxRows = selection != null ? selection.getMaxRows() : Integer.MAX_VALUE; // best not be INTEGER.MAX_VALUE
 		List<AfterLoadAction> afterLoadActions = new ArrayList<>();
 
@@ -88,7 +89,7 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 		}
 	}
 
-	private List<Object> processResults(ResourceResultSet resultSet, ResourceManager resourceManager, int maxRow,
+	private List<Object> processResults(ResultSetImplementor resultSet, ResourceManager resourceManager, int maxRow,
 			LockMode lockMode) throws HibernateException, SQLException {
 		PersistenceContext context = resourceManager.getPersistenceContext();
 		ResourcePersister<?> persister = getPersister();
@@ -185,8 +186,8 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 		}
 	}
 
-	private EntityKey[] generateKeys(ResourceResultSet resultSet) throws HibernateException, SQLException {
-		List<Object> instances = resultSet.getAll();
+	private EntityKey[] generateKeys(ResultSetImplementor resultSet) throws HibernateException, SQLException {
+		List<Object> instances = Collections.emptyList();
 		EntityKey[] keys = new EntityKey[instances.size()];
 
 		for (int i = 0; i < instances.size(); i++) {
@@ -196,7 +197,7 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 		return keys;
 	}
 
-	private EntityKey produceResourceKey(ResourceResultSet resultSet) throws HibernateException, SQLException {
+	private EntityKey produceResourceKey(ResultSetImplementor resultSet) throws HibernateException, SQLException {
 		ResourcePersister<?> persister;
 
 		return new EntityKey(

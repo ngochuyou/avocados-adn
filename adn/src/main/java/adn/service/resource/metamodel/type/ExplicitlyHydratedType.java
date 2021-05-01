@@ -5,6 +5,7 @@ package adn.service.resource.metamodel.type;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Optional;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -17,7 +18,7 @@ import adn.helpers.FunctionHelper.HandledFunction;
  *
  */
 @SuppressWarnings("serial")
-public class ExplicitlyHydratedType<T, E extends HibernateException> extends AbstractTranslatedBasicType {
+public class ExplicitlyHydratedType<T, E extends HibernateException> extends AbstractSynthesizedBasicType {
 
 	private final String[] regKeys = new String[] { };
 
@@ -39,8 +40,8 @@ public class ExplicitlyHydratedType<T, E extends HibernateException> extends Abs
 	@Override
 	public Object hydrate(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
 			throws HibernateException, SQLException {
-		// TODO Auto-generated method stub
-		return function.apply(getCurrentRow(rs));
+		return function.apply(Optional.ofNullable(assertResultSet(rs).getCurrentRow())
+				.orElseThrow(() -> new HibernateException("NULL returned by ResultSet")));
 	}
 
 	public HandledFunction<Object, T, E> getFunction() {

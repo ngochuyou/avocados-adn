@@ -3,7 +3,6 @@
  */
 package adn.service.resource.metamodel.type;
 
-import java.io.File;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -20,7 +19,7 @@ import adn.service.resource.metamodel.Extension;
  *
  */
 @SuppressWarnings("serial")
-public class FileExtensionType extends AbstractTranslatedBasicType implements DiscriminatorTypeImplementor<String> {
+public class FileExtensionType extends AbstractSynthesizedBasicType implements DiscriminatorTypeImplementor<String> {
 
 	public static final FileExtensionType INSTANCE = new FileExtensionType(StringType.INSTANCE);
 
@@ -34,7 +33,7 @@ public class FileExtensionType extends AbstractTranslatedBasicType implements Di
 	public Object hydrate(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
 			throws HibernateException, SQLException {
 		// TODO Auto-generated method stub
-		return FilenameUtils.getExtension(((File) getCurrentRow(rs)).getName());
+		return FilenameUtils.getExtension(rs.getString(assertPersister(owner).getIdentifierPropertyName()));
 	}
 
 	@Override

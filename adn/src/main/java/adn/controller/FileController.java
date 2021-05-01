@@ -48,7 +48,7 @@ public class FileController extends BaseController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("FILE NOT FOUND");
 		}
 
-		return ResponseEntity.ok(resource.getPathname());
+		return ResponseEntity.ok(resource.getName());
 	}
 
 }

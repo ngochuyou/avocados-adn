@@ -31,7 +31,7 @@ public interface ContextBuildingService extends ServiceRegistry {
 		return new BuildingService();
 	}
 
-	void register(Class<?> type, Service newService);
+	void register(Class<? extends Service> type, Service newService);
 
 	<S> S getServiceWrapper(Class<S> serviceRole, Function<Optional<ServiceWrapper<S>>, S> optionObjectHandler);
 
@@ -110,7 +110,7 @@ public interface ContextBuildingService extends ServiceRegistry {
 		}
 
 		@Override
-		public void register(Class<?> clazz, Service service) {
+		public void register(Class<? extends Service> clazz, Service service) {
 			// TODO Auto-generated method stub
 			if (serviceMap.containsKey(clazz)) {
 				logger.debug(String.format(

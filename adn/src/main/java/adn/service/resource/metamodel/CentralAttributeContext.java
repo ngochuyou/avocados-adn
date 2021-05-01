@@ -38,12 +38,12 @@ import org.hibernate.metamodel.model.domain.spi.BasicTypeDescriptor;
 import org.hibernate.metamodel.model.domain.spi.PluralPersistentAttribute;
 import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
 import org.hibernate.service.Service;
-import org.hibernate.tuple.Instantiator;
 import org.hibernate.tuple.PojoInstantiator;
 import org.hibernate.type.ArrayType;
 import org.hibernate.type.BasicType;
 import org.hibernate.type.BasicTypeRegistry;
 import org.hibernate.type.CollectionType;
+import org.hibernate.type.ListType;
 import org.hibernate.type.MapType;
 import org.hibernate.type.ObjectType;
 import org.hibernate.type.SetType;
@@ -59,8 +59,7 @@ import adn.service.resource.metamodel.type.ByteArrayType;
 import adn.service.resource.metamodel.type.CreationTimeStampType;
 import adn.service.resource.metamodel.type.ExplicitlyHydratedType;
 import adn.service.resource.metamodel.type.FileExtensionType;
-import adn.service.resource.metamodel.type.IdentifierStringType;
-import adn.service.resource.metamodel.type.UpdateTimeStampType;
+import adn.service.resource.metamodel.type.UpdateTimestampType;
 
 /**
  * @author Ngoc Huy
@@ -108,9 +107,8 @@ public interface CentralAttributeContext extends Service {
 			this.typeRegistry = typeRegistry;
 			this.metamodel = metamodel;
 			typeRegistry.register(ByteArrayType.INSTANCE);
-			typeRegistry.register(IdentifierStringType.INSTANCE);
 			typeRegistry.register(CreationTimeStampType.INSTANCE);
-			typeRegistry.register(UpdateTimeStampType.INSTANCE);
+			typeRegistry.register(UpdateTimestampType.INSTANCE);
 			typeRegistry.register(FileExtensionType.INSTANCE);
 		}
 
@@ -134,10 +132,9 @@ public interface CentralAttributeContext extends Service {
 					return ObjectType.INSTANCE;
 				}
 
-				return attr instanceof Identifier ? typeRegistry.getRegisteredType(IdentifierStringType.class.getName())
-						: attr instanceof Version ? resolveVersionType(owner, attr)
-								: Optional.ofNullable(resolveSpecificCases(owner, attr))
-										.orElse(typeRegistry.getRegisteredType(attr.getJavaType().getName()));
+				return attr instanceof Version ? resolveVersionType(owner, attr)
+						: Optional.ofNullable(resolveSpecificCases(owner, attr))
+								.orElse(typeRegistry.getRegisteredType(attr.getJavaType().getName()));
 			}
 
 			return resolveCollectionType(owner, attr.getJavaType(), attr.getName());
@@ -179,11 +176,10 @@ public interface CentralAttributeContext extends Service {
 							String.format("Explicit hydrate function must not be null, provided null on %s.%s",
 									owner.getName(), attribute.getName()));
 
-					Instantiator instantiator = new PojoInstantiator(anno.byFunction(), null);
-
 					return new ExplicitlyHydratedType<T, HibernateException>(
 							typeRegistry.getRegisteredType(attribute.getJavaType().getName()), attribute.getJavaType(),
-							(HandledFunction<Object, T, HibernateException>) instantiator.instantiate());
+							(HandledFunction<Object, T, HibernateException>) new PojoInstantiator(anno.byFunction(),
+									null).instantiate());
 				}
 			}
 
@@ -211,7 +207,7 @@ public interface CentralAttributeContext extends Service {
 							? candidate.getReturnedClass().equals(attribute.getJavaType()) ? candidate : null
 							: null)
 					.orElseThrow(() -> new IllegalArgumentException(String.format(
-							"The obtained JavaType from the Type descriptor and JavaType from the attribute do not match. [%s><%s]]",
+							"The obtained JavaType from the Type descriptor and JavaType from the attribute do not match. [%s><%s]",
 							candidate.getReturnedClass(), attribute.getJavaType())));
 		}
 
@@ -236,7 +232,7 @@ public interface CentralAttributeContext extends Service {
 			}
 
 			if (List.class.isAssignableFrom(type)) {
-				return new SetType(owner.getName() + "." + propName, propName);
+				return new ListType(owner.getName() + "." + propName, propName);
 			}
 
 			if (type.isArray()) {

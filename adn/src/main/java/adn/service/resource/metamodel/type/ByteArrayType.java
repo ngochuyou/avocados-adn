@@ -23,7 +23,7 @@ public class ByteArrayType extends AbstractSingleColumnStandardBasicType<byte[]>
 	@Override
 	public String getName() {
 		// TODO Auto-generated method stub
-		return "bytes";
+		return "byte_array";
 	}
 
 }

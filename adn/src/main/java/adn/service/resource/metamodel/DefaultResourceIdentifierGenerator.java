@@ -39,7 +39,7 @@ public class DefaultResourceIdentifierGenerator implements IdentifierGenerator, 
 
 			return new StringBuilder(String.valueOf(new Date().getTime()))
 					.append(IDENTIFIER_PARTS_SEPERATOR)
-					.append(StringHelper.hash(instance.getPathname()))
+					.append(StringHelper.hash(instance.getName()))
 					.append(instance.getExtension())
 					.toString();
 		}

@@ -23,6 +23,10 @@ public class Metadata implements Service, ManagerFactoryEventListener {
 	private volatile Set<String> processedImports = new HashSet<>();
 	private volatile boolean allDone = processedImports.size() != imports.size();
 
+	public Metadata() {
+		listen();
+	}
+
 	public void addImport(String name, Class<?> type) {
 		imports.put(name, type);
 	}

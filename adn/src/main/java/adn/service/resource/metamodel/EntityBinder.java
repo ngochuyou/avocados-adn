@@ -26,7 +26,9 @@ public class EntityBinder implements ManagerFactoryEventListener {
 
 	public static EntityBinder INSTANCE = new EntityBinder();
 
-	private EntityBinder() {}
+	private EntityBinder() {
+		listen();
+	}
 
 	@Override
 	public void postBuild(ResourceManagerFactory managerFactory) {

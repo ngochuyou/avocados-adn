@@ -5,6 +5,7 @@ package adn.service.resource.storage;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,10 +28,6 @@ public class LocalResourceStorageImpl implements LocalResourceStorage {
 	public LocalResourceStorageImpl() throws IllegalAccessException {
 		// TODO Auto-generated constructor stub
 		logger.trace("Registering supported Resource types returned by the " + LocalResourceStorage.class);
-		logger.trace("Adding " + File.class);
-		SupportedResourceContext.INSTANCE.contribute(File.class);
-		logger.trace("Closing type contributions");
-		SupportedResourceContext.INSTANCE.close();
 	}
 
 	@Override
@@ -47,19 +44,21 @@ public class LocalResourceStorageImpl implements LocalResourceStorage {
 	}
 
 	@Override
-	public SingleResourceResultSet select(Serializable identifier) {
+	public ResultSetImplementor select(Serializable identifier) {
 		// TODO Auto-generated method stub
-		return new SingleResourceResultSet(validate(new File(LocalResourceStorage.IMAGE_FILE_DIRECTORY + identifier)),
-				File.class);
+		return new ResourceResultSet(
+				Arrays.asList(validate(new File(LocalResourceStorage.IMAGE_FILE_DIRECTORY + identifier))));
 	}
 
 	@Override
-	public ResourceResultSet select(Serializable[] identifiers) {
+	public ResultSetImplementor select(Serializable[] identifiers) {
+		logger.debug("Selecting identifiers: "
+				+ Stream.of(identifiers).map(id -> LocalResourceStorage.IMAGE_FILE_DIRECTORY + id.toString())
+						.collect(Collectors.joining(", ")));
 		// @formatter:off
-		logger.debug("Selecting identifiers: " + Stream.of(identifiers).map(id -> LocalResourceStorage.IMAGE_FILE_DIRECTORY + id.toString()).collect(Collectors.joining(", ")));
 		return new ResourceResultSet(Stream.of(identifiers)
 				.map(id -> new File(LocalResourceStorage.IMAGE_FILE_DIRECTORY + id.toString()))
-				.map(this::validate).collect(Collectors.toList()), File.class);
+				.map(this::validate).collect(Collectors.toList()));
 		// @formatter:on
 	}
 
@@ -70,12 +69,6 @@ public class LocalResourceStorageImpl implements LocalResourceStorage {
 	@Override
 	public void lock(Serializable identifier) {
 		// TODO Auto-generated method stub
-	}
-
-	@Override
-	public boolean isResourceTypeSupported(Class<?> type) {
-		// TODO Auto-generated method stub
-		return SupportedResourceContext.INSTANCE.isSupported(type);
 	}
 
 }

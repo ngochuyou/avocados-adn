@@ -14,6 +14,7 @@ import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import adn.service.resource.local.LocalResource;
+import adn.service.resource.metamodel.Extension;
 
 /**
  * @author Ngoc Huy
@@ -25,7 +26,7 @@ public class FileResource implements Resource {
 	@Id
 	@GeneratedValue
 	@GenericGenerator(strategy = "resource_identifier", name = "resource_identifier")
-	private String pathname;
+	private String name;
 
 	@CreationTimestamp
 	private Date createdDate;
@@ -34,24 +35,24 @@ public class FileResource implements Resource {
 	@UpdateTimestamp
 	private Date lastModified;
 
+	@Extension
 	private String extension;
 
 	public FileResource() {}
 
 	public FileResource(String pathname, String extension, Date timestamp) {
 		super();
-		this.pathname = pathname;
+		this.name = pathname;
 		this.createdDate = timestamp;
 		this.extension = "." + extension;
 	}
 
-	@Override
-	public String getPathname() {
-		return pathname;
+	public String getName() {
+		return name;
 	}
 
-	public void setPathname(String pathname) {
-		this.pathname = pathname;
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public Date getCreatedDate() {

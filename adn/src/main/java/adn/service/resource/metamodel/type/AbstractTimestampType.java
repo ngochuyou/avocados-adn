@@ -10,7 +10,7 @@ import org.hibernate.type.TimestampType;
  * 
  */
 @SuppressWarnings("serial")
-public abstract class AbstractTimestampType extends AbstractTranslatedBasicType {
+public abstract class AbstractTimestampType extends AbstractSynthesizedBasicType {
 
 	protected AbstractTimestampType(TimestampType basicType) {
 		super(basicType);

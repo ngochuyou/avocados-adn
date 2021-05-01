@@ -69,7 +69,9 @@ public class PropertyBinder implements ManagerFactoryEventListener {
 
 	public static PropertyBinder INSTANCE = new PropertyBinder();
 
-	private PropertyBinder() {}
+	private PropertyBinder() {
+		listen();
+	}
 
 	@Override
 	public void postBuild(ResourceManagerFactory managerFactory) {
