@@ -377,7 +377,6 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 							throw new IllegalArgumentException("IDENTIFIER type must be basic type");
 						}
 
-						logger.trace("Creating IDENTIFIER for type: " + metamodel.getJavaType());
 						attribute = attributeContext.createIdentifier(metamodel, f);
 						break;
 					}
@@ -386,19 +385,16 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 							throw new IllegalArgumentException("VERSION type must be basic type");
 						}
 
-						logger.trace("Creating VERSION for type: " + metamodel.getJavaType());
 						attribute = attributeContext.createVersion(metamodel, f);
 						break;
 					}
 					case PROPERTY: {
 						if (!attributeContext.isPlural(f.getType())) {
-							logger.trace("Creating SingularAttribute for type: " + metamodel.getJavaType());
 							attribute = attributeContext.createSingularAttribute(metamodel, f,
 									PropertyBinder.INSTANCE.isOptional(f));
 							break;
 						}
 
-						logger.trace("Creating PluralAttribute for type: " + metamodel.getJavaType());
 						attribute = attributeContext.createPluralAttribute(metamodel, f);
 						break;
 					}
@@ -408,6 +404,8 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 					throw new IllegalAccessException("Unable to process attribute " + f.getName());
 				}
 
+				logger.trace(String.format("Created [%s] [%s] for type [%s]", attribute.getClass(), attribute.getName(),
+						metamodel.getName()));
 				metamodel.getInFlightAccess().addAttribute(attribute);
 			}
 		}
@@ -565,19 +563,18 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	}
 
 	@Override
-	@SuppressWarnings({ "rawtypes", "unlikely-arg-type" })
+	@SuppressWarnings({ "rawtypes" })
 	public ResourcePersister<?> entityPersister(Class entityClass) {
-		// TODO Auto-generated method stub
-		String resourceName = importedClassNames.get(entityClass);
+		String resourceName = importedClassNames.get(entityClass.getName());
 
 		if (resourceName != null) {
 			return persistersByName.get(resourceName);
 		}
 
-		Assert.isTrue(!resourceNameResolvers.isEmpty(), "Unable to locate name resolver");
-		resourceName = resourceNameResolvers.stream().findFirst().orElseThrow().resolveEntityName(entityClass);
-
-		return Optional.ofNullable(entityPersister(resourceName)).orElse(null);
+		return Optional
+				.ofNullable(entityPersister(
+						resourceNameResolvers.stream().findFirst().orElseThrow().resolveEntityName(entityClass)))
+				.orElseThrow(() -> new IllegalArgumentException("Unable to locate persister for type " + entityClass));
 	}
 
 	@Override

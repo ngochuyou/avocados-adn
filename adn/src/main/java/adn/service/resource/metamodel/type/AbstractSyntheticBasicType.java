@@ -20,8 +20,8 @@ import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.Type;
 import org.springframework.util.Assert;
 
+import adn.helpers.StringHelper;
 import adn.service.resource.local.ResourceManager;
-import adn.service.resource.local.ResourcePersister;
 import adn.service.resource.storage.ResourceResultSet;
 
 /**
@@ -285,12 +285,16 @@ public abstract class AbstractSyntheticBasicType implements BasicType {
 		throw new HibernateException("session must be instanceof " + ResourceManager.class);
 	}
 
-	protected ResourcePersister<?> assertPersister(Object owner) {
-		if (owner instanceof ResourcePersister) {
-			return (ResourcePersister<?>) owner;
+	protected static abstract class AbstractFieldBasedSyntheticBasicType extends AbstractSyntheticBasicType {
+
+		protected final String referencedFieldName;
+
+		protected AbstractFieldBasedSyntheticBasicType(BasicType basicType, String referencedFieldName) {
+			super(basicType);
+			Assert.isTrue(StringHelper.hasLength(referencedFieldName), "Referenced name must not be empty");
+			this.referencedFieldName = referencedFieldName;
 		}
 
-		throw new HibernateException("owner must be instanceof " + ResourcePersister.class);
 	}
 
 }

@@ -9,6 +9,7 @@ import javax.persistence.EntityManagerFactory;
 
 import org.hibernate.dialect.Dialect;
 import org.hibernate.event.spi.LoadEventListener;
+import org.hibernate.internal.FastSessionServices;
 import org.hibernate.proxy.EntityNotFoundDelegate;
 import org.hibernate.service.Service;
 import org.hibernate.type.spi.TypeConfiguration;
@@ -21,12 +22,6 @@ import adn.service.resource.storage.LocalResourceStorage;
  *
  */
 public interface ResourceManagerFactory extends EntityManagerFactory {
-
-	<T> ResourcePersister<T> getResourcePersister(String name);
-
-	<T> ResourcePersister<T> getResourcePersister(Class<T> clazz);
-
-	<T> ResourcePersister<T> locateResourcePersister(Class<T> clazz) throws IllegalArgumentException;
 
 	boolean isLocked(Serializable identifier);
 
@@ -56,5 +51,7 @@ public interface ResourceManagerFactory extends EntityManagerFactory {
 	LoadEventListener getLoadEventListener();
 
 	EntityNotFoundDelegate getResourceNotFoundHandler();
+
+	FastSessionServices getFastSessionServices();
 
 }

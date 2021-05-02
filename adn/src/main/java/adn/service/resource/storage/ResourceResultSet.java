@@ -28,16 +28,16 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
-import org.slf4j.Logger;
+import org.hibernate.property.access.spi.PropertyAccess;
 import org.slf4j.LoggerFactory;
 
 import adn.service.resource.storage.LocalResourceStorage.ResultSetImplementor;
 import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplementor;
+import adn.service.resource.storage.ResultSetMetaDataImpl.AccessImpl.NonPropertyAccess;
 
 public class ResourceResultSet implements ResultSetImplementor {
-
-	protected static final Logger logger = LoggerFactory.getLogger(ResourceResultSet.class);
 
 	private int current = 0;
 	private static final ResultSetMetaDataImplementor metadata = ResultSetMetaDataImpl.INSTANCE;
@@ -46,14 +46,29 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	private Object lastRead = null;
 	private final List<File> rows;
-
+	// @formatter:off
+	private final Map<Class<?>, Map<Class<?>, Function<Object, Object>>> resolvers = Map.of(
+			Timestamp.class, Map.of(
+					Long.class, (longVal) -> new Timestamp((Long) longVal),
+					Date.class, (date) -> new Timestamp(((Date) date).getTime())
+			),
+			Date.class, Map.of(
+					Long.class, (longVal) -> new Date((Long) longVal)
+			)
+	);
+	// @formatter:on
 	public ResourceResultSet(List<File> rows) {
 		// TODO Auto-generated constructor stub
 		this.rows = rows;
+		LoggerFactory.getLogger(ResourceResultSet.class).trace("\n" + metadata.toString());
 	}
 
-	private boolean inBound() {
-		return current > 0 && current < rows.size();
+	private int getRightBound() throws SQLException {
+		return getFetchSize() + 1;
+	}
+
+	private boolean inBound() throws SQLException {
+		return current > 0 && current < getRightBound();
 	}
 
 	private void assertBound() throws SQLException {
@@ -61,14 +76,14 @@ public class ResourceResultSet implements ResultSetImplementor {
 			return;
 		}
 
-		throw new SQLException("Fetch bound exceeded");
+		throw new SQLException(String.format("Fetch bound exceeded, current cursor position is [%d]", current));
 	}
 
 	@Override
 	public Object getObject(int columnIndex) throws SQLException {
 		assertBound();
 
-		return metadata.getPropertyAccess(columnIndex).getGetter().get(rows.get(current));
+		return lastRead = metadata.getPropertyAccess(columnIndex).getGetter().get(getCurrentRow());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -89,7 +104,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public boolean next() throws SQLException {
-		if (current < rows.size()) {
+		if (current < getRightBound()) {
 			current++;
 
 			return inBound();
@@ -105,7 +120,6 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public boolean wasNull() throws SQLException {
-
 		return lastRead == null;
 	}
 
@@ -113,13 +127,32 @@ public class ResourceResultSet implements ResultSetImplementor {
 	private <T> T typeSafeGet(int columnIndex, Class<T> type) throws SQLException {
 		assertBound();
 
-		Object val = metadata.getPropertyAccess(columnIndex).getGetter().get(rows.get(current));
+		PropertyAccess propertyAccess = metadata.getPropertyAccess(columnIndex);
+
+		if (propertyAccess instanceof NonPropertyAccess) {
+			return null;
+		}
+
+		Object val = (lastRead = propertyAccess.getGetter().get(rows.get(current - 1)));
 
 		if (type.isAssignableFrom(val.getClass())) {
 			return (T) val;
 		}
 
-		throw new SQLException("Type mismatch when trying to get value from col " + columnIndex);
+		Map<Class<?>, Function<Object, Object>> resolver;
+
+		if (resolvers.containsKey(type)) {
+			if ((resolver = resolvers.get(type)).containsKey(val.getClass())) {
+				try {
+					return (T) resolver.get(val.getClass()).apply(val);
+				} catch (Exception e) {
+					throw new SQLException(e);
+				}
+			}
+		}
+
+		throw new SQLException(String.format("Type mismatch when trying to get value from column {%d} [%s><%s]",
+				columnIndex, val.getClass(), type));
 	}
 
 	private <T> T typeSafeGet(String name, Class<T> type) throws SQLException {
@@ -200,7 +233,6 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public Timestamp getTimestamp(int columnIndex) throws SQLException {
-
 		return typeSafeGet(columnIndex, Timestamp.class);
 	}
 
@@ -299,8 +331,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel) throws SQLException {
-
-		return typeSafeGet(columnLabel, Timestamp.class);
+		return getTimestamp(metadata.getIndex(columnLabel));
 	}
 
 	@Override
@@ -383,8 +414,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public boolean isAfterLast() throws SQLException {
-
-		return current == rows.size();
+		return current == getRightBound();
 	}
 
 	@Override
@@ -395,8 +425,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public boolean isLast() throws SQLException {
-
-		return current == rows.size() - 1;
+		return current == getRightBound() - 1;
 	}
 
 	@Override
@@ -406,12 +435,12 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public void afterLast() throws SQLException {
-		current = rows.size();
+		current = getRightBound();
 	}
 
 	@Override
 	public boolean first() throws SQLException {
-		if (rows.size() == 0) {
+		if (getFetchSize() == 0) {
 			return false;
 		}
 
@@ -422,11 +451,11 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public boolean last() throws SQLException {
-		if (rows.size() == 0) {
+		if (getFetchSize() == 0) {
 			return false;
 		}
 
-		current = rows.size() - 1;
+		current = getFetchSize() - 1;
 
 		return true;
 	}
@@ -444,10 +473,12 @@ public class ResourceResultSet implements ResultSetImplementor {
 		}
 
 		if (row > 0) {
-			current = row - 1;
+			current = row;
+
+			return inBound();
 		}
 
-		current = rows.size() - Math.abs(row);
+		current = getFetchSize() - Math.abs(row);
 
 		return inBound();
 	}
@@ -460,7 +491,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 		int newCursor = current + rows;
 
-		current = newCursor < 0 ? 0 : newCursor > this.rows.size() ? this.rows.size() : newCursor;
+		current = newCursor < 0 ? 0 : newCursor > getFetchSize() ? getFetchSize() : newCursor;
 
 		return inBound();
 	}
@@ -934,10 +965,8 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 		@Override
 		public byte[] getBytes() {
-
 			return toByteArray(index);
 		}
-
 	}
 
 	@Override
@@ -1195,9 +1224,9 @@ public class ResourceResultSet implements ResultSetImplementor {
 		return getObject(findColumn(columnLabel), type);
 	}
 
-	public Object getCurrentRow() {
+	public Object getCurrentRow() throws SQLException {
 		if (inBound()) {
-			return rows.get(current);
+			return rows.get(current - 1);
 		}
 
 		return null;

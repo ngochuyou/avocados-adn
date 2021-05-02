@@ -4,6 +4,7 @@
 package adn.service.resource.metamodel;
 
 import java.io.Serializable;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.Properties;
 
@@ -14,7 +15,6 @@ import org.hibernate.id.Configurable;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
-import org.springframework.util.Assert;
 
 import adn.helpers.StringHelper;
 import adn.service.resource.model.models.Resource;
@@ -26,9 +26,9 @@ import adn.service.resource.model.models.Resource;
 public class DefaultResourceIdentifierGenerator implements IdentifierGenerator, Configurable {
 
 	public static final DefaultResourceIdentifierGenerator INSTANCE = new DefaultResourceIdentifierGenerator();
+	public static final String NAME = "resource_identifier";
 
 	public static final String IDENTIFIER_PARTS_SEPERATOR = "_";
-
 	public static final int PART_COMPONENT_AMOUNT = 2;
 
 	@Override
@@ -71,11 +71,13 @@ public class DefaultResourceIdentifierGenerator implements IdentifierGenerator, 
 			return partPos;
 		}
 
-		public static Date getCreationTimeStamp(String identifier) throws NumberFormatException {
+		public static Date getCreationTimeStamp(String identifier) throws NumberFormatException, SQLException {
 			String[] parts = identifier.split(IDENTIFIER_PARTS_SEPERATOR);
 
-			Assert.isTrue(parts.length == PART_COMPONENT_AMOUNT,
-					String.format("Invalid Resource identifier value, expect %s part(s)", PART_COMPONENT_AMOUNT));
+			if (parts.length != PART_COMPONENT_AMOUNT) {
+				throw new SQLException(
+						String.format("Invalid Resource identifier value, expect %s part(s)", PART_COMPONENT_AMOUNT));
+			}
 
 			return new Date(Long.valueOf(parts[CREATION_TIMESTAMP.getPartPos()]));
 		}

@@ -201,7 +201,8 @@ public class TestController extends BaseController {
 
 	@GetMapping("/file/public/image/session-load")
 	public @ResponseBody ResponseEntity<?> testGetImageBytes() {
-		return ResponseEntity.ok(session.load(FileByBytes.class, "IMG_20210301_162741.jpg"));
+		return ResponseEntity.ok(session.load(FileByBytes.class,
+				"1619973416467_0c46022fcfda4d9f4bb8c09e8c42e9efc12d839d35c78c73e4dab1d24fac8a1c.jpg"));
 	}
 
 }

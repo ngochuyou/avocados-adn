@@ -14,6 +14,7 @@ import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import adn.service.resource.local.LocalResource;
+import adn.service.resource.metamodel.DefaultResourceIdentifierGenerator;
 import adn.service.resource.metamodel.Extension;
 
 /**
@@ -25,7 +26,7 @@ public class FileResource implements Resource {
 
 	@Id
 	@GeneratedValue
-	@GenericGenerator(strategy = "resource_identifier", name = "resource_identifier")
+	@GenericGenerator(strategy = DefaultResourceIdentifierGenerator.NAME, name = DefaultResourceIdentifierGenerator.NAME)
 	private String name;
 
 	@CreationTimestamp

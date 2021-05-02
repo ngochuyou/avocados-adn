@@ -9,7 +9,6 @@ import java.util.List;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
-import org.hibernate.type.Type;
 import org.springframework.util.Assert;
 
 /**
@@ -20,15 +19,9 @@ public class ResourceLoader extends AbstractLoader {
 
 	protected final ResourcePersister<?> persister;
 
-	protected final Type identifierType;
-
-	protected final String[] identifierColumnNames;
-
 	public ResourceLoader(ResourcePersister<?> persister) {
 		// TODO Auto-generated constructor stub
 		this.persister = persister;
-		this.identifierType = persister.getIdentifierType();
-		this.identifierColumnNames = new String[] { };
 	}
 
 	@Override
@@ -54,8 +47,6 @@ public class ResourceLoader extends AbstractLoader {
 				throw new IllegalStateException("More than one resource were found with identifier " + id);
 			}
 
-			identifierType.isSame(id, persister.getIdentifier(result.get(0), manager));
-
 			return result.get(0);
 		} catch (HibernateException | SQLException e) {
 			// TODO Auto-generated catch block
@@ -65,19 +56,14 @@ public class ResourceLoader extends AbstractLoader {
 	}
 
 	private void assertIdType(Serializable id) {
-		Assert.isTrue(identifierType.getReturnedClass().equals(id.getClass()), "Identifier type check failed");
+		Assert.isTrue(persister.getIdentifierType().getReturnedClass().equals(id.getClass()),
+				"Identifier type check failed");
 	}
 
 	@Override
 	public ResourcePersister<?> getPersister() {
 		// TODO Auto-generated method stub
 		return persister;
-	}
-
-	@Override
-	public String[] getIdentifierValueNames() {
-		// TODO Auto-generated method stub
-		return identifierColumnNames;
 	}
 
 }

@@ -16,6 +16,7 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
+import org.hibernate.internal.FastSessionServices;
 import org.hibernate.type.BasicTypeRegistry;
 import org.hibernate.type.spi.TypeConfiguration;
 import org.slf4j.Logger;
@@ -95,6 +96,12 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		Assert.notNull(ResultSetMetaDataImpl.INSTANCE,
 				"Unable to locate instance of " + ResultSetMetaDataImplementor.class);
 		contextBuildingService.register(ResultSetMetaDataImplementor.class, ResultSetMetaDataImpl.INSTANCE);
+
+		FastSessionServices fsses = sfi.getFastSessionServices();
+
+		Assert.notNull(fsses, "Unable to locate instance of " + FastSessionServices.class);
+
+		contextBuildingService.register(ServiceWrapper.class, new ServiceWrapperImpl<>(fsses));
 		// @formatter:off
 		prepare();
 		// @formatter:on
@@ -142,7 +149,7 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 	private void importIdentifierGenerator() {
 		MutableIdentifierGeneratorFactory idGeneratorFactory = contextBuildingService
 				.getService(MutableIdentifierGeneratorFactory.class);
-		String defaultResourceIdentifierName = "resource_identifier";
+		String defaultResourceIdentifierName = DefaultResourceIdentifierGenerator.NAME;
 
 		idGeneratorFactory.register(defaultResourceIdentifierName, DefaultResourceIdentifierGenerator.class);
 		identifierGenerators.add(defaultResourceIdentifierName);

@@ -8,11 +8,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Currency;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.property.access.spi.Getter;
@@ -39,8 +40,9 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 
 	public static final ResultSetMetaDataImpl INSTANCE = new ResultSetMetaDataImpl();
 
+	private static final Logger logger = LoggerFactory.getLogger(ResultSetMetaDataImpl.class);
 	private final Map<String, Integer> columnIndexMap = new HashMap<>();
-	private final List<PropertyAccess> propertyAccessors = new ArrayList<>();
+	private List<PropertyAccess> propertyAccessors = null;
 
 	private Access access;
 
@@ -70,7 +72,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 	}
 
 	private void assertIndex(int index) throws IllegalArgumentException, SQLException {
-		Assert.isTrue(index < getColumnCount(), "Index " + index + " is out of bound");
+		Assert.isTrue(index >= 0 && index < getColumnCount(), "Index " + index + " is out of bound");
 	}
 
 	@Override
@@ -222,12 +224,20 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 	}
 
 	protected int getNextColumnIndex() {
-		return columnIndexMap.size();
+		return Integer.valueOf(columnIndexMap.size());
 	}
 
 	public class AccessImpl implements Access {
 
 		private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+		private void addColumn(String name, int index) {
+			if (columnIndexMap.containsKey(name)) {
+				throw new IllegalArgumentException(String.format("Duplicate property [%s]", name));
+			}
+
+			columnIndexMap.put(name, index);
+		}
 
 		@Override
 		public void addColumn(String name) throws NoSuchFieldException {
@@ -239,8 +249,8 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 
 			try {
 				if (File.class.getDeclaredField(name) != null) {
-					columnIndexMap.put(name, nextIndex);
-					propertyAccessors.add(new DirectAccess(File.class.getDeclaredField(name)));
+					addColumn(name, nextIndex);
+					addPropertyAccess(new DirectAccess(File.class.getDeclaredField(name)), nextIndex);
 				}
 			} catch (NoSuchFieldException nsfe) {
 				logger.trace(String.format("%s not found, trying to locate getter", name));
@@ -252,8 +262,8 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 					throw nsfe;
 				}
 
-				columnIndexMap.put(name, nextIndex);
-				propertyAccessors.add(pa);
+				addColumn(name, nextIndex);
+				addPropertyAccess(pa, nextIndex);
 			} catch (SecurityException se) {
 				logger.trace(String.format("%s found on [%s], trying to find getter", SecurityException.class, name));
 
@@ -264,8 +274,8 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 					throw new NoSuchFieldException(String.format("Unable to locate field %s in %s", name, File.class));
 				}
 
-				columnIndexMap.put(name, nextIndex);
-				propertyAccessors.add(pa);
+				addColumn(name, nextIndex);
+				addPropertyAccess(pa, nextIndex);
 			}
 		}
 
@@ -458,8 +468,8 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 
 			logger.trace(String.format("Adding explicitly hydrated column %s with index %d", name, nextIndex));
 
-			columnIndexMap.put(String.format("EXPLICITLY_HYDRATED_COLUMN_%s", name), nextIndex);
-			propertyAccessors.add(holder);
+			addColumn(name, nextIndex);
+			addPropertyAccess(holder, nextIndex);
 		}
 
 		public class NonPropertyAccess implements PropertyAccess {
@@ -493,8 +503,8 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 			int nextIndex = getNextColumnIndex();
 
 			logger.trace(String.format("Adding synthesized column %s with index %d", name, nextIndex));
-			columnIndexMap.put(String.format("SYNTHESIZED_COLUMN_%s", name), nextIndex);
-			propertyAccessors.add(holder);
+			addColumn(name, nextIndex);
+			addPropertyAccess(holder, nextIndex);
 		}
 
 	}
@@ -502,7 +512,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 	@Override
 	public PropertyAccess getPropertyAccess(String name) throws IllegalArgumentException, SQLException {
 		if (!columnIndexMap.containsKey(name)) {
-			return null;
+			throw new IllegalArgumentException("Column " + name + " not found");
 		}
 
 		return getPropertyAccess(columnIndexMap.get(name));
@@ -522,8 +532,58 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 
 	@Override
 	public int getIndex(String name) {
-		// TODO Auto-generated method stub
-		return !columnIndexMap.containsKey(name) ? -1 : columnIndexMap.get(name);
+		if (!columnIndexMap.containsKey(name)) {
+			logger.trace(String.format("Unable to get index of column [%s]", name));
+			return -1;
+		}
+
+		return columnIndexMap.get(name);
+	}
+
+	@Override
+	public String toString() {
+		// @formatter:off
+		return String.format("%s built with summary: \n"
+				+ "\t-columnIndexMap: [%s]\n"
+				+ "\t-propertyAccesssors: [%s]", this.getClass(),
+				columnIndexMap.entrySet().stream()
+					.map(entry -> entry.getKey() + "|" + entry.getValue())
+					.collect(Collectors.joining(", ")),
+				columnIndexMap.entrySet().stream()
+					.map(entry -> propertyAccessors.get(entry.getValue()).getClass().toString())
+					.collect(Collectors.joining(", ")));
+		// @formatter:on
+	}
+
+	private void addPropertyAccess(PropertyAccess pa, int index) {
+		int cap = getCapacity(index + 1);
+		PropertyAccess[] newPAs = new PropertyAccess[cap];
+
+		for (int i = 0; i < cap; i++) {
+			if (i == index) {
+				newPAs[i] = pa;
+				continue;
+			}
+
+			if (propertyAccessors == null || i >= propertyAccessors.size()) {
+				newPAs[i] = null;
+				continue;
+			}
+
+			newPAs[i] = propertyAccessors.get(i);
+		}
+
+		propertyAccessors = Arrays.asList(newPAs);
+	}
+
+	private int getCapacity(int requested) {
+		Assert.isTrue(requested >= 0, String.format("Invali index [%d]", requested));
+
+		if (propertyAccessors == null) {
+			return requested;
+		}
+
+		return Math.max(requested, propertyAccessors.size());
 	}
 
 }

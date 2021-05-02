@@ -3,7 +3,8 @@
  */
 package adn.test.application;
 
-import adn.service.resource.storage.LocalResourceStorage;
+import java.sql.Timestamp;
+import java.util.Date;
 
 /**
  * @author Ngoc Huy
@@ -18,9 +19,7 @@ public class Solution {
 	 */
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException {
 		// TODO Auto-generated method stub
-		String path = LocalResourceStorage.IMAGE_FILE_DIRECTORY + "abcjsz.jpg";
-
-		System.out.println(path.substring(LocalResourceStorage.IMAGE_FILE_DIRECTORY.length()));
+		System.out.println(Date.class.isAssignableFrom(Timestamp.class));
 	}
 
 }

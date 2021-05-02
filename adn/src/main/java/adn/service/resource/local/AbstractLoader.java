@@ -4,12 +4,10 @@
 package adn.service.resource.local;
 
 import java.io.Serializable;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -23,7 +21,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.entity.Loadable;
-import org.hibernate.type.VersionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,11 +51,11 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 		return load(id, optionalObject, unwrapSession(session), lockOptions);
 	}
 
-	protected List<?> doLoad(Serializable id, ResourceManager manager, ResourcePersister<?> persister,
+	protected List<Object> doLoad(Serializable id, ResourceManager manager, ResourcePersister<?> persister,
 			LockOptions lockOptions) throws HibernateException, SQLException {
 		logger.debug(String.format("Loading resource %s", id));
 
-		List<?> result = null;
+		List<Object> result = null;
 
 		manager.getPersistenceContext().beforeLoad();
 
@@ -83,126 +80,146 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 			applyLock(ids, lockOptions, manager, afterLoadActions);
 			result = manager.getResourceManagerFactory().getStorage().select(ids);
 
-			return processResults(result, manager, maxRows, lockOptions.getLockMode());
+			return processResults(result, persister, manager, maxRows, lockOptions.getLockMode(), afterLoadActions);
 		} finally {
 			// cleanups, informs if needed
 		}
 	}
 
-	private List<Object> processResults(ResultSetImplementor resultSet, ResourceManager resourceManager, int maxRow,
-			LockMode lockMode) throws HibernateException, SQLException {
-		PersistenceContext context = resourceManager.getPersistenceContext();
-		ResourcePersister<?> persister = getPersister();
-		EntityKey[] keys = generateKeys(resultSet);
-		List<Object> results = new ArrayList<>();
+	private List<Object> processResults(ResultSetImplementor resultSet, ResourcePersister<?> persister,
+			ResourceManager resourceManager, int maxRow, LockMode lockMode, List<AfterLoadAction> afterLoadActions)
+			throws HibernateException, SQLException {
+		EntityKey[] keys = generateKeys(resultSet, resourceManager);
+		List<Object> results = getRowsFromResultSet(keys, resultSet, maxRow, lockMode, persister, resourceManager);
 
-		for (int i = 0; i < maxRow && i < resultSet.getFetchSize(); i++) {
-			if (context.containsEntity(keys[i])) {
-				results.add(doWhenInContext(persister.unwrap(Loadable.class), resultSet.getObject(i), keys[i], lockMode,
+		resolveResults(results, resultSet, resourceManager.getPersistenceContext().isDefaultReadOnly(),
+				afterLoadActions);
+
+		return results;
+	}
+
+	private void resolveResults(List<Object> hydratedObjects, ResultSet rs, boolean readOnly,
+			List<AfterLoadAction> afterLoadEvents) {
+
+	}
+
+	private List<Object> getRowsFromResultSet(EntityKey[] keys, ResultSet resultSet, int maxRow,
+			LockMode requestedLockMode, ResourcePersister<?> persister, ResourceManager resourceManager)
+			throws HibernateException, SQLException {
+		List<Object> results = new ArrayList<>();
+		PersistenceContext context = resourceManager.getPersistenceContext();
+		Object object;
+
+		for (int i = 0; i < maxRow && i < resultSet.getFetchSize(); i++, resultSet.next()) {
+			if ((object = context.getEntity(keys[i])) != null) {
+				results.add(doWhenInContext(keys[i], object, requestedLockMode, resultSet, i + 1, persister,
 						resourceManager));
 				continue;
 			}
 
-			results.add(doWhenNotInContext(persister, resultSet.getObject(i), keys[i], lockMode, resourceManager));
+			object = persister.instantiate(keys, resourceManager);
+			results.add(doWhenNotInContext(keys[i], object, requestedLockMode, resultSet, i + 1, persister,
+					resourceManager));
 		}
 
 		return results;
 	}
 
-	private Object doWhenNotInContext(ResourcePersister<?> persister, Object object, EntityKey key,
-			LockMode requestedLockMode, ResourceManager manager) throws HibernateException, SQLException {
-		Object instanceObject = persister.instantiate(key.getIdentifier(), manager);
+	private Object doWhenNotInContext(EntityKey key, Object object, LockMode requestedLockMode, ResultSet rs, int row,
+			ResourcePersister<?> persister, ResourceManager resourceManager) throws HibernateException, SQLException {
+		hydrateEntity(key, object, requestedLockMode == LockMode.NONE ? LockMode.READ : requestedLockMode, rs, row,
+				persister.unwrap(Loadable.class), resourceManager);
 
-		return hydrateEntity(key, object, instanceObject, persister.unwrap(Loadable.class), manager,
-				requestedLockMode == LockMode.NONE ? LockMode.READ : requestedLockMode);
+		return object;
 	}
 
-	private Object hydrateEntity(EntityKey key, Object row, Object instance, Loadable persister,
-			ResourceManager manager, LockMode requiredLockMode) throws HibernateException, SQLException {
+	private void hydrateEntity(EntityKey key, Object object, LockMode requestedLockMode, ResultSet rs, int row,
+			Loadable persister, ResourceManager manager) throws HibernateException, SQLException {
 		Serializable id = key.getIdentifier();
-		Object[] hydratedValues = hydrateRowValues(key, row, persister, manager, requiredLockMode);
-
-		logger.debug("%s#%s Hydrated values [%s]", persister.getEntityName(), key.getIdentifier(),
-				Stream.of(hydratedValues.toString()).collect(Collectors.joining(", ")));
 		// add entry
-		TwoPhaseLoad.addUninitializedEntity(key, instance, persister, requiredLockMode, manager);
+		TwoPhaseLoad.addUninitializedEntity(key, object, persister, requestedLockMode, manager);
 		// actually hydrate the entity
-		((ResourcePersister<?>) persister).hydrate(hydratedValues, instance);
+		Object[] hydratedValues = hydrateRowValues(id, object, rs, row, persister, manager);
 		// update entry
-		TwoPhaseLoad.postHydrate(persister, id, hydratedValues, null, instance, requiredLockMode, manager);
-
-		return instance;
+		TwoPhaseLoad.postHydrate(persister, id, hydratedValues, rs.getRowId(0), object, requestedLockMode, manager);
 	}
 
-	private Object[] hydrateRowValues(EntityKey key, Object row, Loadable persister, ResourceManager manager,
-			LockMode requestedLockMode) throws HibernateException, SQLException {
-		Serializable id = key.getIdentifier();
+	private Object[] hydrateRowValues(Serializable id, Object object, ResultSet rs, int row, Loadable persister,
+			SharedSessionContractImplementor session) throws HibernateException, SQLException {
+		rs.absolute(row);
 
-		return persister.hydrate(null, id, row, manager.getResourceManagerFactory().getMetamodel()
-				.entityPersister(persister.getRootEntityName()).unwrap(Loadable.class), null, true, manager);
+		return persister.hydrate(rs, id, object, persister, null, true, session);
 	}
 
-	private Object doWhenInContext(Loadable persister, Object instance, EntityKey key, LockMode requestedLockMode,
-			ResourceManager manager) {
-		if (!persister.isInstance(instance)) {
+	private Object doWhenInContext(EntityKey key, Object existingInstance, LockMode requestedLockMode, ResultSet rs,
+			int i, ResourcePersister<?> persister, ResourceManager resourceManager)
+			throws HibernateException, SQLException {
+		if (!persister.isInstance(existingInstance)) {
 			throw new IllegalStateException(
-					String.format("Type mismatch between loaded instance and persister %s vs %s", instance.getClass(),
-							persister.getMappedClass()));
+					String.format("Type mismatch between loaded instance and persister [%s><%s]",
+							existingInstance.getClass(), persister.getMappedClass()));
 		}
-
+		// exit if locked with NONE
 		if (requestedLockMode == LockMode.NONE) {
-			// exit if locked with NONE
-			return manager.getPersistenceContext().getEntity(key);
+			return resourceManager.getPersistenceContext().getEntity(key);
 		}
 
-		ResourceEntry<?> entry = (ResourceEntry<?>) manager.getPersistenceContext().getEntry(instance);
+		ResourceEntry<?> entry = (ResourceEntry<?>) resourceManager.getPersistenceContext().getEntry(existingInstance);
 
 		if (entry.getLockMode().lessThan(requestedLockMode)) {
 			// upgrade lock mode
 			if (persister.isVersioned()) {
-				versionCheck(entry, instance, manager);
+				versionCheck(key.getIdentifier(), existingInstance, rs, i, persister.unwrap(Loadable.class),
+						resourceManager);
 			}
 
 			entry.setLockMode(requestedLockMode);
 		}
 
-		return manager.getPersistenceContext().getEntity(key);
+		return resourceManager.getPersistenceContext().getEntity(key);
 	}
 
-	private void versionCheck(ResourceEntry<?> entry, Object instance, ResourceManager manager) {
-		Object managedVersion = entry.getVersion();
+	private void versionCheck(Serializable id, Object existingInstance, ResultSet rs, int i, Loadable persister,
+			ResourceManager resourceManager) throws HibernateException, SQLException {
+		Object managedVersion = resourceManager.getPersistenceContext().getEntry(existingInstance).getVersion();
 
-		logger.debug("Checking version of resource " + entry.getEntityKey().getIdentifier());
+		logger.debug("Checking version of resource " + id);
+
+		rs.absolute(i);
 
 		if (managedVersion != null) {
-			Object loadedVersion = entry.getPersister().getVersion(instance);
-			VersionType<?> type = entry.getPersister().getVersionType();
+			Object loadedVersion = persister.getVersionType().hydrate(rs,
+					persister.getPropertyColumnNames(persister.getVersionProperty()),
+					resourceManager.unwrapManager(SharedSessionContractImplementor.class), persister);
 
-			if (!type.isEqual(loadedVersion, type)) {
-				throw new IllegalStateException(
-						String.format("Optimistic lock check failed, loaded version is %s, while managed version is %s",
-								loadedVersion, managedVersion));
+			if (!persister.getVersionType().isEqual(loadedVersion, managedVersion)) {
+				throw new IllegalStateException(String.format(
+						"Optimistic lock check failed, loaded version is [%s], while managed version is [%s]",
+						loadedVersion, managedVersion));
 			}
 		}
 	}
 
-	private EntityKey[] generateKeys(ResultSetImplementor resultSet) throws HibernateException, SQLException {
-		List<Object> instances = Collections.emptyList();
-		EntityKey[] keys = new EntityKey[instances.size()];
+	private EntityKey[] generateKeys(ResultSetImplementor resultSet, ResourceManager session)
+			throws HibernateException, SQLException {
+		EntityKey[] keys = new EntityKey[resultSet.getFetchSize()];
 
-		for (int i = 0; i < instances.size(); i++) {
-			keys[i++] = produceResourceKey(resultSet);
+		resultSet.first();
+
+		for (int i = 0; i < keys.length; i++, resultSet.next()) {
+			keys[i++] = produceResourceKey(resultSet, session);
 		}
 
 		return keys;
 	}
 
-	private EntityKey produceResourceKey(ResultSetImplementor resultSet) throws HibernateException, SQLException {
-		ResourcePersister<?> persister;
+	private EntityKey produceResourceKey(ResultSetImplementor resultSet, ResourceManager session)
+			throws HibernateException, SQLException {
+		ResourcePersister<?> persister = getPersister();
+		Serializable id = (Serializable) persister.getIdentifierType().hydrate(resultSet,
+				new String[] { getPersister().getIdentifierPropertyName() }, session, persister);
 
-		return new EntityKey(
-				(Serializable) (persister = getPersister()).getIdentifierType().hydrate(resultSet, null, null, null),
-				persister);
+		return session.generateEntityKey(id, persister);
 	}
 
 	protected void applyLock(Serializable id, LockOptions lockOptions, ResourceManager manager,
@@ -227,7 +244,5 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 	}
 
 	abstract public ResourcePersister<?> getPersister();
-
-	abstract public String[] getIdentifierValueNames();
 
 }

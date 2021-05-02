@@ -149,8 +149,6 @@ public interface ResourcePersister<T> extends EntityPersister {
 		return null;
 	}
 
-	void hydrate(Object[] hydratedValues, Object instance);
-
 	<E> E unwrap(Class<E> type);
 
 	PropertyAccess getPropertyAccess(String propertyName);
@@ -168,5 +166,7 @@ public interface ResourcePersister<T> extends EntityPersister {
 	Type locatePropertyType(String properyName);
 
 	ResourceManagerFactory getManagerFactory();
+
+	String[] getPropertyColumnNames(String propertyName);
 
 }

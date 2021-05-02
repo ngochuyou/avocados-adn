@@ -56,6 +56,7 @@ public class ResourceContextImpl implements PersistenceContext {
 	public ResourceContextImpl(ResourceManager resourceManager) {
 		// TODO Auto-generated constructor stub
 		this.resourceManager = resourceManager;
+		this.entryContext = new EntityEntryContext(this);
 	}
 
 	@Override
@@ -623,7 +624,7 @@ public class ResourceContextImpl implements PersistenceContext {
 					+ "Entries: \n%s",
 					Stream.of(context)
 						.map(instance -> entryContext.getEntityEntry(instance))
-						.map(entry -> "\t" + entry.toString()).collect(Collectors.joining("\n"))));
+						.map(entry -> entry == null ? "NULL" : "\t" + entry.toString()).collect(Collectors.joining("\n"))));
 			// @formatter:on
 		}
 

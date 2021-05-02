@@ -17,6 +17,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import org.hibernate.boot.internal.StandardEntityNotFoundDelegate;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.event.spi.LoadEventListener;
+import org.hibernate.internal.FastSessionServices;
 import org.hibernate.proxy.EntityNotFoundDelegate;
 import org.hibernate.type.spi.TypeConfiguration;
 import org.springframework.util.Assert;
@@ -36,20 +37,17 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	private final LocalResourceStorage localStorage;
 
 	private final Metamodel metamodel;
-
 	private final ContextBuildingService buildingService;
 
 	private final SharedIdentifierGeneratorFactory sharedIdentifierGeneratorFactory;
-
 	private final TypeConfiguration typeConfiguration;
-
 	private final Metadata metadata;
-
 	private final Dialect dialect;
 
 	private final LoadEventListener loadEventListener = new DefaultLoadEventListenerImplementor();
-
 	private final EntityNotFoundDelegate eNFD = new StandardEntityNotFoundDelegate();
+
+	private final FastSessionServices fastSessionServices;
 
 	public ResourceManagerFactoryImpl(final ContextBuildingService serviceContext,
 			final TypeConfiguration typeConfiguration) {
@@ -69,6 +67,13 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 
 		Assert.notNull(localStorage, "LocalResourceStorage cannot be null");
 
+		FastSessionServices fsses = serviceContext.getServiceWrapper(FastSessionServices.class,
+				wrapper -> wrapper.orElseThrow().unwrap());
+
+		Assert.notNull(fsses, "Unable to find instance of " + FastSessionServices.class);
+
+		fastSessionServices = fsses;
+
 		metamodel = new MetamodelImpl(serviceContext, this);
 		metamodel.prepare();
 		metamodel.process();
@@ -85,33 +90,6 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	public boolean setLocked(Serializable identifier, boolean isLocked) {
 		// TODO Auto-generated method stub
 		return false;
-	}
-
-	@Override
-	public <T> ResourcePersister<T> getResourcePersister(Class<T> resourceClass) {
-		// TODO Auto-generated method stub
-		return metamodel.getResourcePersister(resourceClass);
-	}
-
-	@Override
-	public <T> ResourcePersister<T> getResourcePersister(String resourceName) {
-		// TODO Auto-generated method stub
-		return metamodel.getResourcePersister(resourceName);
-	}
-
-	@Override
-	public <T> ResourcePersister<T> locateResourcePersister(Class<T> type) {
-		supportCheck(type);
-
-		return getResourcePersister(type);
-	}
-
-	private <T> void supportCheck(Class<T> type) throws IllegalArgumentException {
-		ResourcePersister<T> descriptor = getResourcePersister(type);
-
-		Assert.notNull(descriptor, "Unable to locate descriptor for resource of type: " + type
-				+ ", provided resource type is not a managed type");
-		Assert.isTrue(descriptor.isInstance(type), "Type check failed. Denied by: " + descriptor.getClass().getName());
 	}
 
 	@Override
@@ -246,6 +224,12 @@ public class ResourceManagerFactoryImpl implements ResourceManagerFactory {
 	public EntityNotFoundDelegate getResourceNotFoundHandler() {
 		// TODO Auto-generated method stub
 		return eNFD;
+	}
+
+	@Override
+	public FastSessionServices getFastSessionServices() {
+		// TODO Auto-generated method stub
+		return fastSessionServices;
 	}
 
 }

@@ -100,6 +100,18 @@ public class PropertyBinder implements ManagerFactoryEventListener {
 		return fieldAccess.buildPropertyAccess(containerJavaType, propertyName);
 	}
 
+	public String resolveBasicPropertyName(Attribute<?, ?> attr) {
+		if (attr.getJavaMember() instanceof Field) {
+			Column anno = ((Field) attr.getJavaMember()).getDeclaredAnnotation(Column.class);
+
+			if (anno != null && StringHelper.hasLength(anno.name())) {
+				return anno.name();
+			}
+		}
+
+		return attr.getName();
+	}
+
 	public <X> ValueGeneration resolveValueGeneration(ResourceType<X> metamodel, Attribute<?, ?> attribute) {
 		Field f = (Field) attribute.getJavaMember();
 

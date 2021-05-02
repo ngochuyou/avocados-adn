@@ -35,6 +35,7 @@ import org.hibernate.internal.FilterAliasGenerator;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.metadata.ClassMetadata;
+import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
 import org.hibernate.persister.entity.Loadable;
 import org.hibernate.persister.entity.Lockable;
 import org.hibernate.persister.entity.MultiLoadOptions;
@@ -80,6 +81,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	private String entityName;
 	private Class<D> mappedClass;
 
+	private SingularPersistentAttribute<D, ?> identifier;
 	private PropertyAccess identifierAccess;
 	private IdentifierGenerator identifierGenerator;
 
@@ -108,6 +110,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 		this.metamodel = metamodel;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void generateEntityDefinition() {
 		mappedClass = metamodel.getJavaType();
@@ -130,7 +133,9 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 					"Resource of type " + getEntityName() + " must define a default constructor");
 		}
 
-		@SuppressWarnings("unchecked")
+		identifier = (SingularPersistentAttribute<D, ?>) metamodel.getId(metamodel.getIdType().getJavaType());
+		Assert.notNull(identifier, "Unable to locate IDENTIFER for metamodel " + metamodel.getName());
+
 		Attribute<D, ?>[] attributes = metamodel.getAttributes().toArray(Attribute[]::new);
 		CentralAttributeContext attributeContext = managerFactory.getContextBuildingService()
 				.getService(CentralAttributeContext.class);
@@ -144,14 +149,14 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 			ValueGeneration delegateGeneration;
 
-			propertyColumnNames[i] = new String[] { attr.getName() };
-
 			if (!attr.getDeclaringType().equals(metamodel)) {
 				logger.trace(String.format("Locating metadata from super type %s.%s",
 						metamodel.getSupertype().getName(), attr.getName()));
 				propertyAccesses[i] = locatePropertyAccess(attr.getName());
 				valueGenerations[i] = (delegateGeneration = locateValueGeneration(attr.getName()));
 				propertyTypes[i] = locatePropertyType(attr.getName());
+				propertyColumnNames[i] = managerFactory.getMetamodel()
+						.entityPersister(metamodel.locateSuperType().getName()).getPropertyColumnNames(attr.getName());
 			} else {
 				logger.trace(String.format("Creating metadata for %s.%s", metamodel.getName(), attr.getName()));
 				propertyAccesses[i] = PropertyBinder.INSTANCE.createPropertyAccess(mappedClass, attr.getName(),
@@ -159,6 +164,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 				valueGenerations[i] = (delegateGeneration = PropertyBinder.INSTANCE.resolveValueGeneration(metamodel,
 						attr));
 				propertyTypes[i] = attributeContext.resolveType(metamodel, attr);
+				propertyColumnNames[i] = new String[] { PropertyBinder.INSTANCE.resolveBasicPropertyName(attr) };
 			}
 
 			Assert.notNull(propertyAccesses[i],
@@ -193,11 +199,15 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 		}
 
 		Attribute<?, ?>[] declaredAttributes = metamodel.getDeclaredAttributes().toArray(Attribute<?, ?>[]::new);
+		String name;
 
 		for (int i = 0; i < declaredAttributes.length; i++) {
+			name = getPropertyColumnNames(indexMap.get(declaredAttributes[i].getName()))[0];
+
 			try {
-				addColumnToResultSetMetadata(declaredAttributes[i].getName(),
-						getPropertyType(declaredAttributes[i].getName()));
+				logger.trace(String.format("Registering column %s into %s by [%s]", declaredAttributes[i].getName(),
+						ResultSetMetaDataImplementor.class, name));
+				addColumnToResultSetMetadata(name, getPropertyType(declaredAttributes[i].getName()));
 			} catch (IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -217,7 +227,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 			}
 
 			logger.trace("Inheriting IdentifierAccess from root named " + root.getName());
-			identifierAccess = managerFactory.getResourcePersister(root.getName())
+			identifierAccess = managerFactory.getMetamodel().entityPersister(root.getName())
 					.getPropertyAccess(getIdentifierPropertyName());
 		} else {
 			logger.trace("Creating IdentifierAccess");
@@ -578,19 +588,16 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public Type[] getPropertyTypes() {
-
 		return propertyTypes;
 	}
 
 	@Override
 	public String[] getPropertyNames() {
-
 		return indexMap.keySet().toArray(String[]::new);
 	}
 
 	@Override
 	public boolean[] getPropertyInsertability() {
-
 		boolean[] arr = new boolean[propertySpan];
 
 		Arrays.fill(arr, true);
@@ -664,7 +671,6 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public Type getIdentifierType() {
-
 		if (!hasIdentifierProperty()) {
 			return locateSuperPersister().getIdentifierType();
 		}
@@ -684,14 +690,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public String getIdentifierPropertyName() {
-
-		if (!hasIdentifierProperty()) {
-			return metamodel.getSuperType() == null ? null
-					: managerFactory.getResourcePersister(metamodel.locateSuperType().getName())
-							.getIdentifierPropertyName();
-		}
-
-		return metamodel.locateIdAttribute().getName();
+		return identifier.getName();
 	}
 
 	@Override
@@ -921,7 +920,6 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public boolean isInstance(Object object) {
-
 		return instantiator.isInstance(object);
 	}
 
@@ -1083,6 +1081,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 						+ "\t\t-persistentAttributeType: %s\n"
 						+ "\t\t-declaringType: %s\n"
 						+ "\t\t-javaMember: %s\n"
+						+ "\t\t-javaType: %s\n"
 						+ "\t\t-isAssociation: %b\n"
 						+ "\t\t-isCollection: %b\n"
 						+ "\t\t-typeDescriptorClass: %s",
@@ -1090,6 +1089,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 						ele.getPersistentAttributeType(),
 						ele.getDeclaringType().getJavaType(),
 						ele.getJavaMember().getName(),
+						ele.getJavaType(),
 						ele.isAssociation(),
 						ele.isCollection(),
 						(
@@ -1237,13 +1237,18 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public String[] getPropertyAliases(String suffix, int i) {
-
 		return null;
 	}
 
 	@Override
 	public String[] getPropertyColumnNames(int i) {
 		return propertyColumnNames[i];
+	}
+
+	@Override
+	public String[] getPropertyColumnNames(String propertyName) {
+		// TODO Auto-generated method stub
+		return propertyColumnNames[indexMap.get(propertyName)];
 	}
 
 	@Override
@@ -1265,33 +1270,17 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	}
 
 	@Override
-	public Object[] hydrate(ResultSet rs, Serializable id, Object row, Loadable rootLoadable,
+	public Object[] hydrate(ResultSet rs, Serializable id, Object object, Loadable rootLoadable,
 			String[][] suffixedPropertyColumns, boolean allProperties, SharedSessionContractImplementor session)
 			throws SQLException, HibernateException {
 		// TODO: hydrate
 		logger.debug(String.format("[Row-Hydrate]"));
 
-		Type[] types = getPropertyTypes();
-		int n = types.length;
+		int n = propertyTypes.length;
 		Object[] values = new Object[n];
 
 		for (int i = 0; i < n; i++) {
-			Object value;
-
-			values[i] = (value = getPropertyTypes()[i].hydrate(rs, getPropertyColumnNames(i), session, this));
-
-			if (value == null && !getPropertyNullability()[i]) {
-				throw new HibernateException(
-						String.format("Null property value found on %s.%s", getEntityName(), getPropertyNames()[i]));
-			}
-
-			if (!types[i].getReturnedClass().equals(value.getClass())) {
-				if (!value.getClass().isAssignableFrom(types[i].getReturnedClass())) {
-					throw new HibernateException(String.format(
-							"Unable to hydrate property %s.%s. Type mismatch [%s><%s]", getEntityName(),
-							getPropertyNames()[i], types[i].getReturnedClass().getName(), value.getClass().getName()));
-				}
-			}
+			values[i] = propertyTypes[i].hydrate(rs, getPropertyColumnNames(i), session, object);
 		}
 
 		return values;
@@ -1312,15 +1301,6 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	public String getTableAliasForColumn(String columnName, String rootAlias) {
 
 		return null;
-	}
-
-	/**
-	 * Basically inject the hydrated values into the instance, include
-	 * type-checking, index-checking
-	 */
-	@Override
-	public void hydrate(Object[] hydratedValues, Object instance) {
-		setPropertyValues(instance, hydratedValues);
 	}
 
 }
