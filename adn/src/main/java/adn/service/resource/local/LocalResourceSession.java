@@ -64,6 +64,7 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
+import org.hibernate.event.spi.LoadEventListener.LoadType;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
@@ -81,10 +82,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
+import adn.application.context.ContextProvider;
+import adn.service.resource.local.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.metamodel.Metamodel;
 
 /**
@@ -94,34 +96,22 @@ import adn.service.resource.metamodel.Metamodel;
 @Component
 @RequestScope
 @Lazy
-@SuppressWarnings({ "serial", "rawtypes", "deprecation", "unchecked" })
+@SuppressWarnings({ "serial", "rawtypes", "deprecation", "unchecked", "resource" })
 public class LocalResourceSession implements SessionImplementor, ResourceManager, EventSource {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private final PersistenceContext resourceContext;
-	private final ResourceManagerFactory resourceManagerFactory;
+	private final EntityManagerFactoryImplementor sessionFactory;
 
-	/**
-	 * 
-	 */
 	@Autowired
-	public LocalResourceSession(
-	// @formatter:off
-			@NonNull final ResourceManagerFactory resourceManagerFactory) {
-	// @formatter:on
-
-		this.resourceManagerFactory = resourceManagerFactory;
+	public LocalResourceSession() {
+		this.sessionFactory = ContextProvider.getLocalResourceSessionFactory();
 		resourceContext = createResourceContext();
 	}
 
 	private PersistenceContext createResourceContext() {
 		return new ResourceContextImpl(this);
-	}
-
-	@Override
-	public ResourceManagerFactory getResourceManagerFactory() {
-		return resourceManagerFactory;
 	}
 
 	@Override
@@ -278,9 +268,8 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 	}
 
 	@Override
-	public SessionFactoryImplementor getFactory() {
-
-		return null;
+	public EntityManagerFactoryImplementor getFactory() {
+		return sessionFactory;
 	}
 
 	@Override
@@ -743,7 +732,7 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 			return sqlTypeDescriptor;
 		}
 
-		SqlTypeDescriptor remapped = resourceManagerFactory.getDialect().remapSqlTypeDescriptor(sqlTypeDescriptor);
+		SqlTypeDescriptor remapped = sessionFactory.getDialect().remapSqlTypeDescriptor(sqlTypeDescriptor);
 
 		return remapped == null ? sqlTypeDescriptor : remapped;
 	}
@@ -802,8 +791,7 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 	@Override
 	public Metamodel getMetamodel() {
-
-		return getResourceManagerFactory().getMetamodel();
+		return getFactory().getMetamodel();
 	}
 
 	@Override
@@ -1164,7 +1152,6 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 	@Override
 	public Connection disconnect() {
-
 		return null;
 	}
 
@@ -1175,7 +1162,6 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 	@Override
 	public boolean isFetchProfileEnabled(String name) throws UnknownProfileException {
-
 		return false;
 	}
 
@@ -1337,6 +1323,11 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 	}
 
+	private void fireLoad(LoadEvent event, LoadType loadType) {
+		getFactory().getFastSessionServices().eventListenerGroup_LOAD.fireEventOnEachListener(event, loadType,
+				LoadEventListener::onLoad);
+	}
+
 	public void afterOperation(boolean success) {
 		logger.debug("Operation status: " + success);
 //		if (!isTransactionInProgress()) {
@@ -1362,7 +1353,6 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 		@Override
 		public IdentifierLoadAccess<T> with(LockOptions lockOptions) {
-
 			this.lockOptions = lockOptions;
 			return this;
 		}
@@ -1386,8 +1376,7 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 			if (this.lockOptions != null) {
 				LoadEvent event = new LoadEvent(id, resourcePersister.getEntityName(), lockOptions,
 						LocalResourceSession.this, false);
-
-				getResourceManagerFactory().getLoadEventListener().onLoad(event, LoadEventListener.IMMEDIATE_LOAD);
+				fireLoad(event, LoadEventListener.IMMEDIATE_LOAD);
 
 				return (T) event.getResult();
 			}
@@ -1397,12 +1386,11 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 			try {
 				LoadEvent event = new LoadEvent(id, resourcePersister.getEntityName(), false, LocalResourceSession.this,
 						false);
-
-				getResourceManagerFactory().getLoadEventListener().onLoad(event, LoadEventListener.IMMEDIATE_LOAD);
+				fireLoad(event, LoadEventListener.IMMEDIATE_LOAD);
 
 				if (event.getResult() == null) {
-					getResourceManagerFactory().getResourceNotFoundHandler()
-							.handleEntityNotFound(resourcePersister.getEntityName(), id);
+					getFactory().getEntityNotFoundDelegate().handleEntityNotFound(resourcePersister.getEntityName(),
+							id);
 				}
 
 				success = true;
@@ -1419,8 +1407,7 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 			if (this.lockOptions != null) {
 				LoadEvent event = new LoadEvent(id, resourcePersister.getEntityName(), lockOptions,
 						LocalResourceSession.this, false);
-
-				getResourceManagerFactory().getLoadEventListener().onLoad(event, LoadEventListener.IMMEDIATE_LOAD);
+				fireLoad(event, LoadEventListener.IMMEDIATE_LOAD);
 
 				return (T) event.getResult();
 			}
@@ -1430,10 +1417,10 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 			boolean success = false;
 
 			try {
-				getResourceManagerFactory().getLoadEventListener().onLoad(event, LoadEventListener.IMMEDIATE_LOAD);
+				fireLoad(event, LoadEventListener.IMMEDIATE_LOAD);
 				success = true;
 			} catch (ObjectNotFoundException onfe) {
-
+				
 			} finally {
 				afterOperation(success);
 			}
@@ -1510,11 +1497,11 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 	}
 
 	private <T> ResourcePersister<T> locatePersister(Class<T> clazz) {
-		return (ResourcePersister<T>) getResourceManagerFactory().getMetamodel().entityPersister(clazz);
+		return (ResourcePersister<T>) getFactory().getMetamodel().entityPersister(clazz);
 	}
 
 	private <T> ResourcePersister<T> locatePersister(String name) {
-		return (ResourcePersister<T>) getResourceManagerFactory().getMetamodel().entityPersister(name);
+		return (ResourcePersister<T>) getFactory().getMetamodel().entityPersister(name);
 	}
 
 }

@@ -11,6 +11,8 @@ import java.util.Set;
 import org.hibernate.service.Service;
 import org.slf4j.LoggerFactory;
 
+import adn.service.resource.local.factory.EntityManagerFactoryImplementor;
+
 /**
  * @author Ngoc Huy
  *
@@ -56,7 +58,7 @@ public class Metadata implements Service, ManagerFactoryEventListener {
 	}
 
 	@Override
-	public void postBuild(ResourceManagerFactory managerFactory) {
+	public void postBuild(EntityManagerFactoryImplementor sessionFactory) {
 		LoggerFactory.getLogger(this.getClass()).trace("Cleaning up " + this.getClass());
 		processedImports = null;
 	}

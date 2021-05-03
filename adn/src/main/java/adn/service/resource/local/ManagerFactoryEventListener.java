@@ -4,6 +4,7 @@
 package adn.service.resource.local;
 
 import adn.application.context.ContextProvider;
+import adn.service.resource.local.factory.EntityManagerFactoryImplementor;
 
 /**
  * @author Ngoc Huy
@@ -11,7 +12,7 @@ import adn.application.context.ContextProvider;
  */
 public interface ManagerFactoryEventListener {
 
-	void postBuild(ResourceManagerFactory managerFactory);
+	void postBuild(EntityManagerFactoryImplementor managerFactory);
 
 	default void listen() {
 		ContextProvider.getApplicationContext().getBean(ResourceManagerFactoryBuilder.class).addEventListener(this);

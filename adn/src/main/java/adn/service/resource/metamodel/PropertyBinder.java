@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
 
 import adn.helpers.StringHelper;
 import adn.service.resource.local.ManagerFactoryEventListener;
-import adn.service.resource.local.ResourceManagerFactory;
+import adn.service.resource.local.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.metamodel.MetamodelImpl.IdentifierGenerationHolder;
 import adn.service.resource.metamodel.MetamodelImpl.NoValueGeneration;
 
@@ -74,7 +74,7 @@ public class PropertyBinder implements ManagerFactoryEventListener {
 	}
 
 	@Override
-	public void postBuild(ResourceManagerFactory managerFactory) {
+	public void postBuild(EntityManagerFactoryImplementor managerFactory) {
 		// TODO Auto-generated method stub
 		logger.trace("Cleaning up INSTANCE of type " + this.getClass().getName());
 		PropertyBinder.INSTANCE = null;

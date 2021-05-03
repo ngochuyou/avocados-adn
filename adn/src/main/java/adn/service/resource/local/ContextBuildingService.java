@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
-import adn.service.resource.local.ResourceManagerFactory.ServiceWrapper;
+import adn.service.resource.local.factory.EntityManagerFactoryImplementor.ServiceWrapper;
 
 /**
  * @author Ngoc Huy

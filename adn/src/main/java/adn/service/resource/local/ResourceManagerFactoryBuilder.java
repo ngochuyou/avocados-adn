@@ -22,9 +22,7 @@ import org.hibernate.type.spi.TypeConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.boot.SpringApplication;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
@@ -34,7 +32,9 @@ import org.springframework.util.Assert;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
-import adn.service.resource.local.ResourceManagerFactory.ServiceWrapper;
+import adn.service.resource.local.factory.EntityManagerFactoryImplementor;
+import adn.service.resource.local.factory.EntityManagerFactoryImplementor.ServiceWrapper;
+import adn.service.resource.local.factory.ManagerFactory;
 import adn.service.resource.metamodel.DefaultResourceIdentifierGenerator;
 import adn.service.resource.storage.LocalResourceStorage;
 import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplementor;
@@ -50,21 +50,24 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private ContextBuildingService contextBuildingService;
-
 	@Autowired
 	private LocalResourceStorage localStorage;
+	private ContextBuildingService contextBuildingService;
 
 	public static final String MODEL_PACKAGE = "adn.service.resource.model.models";
-
 	private Set<String> identifierGenerators;
-
 	private Set<ManagerFactoryEventListener> eventListeners = new HashSet<>();
 
 	@Override
 	public void buildAfterStartUp() throws Exception {
-		// TODO Auto-generated method stub
 		logger.info(getLoggingPrefix(this) + "Building " + this.getClass());
+		// @formatter:off
+		logger.trace("\n\n"
+				+ "\t\t\t\t\t\t========================================================\n"
+				+ "\t\t\t\t\t\t=          BUILDING LOCAL RESOURCE MANAGEMENT          =\n"
+				+ "\t\t\t\t\t\t========================================================\n");
+		// @formatter:on
+		// TODO Auto-generated method stub
 		// register STATIC services
 		// init identifierGenerators
 		identifierGenerators = new HashSet<>();
@@ -110,13 +113,10 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		// ContextProvider.getApplicationContext().getBean(ResourceManager.class.getName());
 		// or
 		// ContextProvider.getApplicationContext().getBean([Explicit bean name]);
-		ResourceManagerFactory resourceManager = build(sfi.getMetamodel().getTypeConfiguration());
-		ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) ContextProvider
-				.getApplicationContext()).getBeanFactory();
+		EntityManagerFactoryImplementor sessionFactory = build(sfi.getMetamodel().getTypeConfiguration());
 
+		ContextProvider.getAccess().setLocalResourceSessionFactory(sessionFactory);
 		postBuild();
-		beanFactory.registerSingleton(resourceManager.getClass().getName(), resourceManager);
-		beanFactory.registerAlias(resourceManager.getClass().getName(), ResourceManagerFactory.class.getName());
 		logger.info(getLoggingPrefix(this) + "Finished building " + this.getClass());
 	}
 
@@ -236,10 +236,9 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		eventListeners.forEach(listener -> listener.postBuild(null));
 	}
 
-	private ResourceManagerFactory build(TypeConfiguration typeConfig)
+	private EntityManagerFactoryImplementor build(TypeConfiguration typeConfig)
 			throws IllegalAccessException, NoSuchMethodException, SecurityException, NoSuchFieldException {
-		// TODO Auto-generated method stub
-		return new ResourceManagerFactoryImpl(contextBuildingService, typeConfig);
+		return new ManagerFactory(contextBuildingService, typeConfig);
 	}
 
 	public static void unsupport() {

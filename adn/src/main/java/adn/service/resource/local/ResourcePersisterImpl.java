@@ -54,6 +54,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.util.Assert;
 
 import adn.application.context.ContextProvider;
+import adn.service.resource.local.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.metamodel.CentralAttributeContext;
 import adn.service.resource.metamodel.EntityBinder;
 import adn.service.resource.metamodel.EntityPersisterImplementor;
@@ -75,7 +76,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private final ResourceManagerFactory managerFactory;
+	private final EntityManagerFactoryImplementor sessionFactory;
 	private final ResourceType<D> metamodel;
 
 	private String entityName;
@@ -102,11 +103,11 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	private UniqueEntityLoader resourceLoader;
 
-	public ResourcePersisterImpl(ResourceManagerFactory managerFactory, ResourceType<D> metamodel) {
+	public ResourcePersisterImpl(EntityManagerFactoryImplementor sessionFactory, ResourceType<D> metamodel) {
 		// TODO Auto-generated constructor stub
-		Assert.notNull(managerFactory, "ResourceManagerFactory must not be null");
+		Assert.notNull(sessionFactory, "ResourceManagerFactory must not be null");
 		Assert.notNull(metamodel, "EntityTypeImpl must not be null");
-		this.managerFactory = managerFactory;
+		this.sessionFactory = sessionFactory;
 		this.metamodel = metamodel;
 	}
 
@@ -137,7 +138,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 		Assert.notNull(identifier, "Unable to locate IDENTIFER for metamodel " + metamodel.getName());
 
 		Attribute<D, ?>[] attributes = metamodel.getAttributes().toArray(Attribute[]::new);
-		CentralAttributeContext attributeContext = managerFactory.getContextBuildingService()
+		CentralAttributeContext attributeContext = sessionFactory.getContextBuildingService()
 				.getService(CentralAttributeContext.class);
 
 		Assert.notNull(attributeContext, "Unable to locate CentricAttributeContext");
@@ -155,7 +156,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 				propertyAccesses[i] = locatePropertyAccess(attr.getName());
 				valueGenerations[i] = (delegateGeneration = locateValueGeneration(attr.getName()));
 				propertyTypes[i] = locatePropertyType(attr.getName());
-				propertyColumnNames[i] = managerFactory.getMetamodel()
+				propertyColumnNames[i] = sessionFactory.getMetamodel()
 						.entityPersister(metamodel.locateSuperType().getName()).getPropertyColumnNames(attr.getName());
 			} else {
 				logger.trace(String.format("Creating metadata for %s.%s", metamodel.getName(), attr.getName()));
@@ -227,7 +228,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 			}
 
 			logger.trace("Inheriting IdentifierAccess from root named " + root.getName());
-			identifierAccess = managerFactory.getMetamodel().entityPersister(root.getName())
+			identifierAccess = sessionFactory.getMetamodel().entityPersister(root.getName())
 					.getPropertyAccess(getIdentifierPropertyName());
 		} else {
 			logger.trace("Creating IdentifierAccess");
@@ -235,7 +236,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 					.get(metamodel.getId(metamodel.getIdType().getJavaType()).getName())];
 
 			try {
-				identifierGenerator = EntityBinder.INSTANCE.locateIdentifierGenerator(metamodel, managerFactory);
+				identifierGenerator = EntityBinder.INSTANCE.locateIdentifierGenerator(metamodel, sessionFactory);
 			} catch (IllegalAccessException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -255,12 +256,12 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	}
 
 	private LockingStrategy createLockingStrategy(LockMode lockMode) {
-		return managerFactory.getDialect().getLockingStrategy(this, lockMode);
+		return sessionFactory.getDialect().getLockingStrategy(this, lockMode);
 	}
 
 	private void addColumnToResultSetMetadata(String attrName, Type type)
 			throws IllegalAccessException, NoSuchFieldException, SecurityException {
-		ResultSetMetaDataImplementor metadata = managerFactory.getContextBuildingService()
+		ResultSetMetaDataImplementor metadata = sessionFactory.getContextBuildingService()
 				.getService(ResultSetMetaDataImplementor.class);
 		if (type instanceof AbstractSyntheticBasicType) {
 			if (type instanceof ExplicitlyHydratedType) {
@@ -387,7 +388,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 			return null;
 		}
 
-		return managerFactory.getMetamodel().entityPersister(metamodel.locateSuperType().getName())
+		return sessionFactory.getMetamodel().entityPersister(metamodel.locateSuperType().getName())
 				.locatePropertyType(propertyName);
 	}
 
@@ -512,7 +513,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 		assertNaturalId(naturalIdValues);
 		// directly load from storage
-		Object instance = getManagerFactory().getStorage().select((Serializable) naturalIdValues[0]);
+		Object instance = getFactory().getStorage().select((Serializable) naturalIdValues[0]);
 
 		if (instance == null) {
 			return null;
@@ -531,8 +532,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	@Override
 	public Object load(Serializable id, Object optionalObject, LockOptions lockOptions,
 			SharedSessionContractImplementor session) throws HibernateException {
-
-		return resourceLoader.load(id, null, session, lockOptions);
+		return resourceLoader.load(id, optionalObject, session, lockOptions);
 	}
 
 	@Override
@@ -681,7 +681,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	@SuppressWarnings("unchecked")
 	private ResourcePersister<? super D> locateSuperPersister() {
 		if (metamodel.getSupertype() != null) {
-			return (ResourcePersister<? super D>) managerFactory.getMetamodel()
+			return (ResourcePersister<? super D>) sessionFactory.getMetamodel()
 					.locateEntityPersister(metamodel.locateSuperType().getName());
 		}
 
@@ -985,7 +985,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	public ResourcePersister<D> getSubclassEntityPersister(Object instance, SessionFactoryImplementor factory) {
 
 		return (ResourcePersister<D>) metamodel.getSubclassNames().stream()
-				.map(name -> managerFactory.getMetamodel().entityPersister(name))
+				.map(name -> sessionFactory.getMetamodel().entityPersister(name))
 				.filter(persister -> persister.isInstance(factory)).findFirst().orElse(null);
 	}
 
@@ -993,12 +993,6 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	public ResourcePersister<D> getEntityPersister() {
 
 		return this;
-	}
-
-	@Override
-	public ResourceManagerFactory getManagerFactory() {
-
-		return managerFactory;
 	}
 
 	@Override
@@ -1145,7 +1139,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 			return null;
 		}
 
-		return managerFactory.getMetamodel().entityPersister(metamodel.locateSuperType().getName())
+		return sessionFactory.getMetamodel().entityPersister(metamodel.locateSuperType().getName())
 				.locatePropertyAccess(propertyName);
 	}
 
@@ -1173,7 +1167,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 			return null;
 		}
 
-		return managerFactory.getMetamodel().entityPersister(metamodel.locateSuperType().getName())
+		return sessionFactory.getMetamodel().entityPersister(metamodel.locateSuperType().getName())
 				.locateValueGeneration(propertyName);
 	}
 
@@ -1301,6 +1295,12 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	public String getTableAliasForColumn(String columnName, String rootAlias) {
 
 		return null;
+	}
+
+	@Override
+	public EntityManagerFactoryImplementor getFactory() {
+
+		return sessionFactory;
 	}
 
 }

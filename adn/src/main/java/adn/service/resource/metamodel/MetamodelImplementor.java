@@ -3,11 +3,7 @@
  */
 package adn.service.resource.metamodel;
 
-import static adn.service.resource.local.ResourceManagerFactoryBuilder.unsupport;
-
 import javax.persistence.EntityGraph;
-
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 
 import adn.service.resource.local.ResourcePersister;
 
@@ -34,14 +30,6 @@ public interface MetamodelImplementor extends Metamodel, org.hibernate.metamodel
 
 	@Override
 	ResourcePersister<?> entityPersister(String entityName);
-
-	@Override
-	@Deprecated
-	default SessionFactoryImplementor getSessionFactory() {
-		// TODO Auto-generated method stub
-		unsupport();
-		return null;
-	}
 
 	@Override
 	ResourcePersister<?> locateEntityPersister(@SuppressWarnings("rawtypes") Class byClass);

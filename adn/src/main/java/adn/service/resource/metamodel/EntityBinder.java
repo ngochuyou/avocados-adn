@@ -13,8 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import adn.service.resource.local.ManagerFactoryEventListener;
-import adn.service.resource.local.ResourceManagerFactory;
 import adn.service.resource.local.SharedIdentifierGeneratorFactory;
+import adn.service.resource.local.factory.EntityManagerFactoryImplementor;
 
 /**
  * @author Ngoc Huy
@@ -24,14 +24,19 @@ public class EntityBinder implements ManagerFactoryEventListener {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	public static EntityBinder INSTANCE = new EntityBinder();
+	public static EntityBinder INSTANCE;
+	private final SharedIdentifierGeneratorFactory identifierGeneratorfactory;
 
-	private EntityBinder() {
+	public EntityBinder(SharedIdentifierGeneratorFactory identifierGeneratorfactory) {
+		Assert.notNull(identifierGeneratorfactory, SharedIdentifierGeneratorFactory.class + " must not be null");
+
+		this.identifierGeneratorfactory = identifierGeneratorfactory;
+
 		listen();
 	}
 
 	@Override
-	public void postBuild(ResourceManagerFactory managerFactory) {
+	public void postBuild(EntityManagerFactoryImplementor sessionFactory) {
 		// TODO Auto-generated method stub
 		logger.trace("Cleaning up INSTANCE of type " + this.getClass().getName());
 		EntityBinder.INSTANCE = null;
@@ -39,12 +44,12 @@ public class EntityBinder implements ManagerFactoryEventListener {
 	}
 
 	public <X, T> IdentifierGenerator locateIdentifierGenerator(ResourceType<X> metamodel,
-			ResourceManagerFactory managerFactory) throws IllegalAccessException {
-		return locateIdentifierGenerator(metamodel, metamodel.getIdType().getJavaType(), managerFactory);
+			EntityManagerFactoryImplementor sessionFactory) throws IllegalAccessException {
+		return locateIdentifierGenerator(metamodel, metamodel.getIdType().getJavaType(), sessionFactory);
 	}
 
 	private <X, T> IdentifierGenerator locateIdentifierGenerator(ResourceType<X> metamodel, Class<T> identifierType,
-			ResourceManagerFactory managerFactory) throws IllegalAccessException {
+			EntityManagerFactoryImplementor sessionFactory) throws IllegalAccessException {
 		Assert.notNull(identifierType, "Identifier type must not be null");
 
 		SingularPersistentAttribute<X, T> idAttribute = metamodel.getDeclaredId(identifierType);
@@ -58,11 +63,10 @@ public class EntityBinder implements ManagerFactoryEventListener {
 
 		Assert.hasLength(generatorName, "Invalid IdentifierGenrator name");
 
-		SharedIdentifierGeneratorFactory igFactory = managerFactory.getIdentifierGeneratorFactory();
-		IdentifierGenerator generator = igFactory.obtainGenerator(generatorName);
+		IdentifierGenerator generator = identifierGeneratorfactory.obtainGenerator(generatorName);
 
 		generator = (generator != null ? generator
-				: igFactory.createIdentifierGenerator(generatorName, idAttribute.getJavaType()));
+				: identifierGeneratorfactory.createIdentifierGenerator(generatorName, idAttribute.getJavaType()));
 		Assert.notNull(generator, "Unable to locate IdentifierGenrator for " + idAttribute.getName());
 
 		return generator;

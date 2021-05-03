@@ -10,7 +10,6 @@ import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.cache.spi.entry.CacheEntry;
 import org.hibernate.cache.spi.entry.CacheEntryStructure;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.model.domain.NavigableRole;
 import org.hibernate.persister.entity.EntityPersister;
@@ -24,21 +23,6 @@ import org.hibernate.type.Type;
  *
  */
 public interface ResourcePersister<T> extends EntityPersister {
-
-	@Override
-	@Deprecated
-	default SessionFactoryImplementor getFactory() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	@Deprecated
-	default EntityPersister getSubclassEntityPersister(Object instance, SessionFactoryImplementor factory) {
-		// TODO Auto-generated method stub
-		unsupport();
-		return null;
-	}
 
 	@Override
 	@Deprecated
@@ -164,8 +148,6 @@ public interface ResourcePersister<T> extends EntityPersister {
 	ValueGeneration locateValueGeneration(String propertyName);
 
 	Type locatePropertyType(String properyName);
-
-	ResourceManagerFactory getManagerFactory();
 
 	String[] getPropertyColumnNames(String propertyName);
 

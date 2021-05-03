@@ -78,7 +78,7 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 
 		try {
 			applyLock(ids, lockOptions, manager, afterLoadActions);
-			result = manager.getResourceManagerFactory().getStorage().select(ids);
+			result = manager.getFactory().getStorage().select(ids);
 
 			return processResults(result, persister, manager, maxRows, lockOptions.getLockMode(), afterLoadActions);
 		} finally {

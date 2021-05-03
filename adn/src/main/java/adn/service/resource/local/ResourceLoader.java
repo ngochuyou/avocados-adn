@@ -56,8 +56,9 @@ public class ResourceLoader extends AbstractLoader {
 	}
 
 	private void assertIdType(Serializable id) {
-		Assert.isTrue(persister.getIdentifierType().getReturnedClass().equals(id.getClass()),
-				"Identifier type check failed");
+		Class<?> idType = persister.getIdentifierType().getReturnedClass();
+
+		Assert.isTrue(idType.equals(id) || idType.isAssignableFrom(id.getClass()), "Identifier type check failed");
 	}
 
 	@Override

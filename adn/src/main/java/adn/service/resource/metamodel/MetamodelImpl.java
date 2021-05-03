@@ -44,9 +44,9 @@ import adn.helpers.ReflectHelper;
 import adn.service.resource.local.ContextBuildingService;
 import adn.service.resource.local.Metadata;
 import adn.service.resource.local.NamingStrategy;
-import adn.service.resource.local.ResourceManagerFactory;
 import adn.service.resource.local.ResourcePersister;
 import adn.service.resource.local.ResourcePersisterImpl;
+import adn.service.resource.local.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.metamodel.PropertyBinder.AttributeRole;
 
 /**
@@ -57,7 +57,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 	private static final Logger logger = LoggerFactory.getLogger(MetamodelImpl.class);
 
-	private final ResourceManagerFactory managerFactory;
+	private final EntityManagerFactoryImplementor sessionFactory;
 
 	private final Map<String, String> importedClassNames;
 	private final Map<String, ResourceType<?>> resourceTypesByName;
@@ -65,10 +65,10 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 	private final Set<EntityNameResolver> resourceNameResolvers;
 
-	public MetamodelImpl(ContextBuildingService serviceRegistry, ResourceManagerFactory resourceManagerFactory) {
+	public MetamodelImpl(ContextBuildingService serviceRegistry, EntityManagerFactoryImplementor sessionFactory) {
 		// TODO Auto-generated constructor stub
-		Assert.notNull(resourceManagerFactory, "ResourceManagerFactory must not be null");
-		this.managerFactory = resourceManagerFactory;
+		Assert.notNull(sessionFactory, "ResourceManagerFactory must not be null");
+		this.sessionFactory = sessionFactory;
 		this.resourceTypesByName = new HashMap<>();
 		this.persistersByName = new HashMap<>();
 		this.resourceNameResolvers = new HashSet<>();
@@ -77,13 +77,13 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 	@Override
 	public <X> ResourceType<X> entity(Class<X> cls) {
-		// TODO Auto-generated method stub
-		return entity(managerFactory.getContextBuildingService().getService(NamingStrategy.class).getName(cls));
+
+		return entity(sessionFactory.getContextBuildingService().getService(NamingStrategy.class).getName(cls));
 	}
 
 	@SuppressWarnings("unchecked")
 	public <X> ResourceType<X> entity(String name) {
-		// TODO Auto-generated method stub
+
 		if (!resourceTypesByName.containsKey(name)) {
 			return null;
 		}
@@ -93,37 +93,35 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 	@Override
 	public <X> ResourceType<X> managedType(Class<X> cls) {
-		// TODO Auto-generated method stub
+
 		return entity(cls);
 	}
 
 	@Override
 	public <X> EmbeddedTypeDescriptor<X> embeddable(Class<X> cls) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Set<ManagedType<?>> getManagedTypes() {
-		// TODO Auto-generated method stub
+
 		return Collections.unmodifiableSet(new HashSet<>(resourceTypesByName.values()));
 	}
 
 	@Override
 	public Set<EntityType<?>> getEntities() {
-		// TODO Auto-generated method stub
+
 		return Collections.unmodifiableSet(new HashSet<>(resourceTypesByName.values()));
 	}
 
 	@Override
 	public Set<EmbeddableType<?>> getEmbeddables() {
-		// TODO Auto-generated method stub
 		return Collections.emptySet();
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T> ResourcePersister<T> getResourcePersister(String resourceName) {
-		// TODO Auto-generated method stub
 		if (!persistersByName.keySet().contains(resourceName)) {
 			return null;
 		}
@@ -132,29 +130,22 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	}
 
 	public Set<ResourcePersister<?>> getResourceDescriptors() {
-		// TODO Auto-generated method stub
 		return Collections.unmodifiableSet(new HashSet<>(persistersByName.values()));
-	}
-
-	public ResourceManagerFactory getManagerFactory() {
-		return managerFactory;
 	}
 
 	@Override
 	public void prepare() throws PersistenceException {
-		// TODO Auto-generated method stub
-		BasicTypeRegistry typeRegistry = managerFactory.getContextBuildingService()
+		BasicTypeRegistry typeRegistry = sessionFactory.getContextBuildingService()
 				.getServiceWrapper(BasicTypeRegistry.class, wrapper -> wrapper.orElseThrow().unwrap());
 
 		Assert.notNull(typeRegistry, "BasicTypeRegistry must not be null");
-		managerFactory.getContextBuildingService().register(CentralAttributeContext.class,
+		sessionFactory.getContextBuildingService().register(CentralAttributeContext.class,
 				new CentralAttributeContext.CentralAttributeContextImpl(typeRegistry, this));
-		resourceNameResolvers.add(managerFactory.getContextBuildingService().getService(NamingStrategy.class));
+		resourceNameResolvers.add(sessionFactory.getContextBuildingService().getService(NamingStrategy.class));
 	}
 
 	@Override
 	public void process() throws PersistenceException {
-		// TODO Auto-generated method stub
 		try {
 			imports();
 			postImport();
@@ -167,8 +158,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 	@Override
 	public void postProcess() throws PersistenceException {
-		// TODO Auto-generated method stub
-		ContextBuildingService contextService = managerFactory.getContextBuildingService();
+		ContextBuildingService contextService = sessionFactory.getContextBuildingService();
 		Metadata metadata = contextService.getService(Metadata.class);
 
 		resourceTypesByName.values().forEach(metamodel -> {
@@ -185,7 +175,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	}
 
 	private void imports() throws IllegalAccessException {
-		ContextBuildingService contextService = managerFactory.getContextBuildingService();
+		ContextBuildingService contextService = sessionFactory.getContextBuildingService();
 		Metadata metadata = contextService.getService(Metadata.class);
 
 		Assert.notNull(metadata, "Unable to locate Metadata");
@@ -234,7 +224,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	}
 
 	private <T> ResourcePersister<T> createPersister(ResourceType<T> metamodel) {
-		return new ResourcePersisterImpl<>(managerFactory, metamodel);
+		return new ResourcePersisterImpl<>(sessionFactory, metamodel);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -295,15 +285,15 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	}
 
 	private boolean isProcessingDone(String name) {
-		return getManagerFactory().getContextBuildingService().getService(Metadata.class).isProcessingDone(name);
+		return getSessionFactory().getContextBuildingService().getService(Metadata.class).isProcessingDone(name);
 	}
 
 	private Map<String, Class<?>> getImports() {
-		return getManagerFactory().getContextBuildingService().getService(Metadata.class).getImports();
+		return getSessionFactory().getContextBuildingService().getService(Metadata.class).getImports();
 	}
 
 	private void markImportAsDone(String name) {
-		getManagerFactory().getContextBuildingService().getService(Metadata.class).markImportAsDone(name);
+		getSessionFactory().getContextBuildingService().getService(Metadata.class).markImportAsDone(name);
 	}
 
 	private class ModelProcessor {
@@ -358,7 +348,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 		}
 
 		private boolean isRoot(Class<?> type) {
-			return managerFactory.getMetadata().getImports().values().stream()
+			return sessionFactory.getMetadata().getImports().values().stream()
 					.filter(imported -> ReflectHelper.isParentOf(type, imported)).count() != 0;
 		}
 
@@ -422,25 +412,25 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 		@Override
 		public boolean referenceColumnInSql() {
 			unsupport();
-			// TODO Auto-generated method stub
+
 			return false;
 		}
 
 		@Override
 		public ValueGenerator<?> getValueGenerator() {
-			// TODO Auto-generated method stub
+
 			return null;
 		}
 
 		@Override
 		public GenerationTiming getGenerationTiming() {
-			// TODO Auto-generated method stub
+
 			return null;
 		}
 
 		@Override
 		public String getDatabaseGeneratedReferencedColumnValue() {
-			// TODO Auto-generated method stub
+
 			return null;
 		}
 
@@ -455,26 +445,26 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 		@Override
 		public boolean referenceColumnInSql() {
-			// TODO Auto-generated method stub
+
 			unsupport();
 			return false;
 		}
 
 		@Override
 		public ValueGenerator<?> getValueGenerator() {
-			// TODO Auto-generated method stub
+
 			return null;
 		}
 
 		@Override
 		public GenerationTiming getGenerationTiming() {
-			// TODO Auto-generated method stub
+
 			return GenerationTiming.NEVER;
 		}
 
 		@Override
 		public String getDatabaseGeneratedReferencedColumnValue() {
-			// TODO Auto-generated method stub
+
 			return null;
 		}
 
@@ -482,83 +472,82 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 	@Override
 	public TypeConfiguration getTypeConfiguration() {
-		// TODO Auto-generated method stub
-		return managerFactory.getTypeConfiguration();
+
+		return sessionFactory.getTypeConfiguration();
 	}
 
 	@Override
 	public Collection<EntityNameResolver> getEntityNameResolvers() {
-		// TODO Auto-generated method stub
+
 		return resourceNameResolvers;
 	}
 
 	@Override
 	public Map<String, EntityPersister> entityPersisters() {
-		// TODO Auto-generated method stub
+
 		return Collections.unmodifiableMap(new HashMap<>(persistersByName));
 	}
 
 	@Override
 	public CollectionPersister collectionPersister(String role) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Map<String, CollectionPersister> collectionPersisters() {
-		// TODO Auto-generated method stub
+
 		return Collections.emptyMap();
 	}
 
 	@Override
 	public Set<String> getCollectionRolesByEntityParticipant(String entityName) {
-		// TODO Auto-generated method stub
+
 		return Collections.emptySet();
 	}
 
 	@Override
 	public String[] getAllEntityNames() {
-		// TODO Auto-generated method stub
-		return managerFactory.getMetadata().getProcessedImports().toArray(String[]::new);
+		return sessionFactory.getMetadata().getProcessedImports().toArray(String[]::new);
 	}
 
 	@Override
 	public String[] getAllCollectionRoles() {
-		// TODO Auto-generated method stub
+
 		return new String[0];
 	}
 
 	@Override
 	public <T> void addNamedEntityGraph(String graphName, RootGraphImplementor<T> entityGraph) {
-		// TODO Auto-generated method stub
+
 	}
 
 	@Override
 	public <T> RootGraphImplementor<T> findEntityGraphByName(String name) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public <T> List<RootGraphImplementor<? super T>> findEntityGraphsByJavaType(Class<T> entityClass) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public void close() {
-		// TODO Auto-generated method stub
+
 	}
 
 	@Override
 	public String getImportedClassName(String className) {
-		// TODO Auto-generated method stub
+
 		return importedClassNames.get(className);
 	}
 
 	@Override
 	public String[] getImplementors(String entityName) {
-		// TODO Auto-generated method stub
+
 		return new String[0];
 	}
 
@@ -579,20 +568,20 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 	@Override
 	public ResourcePersister<?> entityPersister(String entityName) {
-		// TODO Auto-generated method stub
+
 		return persistersByName.get(entityName);
 	}
 
 	@Override
 	public ResourcePersister<?> locateEntityPersister(@SuppressWarnings("rawtypes") Class byClass) {
-		// TODO Auto-generated method stub
+
 		return Optional.ofNullable(locateEntityPersister(importedClassNames.get(byClass.getName())))
 				.orElseThrow(() -> new IllegalArgumentException("Could not locate ResourcePersister by " + byClass));
 	}
 
 	@Override
 	public ResourcePersister<?> locateEntityPersister(String byName) {
-		// TODO Auto-generated method stub
+
 		return Optional.ofNullable(persistersByName.get(byName)).orElseThrow(
 				() -> new IllegalArgumentException("Could not locate ResourcePersister by name " + byName));
 	}
@@ -600,13 +589,19 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> ResourcePersister<T> getResourcePersister(Class<T> type) {
-		// TODO Auto-generated method stub
+
 		return (ResourcePersister<T>) locateEntityPersister(type);
 	}
 
 	@SuppressWarnings("unchecked")
 	public <E extends Metamodel> E unwrap(Class<? super E> type) {
 		return (E) this;
+	}
+
+	@Override
+	public EntityManagerFactoryImplementor getSessionFactory() {
+		// TODO Auto-generated method stub
+		return sessionFactory;
 	}
 
 }

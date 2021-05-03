@@ -27,7 +27,7 @@ import org.springframework.util.Assert;
 
 import adn.helpers.StringHelper;
 import adn.service.resource.local.ManagerFactoryEventListener;
-import adn.service.resource.local.ResourceManagerFactory;
+import adn.service.resource.local.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplementor;
 import adn.service.resource.storage.ResultSetMetaDataImpl.AccessImpl.DirectAccess;
 
@@ -526,7 +526,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 	}
 
 	@Override
-	public void postBuild(ResourceManagerFactory managerFactory) {
+	public void postBuild(EntityManagerFactoryImplementor managerFactory) {
 		close();
 	}
 
