@@ -40,7 +40,7 @@ public class CreationTimeStampType extends AbstractFieldBasedSyntheticBasicType 
 			throws HibernateException, SQLException {
 		Date stamp = ResourceIdentifierPart.getCreationTimeStamp(rs.getString(referencedFieldName));
 
-		logger.debug(String.format("extracted value ([%s] : [%s]) - [%s]", referencedFieldName,
+		logger.debug(String.format("extracted value ([%s] : [%s]) - [%s]", names[0],
 				basicType instanceof AbstractStandardBasicType
 						? JdbcTypeNameMapper.getTypeName(
 								((AbstractStandardBasicType<?>) basicType).getSqlTypeDescriptor().getSqlType())

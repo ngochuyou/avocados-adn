@@ -23,7 +23,6 @@ public class Metadata implements Service, ManagerFactoryEventListener {
 	private Map<String, Class<?>> imports = new HashMap<>();
 
 	private volatile Set<String> processedImports = new HashSet<>();
-	private volatile boolean allDone = processedImports.size() != imports.size();
 
 	public Metadata() {
 		listen();
@@ -39,10 +38,6 @@ public class Metadata implements Service, ManagerFactoryEventListener {
 
 	public synchronized void markImportAsDone(String importName) {
 		processedImports.add(importName);
-
-		if (processedImports.size() == imports.size()) {
-			allDone = true;
-		}
 	}
 
 	public synchronized boolean isProcessingDone(String importName) {
@@ -51,10 +46,6 @@ public class Metadata implements Service, ManagerFactoryEventListener {
 
 	public Set<String> getProcessedImports() {
 		return processedImports;
-	}
-
-	public boolean isAllDone() {
-		return allDone;
 	}
 
 	@Override

@@ -137,6 +137,10 @@ public class ResourceType<D> extends AbstractIdentifiableType<D> implements Enti
 	}
 
 	public ResourceType<? super D> locateSuperType() {
+		if (getSupertype() == null) {
+			return null;
+		}
+
 		return (ResourceType<? super D>) getSupertype();
 	}
 

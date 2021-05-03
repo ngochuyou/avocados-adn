@@ -77,7 +77,7 @@ public class ManagerFactory implements EntityManagerFactoryImplementor {
 	private final Dialect dialect;
 
 	private final EntityNotFoundDelegate eNFD = new StandardEntityNotFoundDelegate();
-
+	private final StatisticsImplementor nonStats = new NonStatistic();
 	private final FastSessionServices fastSessionServices;
 
 	public ManagerFactory(final ContextBuildingService serviceContext, final TypeConfiguration typeConfiguration) {
@@ -113,373 +113,368 @@ public class ManagerFactory implements EntityManagerFactoryImplementor {
 
 	@Override
 	public IdentifierGeneratorFactory getIdentifierGeneratorFactory() {
-		// TODO Auto-generated method stub
+
 		return sharedIdentifierGeneratorFactory;
 	}
 
 	@Override
 	public Type getIdentifierType(String className) throws MappingException {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public String getIdentifierPropertyName(String className) throws MappingException {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Type getReferencedPropertyType(String className, String propertyName) throws MappingException {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public SessionFactoryOptions getSessionFactoryOptions() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public Session openSession() throws HibernateException {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Session getCurrentSession() throws HibernateException {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public StatelessSessionBuilder<?> withStatelessOptions() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public StatelessSession openStatelessSession() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public StatelessSession openStatelessSession(Connection connection) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public void close() throws HibernateException {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public boolean isClosed() {
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
 	@Override
 	public Set<?> getDefinedFilterNames() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public FilterDefinition getFilterDefinition(String filterName) throws HibernateException {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public boolean containsFetchProfileDefinition(String name) {
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
 	@Override
 	public TypeHelper getTypeHelper() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public ClassMetadata getClassMetadata(@SuppressWarnings("rawtypes") Class entityClass) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public ClassMetadata getClassMetadata(String entityName) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public CollectionMetadata getCollectionMetadata(String roleName) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Map<String, ClassMetadata> getAllClassMetadata() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Map<?, ?> getAllCollectionMetadata() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public EntityManager createEntityManager() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public EntityManager createEntityManager(@SuppressWarnings("rawtypes") Map map) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public EntityManager createEntityManager(SynchronizationType synchronizationType) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public EntityManager createEntityManager(SynchronizationType synchronizationType,
 			@SuppressWarnings("rawtypes") Map map) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public CriteriaBuilder getCriteriaBuilder() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public boolean isOpen() {
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
 	@Override
 	public Map<String, Object> getProperties() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public PersistenceUnitUtil getPersistenceUnitUtil() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public void addNamedQuery(String name, Query query) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public <T> T unwrap(Class<T> cls) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public <T> void addNamedEntityGraph(String graphName, EntityGraph<T> entityGraph) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public Reference getReference() throws NamingException {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Type resolveParameterBindType(Object bindValue) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Type resolveParameterBindType(@SuppressWarnings("rawtypes") Class clazz) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public String getUuid() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public String getName() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Session openTemporarySession() throws HibernateException {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public CacheImplementor getCache() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public StatisticsImplementor getStatistics() {
-		// TODO Auto-generated method stub
-		return null;
+
+		return nonStats;
 	}
 
 	@Override
 	public ServiceRegistryImplementor getServiceRegistry() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public Interceptor getInterceptor() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public QueryPlanCache getQueryPlanCache() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public NamedQueryRepository getNamedQueryRepository() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public FetchProfile getFetchProfile(String name) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public IdentifierGenerator getIdentifierGenerator(String rootEntityName) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public EntityNotFoundDelegate getEntityNotFoundDelegate() {
-		// TODO Auto-generated method stub
+
 		return eNFD;
 	}
 
 	@Override
 	public SQLFunctionRegistry getSqlFunctionRegistry() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public void addObserver(SessionFactoryObserver observer) {
-		// TODO Auto-generated method stub
+
 	}
 
 	@Override
 	public CustomEntityDirtinessStrategy getCustomEntityDirtinessStrategy() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public CurrentTenantIdentifierResolver getCurrentTenantIdentifierResolver() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public FastSessionServices getFastSessionServices() {
-		// TODO Auto-generated method stub
+
 		return fastSessionServices;
 	}
 
 	@Override
 	public DeserializationResolver<?> getDeserializationResolver() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public JdbcServices getJdbcServices() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public MetamodelImplementor getMetamodel() {
-		// TODO Auto-generated method stub
+
 		return metamodel;
 	}
 
 	@Override
 	public <T> List<RootGraphImplementor<? super T>> findEntityGraphsByJavaType(Class<T> entityClass) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public RootGraphImplementor<?> findEntityGraphByName(String name) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public LocalResourceStorage getStorage() {
-		// TODO Auto-generated method stub
+
 		return localStorage;
 	}
 
 	@Override
 	public ContextBuildingService getContextBuildingService() {
-		// TODO Auto-generated method stub
+
 		return buildingService;
 	}
 
 	@Override
 	public TypeConfiguration getTypeConfiguration() {
-		// TODO Auto-generated method stub
+
 		return typeConfiguration;
 	}
 
 	@Override
 	public Metadata getMetadata() {
-		// TODO Auto-generated method stub
+
 		return metadata;
 	}
 
 	@Override
 	public Dialect getDialect() {
-		// TODO Auto-generated method stub
 		return dialect;
 	}
 

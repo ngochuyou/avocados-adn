@@ -50,6 +50,7 @@ import org.hibernate.tuple.ValueGeneration;
 import org.hibernate.tuple.VmValueGeneration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
 import adn.helpers.StringHelper;
 import adn.service.resource.local.ManagerFactoryEventListener;
@@ -110,6 +111,16 @@ public class PropertyBinder implements ManagerFactoryEventListener {
 		}
 
 		return attr.getName();
+	}
+
+	public String resolveSyntheticPropertyName(String suffix, Attribute<?, ?> attr) {
+		Assert.isTrue(StringHelper.hasLength(suffix), "suffix must not be empty");
+
+		if (attr.getName().equals(suffix)) {
+			return String.format("%s_%s", "synthetic", attr.getName());
+		}
+
+		return String.format("%s_%s", suffix, attr.getName());
 	}
 
 	public <X> ValueGeneration resolveValueGeneration(ResourceType<X> metamodel, Attribute<?, ?> attribute) {

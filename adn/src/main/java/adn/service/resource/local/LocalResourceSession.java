@@ -25,6 +25,7 @@ import javax.persistence.criteria.Selection;
 
 import org.hibernate.CacheMode;
 import org.hibernate.Criteria;
+import org.hibernate.EmptyInterceptor;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
@@ -46,6 +47,7 @@ import org.hibernate.TypeHelper;
 import org.hibernate.UnknownProfileException;
 import org.hibernate.cache.spi.CacheTransactionSynchronization;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.internal.StatefulPersistenceContext;
 import org.hibernate.engine.jdbc.LobCreator;
 import org.hibernate.engine.jdbc.connections.spi.JdbcConnectionAccess;
 import org.hibernate.engine.jdbc.spi.JdbcCoordinator;
@@ -111,7 +113,8 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 	}
 
 	private PersistenceContext createResourceContext() {
-		return new ResourceContextImpl(this);
+		logger.trace("Creating an instance of " + PersistenceContext.class);
+		return new StatefulPersistenceContext(getSession());
 	}
 
 	@Override
@@ -350,8 +353,8 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 	@Override
 	public Interceptor getInterceptor() {
-
-		return null;
+		// TODO: explicitly-hydrated logic could be executed here
+		return EmptyInterceptor.INSTANCE;
 	}
 
 	@Override
@@ -373,7 +376,6 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 	@Override
 	public Object immediateLoad(String entityName, Serializable id) throws HibernateException {
-
 		return null;
 	}
 
@@ -578,7 +580,6 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 	@Override
 	public PersistenceContext getPersistenceContextInternal() {
-
 		return resourceContext;
 	}
 
@@ -1029,19 +1030,16 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 	@Override
 	public <T> T get(Class<T> entityType, Serializable id) {
-
 		return byId(entityType).load(id);
 	}
 
 	@Override
 	public <T> T get(Class<T> entityType, Serializable id, LockMode lockMode) {
-
 		return null;
 	}
 
 	@Override
 	public <T> T get(Class<T> entityType, Serializable id, LockOptions lockOptions) {
-
 		return null;
 	}
 
@@ -1200,8 +1198,7 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 	@Override
 	public SessionImplementor getSession() {
-
-		return null;
+		return this;
 	}
 
 	@Override
@@ -1337,8 +1334,11 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 	@Override
 	public <T> T unwrap(Class<T> cls) {
+		if (cls.isAssignableFrom(this.getClass())) {
+			return (T) this;
+		}
 
-		return (T) this;
+		throw new ClassCastException(String.format("Unable to unwrap to ", cls));
 	}
 
 	private class IdentifierLoadAccessImpl<T> implements IdentifierLoadAccess<T> {
@@ -1403,11 +1403,10 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 		@Override
 		public T load(Serializable id) {
-
 			if (this.lockOptions != null) {
 				LoadEvent event = new LoadEvent(id, resourcePersister.getEntityName(), lockOptions,
 						LocalResourceSession.this, false);
-				fireLoad(event, LoadEventListener.IMMEDIATE_LOAD);
+				fireLoad(event, LoadEventListener.GET);
 
 				return (T) event.getResult();
 			}
@@ -1417,10 +1416,10 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 			boolean success = false;
 
 			try {
-				fireLoad(event, LoadEventListener.IMMEDIATE_LOAD);
+				fireLoad(event, LoadEventListener.GET);
 				success = true;
 			} catch (ObjectNotFoundException onfe) {
-				
+
 			} finally {
 				afterOperation(success);
 			}

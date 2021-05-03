@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -46,6 +47,7 @@ import org.hibernate.tuple.GenerationTiming;
 import org.hibernate.tuple.Instantiator;
 import org.hibernate.tuple.PojoInstantiator;
 import org.hibernate.tuple.ValueGeneration;
+import org.hibernate.tuple.entity.BytecodeEnhancementMetadataNonPojoImpl;
 import org.hibernate.type.Type;
 import org.hibernate.type.VersionType;
 import org.slf4j.Logger;
@@ -87,8 +89,9 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	private IdentifierGenerator identifierGenerator;
 
 	private int propertySpan;
+	private String[] propertyNames;
 	private String[][] propertyColumnNames;
-	private final Map<String, Integer> indexMap = new HashMap<>();
+	private Map<String, Integer> indexMap = new HashMap<>();
 	private PropertyAccess[] propertyAccesses;
 	private Type[] propertyTypes;
 	private ValueGeneration[] valueGenerations;
@@ -97,7 +100,9 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	private boolean[] propertyUpdatabilities;
 	private Instantiator instantiator;
 	// Every resource instances is mutable
-	private final EntityEntryFactory entryFactory = ResourceEntryFactory.INSTANCE;
+	private final EntityEntryFactory entryFactory = MutableEntityEntryFactory.INSTANCE;
+	// Entity enhancement is not necessary
+	private BytecodeEnhancementMetadata nonEnhanced;
 
 	private final Map<LockMode, LockingStrategy> lockingStrategyMap = new HashMap<>();
 
@@ -117,7 +122,9 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 		mappedClass = metamodel.getJavaType();
 		logger.trace("Generating entity definition of type " + mappedClass.getName());
 		entityName = metamodel.getName();
+		nonEnhanced = new BytecodeEnhancementMetadataNonPojoImpl(entityName);
 		propertySpan = determinePropertySpan(metamodel);
+		propertyNames = new String[propertySpan];
 		propertyColumnNames = new String[propertySpan][1];
 		propertyAccesses = new PropertyAccess[propertySpan];
 		valueGenerations = new ValueGeneration[propertySpan];
@@ -137,36 +144,52 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 		identifier = (SingularPersistentAttribute<D, ?>) metamodel.getId(metamodel.getIdType().getJavaType());
 		Assert.notNull(identifier, "Unable to locate IDENTIFER for metamodel " + metamodel.getName());
 
-		Attribute<D, ?>[] attributes = metamodel.getAttributes().toArray(Attribute[]::new);
 		CentralAttributeContext attributeContext = sessionFactory.getContextBuildingService()
 				.getService(CentralAttributeContext.class);
+		ValueGeneration delegateGeneration;
 
 		Assert.notNull(attributeContext, "Unable to locate CentricAttributeContext");
 
-		for (int i = 0; i < propertySpan; i++) {
-			Attribute<D, ?> attr = attributes[i];
+		ResourceType<? super D> superType = metamodel.locateSuperType();
 
-			indexMap.put(attr.getName(), i);
+		if (superType != null) {
+			for (Attribute<? super D, ?> attr : superType.getAttributes()) {
+				logger.trace(String.format("Retreiving metadata of attribute {%s} from {%s}", attr.getName(),
+						superType.getName()));
 
-			ValueGeneration delegateGeneration;
+				int propertyIndex = locateSuperPersister().getPropertyIndex(attr.getName());
 
-			if (!attr.getDeclaringType().equals(metamodel)) {
-				logger.trace(String.format("Locating metadata from super type %s.%s",
-						metamodel.getSupertype().getName(), attr.getName()));
-				propertyAccesses[i] = locatePropertyAccess(attr.getName());
-				valueGenerations[i] = (delegateGeneration = locateValueGeneration(attr.getName()));
-				propertyTypes[i] = locatePropertyType(attr.getName());
-				propertyColumnNames[i] = sessionFactory.getMetamodel()
+				putProperty(attr.getName(), propertyIndex);
+				propertyNames[propertyIndex] = locateSuperPersister().getPropertyNames()[propertyIndex];
+				propertyAccesses[propertyIndex] = locatePropertyAccess(attr.getName());
+				valueGenerations[propertyIndex] = (delegateGeneration = locateValueGeneration(attr.getName()));
+				propertyTypes[propertyIndex] = locatePropertyType(attr.getName());
+				propertyColumnNames[propertyIndex] = sessionFactory.getMetamodel()
 						.entityPersister(metamodel.locateSuperType().getName()).getPropertyColumnNames(attr.getName());
-			} else {
-				logger.trace(String.format("Creating metadata for %s.%s", metamodel.getName(), attr.getName()));
-				propertyAccesses[i] = PropertyBinder.INSTANCE.createPropertyAccess(mappedClass, attr.getName(),
-						attr.getJavaType());
-				valueGenerations[i] = (delegateGeneration = PropertyBinder.INSTANCE.resolveValueGeneration(metamodel,
-						attr));
-				propertyTypes[i] = attributeContext.resolveType(metamodel, attr);
-				propertyColumnNames[i] = new String[] { PropertyBinder.INSTANCE.resolveBasicPropertyName(attr) };
 			}
+		}
+
+		Attribute<?, ?>[] declaredAttributes = metamodel.getDeclaredAttributes().toArray(Attribute[]::new);
+
+		for (int i = (superType == null ? 0 : superType.getAttributes().size()), j = 0; i < propertySpan; i++, j++) {
+			Attribute<D, ?> attr = (Attribute<D, ?>) declaredAttributes[j];
+
+			logger.trace(
+					String.format("Creating metadata for %s.%s index {%d}", metamodel.getName(), attr.getName(), i));
+
+			putProperty(attr.getName(), i);
+			propertyNames[i] = attr.getName();
+			propertyAccesses[i] = PropertyBinder.INSTANCE.createPropertyAccess(mappedClass, attr.getName(),
+					attr.getJavaType());
+			valueGenerations[i] = (delegateGeneration = PropertyBinder.INSTANCE.resolveValueGeneration(metamodel,
+					attr));
+			propertyTypes[i] = attributeContext.resolveType(metamodel, attr);
+			propertyColumnNames[i] = new String[] { propertyTypes[i] instanceof AbstractSyntheticBasicType
+					? propertyTypes[i] instanceof ExplicitlyHydratedType
+							? PropertyBinder.INSTANCE.resolveSyntheticPropertyName("explicitly_hydrated", attr)
+							: PropertyBinder.INSTANCE.resolveSyntheticPropertyName(
+									PropertyBinder.INSTANCE.resolveBasicPropertyName(attr), attr)
+					: PropertyBinder.INSTANCE.resolveBasicPropertyName(attr) };
 
 			Assert.notNull(propertyAccesses[i],
 					String.format("%s Unable to locate PropertyAccess for property %s", entityName, attr.getName()));
@@ -199,11 +222,14 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 			autoGeneratedMarkers[i] = (delegateGeneration != NoValueGeneration.INSTANCE);
 		}
 
-		Attribute<?, ?>[] declaredAttributes = metamodel.getDeclaredAttributes().toArray(Attribute<?, ?>[]::new);
+		indexMap = indexMap.entrySet().stream().sorted((l, r) -> Integer.compare(l.getValue(), r.getValue()))
+				.collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+		declaredAttributes = metamodel.getDeclaredAttributes().toArray(Attribute<?, ?>[]::new);
+
 		String name;
 
 		for (int i = 0; i < declaredAttributes.length; i++) {
-			name = getPropertyColumnNames(indexMap.get(declaredAttributes[i].getName()))[0];
+			name = getPropertyColumnNames(getPropertyIndex(declaredAttributes[i].getName()))[0];
 
 			try {
 				logger.trace(String.format("Registering column %s into %s by [%s]", declaredAttributes[i].getName(),
@@ -245,6 +271,11 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 		}
 
 		resourceLoader = new ResourceLoader(this);
+	}
+
+	private void putProperty(String name, int index) {
+		logger.trace(String.format("Putting property {%s} -> {%d}", name, index));
+		indexMap.put(name, index);
 	}
 
 	private int determinePropertySpan(ResourceType<? super D> metamodel) {
@@ -372,6 +403,9 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public Type getPropertyType(String propertyName) throws MappingException {
+		if (!indexMap.containsKey(propertyName)) {
+			return null;
+		}
 
 		return propertyTypes[indexMap.get(propertyName)];
 	}
@@ -470,8 +504,8 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public boolean hasNaturalIdentifier() {
-
-		return identifierGenerator == null;
+		// always lookup by identifier
+		return false;
 	}
 
 	@Override
@@ -593,7 +627,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public String[] getPropertyNames() {
-		return indexMap.keySet().toArray(String[]::new);
+		return propertyNames;
 	}
 
 	@Override
@@ -617,7 +651,6 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public ValueInclusion[] getPropertyUpdateGenerationInclusions() {
-
 		return Stream.of(valueGenerations)
 				.map(vg -> vg != NoValueGeneration.INSTANCE && vg.getGenerationTiming().equals(GenerationTiming.ALWAYS)
 						? ValueInclusion.FULL
@@ -735,7 +768,6 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	@Override
 	public Object forceVersionIncrement(Serializable id, Object currentVersion,
 			SharedSessionContractImplementor session) throws HibernateException {
-
 		return valueGenerations[getVersionProperty()].getGenerationTiming() == GenerationTiming.ALWAYS;
 	}
 
@@ -747,27 +779,24 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public boolean hasInsertGeneratedProperties() {
-
 		return Stream.of(valueGenerations).filter(vg -> vg.getGenerationTiming() == GenerationTiming.INSERT)
 				.count() != 0;
 	}
 
 	@Override
 	public boolean hasUpdateGeneratedProperties() {
-
 		return Stream.of(valueGenerations).filter(vg -> vg.getGenerationTiming() == GenerationTiming.ALWAYS)
 				.count() != 0;
 	}
 
 	@Override
 	public boolean isVersionPropertyGenerated() {
-
 		return valueGenerations[getVersionProperty()] != NoValueGeneration.INSTANCE;
 	}
 
 	@Override
 	public void afterInitialize(Object entity, SharedSessionContractImplementor session) {
-
+		logger.trace("Finished initializing entity " + entity.toString());
 	}
 
 	@Override
@@ -830,7 +859,6 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public void setPropertyValues(Object object, Object[] values) {
-
 		assertInput(values);
 
 		for (int i = 0; i < propertySpan; i++) {
@@ -842,19 +870,20 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 		Assert.isTrue(i < propertySpan, "Index exceeded");
 	}
 
+	@SuppressWarnings("unchecked")
 	private void assertValue(int i, Object value) {
 		assertIndex(i);
 		Assert.isTrue(
 				propertyTypes[i].getReturnedClass() == value.getClass()
-						|| value.getClass().isAssignableFrom(propertyTypes[i].getReturnedClass()),
-				"Value type and returned type must match");
+						|| propertyTypes[i].getReturnedClass().isAssignableFrom(value.getClass()),
+				String.format("Value type and returned type must match [%s><%s]", value.getClass(),
+						propertyTypes[i].getReturnedClass()));
 	}
 
 	@Override
 	public void setPropertyValue(Object object, int i, Object value) {
-
 		assertValue(i, value);
-		propertyAccesses[i].getSetter().set(object, value, null);
+		propertyAccesses[i].getSetter().set(object, value, getFactory());
 	}
 
 	@Override
@@ -865,20 +894,17 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public Object getPropertyValue(Object object, int i) throws HibernateException {
-
 		assertIndex(i);
 		return propertyAccesses[i].getGetter().get(object);
 	}
 
 	@Override
 	public Object getPropertyValue(Object object, String propertyName) {
-
 		return getPropertyValue(object, indexMap.get(propertyName));
 	}
 
 	@Override
 	public Serializable getIdentifier(Object object) throws HibernateException {
-
 		if (canExtractIdOutOfEntity()) {
 			return (Serializable) identifierAccess.getGetter().get(object);
 		}
@@ -888,7 +914,6 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public Serializable getIdentifier(Object entity, SharedSessionContractImplementor session) {
-
 		return getIdentifier(entity);
 	}
 
@@ -901,9 +926,8 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public void setIdentifier(Object entity, Serializable id, SharedSessionContractImplementor session) {
-
 		assertIdValue(id);
-		identifierAccess.getSetter().set(entity, id, null);
+		identifierAccess.getSetter().set(entity, id, getFactory());
 	}
 
 	@Override
@@ -938,14 +962,12 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 	@SuppressWarnings("unchecked")
 	@Override
 	public EntityTuplizerImplementor<D> getEntityTuplizer() {
-
 		return this.unwrap(EntityTuplizerImplementor.class);
 	}
 
 	@Override
 	public BytecodeEnhancementMetadata getInstrumentationMetadata() {
-
-		return null;
+		return nonEnhanced;
 	}
 
 	@Override
@@ -1041,7 +1063,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 				+ "\t-subclassNames: %s",
 				getEntityName(),
 				propertySpan,
-				indexMap.entrySet().stream().sorted((l, r) -> Integer.compare(l.getValue(), r.getValue())).map(ele -> ele.getValue() + "|" + ele.getKey()).collect(Collectors.joining(", ")),
+				indexMap.entrySet().stream().map(ele -> ele.getValue() + "|" + ele.getKey()).collect(Collectors.joining(", ")),
 				Stream.of(valueGenerations)
 					.map(ele -> {
 						if (ele instanceof IdentifierGenerationHolder) {
@@ -1071,7 +1093,9 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 					.collect(Collectors.joining(", ")),
 				identifierGenerator != null ? identifierGenerator.getClass().getName() : "NULL",
 				metamodel.getSupertype() != null ? metamodel.getSupertype().getName() : "NULL",
-				metamodel.getDeclaredAttributes().stream().map(ele -> String.format("\t\t-name: %s\n"
+				metamodel.getDeclaredAttributes().stream().map(ele -> String.format(""
+						+ "\t\t-name: %s\n"
+						+ "\t\t-propertyColumnNames: %s\n"
 						+ "\t\t-persistentAttributeType: %s\n"
 						+ "\t\t-declaringType: %s\n"
 						+ "\t\t-javaMember: %s\n"
@@ -1080,6 +1104,7 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 						+ "\t\t-isCollection: %b\n"
 						+ "\t\t-typeDescriptorClass: %s",
 						ele.getName(),
+						propertyColumnNames[indexMap.get(ele.getName())][0],
 						ele.getPersistentAttributeType(),
 						ele.getDeclaringType().getJavaType(),
 						ele.getJavaMember().getName(),
@@ -1117,13 +1142,15 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public PropertyAccess getPropertyAccess(String propertyName) {
+		if (!indexMap.containsKey(propertyName)) {
+			return null;
+		}
 
-		return propertyAccesses[indexMap.get(propertyName)];
+		return getPropertyAccess(indexMap.get(propertyName));
 	}
 
 	@Override
 	public PropertyAccess getPropertyAccess(int propertyIndex) {
-
 		return propertyAccesses[propertyIndex];
 	}
 
@@ -1151,8 +1178,11 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public ValueGeneration getValueGeneration(String propertyName) {
+		if (!indexMap.containsKey(propertyName)) {
+			return null;
+		}
 
-		return valueGenerations[indexMap.get(propertyName)];
+		return getValueGeneration(indexMap.get(propertyName));
 	}
 
 	@Override
@@ -1201,32 +1231,27 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public Type getDiscriminatorType() {
-
 		return null;
 	}
 
 	@Override
 	public Object getDiscriminatorValue() {
-
 		return null;
 	}
 
 	@Override
 	public String getSubclassForDiscriminatorValue(Object value) {
-
 		return null;
 	}
 
 	@Override
 	public String[] getIdentifierColumnNames() {
-
-		return null;
+		return getPropertyColumnNames(indexMap.get(identifier.getName()));
 	}
 
 	@Override
 	public String[] getIdentifierAliases(String suffix) {
-
-		return null;
+		return getIdentifierColumnNames();
 	}
 
 	@Override
@@ -1299,8 +1324,12 @@ public class ResourcePersisterImpl<D> implements ResourcePersister<D>, EntityPer
 
 	@Override
 	public EntityManagerFactoryImplementor getFactory() {
-
 		return sessionFactory;
+	}
+
+	@Override
+	public int getPropertyIndex(String propertyName) {
+		return indexMap.get(propertyName);
 	}
 
 }

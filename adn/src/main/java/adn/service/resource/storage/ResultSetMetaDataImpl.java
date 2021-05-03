@@ -8,11 +8,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Currency;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -41,8 +42,8 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 	public static final ResultSetMetaDataImpl INSTANCE = new ResultSetMetaDataImpl();
 
 	private static final Logger logger = LoggerFactory.getLogger(ResultSetMetaDataImpl.class);
-	private final Map<String, Integer> columnIndexMap = new HashMap<>();
-	private List<PropertyAccess> propertyAccessors = null;
+	private Map<String, Integer> columnIndexMap = new HashMap<>();
+	private List<PropertyAccess> propertyAccessors = new ArrayList<>();
 
 	private Access access;
 
@@ -209,13 +210,14 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 
 	@Override
 	public void close() {
+		columnIndexMap = columnIndexMap.entrySet().stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+		LoggerFactory.getLogger(this.getClass()).trace("\n" + toString());
 		LoggerFactory.getLogger(this.getClass()).trace("Closing access to " + this.getClass().getName());
 		this.access = null;
 	}
 
 	@Override
 	public Access getAccess() throws IllegalAccessException {
-
 		if (access == null) {
 			throw new IllegalAccessException("Access to " + ResultSetMetaDataImplementor.class + " was closed");
 		}
@@ -250,7 +252,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 			try {
 				if (File.class.getDeclaredField(name) != null) {
 					addColumn(name, nextIndex);
-					addPropertyAccess(new DirectAccess(File.class.getDeclaredField(name)), nextIndex);
+					propertyAccessors.add(new DirectAccess(File.class.getDeclaredField(name)));
 				}
 			} catch (NoSuchFieldException nsfe) {
 				logger.trace(String.format("%s not found, trying to locate getter", name));
@@ -263,7 +265,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 				}
 
 				addColumn(name, nextIndex);
-				addPropertyAccess(pa, nextIndex);
+				propertyAccessors.add(pa);
 			} catch (SecurityException se) {
 				logger.trace(String.format("%s found on [%s], trying to find getter", SecurityException.class, name));
 
@@ -275,7 +277,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 				}
 
 				addColumn(name, nextIndex);
-				addPropertyAccess(pa, nextIndex);
+				propertyAccessors.add(pa);
 			}
 		}
 
@@ -469,7 +471,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 			logger.trace(String.format("Adding explicitly hydrated column %s with index %d", name, nextIndex));
 
 			addColumn(name, nextIndex);
-			addPropertyAccess(holder, nextIndex);
+			propertyAccessors.add(holder);
 		}
 
 		public class NonPropertyAccess implements PropertyAccess {
@@ -504,7 +506,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 
 			logger.trace(String.format("Adding synthesized column %s with index %d", name, nextIndex));
 			addColumn(name, nextIndex);
-			addPropertyAccess(holder, nextIndex);
+			propertyAccessors.add(holder);
 		}
 
 	}
@@ -545,45 +547,14 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 		// @formatter:off
 		return String.format("%s built with summary: \n"
 				+ "\t-columnIndexMap: [%s]\n"
-				+ "\t-propertyAccesssors: [%s]", this.getClass(),
+				+ "\t-propertyAccesssors: \n\t\t%s", this.getClass(),
 				columnIndexMap.entrySet().stream()
 					.map(entry -> entry.getKey() + "|" + entry.getValue())
 					.collect(Collectors.joining(", ")),
 				columnIndexMap.entrySet().stream()
-					.map(entry -> propertyAccessors.get(entry.getValue()).getClass().toString())
-					.collect(Collectors.joining(", ")));
+					.map(entry -> entry.getValue() + " -> " + propertyAccessors.get(entry.getValue()).getClass().toString())
+					.collect(Collectors.joining("\n\t\t")));
 		// @formatter:on
-	}
-
-	private void addPropertyAccess(PropertyAccess pa, int index) {
-		int cap = getCapacity(index + 1);
-		PropertyAccess[] newPAs = new PropertyAccess[cap];
-
-		for (int i = 0; i < cap; i++) {
-			if (i == index) {
-				newPAs[i] = pa;
-				continue;
-			}
-
-			if (propertyAccessors == null || i >= propertyAccessors.size()) {
-				newPAs[i] = null;
-				continue;
-			}
-
-			newPAs[i] = propertyAccessors.get(i);
-		}
-
-		propertyAccessors = Arrays.asList(newPAs);
-	}
-
-	private int getCapacity(int requested) {
-		Assert.isTrue(requested >= 0, String.format("Invali index [%d]", requested));
-
-		if (propertyAccessors == null) {
-			return requested;
-		}
-
-		return Math.max(requested, propertyAccessors.size());
 	}
 
 }

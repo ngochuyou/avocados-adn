@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.hibernate.property.access.spi.PropertyAccess;
-import org.slf4j.LoggerFactory;
 
 import adn.service.resource.storage.LocalResourceStorage.ResultSetImplementor;
 import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplementor;
@@ -60,7 +59,6 @@ public class ResourceResultSet implements ResultSetImplementor {
 	public ResourceResultSet(List<File> rows) {
 		// TODO Auto-generated constructor stub
 		this.rows = rows;
-		LoggerFactory.getLogger(ResourceResultSet.class).trace("\n" + metadata.toString());
 	}
 
 	private int getRightBound() throws SQLException {

@@ -8,6 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.hibernate.HibernateException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import adn.helpers.FunctionHelper.HandledFunction;
 
@@ -19,6 +21,8 @@ public class ByteArrayHydrateFunction implements HandledFunction<Object, byte[],
 
 	public static final int MAX_SIZE_IN_ONE_READ = 5 * 1024 * 1024;
 
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
 	@Override
 	public byte[] apply(Object arg) throws HibernateException {
 		// TODO Auto-generated method stub
@@ -29,7 +33,12 @@ public class ByteArrayHydrateFunction implements HandledFunction<Object, byte[],
 				throw new HibernateException("File size is too large to read into byte[]");
 			}
 
-			return Files.readAllBytes(path);
+			byte[] bytes = Files.readAllBytes(path);
+
+			logger.trace(String.format("extracted value ([%s] : [%s]) -> [%s]", "explicitly_hydrated", byte[].class,
+					bytes.toString()));
+
+			return bytes;
 		} catch (Exception e) {
 			throw new HibernateException(e);
 		}

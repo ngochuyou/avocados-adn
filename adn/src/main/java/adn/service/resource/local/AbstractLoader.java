@@ -13,11 +13,15 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.internal.TwoPhaseLoad;
+import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.RowSelection;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.event.spi.EventSource;
+import org.hibernate.event.spi.PostLoadEvent;
+import org.hibernate.event.spi.PreLoadEvent;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.entity.Loadable;
@@ -53,8 +57,6 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 
 	protected List<Object> doLoad(Serializable id, ResourceManager manager, ResourcePersister<?> persister,
 			LockOptions lockOptions) throws HibernateException, SQLException {
-		logger.debug(String.format("Loading resource %s", id));
-
 		List<Object> result = null;
 
 		manager.getPersistenceContext().beforeLoad();
@@ -64,8 +66,6 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 		} finally {
 			manager.getPersistenceContext().afterLoad();
 		}
-
-		logger.debug(String.format("Done loading", id));
 
 		return result;
 	}
@@ -93,14 +93,40 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 		List<Object> results = getRowsFromResultSet(keys, resultSet, maxRow, lockMode, persister, resourceManager);
 
 		resolveResults(results, resultSet, resourceManager.getPersistenceContext().isDefaultReadOnly(),
-				afterLoadActions);
+				afterLoadActions, resourceManager);
 
 		return results;
 	}
 
+	@SuppressWarnings({ "resource", "deprecation" })
 	private void resolveResults(List<Object> hydratedObjects, ResultSet rs, boolean readOnly,
-			List<AfterLoadAction> afterLoadEvents) {
+			List<AfterLoadAction> afterLoadActions, ResourceManager resourceManager) {
+		PreLoadEvent ple = new PreLoadEvent((EventSource) resourceManager);
 
+		for (Object hydratedObject : hydratedObjects) {
+			TwoPhaseLoad.initializeEntity(hydratedObject, readOnly, resourceManager, ple,
+					resourceManager.getFactory().getFastSessionServices().eventListenerGroup_PRE_LOAD.listeners());
+		}
+
+		for (Object hydratedObject : hydratedObjects) {
+			TwoPhaseLoad.afterInitialize(hydratedObject, resourceManager);
+		}
+
+		PostLoadEvent postLE = new PostLoadEvent((EventSource) resourceManager);
+
+		for (Object hydratedObject : hydratedObjects) {
+			TwoPhaseLoad.postLoad(hydratedObject, resourceManager, postLE);
+
+			for (AfterLoadAction afterLoadAction : afterLoadActions) {
+				final EntityEntry entityEntry = resourceManager.getPersistenceContext().getEntry(hydratedObject);
+
+				if (entityEntry == null) {
+					throw new HibernateException("Could not locate EntityEntry immediately after two-phase load");
+				}
+
+				afterLoadAction.afterLoad(resourceManager, hydratedObject, (Loadable) entityEntry.getPersister());
+			}
+		}
 	}
 
 	private List<Object> getRowsFromResultSet(EntityKey[] keys, ResultSet resultSet, int maxRow,

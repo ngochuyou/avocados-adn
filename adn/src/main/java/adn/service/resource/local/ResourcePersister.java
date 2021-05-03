@@ -80,10 +80,7 @@ public interface ResourcePersister<T> extends EntityPersister {
 	}
 
 	@Override
-	@Deprecated
 	default boolean canWriteToCache() {
-		// TODO Auto-generated method stub
-		unsupport();
 		return false;
 	}
 
@@ -150,5 +147,7 @@ public interface ResourcePersister<T> extends EntityPersister {
 	Type locatePropertyType(String properyName);
 
 	String[] getPropertyColumnNames(String propertyName);
+
+	int getPropertyIndex(String propertyName);
 
 }

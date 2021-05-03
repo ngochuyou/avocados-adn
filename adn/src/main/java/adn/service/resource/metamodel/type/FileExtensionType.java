@@ -9,8 +9,10 @@ import java.sql.SQLException;
 import org.apache.commons.io.FilenameUtils;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.type.AbstractStandardBasicType;
 import org.hibernate.type.DiscriminatorType;
 import org.hibernate.type.StringType;
+import org.hibernate.type.descriptor.JdbcTypeNameMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +41,12 @@ public class FileExtensionType extends AbstractFieldBasedSyntheticBasicType
 			throws HibernateException, SQLException {
 		String value = "." + FilenameUtils.getExtension(rs.getString(referencedFieldName));
 
-		logger.debug(String.format("Successfully extracted [%s] with value [%s]", referencedFieldName, value));
+		logger.debug(String.format("extracted value ([%s] : [%s]) - [%s]", names[0],
+				basicType instanceof AbstractStandardBasicType
+						? JdbcTypeNameMapper.getTypeName(
+								((AbstractStandardBasicType<?>) basicType).getSqlTypeDescriptor().getSqlType())
+						: basicType.getName(),
+				value.toString()));
 
 		return value;
 	}
