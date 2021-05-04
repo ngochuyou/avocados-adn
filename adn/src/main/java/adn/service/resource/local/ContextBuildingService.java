@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 
 import org.hibernate.service.Service;
 import org.hibernate.service.ServiceRegistry;
+import org.hibernate.service.spi.ServiceBinding;
+import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -25,7 +27,7 @@ import adn.service.resource.local.factory.EntityManagerFactoryImplementor.Servic
  * @author Ngoc Huy
  *
  */
-public interface ContextBuildingService extends ServiceRegistry {
+public interface ContextBuildingService extends ServiceRegistry, ServiceRegistryImplementor {
 
 	public static ContextBuildingService createBuildingService() {
 		return new BuildingService();
@@ -135,6 +137,27 @@ public interface ContextBuildingService extends ServiceRegistry {
 					clazz,
 					(service instanceof ServiceWrapper ? ((ServiceWrapper<?>) service).unwrap().getClass() : null)));
 			serviceMap.put(clazz, new HashSet<>(Arrays.asList(service)));
+		}
+
+		@Override
+		public <R extends Service> ServiceBinding<R> locateServiceBinding(Class<R> serviceRole) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public void destroy() {
+			// TODO Auto-generated method stub
+		}
+
+		@Override
+		public void registerChild(ServiceRegistryImplementor child) {
+			// TODO Auto-generated method stub
+		}
+
+		@Override
+		public void deRegisterChild(ServiceRegistryImplementor child) {
+			// TODO Auto-generated method stub
 		}
 
 	}

@@ -52,4 +52,24 @@ public class ExplicitlyHydratedType<T, E extends HibernateException> extends Abs
 		return returnedType;
 	}
 
+	@Override
+	public boolean isAssociationType() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isComponentType() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+	
+	@Override
+	public boolean isCollectionType() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+	
+	
+
 }

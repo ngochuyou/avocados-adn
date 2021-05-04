@@ -3,8 +3,6 @@
  */
 package adn.service.resource.metamodel;
 
-import static adn.service.resource.local.ResourceManagerFactoryBuilder.unsupport;
-
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +32,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.tuple.GenerationTiming;
 import org.hibernate.tuple.ValueGeneration;
 import org.hibernate.tuple.ValueGenerator;
+import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.type.BasicTypeRegistry;
 import org.hibernate.type.spi.TypeConfiguration;
 import org.slf4j.Logger;
@@ -60,7 +59,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	private final EntityManagerFactoryImplementor sessionFactory;
 
 	private final Map<String, String> importedClassNames;
-	private final Map<String, ResourceType<?>> resourceTypesByName;
+	private final Map<String, ResourceType<?>> jpaMetamodels;
 	private final Map<String, ResourcePersister<?>> persistersByName;
 
 	private final Set<EntityNameResolver> resourceNameResolvers;
@@ -69,7 +68,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 		// TODO Auto-generated constructor stub
 		Assert.notNull(sessionFactory, "ResourceManagerFactory must not be null");
 		this.sessionFactory = sessionFactory;
-		this.resourceTypesByName = new HashMap<>();
+		this.jpaMetamodels = new HashMap<>();
 		this.persistersByName = new HashMap<>();
 		this.resourceNameResolvers = new HashSet<>();
 		this.importedClassNames = new HashMap<>();
@@ -84,11 +83,11 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	@SuppressWarnings("unchecked")
 	public <X> ResourceType<X> entity(String name) {
 
-		if (!resourceTypesByName.containsKey(name)) {
+		if (!jpaMetamodels.containsKey(name)) {
 			return null;
 		}
 
-		return (ResourceType<X>) resourceTypesByName.get(name);
+		return (ResourceType<X>) jpaMetamodels.get(name);
 	}
 
 	@Override
@@ -106,13 +105,13 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	@Override
 	public Set<ManagedType<?>> getManagedTypes() {
 
-		return Collections.unmodifiableSet(new HashSet<>(resourceTypesByName.values()));
+		return Collections.unmodifiableSet(new HashSet<>(jpaMetamodels.values()));
 	}
 
 	@Override
 	public Set<EntityType<?>> getEntities() {
 
-		return Collections.unmodifiableSet(new HashSet<>(resourceTypesByName.values()));
+		return Collections.unmodifiableSet(new HashSet<>(jpaMetamodels.values()));
 	}
 
 	@Override
@@ -161,7 +160,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 		ContextBuildingService contextService = sessionFactory.getContextBuildingService();
 		Metadata metadata = contextService.getService(Metadata.class);
 
-		resourceTypesByName.values().forEach(metamodel -> {
+		jpaMetamodels.values().forEach(metamodel -> {
 			logger.trace("Closing access to " + metamodel.getName() + " metamodel");
 			((ResourceType<?>) metamodel).getInFlightAccess().finishUp();
 		});
@@ -169,6 +168,14 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 		Assert.isTrue(metadata.getImports().keySet().stream()
 				.filter(key -> !metadata.isProcessingDone(key) || entity(key) == null).findAny().orElse(null) == null,
 				"Processing is not done, cannot invoke postProcess");
+		Assert.isTrue(persistersByName.values().stream().filter(persister -> {
+			if (persister.getEntityMetamodel() == null) {
+				logger.error(EntityMetamodel.class + " in persister of resource named " + persister.getEntityName()
+						+ " was not processed");
+			}
+
+			return persister.getEntityMetamodel() == null;
+		}).count() == 0, "Some HBN metamodel was not processed");
 
 		logger.trace("Metamodel building summary:\n"
 				+ persistersByName.values().stream().map(ele -> ele.toString()).collect(Collectors.joining("\n")));
@@ -191,11 +198,11 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	private void postImport() throws IllegalAccessException {
 		logger.trace("Post import");
 
-		for (ResourceType<?> metamodel : resourceTypesByName.values()) {
+		for (ResourceType<?> metamodel : jpaMetamodels.values()) {
 			visitInheritance(metamodel);
 		}
 
-		for (ResourceType<?> metamodel : resourceTypesByName.values()) {
+		for (ResourceType<?> metamodel : jpaMetamodels.values()) {
 			logger.trace("Tracing identifier of type: " + metamodel.getName());
 			resolveIdentifierAndVersion(metamodel);
 		}
@@ -204,7 +211,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 	private void resolvePersisters() {
 		logger.trace("Resolving persisters");
 
-		for (ResourceType<?> metamodel : resourceTypesByName.values()) {
+		for (ResourceType<?> metamodel : jpaMetamodels.values()) {
 			if (metamodel.getSupertype() == null) {
 				fromRoot(metamodel, (node) -> {
 					ResourcePersister<?> persister;
@@ -336,7 +343,7 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 					isRoot(type));
 			// @formatter:on
 			processAttributes(metamodel);
-			resourceTypesByName.put(name, metamodel);
+			jpaMetamodels.put(name, metamodel);
 			importedClassNames.put(type.getName(), name);
 			markImportAsDone(name);
 
@@ -411,8 +418,6 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 		@Override
 		public boolean referenceColumnInSql() {
-			unsupport();
-
 			return false;
 		}
 
@@ -445,14 +450,11 @@ public class MetamodelImpl implements Metamodel, MetamodelImplementor {
 
 		@Override
 		public boolean referenceColumnInSql() {
-
-			unsupport();
 			return false;
 		}
 
 		@Override
 		public ValueGenerator<?> getValueGenerator() {
-
 			return null;
 		}
 

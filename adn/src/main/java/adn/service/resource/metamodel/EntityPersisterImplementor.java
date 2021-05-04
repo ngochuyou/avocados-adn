@@ -20,7 +20,4 @@ public interface EntityPersisterImplementor<T> extends EntityPersister {
 	@Override
 	ResourcePersister<T> getEntityPersister();
 
-	@Override
-	EntityTuplizerImplementor<T> getEntityTuplizer();
-
 }

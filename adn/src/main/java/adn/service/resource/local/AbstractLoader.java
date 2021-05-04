@@ -143,7 +143,7 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 				continue;
 			}
 
-			object = persister.instantiate(keys, resourceManager);
+			object = persister.instantiate(keys[i].getIdentifier(), resourceManager);
 			results.add(doWhenNotInContext(keys[i], object, requestedLockMode, resultSet, i + 1, persister,
 					resourceManager));
 		}

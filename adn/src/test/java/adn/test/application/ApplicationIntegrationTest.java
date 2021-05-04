@@ -215,7 +215,8 @@ public class ApplicationIntegrationTest {
 
 	@Test
 	public void sessionLoadTest() throws Exception {
-		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get(PREFIX + "/file/public/image/session-load");
+		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
+				.get(PREFIX + "/file/public/image/session-load");
 
 		mock.perform(reqBuilder).andExpect(status().isOk()).andDo(result -> {
 			logger.debug(result.getResponse().getContentAsString());

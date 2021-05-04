@@ -15,7 +15,6 @@ import org.hibernate.metamodel.model.domain.NavigableRole;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.tuple.ValueGeneration;
-import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.type.Type;
 
 /**
@@ -23,14 +22,6 @@ import org.hibernate.type.Type;
  *
  */
 public interface ResourcePersister<T> extends EntityPersister {
-
-	@Override
-	@Deprecated
-	default EntityMetamodel getEntityMetamodel() {
-		// TODO Auto-generated method stub
-		unsupport();
-		return null;
-	}
 
 	@Override
 	@Deprecated

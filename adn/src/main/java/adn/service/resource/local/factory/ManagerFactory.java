@@ -44,6 +44,7 @@ import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.metadata.CollectionMetadata;
 import org.hibernate.proxy.EntityNotFoundDelegate;
 import org.hibernate.query.spi.NamedQueryRepository;
+import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.Type;
@@ -69,6 +70,8 @@ public class ManagerFactory implements EntityManagerFactoryImplementor {
 	private final LocalResourceStorage localStorage;
 
 	private final MetamodelImplementor metamodel;
+	private final SessionFactoryOptions sessionFactoryOptions;
+	private final ServiceRegistry serviceRegistry;
 	private final ContextBuildingService buildingService;
 
 	private final SharedIdentifierGeneratorFactory sharedIdentifierGeneratorFactory;
@@ -80,9 +83,11 @@ public class ManagerFactory implements EntityManagerFactoryImplementor {
 	private final StatisticsImplementor nonStats = new NonStatistic();
 	private final FastSessionServices fastSessionServices;
 
-	public ManagerFactory(final ContextBuildingService serviceContext, final TypeConfiguration typeConfiguration) {
+	public ManagerFactory(final ContextBuildingService serviceContext, final TypeConfiguration typeConfiguration,
+			final ServiceRegistry serviceRegistry, final SessionFactoryOptions sessionFactoryOptions) {
 		// TODO Auto-generated constructor stub
-		Assert.notNull(serviceContext, "ContextBuildingService cannot be null");
+		Assert.notNull(serviceRegistry, ServiceRegistry.class + " must not be null");
+		Assert.notNull(serviceContext, ContextBuildingService.class + " must not be null");
 
 		Metadata metadata = serviceContext.getService(Metadata.class);
 
@@ -91,6 +96,8 @@ public class ManagerFactory implements EntityManagerFactoryImplementor {
 		this.metadata = metadata;
 		this.typeConfiguration = typeConfiguration;
 		buildingService = serviceContext;
+		this.sessionFactoryOptions = sessionFactoryOptions;
+		this.serviceRegistry = serviceRegistry;
 		localStorage = serviceContext.getService(LocalResourceStorage.class);
 		sharedIdentifierGeneratorFactory = new SharedIdentifierGeneratorFactory(serviceContext);
 		EntityBinder.INSTANCE = new EntityBinder(sharedIdentifierGeneratorFactory);
@@ -137,7 +144,7 @@ public class ManagerFactory implements EntityManagerFactoryImplementor {
 
 	@Override
 	public SessionFactoryOptions getSessionFactoryOptions() {
-		return null;
+		return sessionFactoryOptions;
 	}
 
 	@Override
@@ -350,8 +357,7 @@ public class ManagerFactory implements EntityManagerFactoryImplementor {
 
 	@Override
 	public ServiceRegistryImplementor getServiceRegistry() {
-
-		return null;
+		return (ServiceRegistryImplementor) serviceRegistry;
 	}
 
 	@Override
