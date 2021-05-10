@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.local.factory;
+package adn.service.resource.factory;
 
 import org.hibernate.metamodel.model.domain.NavigableRole;
 import org.hibernate.stat.CacheRegionStatistics;

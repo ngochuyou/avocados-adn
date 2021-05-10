@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.metamodel;
+package adn.service.resource.factory;
 
 import java.io.Serializable;
 import java.sql.SQLException;

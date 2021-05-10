@@ -16,8 +16,8 @@ import org.hibernate.type.descriptor.JdbcTypeNameMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import adn.service.resource.metamodel.Extension;
 import adn.service.resource.metamodel.type.AbstractSyntheticBasicType.AbstractFieldBasedSyntheticBasicType;
+import adn.service.resource.model.models.Resource;
 
 /**
  * @author Ngoc Huy
@@ -27,13 +27,17 @@ import adn.service.resource.metamodel.type.AbstractSyntheticBasicType.AbstractFi
 public class FileExtensionType extends AbstractFieldBasedSyntheticBasicType
 		implements DiscriminatorTypeImplementor<String> {
 
-	public static final FileExtensionType INSTANCE = new FileExtensionType(StringType.INSTANCE, "name");
+	public static final String NAME = "adn.service.resource.metamodel.type.FileExtensionType";
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
-	private final String[] regKeys = new String[] { Extension.class.getName() };
+	private final String[] regKeys = new String[] { NAME };
 
-	private FileExtensionType(StringType basicType, String referencedFieldName) {
-		super(basicType, referencedFieldName);
+	public FileExtensionType() {
+		this(Resource.RESOURCE_IDENTIFIER_ATTRIBUTE_NAME);
+	}
+
+	public FileExtensionType(String referencedFieldName) {
+		super(StringType.INSTANCE, referencedFieldName);
 	}
 
 	@Override

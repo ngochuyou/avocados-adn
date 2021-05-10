@@ -21,7 +21,6 @@ import org.hibernate.type.Type;
 import org.springframework.util.Assert;
 
 import adn.helpers.StringHelper;
-import adn.service.resource.local.ResourceManager;
 import adn.service.resource.storage.ResourceResultSet;
 
 /**
@@ -90,7 +89,7 @@ public abstract class AbstractSyntheticBasicType implements BasicType {
 	@Override
 	public Size[] defaultSizes(Mapping mapping) throws MappingException {
 		// TODO Auto-generated method stub
-		return defaultSizes(mapping);
+		return basicType.defaultSizes(mapping);
 	}
 
 	@Override
@@ -275,14 +274,6 @@ public abstract class AbstractSyntheticBasicType implements BasicType {
 		}
 
 		throw new HibernateException("ResultSet must be instance of " + ResourceResultSet.class);
-	}
-
-	protected ResourceManager assertSession(SharedSessionContractImplementor session) {
-		if (session instanceof ResourceManager) {
-			return (ResourceManager) session;
-		}
-
-		throw new HibernateException("session must be instanceof " + ResourceManager.class);
 	}
 
 	protected static abstract class AbstractFieldBasedSyntheticBasicType extends AbstractSyntheticBasicType {

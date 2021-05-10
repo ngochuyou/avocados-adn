@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.local;
+package adn.service.resource;
 
 import java.io.Serializable;
 import java.sql.ResultSet;
@@ -190,7 +190,7 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 			return resourceManager.getPersistenceContext().getEntity(key);
 		}
 
-		ResourceEntry<?> entry = (ResourceEntry<?>) resourceManager.getPersistenceContext().getEntry(existingInstance);
+		EntityEntry entry = resourceManager.getPersistenceContext().getEntry(existingInstance);
 
 		if (entry.getLockMode().lessThan(requestedLockMode)) {
 			// upgrade lock mode

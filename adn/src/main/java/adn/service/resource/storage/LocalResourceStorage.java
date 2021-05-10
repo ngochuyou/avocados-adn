@@ -8,6 +8,8 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
+import org.hibernate.SessionFactory;
+import org.hibernate.SessionFactoryObserver;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.service.Service;
 
@@ -35,7 +37,7 @@ public interface LocalResourceStorage extends Service {
 
 	}
 
-	public interface ResultSetMetaDataImplementor extends ResultSetMetaData, Service {
+	public interface ResultSetMetaDataImplementor extends ResultSetMetaData, Service, SessionFactoryObserver {
 
 		public interface Access {
 
@@ -56,6 +58,11 @@ public interface LocalResourceStorage extends Service {
 		PropertyAccess getPropertyAccess(int index) throws IllegalArgumentException, SQLException;
 
 		int getIndex(String name);
+
+		@Override
+		default void sessionFactoryCreated(SessionFactory factory) {
+			close();
+		}
 
 	}
 

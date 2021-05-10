@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.metamodel;
+package adn.service.resource.metamodel.type;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

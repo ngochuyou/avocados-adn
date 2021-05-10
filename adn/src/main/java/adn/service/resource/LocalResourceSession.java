@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.local;
+package adn.service.resource;
 
 import java.io.Serializable;
 import java.sql.Connection;
@@ -34,6 +34,7 @@ import org.hibernate.Interceptor;
 import org.hibernate.LobHelper;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
+import org.hibernate.Metamodel;
 import org.hibernate.MultiIdentifierLoadAccess;
 import org.hibernate.NaturalIdLoadAccess;
 import org.hibernate.ObjectNotFoundException;
@@ -88,8 +89,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
 import adn.application.context.ContextProvider;
-import adn.service.resource.local.factory.EntityManagerFactoryImplementor;
-import adn.service.resource.metamodel.Metamodel;
+import adn.service.resource.factory.EntityManagerFactoryImplementor;
 
 /**
  * @author Ngoc Huy
@@ -109,12 +109,7 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 	@Autowired
 	public LocalResourceSession() {
 		this.sessionFactory = ContextProvider.getLocalResourceSessionFactory();
-		resourceContext = createResourceContext();
-	}
-
-	private PersistenceContext createResourceContext() {
-		logger.trace("Creating an instance of " + PersistenceContext.class);
-		return new StatefulPersistenceContext(getSession());
+		resourceContext = new StatefulPersistenceContext(getSession());
 	}
 
 	@Override
@@ -844,7 +839,6 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 	@Override
 	public boolean isDirty() throws HibernateException {
-
 		return false;
 	}
 
@@ -902,7 +896,6 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 	@Override
 	public <T> T load(Class<T> theClass, Serializable id) {
-
 		return byId(theClass).getReference(id);
 	}
 
@@ -1069,7 +1062,6 @@ public class LocalResourceSession implements SessionImplementor, ResourceManager
 
 	@Override
 	public IdentifierLoadAccess<?> byId(String entityName) {
-
 		return new IdentifierLoadAccessImpl<>(locatePersister(entityName));
 	}
 

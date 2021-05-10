@@ -19,9 +19,14 @@ import adn.helpers.FunctionHelper.HandledFunction;
  */
 public class ByteArrayHydrateFunction implements HandledFunction<Object, byte[], HibernateException> {
 
+	public static final ByteArrayHydrateFunction INSTANCE = new ByteArrayHydrateFunction();
 	public static final int MAX_SIZE_IN_ONE_READ = 5 * 1024 * 1024;
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+	private ByteArrayHydrateFunction() {
+		// TODO Auto-generated constructor stub
+	}
 
 	@Override
 	public byte[] apply(Object arg) throws HibernateException {

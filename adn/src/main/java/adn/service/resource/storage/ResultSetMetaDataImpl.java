@@ -27,8 +27,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import adn.helpers.StringHelper;
-import adn.service.resource.local.ManagerFactoryEventListener;
-import adn.service.resource.local.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplementor;
 import adn.service.resource.storage.ResultSetMetaDataImpl.AccessImpl.DirectAccess;
 
@@ -37,7 +35,7 @@ import adn.service.resource.storage.ResultSetMetaDataImpl.AccessImpl.DirectAcces
  *
  */
 @SuppressWarnings("serial")
-public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, ManagerFactoryEventListener {
+public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 
 	public static final ResultSetMetaDataImpl INSTANCE = new ResultSetMetaDataImpl();
 
@@ -48,7 +46,6 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 	private Access access;
 
 	private ResultSetMetaDataImpl() {
-		listen();
 		access = createAccess();
 	}
 
@@ -235,7 +232,8 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 
 		private void addColumn(String name, int index) {
 			if (columnIndexMap.containsKey(name)) {
-				throw new IllegalArgumentException(String.format("Duplicate property [%s]", name));
+				logger.trace(String.format("Ignoring duplicated property [%s]", name));
+				return;
 			}
 
 			columnIndexMap.put(name, index);
@@ -247,7 +245,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 
 			int nextIndex = getNextColumnIndex();
 
-			logger.trace(String.format("Adding column %s with index %d", name, nextIndex));
+			logger.trace(String.format("Adding column [%s] <index: [%d]>", name, nextIndex));
 
 			try {
 				if (File.class.getDeclaredField(name) != null) {
@@ -255,7 +253,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 					propertyAccessors.add(new DirectAccess(File.class.getDeclaredField(name)));
 				}
 			} catch (NoSuchFieldException nsfe) {
-				logger.trace(String.format("%s not found, trying to locate getter", name));
+				logger.trace(String.format("[%s] not found, trying to locate getter", name));
 
 				PropertyAccess pa = locatePropertyAccess(name);
 
@@ -267,13 +265,14 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 				addColumn(name, nextIndex);
 				propertyAccessors.add(pa);
 			} catch (SecurityException se) {
-				logger.trace(String.format("%s found on [%s], trying to find getter", SecurityException.class, name));
+				logger.trace(String.format("[%s] found on [%s], trying to find getter", SecurityException.class, name));
 
 				PropertyAccess pa = locatePropertyAccess(name);
 
 				if (pa == null) {
 					logger.trace(String.format("Getter not found for [%s]", name));
-					throw new NoSuchFieldException(String.format("Unable to locate field %s in %s", name, File.class));
+					throw new NoSuchFieldException(
+							String.format("Unable to locate field [%s] in [%s]", name, File.class));
 				}
 
 				addColumn(name, nextIndex);
@@ -292,19 +291,19 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 
 					@Override
 					public Setter getSetter() {
-						// TODO Auto-generated method stub
+
 						return null;
 					}
 
 					@Override
 					public PropertyAccessStrategy getPropertyAccessStrategy() {
-						// TODO Auto-generated method stub
+
 						return null;
 					}
 
 					@Override
 					public Getter getGetter() {
-						// TODO Auto-generated method stub
+
 						return getter;
 					}
 				};
@@ -334,13 +333,13 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 
 			@Override
 			public PropertyAccessStrategy getPropertyAccessStrategy() {
-				// TODO Auto-generated method stub
+
 				return new PropertyAccessStrategy() {
 
 					@Override
 					public PropertyAccess buildPropertyAccess(@SuppressWarnings("rawtypes") Class containerJavaType,
 							String propertyName) {
-						// TODO Auto-generated method stub
+
 						try {
 							return new LiteralNamedPropertyAccess(containerJavaType, propertyName);
 						} catch (NoSuchMethodException | SecurityException e) {
@@ -354,13 +353,13 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 
 			@Override
 			public Getter getGetter() {
-				// TODO Auto-generated method stub
+
 				return getter;
 			}
 
 			@Override
 			public Setter getSetter() {
-				// TODO Auto-generated method stub
+
 				return null;
 			}
 
@@ -468,7 +467,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 
 			int nextIndex = getNextColumnIndex();
 
-			logger.trace(String.format("Adding explicitly hydrated column %s with index %d", name, nextIndex));
+			logger.trace(String.format("Adding explicitly hydrated column [%s] <index: %d>", name, nextIndex));
 
 			addColumn(name, nextIndex);
 			propertyAccessors.add(holder);
@@ -480,19 +479,16 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 
 			@Override
 			public PropertyAccessStrategy getPropertyAccessStrategy() {
-				// TODO Auto-generated method stub
 				return null;
 			}
 
 			@Override
 			public Getter getGetter() {
-				// TODO Auto-generated method stub
 				return null;
 			}
 
 			@Override
 			public Setter getSetter() {
-				// TODO Auto-generated method stub
 				return null;
 			}
 
@@ -504,7 +500,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 
 			int nextIndex = getNextColumnIndex();
 
-			logger.trace(String.format("Adding synthesized column %s with index %d", name, nextIndex));
+			logger.trace(String.format("Adding synthesized column [%s] <index: %d>", name, nextIndex));
 			addColumn(name, nextIndex);
 			propertyAccessors.add(holder);
 		}
@@ -514,7 +510,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 	@Override
 	public PropertyAccess getPropertyAccess(String name) throws IllegalArgumentException, SQLException {
 		if (!columnIndexMap.containsKey(name)) {
-			throw new IllegalArgumentException("Column " + name + " not found");
+			throw new IllegalArgumentException("Column [" + name + "] not found");
 		}
 
 		return getPropertyAccess(columnIndexMap.get(name));
@@ -525,11 +521,6 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor, Mana
 		assertIndex(index);
 
 		return propertyAccessors.get(index);
-	}
-
-	@Override
-	public void postBuild(EntityManagerFactoryImplementor managerFactory) {
-		close();
 	}
 
 	@Override

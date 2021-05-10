@@ -63,13 +63,11 @@ public class ExplicitlyHydratedType<T, E extends HibernateException> extends Abs
 		// TODO Auto-generated method stub
 		return false;
 	}
-	
+
 	@Override
 	public boolean isCollectionType() {
 		// TODO Auto-generated method stub
 		return false;
 	}
-	
-	
 
 }

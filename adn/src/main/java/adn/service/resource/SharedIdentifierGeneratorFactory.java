@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.local;
+package adn.service.resource;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,13 +29,13 @@ public class SharedIdentifierGeneratorFactory implements IdentifierGeneratorFact
 
 	private final Map<String, IdentifierGenerator> generatorMap = new HashMap<>();
 
-	private final ContextBuildingService contextService;
+	private final MutableIdentifierGeneratorFactory mutableIdentifierGeneratorFactory;
 	private final BasicTypeRegistry typeRegistry;
 
-	public SharedIdentifierGeneratorFactory(ContextBuildingService contextService) {
-		this.contextService = contextService;
-		typeRegistry = contextService.getServiceWrapper(BasicTypeRegistry.class,
-				wrapper -> wrapper.orElseThrow().unwrap());
+	public SharedIdentifierGeneratorFactory(BasicTypeRegistry typeRegistry,
+			MutableIdentifierGeneratorFactory mutableIdentifierGeneratorFactory) {
+		this.typeRegistry = typeRegistry;
+		this.mutableIdentifierGeneratorFactory = mutableIdentifierGeneratorFactory;
 	}
 
 	public <X extends IdentifierGenerator> IdentifierGenerator obtainGenerator(String name) {
@@ -66,8 +66,7 @@ public class SharedIdentifierGeneratorFactory implements IdentifierGeneratorFact
 		Properties props = new Properties();
 
 		props.setProperty(IdentifierGenerator.GENERATOR_NAME, name);
-		generatorMap.put(name, contextService.getService(MutableIdentifierGeneratorFactory.class)
-				.createIdentifierGenerator(name, type, props));
+		generatorMap.put(name, mutableIdentifierGeneratorFactory.createIdentifierGenerator(name, type, props));
 
 		return generatorMap.get(name);
 	}
@@ -75,21 +74,17 @@ public class SharedIdentifierGeneratorFactory implements IdentifierGeneratorFact
 	@Override
 	public Class<?> getIdentifierGeneratorClass(String strategy) {
 		// TODO Auto-generated method stub
-		return contextService.getService(MutableIdentifierGeneratorFactory.class).getIdentifierGeneratorClass(strategy);
+		return mutableIdentifierGeneratorFactory.getIdentifierGeneratorClass(strategy);
 	}
 
 	@Override
 	@Deprecated
 	public Dialect getDialect() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	@Deprecated
-	public void setDialect(Dialect dialect) {
-		// TODO Auto-generated method stub
-
-	}
+	public void setDialect(Dialect dialect) {}
 
 }

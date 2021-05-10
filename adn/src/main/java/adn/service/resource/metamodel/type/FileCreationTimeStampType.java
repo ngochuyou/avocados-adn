@@ -8,7 +8,6 @@ import java.sql.SQLException;
 import java.util.Date;
 
 import org.hibernate.HibernateException;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.type.AbstractStandardBasicType;
 import org.hibernate.type.TimestampType;
@@ -16,23 +15,28 @@ import org.hibernate.type.descriptor.JdbcTypeNameMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import adn.service.resource.metamodel.DefaultResourceIdentifierGenerator.ResourceIdentifierPart;
+import adn.service.resource.factory.DefaultResourceIdentifierGenerator.ResourceIdentifierPart;
 import adn.service.resource.metamodel.type.AbstractSyntheticBasicType.AbstractFieldBasedSyntheticBasicType;
+import adn.service.resource.model.models.Resource;
 
 /**
  * @author Ngoc Huy
  *
  */
 @SuppressWarnings("serial")
-public class CreationTimeStampType extends AbstractFieldBasedSyntheticBasicType {
+public class FileCreationTimeStampType extends AbstractFieldBasedSyntheticBasicType {
 
-	public static final CreationTimeStampType INSTANCE = new CreationTimeStampType(TimestampType.INSTANCE, "name");
+	public static final String NAME = "adn.service.resource.metamodel.type.FileCreationTimeStampType";
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
-	private final String[] regKeys = new String[] { CreationTimestamp.class.getName() };
+	private final String[] regKeys = new String[] { NAME };
 
-	private CreationTimeStampType(TimestampType basicType, String referencedFieldName) {
-		super(basicType, referencedFieldName);
+	public FileCreationTimeStampType() {
+		this(Resource.RESOURCE_IDENTIFIER_ATTRIBUTE_NAME);
+	}
+
+	public FileCreationTimeStampType(String referencedFieldName) {
+		super(TimestampType.INSTANCE, referencedFieldName);
 	}
 
 	@Override

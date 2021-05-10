@@ -31,7 +31,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 import adn.security.SecurityConfiguration;
-import adn.service.resource.local.LocalResourceSession;
+import adn.service.resource.LocalResourceSession;
 import adn.service.resource.model.models.FileByBytes;
 
 /**
@@ -205,8 +205,6 @@ public class TestController extends BaseController {
 		FileByBytes file = session.load(FileByBytes.class, filename);
 
 		System.out.println(file.getExtension());
-
-		session.get(FileByBytes.class, filename);
 
 		return ResponseEntity.ok(file);
 	}

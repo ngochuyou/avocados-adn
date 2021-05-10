@@ -3,6 +3,8 @@
  */
 package adn.application.context;
 
+import org.hibernate.SessionFactory;
+import org.hibernate.SessionFactoryObserver;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -14,26 +16,29 @@ import org.springframework.stereotype.Component;
 
 import adn.helpers.Role;
 import adn.security.ApplicationUserDetails;
-import adn.service.resource.local.ManagerFactoryEventListener;
-import adn.service.resource.local.factory.EntityManagerFactoryImplementor;
+import adn.service.resource.factory.EntityManagerFactoryImplementor;
 
 /**
  * @author Ngoc Huy
  *
  */
+@SuppressWarnings("serial")
 @Component
-public class ContextProvider implements ApplicationContextAware, ManagerFactoryEventListener {
+public class ContextProvider implements ApplicationContextAware, SessionFactoryObserver {
+
+	public static final ContextProvider INSTANCE = new ContextProvider();
 
 	private static ApplicationContext applicationContext;
 	private static EntityManagerFactoryImplementor LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE;
 
 	private static Access access = new Access();
 
+	private ContextProvider() {}
+
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
 		// TODO Auto-generated method stub
 		ContextProvider.applicationContext = applicationContext;
-		listen();
 	}
 
 	public static ApplicationContext getApplicationContext() {
@@ -56,7 +61,6 @@ public class ContextProvider implements ApplicationContextAware, ManagerFactoryE
 	}
 
 	public static String getPrincipalName() {
-
 		return SecurityContextHolder.getContext().getAuthentication().getName();
 	}
 
@@ -84,7 +88,7 @@ public class ContextProvider implements ApplicationContextAware, ManagerFactoryE
 	}
 
 	@Override
-	public void postBuild(EntityManagerFactoryImplementor managerFactory) {
+	public void sessionFactoryCreated(SessionFactory factory) {
 		LoggerFactory.getLogger(this.getClass()).trace("Closing access in " + this.getClass());
 		access = null;
 	}

@@ -1,11 +1,11 @@
 /**
  * 
  */
-package adn.service.resource.local;
+package adn.service.resource;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 
-import adn.service.resource.local.factory.EntityManagerFactoryImplementor;
+import adn.service.resource.factory.EntityManagerFactoryImplementor;
 
 /**
  * @author Ngoc Huy

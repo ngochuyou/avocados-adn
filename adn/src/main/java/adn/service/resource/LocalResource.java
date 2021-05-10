@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.metamodel;
+package adn.service.resource;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -13,7 +13,9 @@ import java.lang.annotation.Target;
  *
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface Extension {
+@Target(ElementType.TYPE)
+public @interface LocalResource {
 
+	String name() default "";
+	
 }

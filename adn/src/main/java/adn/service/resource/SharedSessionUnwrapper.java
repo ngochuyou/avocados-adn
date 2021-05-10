@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.local;
+package adn.service.resource;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.local;
+package adn.service.resource;
 
 import org.hibernate.event.internal.DefaultLoadEventListener;
 import org.hibernate.event.spi.LoadEvent;
@@ -16,9 +16,8 @@ public class DefaultLoadEventListenerImplementor extends DefaultLoadEventListene
 
 	@Override
 	protected EntityPersister getPersister(LoadEvent event) {
-		// TODO Auto-generated method stub
-		return ((LocalResourceSession) event.getSession()).getMetamodel()
-				.getResourcePersister(event.getEntityClassName());
+		return ((LocalResourceSession) event.getSession()).getEntityPersister(event.getEntityClassName(),
+				event.getInstanceToLoad());
 	}
 
 }
