@@ -28,6 +28,7 @@ import org.hibernate.persister.entity.Loadable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import adn.service.resource.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.storage.LocalResourceStorage.ResultSetImplementor;
 
 /**
@@ -78,7 +79,7 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 
 		try {
 			applyLock(ids, lockOptions, manager, afterLoadActions);
-			result = manager.getFactory().getStorage().select(ids);
+			result = ((EntityManagerFactoryImplementor) manager.getFactory()).getStorage().select(ids);
 
 			return processResults(result, persister, manager, maxRows, lockOptions.getLockMode(), afterLoadActions);
 		} finally {

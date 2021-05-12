@@ -17,12 +17,15 @@ import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.type.Type;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.metamodel.EntityPersisterImplementor;
 import adn.service.resource.metamodel.type.AbstractSyntheticBasicType;
 import adn.service.resource.metamodel.type.ExplicitlyHydratedType;
 import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplementor;
+import adn.service.resource.storage.ResultSetMetaDataImpl;
 
 /**
  * @author Ngoc Huy
@@ -31,6 +34,8 @@ import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplem
  */
 public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		implements ResourcePersister<D>, EntityPersisterImplementor<D>, ClassMetadata, SharedSessionUnwrapper {
+
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private final UniqueEntityLoader resourceLoader;
 
@@ -41,8 +46,7 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 
 		@SuppressWarnings("unchecked")
 		Iterator<Property> declaredPropertyIterator = persistentClass.getDeclaredPropertyIterator();
-		ResultSetMetaDataImplementor rsMetadata = creationContext.getSessionFactory().getServiceRegistry()
-				.getService(ResultSetMetaDataImplementor.class);
+		ResultSetMetaDataImplementor rsMetadata = ResultSetMetaDataImpl.INSTANCE;
 
 		if (persistentClass.hasIdentifierProperty()) {
 			addResultSetMetadataColumn(rsMetadata, persistentClass.getIdentifierProperty().getType(),
@@ -126,6 +130,8 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 	@Override
 	public Object load(Serializable id, Object optionalObject, LockOptions lockOptions,
 			SharedSessionContractImplementor session) throws HibernateException {
+		logger.trace(String.format("Loading with id [%s]", id));
+
 		return resourceLoader.load(id, optionalObject, session, lockOptions);
 	}
 

@@ -39,8 +39,8 @@ import adn.service.resource.metamodel.type.FileExtensionType;
 public class FileResource implements Resource {
 
 	@Id
-	@GeneratedValue
-	@GenericGenerator(strategy = DefaultResourceIdentifierGenerator.NAME, name = DefaultResourceIdentifierGenerator.NAME)
+	@GeneratedValue(generator = DefaultResourceIdentifierGenerator.NAME)
+	@GenericGenerator(strategy = DefaultResourceIdentifierGenerator.PATH, name = DefaultResourceIdentifierGenerator.NAME)
 	private String name;
 
 	@Type(type = FileCreationTimeStampType.NAME)

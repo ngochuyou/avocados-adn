@@ -3,8 +3,7 @@
  */
 package adn.application.context;
 
-import org.hibernate.SessionFactory;
-import org.hibernate.SessionFactoryObserver;
+import org.hibernate.internal.SessionFactoryImpl;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -16,20 +15,16 @@ import org.springframework.stereotype.Component;
 
 import adn.helpers.Role;
 import adn.security.ApplicationUserDetails;
-import adn.service.resource.factory.EntityManagerFactoryImplementor;
 
 /**
  * @author Ngoc Huy
  *
  */
-@SuppressWarnings("serial")
 @Component
-public class ContextProvider implements ApplicationContextAware, SessionFactoryObserver {
-
-	public static final ContextProvider INSTANCE = new ContextProvider();
+public class ContextProvider implements ApplicationContextAware {
 
 	private static ApplicationContext applicationContext;
-	private static EntityManagerFactoryImplementor LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE;
+	private static SessionFactoryImpl LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE;
 
 	private static Access access = new Access();
 
@@ -37,7 +32,6 @@ public class ContextProvider implements ApplicationContextAware, SessionFactoryO
 
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		// TODO Auto-generated method stub
 		ContextProvider.applicationContext = applicationContext;
 	}
 
@@ -64,7 +58,7 @@ public class ContextProvider implements ApplicationContextAware, SessionFactoryO
 		return SecurityContextHolder.getContext().getAuthentication().getName();
 	}
 
-	public static EntityManagerFactoryImplementor getLocalResourceSessionFactory() {
+	public static SessionFactoryImpl getLocalResourceSessionFactory() {
 		return LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE;
 	}
 
@@ -78,18 +72,16 @@ public class ContextProvider implements ApplicationContextAware, SessionFactoryO
 
 	public static class Access {
 
-		public void setLocalResourceSessionFactory(
-				EntityManagerFactoryImplementor LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE) {
-			LoggerFactory.getLogger(
-					"Setting an instance of " + EntityManagerFactoryImplementor.class + " to " + this.getClass());
+		public void setLocalResourceSessionFactory(SessionFactoryImpl LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE) {
+			LoggerFactory.getLogger("Setting an instance of " + SessionFactoryImpl.class + " to " + this.getClass());
 			ContextProvider.LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE = LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE;
 		}
 
 	}
 
-	@Override
-	public void sessionFactoryCreated(SessionFactory factory) {
-		LoggerFactory.getLogger(this.getClass()).trace("Closing access in " + this.getClass());
+	public static void closeAccess() {
+		LoggerFactory.getLogger(ContextProvider.class)
+				.trace(String.format("Closing access in [%s]", ContextProvider.class));
 		access = null;
 	}
 

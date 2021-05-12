@@ -100,7 +100,6 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 
 	@Override
 	public boolean isCurrency(int column) throws SQLException {
-
 		return Currency.class.isAssignableFrom(getColumnJavaType(column));
 	}
 
@@ -137,7 +136,6 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 
 	@Override
 	public String getSchemaName(int column) throws SQLException {
-
 		return File.class.getName();
 	}
 
@@ -148,60 +146,50 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 
 	@Override
 	public int getScale(int column) throws SQLException {
-
 		return 0;
 	}
 
 	@Override
 	public String getTableName(int column) throws SQLException {
-
 		return File.class.getName();
 	}
 
 	@Override
 	public String getCatalogName(int column) throws SQLException {
-
 		return File.class.getName();
 	}
 
 	@Override
 	public int getColumnType(int column) throws SQLException {
-
 		return 0;
 	}
 
 	@Override
 	public String getColumnTypeName(int column) throws SQLException {
-
 		return getColumnJavaType(column).getName();
 	}
 
 	@Override
 	public boolean isReadOnly(int column) throws SQLException {
-
 		return true;
 	}
 
 	@Override
 	public boolean isWritable(int column) throws SQLException {
-
 		return !isReadOnly(column);
 	}
 
 	@Override
 	public boolean isDefinitelyWritable(int column) throws SQLException {
-
 		return !isReadOnly(column);
 	}
 
 	@Override
 	public String getColumnClassName(int column) throws SQLException {
-
 		return getColumnName(column);
 	}
 
 	private Access createAccess() {
-
 		return new AccessImpl();
 	}
 
@@ -353,13 +341,11 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 
 			@Override
 			public Getter getGetter() {
-
 				return getter;
 			}
 
 			@Override
 			public Setter getSetter() {
-
 				return null;
 			}
 

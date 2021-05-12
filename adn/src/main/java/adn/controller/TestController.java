@@ -202,9 +202,10 @@ public class TestController extends BaseController {
 	@GetMapping("/file/public/image/session-load")
 	public @ResponseBody ResponseEntity<?> testGetImageBytes() {
 		String filename = "1619973416467_0c46022fcfda4d9f4bb8c09e8c42e9efc12d839d35c78c73e4dab1d24fac8a1c.jpg";
-		FileByBytes file = session.load(FileByBytes.class, filename);
 
-		System.out.println(file.getExtension());
+		logger.debug(String.format("Session type -> [%s]", session.getClass()));
+
+		FileByBytes file = session.load(FileByBytes.class, filename);
 
 		return ResponseEntity.ok(file);
 	}

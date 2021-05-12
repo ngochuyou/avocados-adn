@@ -78,11 +78,6 @@ public class MetadataBuildingOptionsImpl implements MetadataBuildingOptions, Jpa
 	@Override
 	public List<BasicTypeRegistration> getBasicTypeRegistrations() {
 		return Collections.emptyList();
-//		return Arrays.asList(
-//				new BasicTypeRegistration(CreationTimeStampType.INSTANCE,
-//						CreationTimeStampType.INSTANCE.getRegistrationKeys()),
-//				new BasicTypeRegistration(FileExtensionType.INSTANCE,
-//						FileExtensionType.INSTANCE.getRegistrationKeys()));
 	}
 
 	@Override

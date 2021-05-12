@@ -5,11 +5,9 @@ package adn.service.resource.factory;
 
 import org.hibernate.MappingException;
 import org.hibernate.cfg.Settings;
-import org.hibernate.engine.spi.SessionBuilderImplementor;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.type.TypeResolver;
-import org.hibernate.type.spi.TypeConfiguration;
 
 import adn.service.resource.ResourcePersister;
 import adn.service.resource.storage.LocalResourceStorage;
@@ -20,12 +18,6 @@ import adn.service.resource.storage.LocalResourceStorage;
  */
 @SuppressWarnings("deprecation")
 public interface EntityManagerFactoryImplementor extends SessionFactoryImplementor {
-
-	@Override
-	@Deprecated
-	default SessionBuilderImplementor<?> withOptions() {
-		return null;
-	}
 
 	@Override
 	@Deprecated
@@ -40,8 +32,6 @@ public interface EntityManagerFactoryImplementor extends SessionFactoryImplement
 	}
 
 	LocalResourceStorage getStorage();
-
-	TypeConfiguration getTypeConfiguration();
 
 	@SuppressWarnings("unchecked")
 	default <D> ResourcePersister<D> getEntityPersister(Class<D> entityClass) {

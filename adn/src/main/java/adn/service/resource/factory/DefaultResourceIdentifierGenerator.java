@@ -27,6 +27,7 @@ public class DefaultResourceIdentifierGenerator implements IdentifierGenerator, 
 
 	public static final DefaultResourceIdentifierGenerator INSTANCE = new DefaultResourceIdentifierGenerator();
 	public static final String NAME = "resource_identifier";
+	public static final String PATH = "adn.service.resource.factory.DefaultResourceIdentifierGenerator";
 
 	public static final String IDENTIFIER_PARTS_SEPERATOR = "_";
 	public static final int PART_COMPONENT_AMOUNT = 2;
