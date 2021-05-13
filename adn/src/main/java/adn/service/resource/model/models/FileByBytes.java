@@ -11,6 +11,7 @@ import javax.persistence.Entity;
 import org.hibernate.annotations.Proxy;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
+import org.springframework.context.annotation.Lazy;
 
 import adn.service.resource.LocalResource;
 import adn.service.resource.type.ExplicitlyHydratedFileContextType;
@@ -25,6 +26,7 @@ import adn.service.resource.type.ExplicitlyHydratedFileContextType;
 @Proxy(lazy = false)
 public class FileByBytes extends FileResource {
 
+	@Lazy(true)
 	@Column(nullable = false)
 	@Type(type = ExplicitlyHydratedFileContextType.NAME)
 	private byte[] content;

@@ -10,6 +10,8 @@ import java.util.Optional;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.type.BasicType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import adn.helpers.FunctionHelper.HandledFunction;
 
@@ -18,8 +20,9 @@ import adn.helpers.FunctionHelper.HandledFunction;
  *
  */
 @SuppressWarnings("serial")
-public class ExplicitlyHydratedType<T, E extends HibernateException> extends AbstractSyntheticBasicType {
+public abstract class ExplicitlyHydratedType<T, E extends HibernateException> extends AbstractSyntheticBasicType {
 
+	private static final Logger logger = LoggerFactory.getLogger(ExplicitlyHydratedType.class);
 	private final String[] regKeys = new String[] { };
 
 	private final Class<T> returnedType;
@@ -40,8 +43,13 @@ public class ExplicitlyHydratedType<T, E extends HibernateException> extends Abs
 	@Override
 	public Object hydrate(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
 			throws HibernateException, SQLException {
-		return function.apply(Optional.ofNullable(assertResultSet(rs).getCurrentRow())
+		Object value = function.apply(Optional.ofNullable(assertResultSet(rs).getCurrentRow())
 				.orElseThrow(() -> new HibernateException("NULL returned by ResultSet")));
+
+		logger.trace(String.format("extracted value ([%s] : [%s]) -> [%s]", getAttributeName(), getSqlTypeName(),
+				value.toString()));
+
+		return value;
 	}
 
 	public HandledFunction<Object, T, E> getFunction() {
@@ -69,5 +77,7 @@ public class ExplicitlyHydratedType<T, E extends HibernateException> extends Abs
 		// TODO Auto-generated method stub
 		return false;
 	}
+
+	public abstract String getAttributeName();
 
 }

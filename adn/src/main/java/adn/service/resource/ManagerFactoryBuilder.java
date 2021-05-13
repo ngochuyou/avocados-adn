@@ -72,6 +72,8 @@ import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplem
 import adn.service.resource.storage.ResultSetMetaDataImpl;
 
 /**
+ * Build an SessionFactory using default configurations which were hard-coded
+ * 
  * @author Ngoc Huy
  *
  */
@@ -136,7 +138,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 
 				@Override
 				public ConfigurationService apply(SessionFactoryImplementor sfi) {
-					return disableHbm2DdlAuto(sfi.getServiceRegistry().getService(ConfigurationService.class));
+					return getDefaultConfigurations(sfi.getServiceRegistry().getService(ConfigurationService.class));
 				}
 				
 			},
@@ -242,6 +244,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 
 	private StandardServiceRegistry createStandardServiceRegistry(SessionFactoryImplementor sfi,
 			BootstrapServiceRegistry bootstrapServiceRegistry, ProvidedService<?>... additional) {
+		logger.trace(String.format("Building [%s]", StandardServiceRegistry.class));
 		// @formatter:off
 		serviceRegistry = new StandardServiceRegistryImpl(
 				bootstrapServiceRegistry,
@@ -265,6 +268,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 		@Override
 		public SessionFactoryServiceRegistry buildServiceRegistry(SessionFactoryImplementor sessionFactory,
 				SessionFactoryOptions sessionFactoryOptions) {
+			logger.trace(String.format("Building [%s]", SessionFactoryServiceRegistry.class));
 			// @formatter:off
 			SessionFactoryServiceRegistryImpl delegatedService = new SessionFactoryServiceRegistryImpl(
 					sfi.getServiceRegistry(), // we want to use the service registry from the original SessionFactoryImpl as the parent
@@ -278,50 +282,53 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 
 	}
 
+	private static final String CONFIGURATION_FRIENDLY_NONE_VALUE = "none";
+
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private ConfigurationService disableHbm2DdlAuto(ConfigurationService cfgService) {
+	private ConfigurationService getDefaultConfigurations(ConfigurationService cfgService) {
 		final Map settings = new HashMap<>();
 		// @formatter:off
-		final Map<String, Consumer<Map>> disablingFuntions = Map.of(
+		final Map<String, Consumer<Map>> defaultSettings = Map.of(
 				AvailableSettings.HBM2DDL_AUTO, (settingMap) -> {
-					logger.trace(String.format("Disabling setting [%s] -> [%s]", AvailableSettings.HBM2DDL_AUTO, Action.NONE));
-					settings.put(AvailableSettings.HBM2DDL_AUTO, Action.NONE);
+					traceSetting(AvailableSettings.HBM2DDL_AUTO, Action.NONE);
+					settings.put(AvailableSettings.HBM2DDL_AUTO, CONFIGURATION_FRIENDLY_NONE_VALUE);
 				},
 				AvailableSettings.HBM2DDL_SCRIPTS_ACTION, (settingMap) -> {
-					logger.trace(String.format("Disabling setting [%s] -> [%s]", AvailableSettings.HBM2DDL_SCRIPTS_ACTION, Action.NONE));
-					settings.put(AvailableSettings.HBM2DDL_SCRIPTS_ACTION, Action.NONE);
+					traceSetting(AvailableSettings.HBM2DDL_SCRIPTS_ACTION, Action.NONE);
+					settings.put(AvailableSettings.HBM2DDL_SCRIPTS_ACTION, CONFIGURATION_FRIENDLY_NONE_VALUE);
 				},
 				AvailableSettings.HBM2DDL_DATABASE_ACTION, (settingMap) -> {
-					logger.trace(String.format("Disabling setting [%s] -> [%s]", AvailableSettings.HBM2DDL_DATABASE_ACTION, Action.NONE));
-					settings.put(AvailableSettings.HBM2DDL_DATABASE_ACTION, Action.NONE);
+					traceSetting(AvailableSettings.HBM2DDL_DATABASE_ACTION, Action.NONE);
+					settings.put(AvailableSettings.HBM2DDL_DATABASE_ACTION, CONFIGURATION_FRIENDLY_NONE_VALUE);
+				},
+				AvailableSettings.ALLOW_ENHANCEMENT_AS_PROXY, (settingMap) -> {
+					traceSetting(AvailableSettings.ALLOW_ENHANCEMENT_AS_PROXY, true);
+					settingMap.put(AvailableSettings.ALLOW_ENHANCEMENT_AS_PROXY, Boolean.TRUE);
+				},
+				AvailableSettings.USE_SECOND_LEVEL_CACHE, (settingMap) -> {
+					traceSetting(AvailableSettings.USE_SECOND_LEVEL_CACHE, true);
+					settingMap.put(AvailableSettings.USE_SECOND_LEVEL_CACHE, Boolean.TRUE);
 				}
-		);
-		final Map<String, Consumer<Map>> injectDefaultFunctions = Map.of(
-				AvailableSettings.HBM2DDL_SCRIPTS_ACTION, disablingFuntions.get(AvailableSettings.HBM2DDL_SCRIPTS_ACTION),
-				AvailableSettings.HBM2DDL_DATABASE_ACTION, disablingFuntions.get(AvailableSettings.HBM2DDL_DATABASE_ACTION)
 		);
 		// @formatter:on
 		cfgService.getSettings().entrySet().stream().forEach(e -> {
 			Map.Entry<Object, Object> entry = (Map.Entry<Object, Object>) e;
 
-			if (disablingFuntions.containsKey(entry.getKey())) {
-				disablingFuntions.get(entry.getKey()).accept(settings);
-				return;
-			}
-
 			settings.put(entry.getKey(), entry.getValue());
-			return;
 		});
-		injectDefaultFunctions.entrySet().stream().forEach(entry -> {
+		defaultSettings.entrySet().stream().forEach(entry -> {
 			if (settings.containsKey(entry.getKey())) {
 				return;
 			}
 
-			logger.trace(String.format("Injecting default setting [%s]", entry.getKey()));
 			entry.getValue().accept(settings);
 		});
 
 		return new ConfigurationServiceImpl(settings);
+	}
+
+	private void traceSetting(String settingName, Object value) {
+		logger.trace(String.format("Setting default setting [%s] -> [%s]", settingName, value));
 	}
 
 	private EntityManagerFactoryImplementor build(SessionFactoryImplementor hibernateSessionFactoryInstance,
@@ -352,6 +359,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 
 	private void scanPackages() {
 		logger.trace("Scanning packages");
+
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
 		scanner.addIncludeFilter(new AnnotationTypeFilter(LocalResource.class));

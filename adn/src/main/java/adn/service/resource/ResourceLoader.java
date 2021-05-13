@@ -8,7 +8,11 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.hibernate.HibernateException;
+import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
+import org.hibernate.loader.CollectionAliases;
+import org.hibernate.loader.EntityAliases;
+import org.hibernate.persister.entity.Loadable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -23,6 +27,7 @@ public class ResourceLoader extends AbstractLoader {
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	public ResourceLoader(ResourcePersister<?> persister) {
+		super(persister.getFactory());
 		this.persister = persister;
 	}
 
@@ -70,6 +75,36 @@ public class ResourceLoader extends AbstractLoader {
 	@Override
 	public ResourcePersister<?> getPersister() {
 		return persister;
+	}
+
+	@Override
+	public String getSQLString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	protected Loadable[] getEntityPersisters() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	protected LockMode[] getLockModes(LockOptions lockOptions) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	protected EntityAliases[] getEntityAliases() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	protected CollectionAliases[] getCollectionAliases() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

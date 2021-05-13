@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.factory.EntityPersisterImplementor;
 import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplementor;
-import adn.service.resource.storage.ResultSetMetaDataImpl;
 import adn.service.resource.type.AbstractSyntheticBasicType;
 import adn.service.resource.type.ExplicitlyHydratedType;
 
@@ -49,7 +48,8 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 
 		@SuppressWarnings("unchecked")
 		Iterator<Property> declaredPropertyIterator = persistentClass.getDeclaredPropertyIterator();
-		ResultSetMetaDataImplementor rsMetadata = ResultSetMetaDataImpl.INSTANCE;
+		ResultSetMetaDataImplementor rsMetadata = creationContext.getSessionFactory().getServiceRegistry()
+				.getService(ResultSetMetaDataImplementor.class);
 
 		if (persistentClass.hasIdentifierProperty()) {
 			addResultSetMetadataColumn(rsMetadata, persistentClass.getIdentifierProperty().getType(),
@@ -78,6 +78,7 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		}
 
 		rsMetadata.getAccess().addColumn(propertyName);
+		return;
 	}
 
 	@Override

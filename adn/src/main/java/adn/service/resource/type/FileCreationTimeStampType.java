@@ -9,9 +9,7 @@ import java.util.Date;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.type.AbstractStandardBasicType;
 import org.hibernate.type.TimestampType;
-import org.hibernate.type.descriptor.JdbcTypeNameMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,12 +42,8 @@ public class FileCreationTimeStampType extends AbstractFieldBasedSyntheticBasicT
 			throws HibernateException, SQLException {
 		Date stamp = ResourceIdentifierPart.getCreationTimeStamp(rs.getString(referencedFieldName));
 
-		logger.debug(String.format("extracted value ([%s] : [%s]) - [%s]", names[0],
-				basicType instanceof AbstractStandardBasicType
-						? JdbcTypeNameMapper.getTypeName(
-								((AbstractStandardBasicType<?>) basicType).getSqlTypeDescriptor().getSqlType())
-						: basicType.getName(),
-				stamp.toString()));
+		logger.debug(
+				String.format("extracted value ([%s] : [%s]) - [%s]", names[0], getSqlTypeName(), stamp.toString()));
 
 		return stamp;
 	}

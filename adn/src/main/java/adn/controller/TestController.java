@@ -15,6 +15,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.hibernate.LockMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +33,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 import adn.security.SecurityConfiguration;
 import adn.service.resource.ResourceSession;
-import adn.service.resource.model.models.FileByBytes;
+import adn.service.resource.model.models.FileResource;
 
 /**
  * @author Ngoc Huy
@@ -203,8 +204,10 @@ public class TestController extends BaseController {
 
 	@GetMapping("/file/public/image/session-load")
 	public @ResponseBody ResponseEntity<?> testGetImageBytes() {
-		session.load(FileByBytes.class, filename);
+		FileResource file = session.load(FileResource.class, filename);
 
+		session.lock(file, LockMode.OPTIMISTIC);
+		
 		return ResponseEntity.ok(null);
 	}
 

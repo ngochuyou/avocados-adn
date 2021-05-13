@@ -15,9 +15,11 @@ import org.hibernate.engine.jdbc.Size;
 import org.hibernate.engine.spi.Mapping;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.type.AbstractStandardBasicType;
 import org.hibernate.type.BasicType;
 import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.Type;
+import org.hibernate.type.descriptor.JdbcTypeNameMapper;
 import org.springframework.util.Assert;
 
 import adn.helpers.StringHelper;
@@ -266,6 +268,13 @@ public abstract class AbstractSyntheticBasicType implements BasicType {
 	public boolean[] toColumnNullness(Object value, Mapping mapping) {
 		// TODO Auto-generated method stub
 		return basicType.toColumnNullness(value, mapping);
+	}
+
+	protected String getSqlTypeName() {
+		return basicType instanceof AbstractStandardBasicType
+				? JdbcTypeNameMapper
+						.getTypeName(((AbstractStandardBasicType<?>) basicType).getSqlTypeDescriptor().getSqlType())
+				: basicType.getName();
 	}
 
 	protected ResourceResultSet assertResultSet(ResultSet rs) throws HibernateException {

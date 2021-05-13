@@ -17,11 +17,13 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.RowSelection;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PostLoadEvent;
 import org.hibernate.event.spi.PreLoadEvent;
+import org.hibernate.loader.Loader;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.loader.spi.AfterLoadAction;
 import org.hibernate.persister.entity.Loadable;
@@ -35,7 +37,15 @@ import adn.service.resource.storage.LocalResourceStorage.ResultSetImplementor;
  * @author Ngoc Huy
  *
  */
-public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessionUnwrapper {
+public abstract class AbstractLoader extends Loader implements UniqueEntityLoader, SharedSessionUnwrapper {
+
+	/**
+	 * @param factory
+	 */
+	public AbstractLoader(SessionFactoryImplementor factory) {
+		super(factory);
+		// TODO Auto-generated constructor stub
+	}
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
