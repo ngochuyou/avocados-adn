@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.metamodel.type;
+package adn.service.resource.type;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

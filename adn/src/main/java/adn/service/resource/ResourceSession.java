@@ -23,26 +23,21 @@ import adn.application.context.ContextProvider;
 @Component
 @RequestScope
 @Lazy
-public class LocalResourceSession extends SessionImpl implements SessionImplementor, ResourceManager, EventSource {
+public class ResourceSession extends SessionImpl implements SessionImplementor, ResourceManager, EventSource {
 
 	private static final long serialVersionUID = 1L;
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Autowired
-	public LocalResourceSession() {
+	public ResourceSession() {
 		super(ContextProvider.getLocalResourceSessionFactory(),
 				new SessionFactoryImpl.SessionBuilderImpl<>(ContextProvider.getLocalResourceSessionFactory()));
 		logger.debug(String.format("Creating new instance of [%s]", this.getClass().getName()));
 	}
 
-	@SuppressWarnings("unchecked")
-	private <T> ResourcePersister<T> locatePersister(Class<T> clazz) {
-		return (ResourcePersister<T>) getFactory().getMetamodel().entityPersister(clazz);
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T> ResourcePersister<T> locatePersister(String name) {
-		return (ResourcePersister<T>) getFactory().getMetamodel().entityPersister(name);
+	@Override
+	public ResourcePersister<?> getEntityPersister(String entityName, Object object) {
+		return (ResourcePersister<?>) super.getEntityPersister(entityName, object);
 	}
 
 }

@@ -23,7 +23,6 @@ public class ResourceLoader extends AbstractLoader {
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	public ResourceLoader(ResourcePersister<?> persister) {
-		// TODO Auto-generated constructor stub
 		this.persister = persister;
 	}
 
@@ -40,6 +39,7 @@ public class ResourceLoader extends AbstractLoader {
 		logger.debug(String.format("Loading resource %s", id));
 
 		List<?> result;
+
 		try {
 			result = doLoad(id, manager, persister, lockOptions);
 
@@ -51,7 +51,7 @@ public class ResourceLoader extends AbstractLoader {
 				throw new IllegalStateException("More than one resource were found with identifier " + id);
 			}
 
-			logger.debug(String.format("Done loading", id.toString()));
+			logger.debug(String.format("Done loading [%s]", id.toString()));
 
 			return result.get(0);
 		} catch (HibernateException | SQLException e) {
@@ -69,7 +69,6 @@ public class ResourceLoader extends AbstractLoader {
 
 	@Override
 	public ResourcePersister<?> getPersister() {
-		// TODO Auto-generated method stub
 		return persister;
 	}
 

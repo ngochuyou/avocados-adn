@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.metamodel.type;
+package adn.service.resource.type;
 
 import org.hibernate.dialect.Dialect;
 import org.hibernate.type.DiscriminatorType;

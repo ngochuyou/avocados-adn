@@ -8,10 +8,10 @@ import java.util.Date;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.Version;
 
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Persister;
+import org.hibernate.annotations.Proxy;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.TypeDefs;
@@ -20,8 +20,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import adn.service.resource.LocalResource;
 import adn.service.resource.ResourcePersisterImpl;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
-import adn.service.resource.metamodel.type.FileCreationTimeStampType;
-import adn.service.resource.metamodel.type.FileExtensionType;
+import adn.service.resource.type.FileCreationTimeStampType;
+import adn.service.resource.type.FileExtensionType;
 
 /**
  * @author Ngoc Huy
@@ -36,6 +36,7 @@ import adn.service.resource.metamodel.type.FileExtensionType;
 	@TypeDef(name = FileExtensionType.NAME, typeClass = FileExtensionType.class)
 })
 //@formatter:on
+@Proxy(lazy = false)
 public class FileResource implements Resource {
 
 	@Id
@@ -46,7 +47,6 @@ public class FileResource implements Resource {
 	@Type(type = FileCreationTimeStampType.NAME)
 	private Date createdDate;
 
-	@Version
 	@UpdateTimestamp
 	private Date lastModified;
 

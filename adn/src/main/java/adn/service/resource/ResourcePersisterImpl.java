@@ -1,6 +1,8 @@
 package adn.service.resource;
 
 import java.io.Serializable;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Iterator;
 
 import org.hibernate.HibernateException;
@@ -13,6 +15,7 @@ import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
 import org.hibernate.metadata.ClassMetadata;
+import org.hibernate.persister.entity.Loadable;
 import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.property.access.spi.PropertyAccess;
@@ -21,11 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
-import adn.service.resource.metamodel.EntityPersisterImplementor;
-import adn.service.resource.metamodel.type.AbstractSyntheticBasicType;
-import adn.service.resource.metamodel.type.ExplicitlyHydratedType;
+import adn.service.resource.factory.EntityPersisterImplementor;
 import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplementor;
 import adn.service.resource.storage.ResultSetMetaDataImpl;
+import adn.service.resource.type.AbstractSyntheticBasicType;
+import adn.service.resource.type.ExplicitlyHydratedType;
 
 /**
  * @author Ngoc Huy
@@ -130,9 +133,30 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 	@Override
 	public Object load(Serializable id, Object optionalObject, LockOptions lockOptions,
 			SharedSessionContractImplementor session) throws HibernateException {
-		logger.trace(String.format("Loading with id [%s]", id));
-
 		return resourceLoader.load(id, optionalObject, session, lockOptions);
+	}
+
+	@Override
+	public Object load(Serializable id, Object optionalObject, LockOptions lockOptions,
+			SharedSessionContractImplementor session, Boolean readOnly) throws HibernateException {
+		return resourceLoader.load(id, optionalObject, session, lockOptions, readOnly);
+	}
+
+	@Override
+	public Object[] hydrate(ResultSet rs, Serializable id, Object object, Loadable rootLoadable,
+			String[][] suffixedPropertyColumns, boolean allProperties, SharedSessionContractImplementor session)
+			throws SQLException, HibernateException {
+		logger.trace(String.format("[Row-Hydrate: %s]", id.toString()));
+
+		Type[] propertyTypes = getPropertyTypes();
+		int n = propertyTypes.length;
+		Object[] values = new Object[n];
+
+		for (int i = 0; i < n; i++) {
+			values[i] = propertyTypes[i].hydrate(rs, getPropertyColumnNames(i), session, object);
+		}
+
+		return values;
 	}
 
 }

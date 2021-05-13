@@ -34,7 +34,7 @@ import org.hibernate.property.access.spi.PropertyAccess;
 
 import adn.service.resource.storage.LocalResourceStorage.ResultSetImplementor;
 import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplementor;
-import adn.service.resource.storage.ResultSetMetaDataImpl.AccessImpl.NonPropertyAccess;
+import adn.service.resource.storage.ResultSetMetaDataImpl.AccessImpl.PropertyAccessHolder;
 
 public class ResourceResultSet implements ResultSetImplementor {
 
@@ -127,7 +127,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 		PropertyAccess propertyAccess = metadata.getPropertyAccess(columnIndex);
 
-		if (propertyAccess instanceof NonPropertyAccess) {
+		if (propertyAccess instanceof PropertyAccessHolder) {
 			return null;
 		}
 

@@ -253,17 +253,18 @@ public abstract class AbstractLoader implements UniqueEntityLoader, SharedSessio
 			List<AfterLoadAction> afterLoadActions) {
 		if (lockOptions == null || lockOptions.getLockMode() == LockMode.NONE
 				|| lockOptions.getLockMode() == LockMode.UPGRADE_SKIPLOCKED) {
-			logger.debug(String.format("Skipping %s on %s", LockMode.NONE, id.toString()));
+			logger.trace(String.format("Skipping [%s] on [%s]", LockMode.NONE, id.toString()));
 
 			return;
 		}
 
-		logger.debug("Applying " + lockOptions.getLockMode() + " on " + id);
+		logger.debug(String.format("Applying [%s] on [%s]", lockOptions.getLockMode(), id.toString()));
 
 		afterLoadActions.add(new AfterLoadAction() {
 			@Override
 			public void afterLoad(SharedSessionContractImplementor session, Object entity, Loadable persister) {
-				// TODO Auto-generated method stub
+				logger.trace(String.format("Performing version check on [%s#%s]", entity.getClass().getName(),
+						id.toString()));
 				unwrapSession(session).unwrapManager(SessionImplementor.class).buildLockRequest(lockOptions)
 						.lock(persister.getEntityName(), entity);
 			}

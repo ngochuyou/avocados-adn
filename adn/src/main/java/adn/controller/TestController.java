@@ -31,7 +31,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 import adn.security.SecurityConfiguration;
-import adn.service.resource.LocalResourceSession;
+import adn.service.resource.ResourceSession;
 import adn.service.resource.model.models.FileByBytes;
 
 /**
@@ -197,17 +197,15 @@ public class TestController extends BaseController {
 	}
 
 	@Autowired
-	private LocalResourceSession session;
+	private ResourceSession session;
+
+	private String filename = "1619973416467_0c46022fcfda4d9f4bb8c09e8c42e9efc12d839d35c78c73e4dab1d24fac8a1c.jpg";
 
 	@GetMapping("/file/public/image/session-load")
 	public @ResponseBody ResponseEntity<?> testGetImageBytes() {
-		String filename = "1619973416467_0c46022fcfda4d9f4bb8c09e8c42e9efc12d839d35c78c73e4dab1d24fac8a1c.jpg";
+		session.load(FileByBytes.class, filename);
 
-		logger.debug(String.format("Session type -> [%s]", session.getClass()));
-
-		FileByBytes file = session.load(FileByBytes.class, filename);
-
-		return ResponseEntity.ok(file);
+		return ResponseEntity.ok(null);
 	}
 
 }

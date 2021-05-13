@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.metamodel.type;
+package adn.service.resource.type;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;

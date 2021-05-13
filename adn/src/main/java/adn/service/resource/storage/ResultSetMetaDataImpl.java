@@ -7,6 +7,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Currency;
@@ -218,13 +219,22 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 
 		private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-		private void addColumn(String name, int index) {
+		private boolean putColumn(String name, int index) {
 			if (columnIndexMap.containsKey(name)) {
 				logger.trace(String.format("Ignoring duplicated property [%s]", name));
-				return;
+				return false;
 			}
 
 			columnIndexMap.put(name, index);
+			return true;
+		}
+
+		private void registerColumn(String name, int index, PropertyAccess access) {
+			if (putColumn(name, index)) {
+				propertyAccessors.add(access);
+				logger.trace(String.format("Registered new column [name, index, access] -> [%s, %s, %s]", name, index,
+						access.toString()));
+			}
 		}
 
 		@Override
@@ -233,12 +243,15 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 
 			int nextIndex = getNextColumnIndex();
 
-			logger.trace(String.format("Adding column [%s] <index: [%d]>", name, nextIndex));
+			logger.trace(String.format("Trying to add column [%s]", name));
 
 			try {
-				if (File.class.getDeclaredField(name) != null) {
-					addColumn(name, nextIndex);
-					propertyAccessors.add(new DirectAccess(File.class.getDeclaredField(name)));
+				Field field;
+
+				if ((field = File.class.getDeclaredField(name)) != null) {
+					if (Modifier.isPublic(field.getModifiers())) {
+						registerColumn(name, nextIndex, new DirectAccess(File.class.getDeclaredField(name)));
+					}
 				}
 			} catch (NoSuchFieldException nsfe) {
 				logger.trace(String.format("[%s] not found, trying to locate getter", name));
@@ -250,8 +263,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 					throw nsfe;
 				}
 
-				addColumn(name, nextIndex);
-				propertyAccessors.add(pa);
+				registerColumn(name, nextIndex, pa);
 			} catch (SecurityException se) {
 				logger.trace(String.format("[%s] found on [%s], trying to find getter", SecurityException.class, name));
 
@@ -263,8 +275,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 							String.format("Unable to locate field [%s] in [%s]", name, File.class));
 				}
 
-				addColumn(name, nextIndex);
-				propertyAccessors.add(pa);
+				registerColumn(name, nextIndex, pa);
 			}
 		}
 
@@ -294,12 +305,19 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 
 						return getter;
 					}
+
+					@Override
+					public String toString() {
+						return String.format("<%s:%s>", GetterMethodImpl.class.getSimpleName(),
+								getGetter().getMember().getName());
+					}
+
 				};
 			} catch (NoSuchMethodException | SecurityException pnfe) {
-				logger.trace("Failed to locate getter, trying " + LiteralNamedPropertyAccess.class.getName());
+				logger.trace("Failed to locate getter, trying " + LiterallyNamedPropertyAccess.class.getName());
 
 				try {
-					return new LiteralNamedPropertyAccess(File.class, name);
+					return new LiterallyNamedPropertyAccess(File.class, name);
 				} catch (NoSuchMethodException | SecurityException e) {
 					logger.trace(String.format("Literal getter not found for [%s]", name));
 
@@ -308,13 +326,12 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 			}
 		}
 
-		public class LiteralNamedPropertyAccess implements PropertyAccess {
+		public class LiterallyNamedPropertyAccess implements PropertyAccess {
 
 			private final Getter getter;
 
-			public LiteralNamedPropertyAccess(Class<?> owner, String literalMethodName_aka_FieldName)
+			public LiterallyNamedPropertyAccess(Class<?> owner, String literalMethodName_aka_FieldName)
 					throws NoSuchMethodException, SecurityException {
-				// TODO Auto-generated constructor stub
 				getter = new GetterMethodImpl(owner, literalMethodName_aka_FieldName,
 						owner.getDeclaredMethod(literalMethodName_aka_FieldName));
 			}
@@ -329,9 +346,8 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 							String propertyName) {
 
 						try {
-							return new LiteralNamedPropertyAccess(containerJavaType, propertyName);
+							return new LiterallyNamedPropertyAccess(containerJavaType, propertyName);
 						} catch (NoSuchMethodException | SecurityException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 							return null;
 						}
@@ -347,6 +363,12 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 			@Override
 			public Setter getSetter() {
 				return null;
+			}
+
+			@Override
+			public String toString() {
+				return String.format("<%s:%s>", LiterallyNamedPropertyAccess.class.getSimpleName(),
+						getGetter().getMember().getName());
 			}
 
 		}
@@ -371,7 +393,6 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 						try {
 							return new DirectAccess(containerJavaType.getDeclaredField(propertyName));
 						} catch (NoSuchFieldException | SecurityException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 							return null;
 						}
@@ -389,6 +410,11 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 				return null;
 			}
 
+			@Override
+			public String toString() {
+				return String.format("<%s:%s>", DirectAccess.class.getSimpleName(), getGetter().getMember().getName());
+			}
+
 			public class DirectGetter implements Getter {
 
 				private final Field field;
@@ -404,7 +430,6 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 					try {
 						return field.get(owner);
 					} catch (IllegalArgumentException | IllegalAccessException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 						return null;
 					}
@@ -413,31 +438,26 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 				@Override
 				public Object getForInsert(Object owner, @SuppressWarnings("rawtypes") Map mergeMap,
 						SharedSessionContractImplementor session) {
-
 					return null;
 				}
 
 				@Override
 				public Class<?> getReturnType() {
-
 					return field.getType();
 				}
 
 				@Override
 				public Member getMember() {
-
 					return field;
 				}
 
 				@Override
 				public String getMethodName() {
-
 					return null;
 				}
 
 				@Override
 				public Method getMethod() {
-
 					return null;
 				}
 
@@ -445,7 +465,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 
 		}
 
-		private final NonPropertyAccess holder = new NonPropertyAccess();
+		private final PropertyAccessHolder holder = new PropertyAccessHolder();
 
 		@Override
 		public void addExplicitlyHydratedColumn(String name) {
@@ -453,15 +473,13 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 
 			int nextIndex = getNextColumnIndex();
 
-			logger.trace(String.format("Adding explicitly hydrated column [%s] <index: %d>", name, nextIndex));
-
-			addColumn(name, nextIndex);
-			propertyAccessors.add(holder);
+			logger.trace(String.format("Trying to add explicitly hydrated column [%s]", name));
+			registerColumn(name, nextIndex, holder);
 		}
 
-		public class NonPropertyAccess implements PropertyAccess {
+		public class PropertyAccessHolder implements PropertyAccess {
 
-			private NonPropertyAccess() {}
+			private PropertyAccessHolder() {}
 
 			@Override
 			public PropertyAccessStrategy getPropertyAccessStrategy() {
@@ -478,6 +496,11 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 				return null;
 			}
 
+			@Override
+			public String toString() {
+				return String.format("<%s>", PropertyAccessHolder.class.getSimpleName());
+			}
+
 		}
 
 		@Override
@@ -486,9 +509,8 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 
 			int nextIndex = getNextColumnIndex();
 
-			logger.trace(String.format("Adding synthesized column [%s] <index: %d>", name, nextIndex));
-			addColumn(name, nextIndex);
-			propertyAccessors.add(holder);
+			logger.trace(String.format("Trying to add synthesized column [%s]", name));
+			registerColumn(name, nextIndex, holder);
 		}
 
 	}
@@ -496,7 +518,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 	@Override
 	public PropertyAccess getPropertyAccess(String name) throws IllegalArgumentException, SQLException {
 		if (!columnIndexMap.containsKey(name)) {
-			throw new IllegalArgumentException("Column [" + name + "] not found");
+			throw new IllegalArgumentException(String.format("Column [%s] not found", name));
 		}
 
 		return getPropertyAccess(columnIndexMap.get(name));
@@ -529,7 +551,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 					.map(entry -> entry.getKey() + "|" + entry.getValue())
 					.collect(Collectors.joining(", ")),
 				columnIndexMap.entrySet().stream()
-					.map(entry -> entry.getValue() + " -> " + propertyAccessors.get(entry.getValue()).getClass().toString())
+					.map(entry -> entry.getValue() + " -> " + propertyAccessors.get(entry.getValue()).toString())
 					.collect(Collectors.joining("\n\t\t")));
 		// @formatter:on
 	}

@@ -1,13 +1,12 @@
 /**
  * 
  */
-package adn.service.resource.metamodel;
+package adn.service.resource.factory;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 
 import adn.service.resource.ResourcePersister;
-import adn.service.resource.factory.EntityManagerFactoryImplementor;
 
 /**
  * @author Ngoc Huy

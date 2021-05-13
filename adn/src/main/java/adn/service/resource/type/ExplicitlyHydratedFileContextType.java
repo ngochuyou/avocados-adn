@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.metamodel.type;
+package adn.service.resource.type;
 
 import org.hibernate.HibernateException;
 import org.hibernate.type.BinaryType;

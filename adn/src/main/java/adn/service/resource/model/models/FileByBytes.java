@@ -8,11 +8,12 @@ import java.util.Date;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 
+import org.hibernate.annotations.Proxy;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import adn.service.resource.LocalResource;
-import adn.service.resource.metamodel.type.ExplicitlyHydratedFileContextType;
+import adn.service.resource.type.ExplicitlyHydratedFileContextType;
 
 /**
  * @author Ngoc Huy
@@ -21,6 +22,7 @@ import adn.service.resource.metamodel.type.ExplicitlyHydratedFileContextType;
 @LocalResource
 @Entity
 @TypeDef(name = ExplicitlyHydratedFileContextType.NAME, typeClass = ExplicitlyHydratedFileContextType.class)
+@Proxy(lazy = false)
 public class FileByBytes extends FileResource {
 
 	@Column(nullable = false)
