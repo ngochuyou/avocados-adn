@@ -10,7 +10,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.type.TypeResolver;
 
 import adn.service.resource.ResourcePersister;
-import adn.service.resource.storage.LocalResourceStorage;
+import adn.service.resource.engine.LocalResourceStorage;
 
 /**
  * @author Ngoc Huy

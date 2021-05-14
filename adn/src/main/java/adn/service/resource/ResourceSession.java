@@ -7,6 +7,7 @@ import org.hibernate.FlushMode;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
+import org.hibernate.internal.SessionFactoryImpl.SessionBuilderImpl;
 import org.hibernate.internal.SessionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
 import adn.application.context.ContextProvider;
+import adn.service.resource.connection.ConnectionBuilder;
 
 /**
  * @author Ngoc Huy
@@ -30,11 +32,11 @@ public class ResourceSession extends SessionImpl implements SessionImplementor, 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private static Access access = new Access();
-	private static SessionCreationOptions SESSION_CREATION_OPTIONS_FOR_SPRING;
+	private static SessionCreationOptions SESSION_CREATION_OPTIONS;
 
 	@Autowired
 	public ResourceSession() {
-		super(ContextProvider.getLocalResourceSessionFactory(), SESSION_CREATION_OPTIONS_FOR_SPRING);
+		super(ContextProvider.getLocalResourceSessionFactory(), SESSION_CREATION_OPTIONS);
 
 		logger.debug(String.format("Creating new instance of [%s]", this.getClass().getName()));
 
@@ -51,8 +53,11 @@ public class ResourceSession extends SessionImpl implements SessionImplementor, 
 
 		private Access() {}
 
-		public void injectSessionCreationOptions(SessionFactoryImpl sfi) {
-			SESSION_CREATION_OPTIONS_FOR_SPRING = new SessionFactoryImpl.SessionBuilderImpl<>(sfi);
+		public void createSessionCreationOptions(SessionFactoryImpl sfi) {
+			SessionBuilderImpl<?> options = new SessionFactoryImpl.SessionBuilderImpl<>(sfi);
+
+			options.connection(ConnectionBuilder.INSTANCE.createConnection());
+			SESSION_CREATION_OPTIONS = options;
 		}
 
 	}
@@ -62,6 +67,10 @@ public class ResourceSession extends SessionImpl implements SessionImplementor, 
 			throw new IllegalAccessException(String.format("Access to [%s] was closed", SessionCreationOptions.class));
 		}
 		return access;
+	}
+
+	public static void closeAccess() {
+		access = null;
 	}
 
 }

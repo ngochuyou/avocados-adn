@@ -52,18 +52,18 @@ public class StringHelper extends StringUtils {
 			+ "\\u205F" // MEDIUM MATHEMATICAL SPACE
 			+ "\\u3000"; // IDEOGRAPHIC SPACE
 
-	public static final String MULTIPLE_MATCHES_WHITESPACE_CHARS = "[" + WHITESPACE_CHARS + "]";
+	public static final String ONE_OF_WHITESPACE_CHARS = "[" + WHITESPACE_CHARS + "]";
 
 	private static MessageDigest SHA_256_MD = null;
-	
+
 	private static SecureRandom random = new SecureRandom();
-	
+
 	static {
 		try {
 			SHA_256_MD = MessageDigest.getInstance("SHA-256");
-			
+
 			byte[] salt = new byte[16];
-			
+
 			random.nextBytes(salt);
 			SHA_256_MD.update(salt);
 		} catch (NoSuchAlgorithmException nsae) {
@@ -74,7 +74,7 @@ public class StringHelper extends StringUtils {
 
 	public static String hash(String input) {
 		byte[] hashedPassword = SHA_256_MD.digest(input.getBytes(StandardCharsets.UTF_8));
-		
+
 		StringBuilder sb = new StringBuilder();
 
 		for (byte b : hashedPassword)
@@ -125,6 +125,16 @@ public class StringHelper extends StringUtils {
 		}
 
 		return ("" + s.charAt(0)).toLowerCase() + s.substring(1);
+	}
+
+	public static String getFirstWord(String str) {
+		for (int i = 0; i < str.length(); i++) {
+			if (("" + str.charAt(i)).matches(ONE_OF_WHITESPACE_CHARS)) {
+				return str.substring(0, i);
+			}
+		}
+
+		return str;
 	}
 
 }

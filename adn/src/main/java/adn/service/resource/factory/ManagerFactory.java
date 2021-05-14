@@ -10,7 +10,7 @@ import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.service.ServiceRegistry;
 import org.springframework.util.Assert;
 
-import adn.service.resource.storage.LocalResourceStorage;
+import adn.service.resource.engine.LocalResourceStorage;
 
 /**
  * @author Ngoc Huy

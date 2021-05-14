@@ -203,9 +203,13 @@ public class TestController extends BaseController {
 
 	@GetMapping("/file/public/image/session-load")
 	public @ResponseBody ResponseEntity<?> testGetImageBytes() {
-		FileResource file = session.load(FileResource.class, filename);
+		FileResource file = new FileResource();
 
-		file.getLastModified();
+		file.setName("new_file");
+		file.setExtension(".jpg");
+
+		session.save(file);
+		session.flush();
 
 		return ResponseEntity.ok(null);
 	}

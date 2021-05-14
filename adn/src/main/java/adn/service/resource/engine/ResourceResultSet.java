@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.storage;
+package adn.service.resource.engine;
 
 import static adn.helpers.FunctionHelper.reject;
 
@@ -32,9 +32,9 @@ import java.util.function.Function;
 
 import org.hibernate.property.access.spi.PropertyAccess;
 
-import adn.service.resource.storage.LocalResourceStorage.ResultSetImplementor;
-import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplementor;
-import adn.service.resource.storage.ResultSetMetaDataImpl.AccessImpl.PropertyAccessHolder;
+import adn.service.resource.engine.LocalResourceStorage.ResultSetImplementor;
+import adn.service.resource.engine.LocalResourceStorage.ResultSetMetaDataImplementor;
+import adn.service.resource.engine.ResultSetMetaDataImpl.AccessImpl.PropertyAccessHolder;
 
 public class ResourceResultSet implements ResultSetImplementor {
 

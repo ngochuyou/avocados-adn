@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.storage;
+package adn.service.resource.engine;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.property.access.spi.Getter;
 import org.hibernate.property.access.spi.GetterMethodImpl;
@@ -28,8 +29,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import adn.helpers.StringHelper;
-import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplementor;
-import adn.service.resource.storage.ResultSetMetaDataImpl.AccessImpl.DirectAccess;
+import adn.service.resource.engine.LocalResourceStorage.ResultSetMetaDataImplementor;
+import adn.service.resource.engine.ResultSetMetaDataImpl.AccessImpl.DirectAccess;
 
 /**
  * @author Ngoc Huy
@@ -314,10 +315,10 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 
 				};
 			} catch (NoSuchMethodException | SecurityException pnfe) {
-				logger.trace("Failed to locate getter, trying " + LiterallyNamedPropertyAccess.class.getName());
+				logger.trace("Failed to locate getter, trying " + LiteralNamedGetterPropertyAccess.class.getName());
 
 				try {
-					return new LiterallyNamedPropertyAccess(File.class, name);
+					return new LiteralNamedGetterPropertyAccess(File.class, name);
 				} catch (NoSuchMethodException | SecurityException e) {
 					logger.trace(String.format("Literal getter not found for [%s]", name));
 
@@ -326,11 +327,35 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 			}
 		}
 
-		public class LiterallyNamedPropertyAccess implements PropertyAccess {
+		public class LiteralNamedGetterPropertyAccess implements PropertyAccess {
 
 			private final Getter getter;
+			private final Setter ignoringSetter = new Setter() {
 
-			public LiterallyNamedPropertyAccess(Class<?> owner, String literalMethodName_aka_FieldName)
+				@Override
+				public void set(Object target, Object value, SessionFactoryImplementor factory) {
+					logger.trace("Ignored by setter");
+				}
+
+				@Override
+				public String getMethodName() {
+					return "ignoredSet";
+				}
+
+				@Override
+				public Method getMethod() {
+					try {
+						return this.getClass().getDeclaredMethod("set", Object.class, Object.class,
+								SessionFactoryImplementor.class);
+					} catch (NoSuchMethodException | SecurityException e) {
+						e.printStackTrace();
+						return null;
+					}
+				}
+
+			};
+
+			public LiteralNamedGetterPropertyAccess(Class<?> owner, String literalMethodName_aka_FieldName)
 					throws NoSuchMethodException, SecurityException {
 				getter = new GetterMethodImpl(owner, literalMethodName_aka_FieldName,
 						owner.getDeclaredMethod(literalMethodName_aka_FieldName));
@@ -346,7 +371,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 							String propertyName) {
 
 						try {
-							return new LiterallyNamedPropertyAccess(containerJavaType, propertyName);
+							return new LiteralNamedGetterPropertyAccess(containerJavaType, propertyName);
 						} catch (NoSuchMethodException | SecurityException e) {
 							e.printStackTrace();
 							return null;
@@ -362,12 +387,12 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 
 			@Override
 			public Setter getSetter() {
-				return null;
+				return ignoringSetter;
 			}
 
 			@Override
 			public String toString() {
-				return String.format("<%s:%s>", LiterallyNamedPropertyAccess.class.getSimpleName(),
+				return String.format("<%s:%s>", LiteralNamedGetterPropertyAccess.class.getSimpleName(),
 						getGetter().getMember().getName());
 			}
 
@@ -539,6 +564,11 @@ public class ResultSetMetaDataImpl implements ResultSetMetaDataImplementor {
 		}
 
 		return columnIndexMap.get(name);
+	}
+
+	@Override
+	public List<PropertyAccess> getPropertyAccessors() {
+		return propertyAccessors;
 	}
 
 	@Override

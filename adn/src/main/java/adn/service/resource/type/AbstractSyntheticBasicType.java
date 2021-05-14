@@ -23,7 +23,7 @@ import org.hibernate.type.descriptor.JdbcTypeNameMapper;
 import org.springframework.util.Assert;
 
 import adn.helpers.StringHelper;
-import adn.service.resource.storage.ResourceResultSet;
+import adn.service.resource.engine.ResourceResultSet;
 
 /**
  * @author Ngoc Huy

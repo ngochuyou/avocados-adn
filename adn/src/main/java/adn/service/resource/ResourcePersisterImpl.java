@@ -1,7 +1,6 @@
 package adn.service.resource;
 
 import java.io.Serializable;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
@@ -23,9 +22,9 @@ import org.hibernate.type.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import adn.service.resource.engine.LocalResourceStorage.ResultSetMetaDataImplementor;
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.factory.EntityPersisterImplementor;
-import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplementor;
 import adn.service.resource.type.AbstractSyntheticBasicType;
 import adn.service.resource.type.ExplicitlyHydratedType;
 
@@ -142,24 +141,6 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		}
 
 		return values;
-	}
-
-	@Override
-	public int dehydrate(Serializable id, Object[] fields, Object rowId, boolean[] includeProperty,
-			boolean[][] includeColumns, int j, PreparedStatement ps, SharedSessionContractImplementor session,
-			int index, boolean isUpdate) throws SQLException, HibernateException {
-		logger.trace("[Entity-Dehydrate: %s]", id.toString());
-
-		return super.dehydrate(id, fields, rowId, includeProperty, includeColumns, j, ps, session, index, isUpdate);
-	}
-
-	@Override
-	public void insert(Serializable id, Object[] fields, Object object, SharedSessionContractImplementor session) {
-		preInsertInMemoryValueGeneration(fields, object, session);
-
-		insert(id, fields, deleteCallable, batchSize, ROWID_ALIAS, object, session);
-
-		super.insert(id, fields, object, session);
 	}
 
 }

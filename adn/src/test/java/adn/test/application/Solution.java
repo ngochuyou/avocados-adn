@@ -3,8 +3,7 @@
  */
 package adn.test.application;
 
-import java.sql.Timestamp;
-import java.util.Date;
+import adn.helpers.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -19,7 +18,7 @@ public class Solution {
 	 */
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException {
 		// TODO Auto-generated method stub
-		System.out.println(Date.class.isAssignableFrom(Timestamp.class));
+		System.out.println(StringHelper.getFirstWord("Tran Vu Ngoc huy"));
 	}
 
 }

@@ -1,17 +1,21 @@
 /**
  * 
  */
-package adn.service.resource.storage;
+package adn.service.resource.engine;
 
 import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.List;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.SessionFactoryObserver;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.service.Service;
+
+import adn.service.resource.engine.query.Query;
+import adn.service.resource.template.ResourceTemplate;
 
 /**
  * @author Ngoc Huy
@@ -25,11 +29,13 @@ public interface LocalResourceStorage extends Service {
 
 	String DEFAULT_USER_PHOTO_NAME = "aad81c87bd8316705c4568e72577eb62476a.jpg";
 
-	boolean isExists(String filename);
+	void registerTemplate(ResourceTemplate template) throws IllegalArgumentException;
 
 	ResultSetImplementor select(Serializable identifier);
 
 	ResultSetImplementor select(Serializable[] identifier);
+
+	ResultSetImplementor query(Query query);
 
 	void lock(Serializable identifier);
 
@@ -56,6 +62,8 @@ public interface LocalResourceStorage extends Service {
 		PropertyAccess getPropertyAccess(String name) throws IllegalArgumentException, SQLException;
 
 		PropertyAccess getPropertyAccess(int index) throws IllegalArgumentException, SQLException;
+
+		List<PropertyAccess> getPropertyAccessors();
 
 		int getIndex(String name);
 

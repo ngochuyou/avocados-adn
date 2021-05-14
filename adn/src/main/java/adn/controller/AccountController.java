@@ -29,7 +29,7 @@ import adn.model.Result;
 import adn.model.entities.Account;
 import adn.model.factory.extraction.AccountRoleExtractor;
 import adn.model.models.AccountModel;
-import adn.service.resource.storage.LocalResourceStorage;
+import adn.service.resource.engine.LocalResourceStorage;
 import adn.service.services.AccountService;
 import adn.service.services.FileService;
 

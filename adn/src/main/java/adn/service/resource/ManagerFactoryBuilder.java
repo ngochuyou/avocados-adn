@@ -40,6 +40,7 @@ import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
 import org.hibernate.internal.FastSessionServices;
+import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.persister.spi.PersisterFactory;
 import org.hibernate.property.access.internal.PropertyAccessStrategyFieldImpl;
@@ -63,14 +64,14 @@ import org.springframework.util.Assert;
 
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
+import adn.service.resource.engine.LocalResourceStorage;
+import adn.service.resource.engine.LocalResourceStorage.ResultSetMetaDataImplementor;
+import adn.service.resource.engine.ResultSetMetaDataImpl;
 import adn.service.resource.factory.BootstrapContextImpl;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.factory.ManagerFactory;
 import adn.service.resource.factory.MetadataBuildingOptionsImpl;
-import adn.service.resource.storage.LocalResourceStorage;
-import adn.service.resource.storage.LocalResourceStorage.ResultSetMetaDataImplementor;
-import adn.service.resource.storage.ResultSetMetaDataImpl;
 
 /**
  * Build an SessionFactory using default configurations which were hard-coded
@@ -332,9 +333,6 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 
 		MetadataImplementor metadata = MetadataBuildingProcess.build(metadataSources, bootstrapContext,
 				metadataBuildingOptions);
-
-		metadata.getEntityBindings().stream().forEach(ele -> logger.trace(String.format("[%s]", ele.getEntityName())));
-
 		SessionFactoryOptionsBuilder optionsBuilder = new SessionFactoryOptionsBuilder(serviceRegistry,
 				bootstrapContext);
 
@@ -357,7 +355,9 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 			public void sessionFactoryCreated(SessionFactory factory) {
 				try {
 					if (factory instanceof SessionFactoryImpl) {
-						ResourceSession.getAccess().injectSessionCreationOptions((SessionFactoryImpl) factory);
+						ResourceSession.getAccess().createSessionCreationOptions((SessionFactoryImpl) factory);
+						ResourceSession.closeAccess();
+						logger.trace(String.format("Closing access to [%s]", SessionCreationOptions.class));
 						return;
 					}
 

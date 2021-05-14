@@ -15,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import adn.helpers.StringHelper;
 import adn.service.Service;
 import adn.service.ServiceResult;
-import adn.service.resource.storage.LocalResourceStorage;
+import adn.service.resource.engine.LocalResourceStorage;
 
 @org.springframework.stereotype.Service
 public class FileService implements Service {

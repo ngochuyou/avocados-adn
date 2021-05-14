@@ -50,7 +50,7 @@ import adn.model.ModelManager;
 import adn.model.entities.Account;
 import adn.model.entities.Admin;
 import adn.security.SecurityConfiguration;
-import adn.service.resource.storage.LocalResourceStorage;
+import adn.service.resource.engine.LocalResourceStorage;
 
 /**
  * @author Ngoc Huy
