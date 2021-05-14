@@ -15,7 +15,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.hibernate.LockMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -206,8 +205,8 @@ public class TestController extends BaseController {
 	public @ResponseBody ResponseEntity<?> testGetImageBytes() {
 		FileResource file = session.load(FileResource.class, filename);
 
-		session.lock(file, LockMode.OPTIMISTIC);
-		
+		file.getLastModified();
+
 		return ResponseEntity.ok(null);
 	}
 

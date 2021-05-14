@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import org.hibernate.EntityMode;
 import org.hibernate.SessionFactory;
+import org.hibernate.SessionFactoryObserver;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.cfgxml.spi.CfgXmlAccessService;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
@@ -177,7 +178,6 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 	// @formatter:on
 	@Override
 	public void buildAfterStartUp() throws Exception {
-
 		logger.info(getLoggingPrefix(this) + "Building " + this.getClass());
 		// @formatter:off
 		logger.trace("\n\n"
@@ -288,7 +288,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 	private ConfigurationService getDefaultConfigurations(ConfigurationService cfgService) {
 		final Map settings = new HashMap<>();
 		// @formatter:off
-		final Map<String, Consumer<Map>> defaultSettings = Map.of(
+		final Map<String, Consumer<Map>> overridenSettings = Map.of(
 				AvailableSettings.HBM2DDL_AUTO, (settingMap) -> {
 					traceSetting(AvailableSettings.HBM2DDL_AUTO, Action.NONE);
 					settings.put(AvailableSettings.HBM2DDL_AUTO, CONFIGURATION_FRIENDLY_NONE_VALUE);
@@ -316,13 +316,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 
 			settings.put(entry.getKey(), entry.getValue());
 		});
-		defaultSettings.entrySet().stream().forEach(entry -> {
-			if (settings.containsKey(entry.getKey())) {
-				return;
-			}
-
-			entry.getValue().accept(settings);
-		});
+		overridenSettings.entrySet().stream().forEach(entry -> entry.getValue().accept(settings));
 
 		return new ConfigurationServiceImpl(settings);
 	}
@@ -338,6 +332,9 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 
 		MetadataImplementor metadata = MetadataBuildingProcess.build(metadataSources, bootstrapContext,
 				metadataBuildingOptions);
+
+		metadata.getEntityBindings().stream().forEach(ele -> logger.trace(String.format("[%s]", ele.getEntityName())));
+
 		SessionFactoryOptionsBuilder optionsBuilder = new SessionFactoryOptionsBuilder(serviceRegistry,
 				bootstrapContext);
 
@@ -353,8 +350,24 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 		return sf;
 	}
 
+	@SuppressWarnings("serial")
 	private void addSessionFactoryObservers(SessionFactoryOptionsBuilder optionsBuilder) {
-		optionsBuilder.addSessionFactoryObservers(ResultSetMetaDataImpl.INSTANCE);
+		optionsBuilder.addSessionFactoryObservers(ResultSetMetaDataImpl.INSTANCE, new SessionFactoryObserver() {
+			@Override
+			public void sessionFactoryCreated(SessionFactory factory) {
+				try {
+					if (factory instanceof SessionFactoryImpl) {
+						ResourceSession.getAccess().injectSessionCreationOptions((SessionFactoryImpl) factory);
+						return;
+					}
+
+					throw new IllegalArgumentException();
+				} catch (IllegalAccessException | IllegalArgumentException ex) {
+					ex.printStackTrace();
+					SpringApplication.exit(ContextProvider.getApplicationContext());
+				}
+			}
+		});
 	}
 
 	private void scanPackages() {

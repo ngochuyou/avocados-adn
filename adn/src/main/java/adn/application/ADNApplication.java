@@ -29,7 +29,6 @@ import adn.application.context.ContextProvider;
 public class ADNApplication {
 
 	public static void main(String[] args) {
-		// TODO: Auto-generated stuff
 		SpringApplication.run(ADNApplication.class, args);
 	}
 

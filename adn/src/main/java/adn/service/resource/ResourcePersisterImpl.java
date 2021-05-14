@@ -1,6 +1,7 @@
 package adn.service.resource;
 
 import java.io.Serializable;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
@@ -9,7 +10,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
@@ -35,7 +35,7 @@ import adn.service.resource.type.ExplicitlyHydratedType;
  * @param <D>
  */
 public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
-		implements ResourcePersister<D>, EntityPersisterImplementor<D>, ClassMetadata, SharedSessionUnwrapper {
+		implements EntityPersisterImplementor<D>, ClassMetadata, SharedSessionUnwrapper {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -84,22 +84,6 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 	@Override
 	public EntityManagerFactoryImplementor getFactory() {
 		return (EntityManagerFactoryImplementor) super.getFactory();
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public ResourcePersister<D> getSubclassEntityPersister(Object instance, SessionFactoryImplementor factory) {
-		if (!hasSubclasses()) {
-			return null;
-		}
-
-		final String concreteEntityName = getEntityTuplizer().determineConcreteSubclassEntityName(instance, factory);
-
-		if (concreteEntityName == null || getEntityName().equals(concreteEntityName)) {
-			return this;
-		}
-
-		return (ResourcePersister<D>) getFactory().getEntityPersister(concreteEntityName);
 	}
 
 	@Override
@@ -158,6 +142,24 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		}
 
 		return values;
+	}
+
+	@Override
+	public int dehydrate(Serializable id, Object[] fields, Object rowId, boolean[] includeProperty,
+			boolean[][] includeColumns, int j, PreparedStatement ps, SharedSessionContractImplementor session,
+			int index, boolean isUpdate) throws SQLException, HibernateException {
+		logger.trace("[Entity-Dehydrate: %s]", id.toString());
+
+		return super.dehydrate(id, fields, rowId, includeProperty, includeColumns, j, ps, session, index, isUpdate);
+	}
+
+	@Override
+	public void insert(Serializable id, Object[] fields, Object object, SharedSessionContractImplementor session) {
+		preInsertInMemoryValueGeneration(fields, object, session);
+
+		insert(id, fields, deleteCallable, batchSize, ROWID_ALIAS, object, session);
+
+		super.insert(id, fields, object, session);
 	}
 
 }
