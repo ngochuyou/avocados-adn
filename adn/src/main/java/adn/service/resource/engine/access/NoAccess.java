@@ -10,7 +10,6 @@ import java.util.Map;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.property.access.spi.Getter;
-import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.property.access.spi.PropertyAccessStrategy;
 import org.hibernate.property.access.spi.Setter;
 
@@ -19,7 +18,7 @@ import org.hibernate.property.access.spi.Setter;
  *
  */
 @SuppressWarnings("serial")
-public class NoAccess implements PropertyAccess {
+public class NoAccess extends AbstractPropertyAccess {
 
 	static final Getter NO_OP_GETTER = new Getter() {
 
@@ -80,21 +79,13 @@ public class NoAccess implements PropertyAccess {
 		}
 	};
 
-	NoAccess() {}
+	NoAccess() {
+		super(NO_OP_GETTER, NO_OP_SETTER);
+	}
 
 	@Override
 	public PropertyAccessStrategy getPropertyAccessStrategy() {
 		return PropertyAccessStrategyFactory.NO_ACCESS_STRATEGY;
-	}
-
-	@Override
-	public Getter getGetter() {
-		return NO_OP_GETTER;
-	}
-
-	@Override
-	public Setter getSetter() {
-		return NO_OP_SETTER;
 	}
 
 }

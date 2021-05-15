@@ -3,6 +3,9 @@
  */
 package adn.helpers;
 
+import java.lang.reflect.Method;
+import java.util.Optional;
+
 /**
  * @author Ngoc Huy
  *
@@ -21,6 +24,14 @@ public class FunctionHelper {
 
 	public static <T, E extends Throwable> T reject(E ex, Class<E> type) throws E {
 		throw ex;
+	}
+
+	public static Optional<Method> getMethod(Class<?> owner, String methodName, Class<?> paramTypes) {
+		try {
+			return Optional.of(owner.getDeclaredMethod(methodName, paramTypes));
+		} catch (NoSuchMethodException | SecurityException e) {
+			return Optional.ofNullable(null);
+		}
 	}
 
 	@FunctionalInterface

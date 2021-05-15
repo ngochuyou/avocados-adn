@@ -8,7 +8,6 @@ import java.util.Optional;
 
 import org.hibernate.property.access.spi.Getter;
 import org.hibernate.property.access.spi.GetterFieldImpl;
-import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.property.access.spi.PropertyAccessStrategy;
 import org.hibernate.property.access.spi.Setter;
 import org.hibernate.property.access.spi.SetterFieldImpl;
@@ -19,10 +18,7 @@ import javassist.Modifier;
  * @author Ngoc Huy
  *
  */
-public class DirectAccess implements PropertyAccess {
-
-	private final Getter getter;
-	private final Setter setter;
+public class DirectAccess extends AbstractPropertyAccess {
 
 	DirectAccess(Class<?> owner, String fieldName) throws IllegalArgumentException {
 		try {
@@ -36,7 +32,6 @@ public class DirectAccess implements PropertyAccess {
 			getter = new GetterFieldImpl(owner, fieldName, field);
 			setter = new SetterFieldImpl(owner, fieldName, field);
 		} catch (NoSuchFieldException | SecurityException e) {
-			e.printStackTrace();
 			throw new IllegalArgumentException(e);
 		}
 	}
@@ -67,7 +62,6 @@ public class DirectAccess implements PropertyAccess {
 
 			return Optional.of(new SetterFieldImpl(owner, fieldName, field));
 		} catch (NoSuchFieldException | SecurityException e) {
-			e.printStackTrace();
 			return Optional.ofNullable(null);
 		}
 	}
@@ -78,13 +72,9 @@ public class DirectAccess implements PropertyAccess {
 	}
 
 	@Override
-	public Getter getGetter() {
-		return getter;
-	}
-
-	@Override
-	public Setter getSetter() {
-		return setter;
+	public String toString() {
+		return String.format("%s(fieldName=[%s])", this.getClass().getSimpleName(),
+				((Field) getter.getMember()).getName());
 	}
 
 }

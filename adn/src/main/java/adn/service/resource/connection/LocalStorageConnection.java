@@ -5,7 +5,7 @@ package adn.service.resource.connection;
 
 import java.sql.Connection;
 
-import adn.service.resource.template.ResourceTemplate;
+import adn.service.resource.engine.template.ResourceTemplate;
 
 /**
  * @author Ngoc Huy

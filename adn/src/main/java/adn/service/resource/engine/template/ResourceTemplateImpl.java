@@ -1,7 +1,10 @@
 /**
  * 
  */
-package adn.service.resource.template;
+package adn.service.resource.engine.template;
+
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.hibernate.property.access.spi.PropertyAccess;
 
@@ -51,6 +54,21 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 	@Override
 	public Class<?> getSystemType() {
 		return systemType;
+	}
+
+	@Override
+	public String toString() {
+		// @formatter:off
+		return String.format("%s:%s\n"
+				+ "\t-systemType: %s\n"
+				+ "\t-columnNames: [%s]\n"
+				+ "\t-columnTypes: [%s]\n"
+				+ "\t-accessors: [\n\t\t-%s\n\t]", this.getClass().getSimpleName(), name,
+				systemType,
+				Stream.of(columnNames).collect(Collectors.joining(", ")),
+				Stream.of(columnTypes).map(type -> type.getName()).collect(Collectors.joining(", ")),
+				Stream.of(accessors).map(access -> access.toString()).collect(Collectors.joining("\n\t\t-")));
+		// @formatter:on
 	}
 
 }

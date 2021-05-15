@@ -65,7 +65,6 @@ import org.springframework.util.Assert;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
 import adn.service.resource.engine.LocalStorage;
-import adn.service.resource.engine.LocalStorage.ResultSetMetaDataImplementor;
 import adn.service.resource.engine.ResultSetMetaDataImpl;
 import adn.service.resource.factory.BootstrapContextImpl;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
@@ -108,7 +107,6 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 			CacheImplementor.class,
 			PersisterFactory.class,
 			SessionFactoryServiceRegistryFactory.class,
-			ResultSetMetaDataImplementor.class,
 			PropertyAccessStrategyResolver.class
 	));
 	private final BiFunction<SessionFactoryImplementor, Class<? extends Service>, ? extends Service> defaultServiceGetter = new BiFunction<>() {

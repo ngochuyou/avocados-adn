@@ -3,7 +3,6 @@
  */
 package adn.service.resource.engine.access;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Optional;
 
@@ -19,12 +18,9 @@ import adn.service.resource.engine.access.PropertyAccessStrategyFactory.Property
  * @author Ngoc Huy
  *
  */
-public class LiterallyNamedAccess implements PropertyAccessDelegate {
+public class LiterallyNamedAccess extends AbstractPropertyAccess implements PropertyAccessDelegate {
 
-	private final Getter getter;
-	private final Setter setter;
-
-	LiterallyNamedAccess(Class<?> owner, String fieldName) {
+	LiterallyNamedAccess(Class<?> owner, String fieldName, Class<?> paramType) {
 		this.getter = locateGetter(owner, fieldName).orElse(NoAccess.NO_OP_GETTER);
 
 		if (getter != NoAccess.NO_OP_GETTER) {
@@ -32,30 +28,27 @@ public class LiterallyNamedAccess implements PropertyAccessDelegate {
 			return;
 		}
 
-		this.setter = locateSetter(owner, fieldName).orElseThrow(() -> new IllegalArgumentException(
+		this.setter = locateSetter(owner, fieldName, paramType).orElseThrow(() -> new IllegalArgumentException(
 				String.format("Unable to locate neither getter nor setter access of [%s] for [%s#%s]",
 						LiterallyNamedAccess.class.getName(), owner.getName(), fieldName)));
 	}
 
 	static Optional<Getter> locateGetter(Class<?> owner, String fieldName_aka_methodname) {
 		try {
-			@SuppressWarnings("unused") // for exception catching only
-			Field field = owner.getDeclaredField(fieldName_aka_methodname);
 			Method method = owner.getDeclaredMethod(fieldName_aka_methodname);
 
 			return Optional.of(new GetterMethodImpl(owner, fieldName_aka_methodname, method));
-		} catch (NoSuchFieldException | SecurityException | NoSuchMethodException e) {
+		} catch (SecurityException | NoSuchMethodException e) {
 			return Optional.ofNullable(null);
 		}
 	}
 
-	static Optional<Setter> locateSetter(Class<?> owner, String fieldName_aka_methodname) {
+	static Optional<Setter> locateSetter(Class<?> owner, String fieldName_aka_methodname, Class<?> paramType) {
 		try {
-			Field field = owner.getDeclaredField(fieldName_aka_methodname);
-			Method method = owner.getDeclaredMethod(fieldName_aka_methodname, field.getType());
+			Method method = owner.getDeclaredMethod(fieldName_aka_methodname, paramType);
 
 			return Optional.of(new SetterMethodImpl(owner, fieldName_aka_methodname, method));
-		} catch (NoSuchFieldException | SecurityException | NoSuchMethodException e) {
+		} catch (SecurityException | NoSuchMethodException e) {
 			return Optional.ofNullable(null);
 		}
 	}
@@ -63,16 +56,6 @@ public class LiterallyNamedAccess implements PropertyAccessDelegate {
 	@Override
 	public PropertyAccessStrategy getPropertyAccessStrategy() {
 		return PropertyAccessStrategyFactory.LITERALLY_NAMED_ACCESS_STRATEGY;
-	}
-
-	@Override
-	public Getter getGetter() {
-		return getter;
-	}
-
-	@Override
-	public Setter getSetter() {
-		return setter;
 	}
 
 }

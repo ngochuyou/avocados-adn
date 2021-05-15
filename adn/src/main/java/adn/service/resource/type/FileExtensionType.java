@@ -3,63 +3,53 @@
  */
 package adn.service.resource.type;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.io.File;
 
 import org.apache.commons.io.FilenameUtils;
-import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.dialect.Dialect;
 import org.hibernate.type.DiscriminatorType;
 import org.hibernate.type.StringType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import adn.service.resource.model.models.Resource;
-import adn.service.resource.type.AbstractSyntheticBasicType.AbstractFieldBasedSyntheticBasicType;
 
 /**
  * @author Ngoc Huy
  *
  */
 @SuppressWarnings("serial")
-public class FileExtensionType extends AbstractFieldBasedSyntheticBasicType
-		implements DiscriminatorTypeImplementor<String> {
+public class FileExtensionType extends AbstractExplicitlyExtractedType<File, String>
+		implements DiscriminatorType<String>, NoOperationSet {
 
 	public static final String NAME = "adn.service.resource.metamodel.type.FileExtensionType";
 
-	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 	private final String[] regKeys = new String[] { NAME };
 
 	public FileExtensionType() {
-		this(Resource.RESOURCE_IDENTIFIER_ATTRIBUTE_NAME);
-	}
-
-	public FileExtensionType(String referencedFieldName) {
-		super(StringType.INSTANCE, referencedFieldName);
-	}
-
-	@Override
-	public Object hydrate(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
-			throws HibernateException, SQLException {
-		String value = "." + FilenameUtils.getExtension(rs.getString(referencedFieldName));
-
-		logger.debug(
-				String.format("extracted value ([%s] : [%s]) - [%s]", names[0], getSqlTypeName(), value.toString()));
-
-		return value;
+		super(StringType.INSTANCE.getSqlTypeDescriptor(), StringType.INSTANCE.getJavaTypeDescriptor());
 	}
 
 	@Override
 	public String[] getRegistrationKeys() {
-		// TODO Auto-generated method stub
 		return regKeys;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public DiscriminatorType<String> getDiscriminatorType() {
+	public String stringToObject(String xml) throws Exception {
+		return null;
+	}
+
+	@Override
+	public String getName() {
+		return NAME;
+	}
+
+	@Override
+	public String objectToSQLString(String value, Dialect dialect) throws Exception {
 		// TODO Auto-generated method stub
-		return (DiscriminatorType<String>) basicType;
+		return value;
+	}
+
+	@Override
+	public String apply(File file) {
+		return "." + FilenameUtils.getExtension(file.getName());
 	}
 
 }

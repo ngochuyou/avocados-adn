@@ -9,7 +9,6 @@ import java.util.Optional;
 
 import org.hibernate.property.access.spi.Getter;
 import org.hibernate.property.access.spi.GetterMethodImpl;
-import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.property.access.spi.PropertyAccessStrategy;
 import org.hibernate.property.access.spi.Setter;
 import org.hibernate.property.access.spi.SetterMethodImpl;
@@ -20,26 +19,23 @@ import adn.helpers.StringHelper;
  * @author Ngoc Huy
  *
  */
-public class StandardAccess implements PropertyAccess {
-
-	private final Getter getter;
-	private final Setter setter;
+public class StandardAccess extends AbstractPropertyAccess {
 
 	StandardAccess(Class<?> owner, String fieldName) throws IllegalArgumentException {
 		try {
-			this.getter = locateGetter(owner, fieldName).orElseThrow(() -> new NoSuchMethodException(
+			getter = locateGetter(owner, fieldName).orElseThrow(() -> new NoSuchMethodException(
 					String.format("Unable to locate getter in [%s%s]", owner.getName(), fieldName)));
-			this.setter = locateSetter(owner, fieldName).orElseThrow(() -> new NoSuchMethodException(
+			setter = locateSetter(owner, fieldName).orElseThrow(() -> new NoSuchMethodException(
 					String.format("Unable to locate setter in [%s%s]", owner.getName(), fieldName)));
 		} catch (SecurityException | NoSuchMethodException e) {
 			throw new IllegalArgumentException(e);
 		}
 	}
 
+	@SuppressWarnings("unused")
 	static Optional<Getter> locateGetter(Class<?> owner, String fieldName) {
 		try {
-			@SuppressWarnings("unused") // for exception catching only
-			Field field = owner.getDeclaredField(fieldName);
+			Field field = owner.getDeclaredField(fieldName); // for exception catching only
 			String getterName = StringHelper.toCamel(String.format("%s %s", "get", fieldName),
 					StringHelper.ONE_OF_WHITESPACE_CHARS);
 			Method getter = owner.getDeclaredMethod(getterName);
@@ -66,16 +62,6 @@ public class StandardAccess implements PropertyAccess {
 	@Override
 	public PropertyAccessStrategy getPropertyAccessStrategy() {
 		return PropertyAccessStrategyFactory.STANDARD_ACCESS_STRATEGY;
-	}
-
-	@Override
-	public Getter getGetter() {
-		return getter;
-	}
-
-	@Override
-	public Setter getSetter() {
-		return setter;
 	}
 
 }

@@ -20,13 +20,12 @@ import org.springframework.util.Assert;
 import adn.helpers.StringHelper;
 import adn.service.resource.engine.query.InsertQuery;
 import adn.service.resource.engine.query.Query;
-import adn.service.resource.template.ResourceTemplate;
+import adn.service.resource.engine.template.ResourceTemplate;
 
 /**
  * @author Ngoc Huy
  *
  */
-@SuppressWarnings("serial")
 @Component
 public class LocalStorageImpl implements LocalStorage {
 
@@ -52,15 +51,13 @@ public class LocalStorageImpl implements LocalStorage {
 
 	@Override
 	public ResultSetImplementor select(Serializable identifier) {
-		return new ResourceResultSet(
-				Arrays.asList(validate(new File(LocalStorage.IMAGE_FILE_DIRECTORY + identifier))));
+		return new ResourceResultSet(Arrays.asList(validate(new File(LocalStorage.IMAGE_FILE_DIRECTORY + identifier))));
 	}
 
 	@Override
 	public ResultSetImplementor select(Serializable[] identifiers) {
-		logger.debug("Selecting identifiers: "
-				+ Stream.of(identifiers).map(id -> LocalStorage.IMAGE_FILE_DIRECTORY + id.toString())
-						.collect(Collectors.joining(", ")));
+		logger.debug("Selecting identifiers: " + Stream.of(identifiers)
+				.map(id -> LocalStorage.IMAGE_FILE_DIRECTORY + id.toString()).collect(Collectors.joining(", ")));
 		// @formatter:off
 		return new ResourceResultSet(Stream.of(identifiers)
 				.map(id -> new File(LocalStorage.IMAGE_FILE_DIRECTORY + id.toString()))
@@ -104,6 +101,7 @@ public class LocalStorageImpl implements LocalStorage {
 	private void validateAndPutTemplate(ResourceTemplate template) {
 		validateTemplate(template);
 		templates.put(template.getName(), template);
+		logger.trace(String.format("Registered new resource template: [\n%s\n]", template.toString()));
 	}
 
 	private void validateTemplate(ResourceTemplate template) throws IllegalArgumentException {
@@ -119,7 +117,8 @@ public class LocalStorageImpl implements LocalStorage {
 				"Column names span and property accessors span must match");
 
 		for (int i = 0; i < span; i++) {
-			Assert.isTrue(StringHelper.hasLength(template.getColumnNames()[i]), "Column name must not be empty");
+			Assert.isTrue(StringHelper.hasLength(template.getColumnNames()[i]),
+					String.format("Column name must not be empty, found null at index [%s]", i));
 			Assert.notNull(template.getPropertyAccessors()[i],
 					String.format("Property access of column [%s] must not be null", template.getColumnNames()[i]));
 		}

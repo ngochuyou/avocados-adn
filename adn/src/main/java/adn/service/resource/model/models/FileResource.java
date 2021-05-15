@@ -3,6 +3,7 @@
  */
 package adn.service.resource.model.models;
 
+import java.io.File;
 import java.util.Date;
 
 import javax.persistence.Entity;
@@ -27,7 +28,7 @@ import adn.service.resource.type.FileExtensionType;
  * @author Ngoc Huy
  *
  */
-@LocalResource
+@LocalResource(systemType = File.class)
 @Entity
 @Persister(impl = ResourcePersisterImpl.class)
 // @formatter:off

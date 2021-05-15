@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adn.service.resource.engine.LocalStorage;
-import adn.service.resource.template.ResourceTemplate;
+import adn.service.resource.engine.template.ResourceTemplate;
 
 /**
  * @author Ngoc Huy

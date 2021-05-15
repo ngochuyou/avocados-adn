@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.template;
+package adn.service.resource.engine.template;
 
 import org.hibernate.property.access.spi.PropertyAccess;
 

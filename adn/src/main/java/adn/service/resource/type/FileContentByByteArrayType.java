@@ -1,30 +1,32 @@
 /**
  * 
  */
-package adn.service.resource.model.hydrate;
+package adn.service.resource.type;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.hibernate.HibernateException;
-
-import adn.helpers.FunctionHelper.HandledFunction;
+import org.hibernate.type.BinaryType;
 
 /**
  * @author Ngoc Huy
  *
  */
-public class FileBytesHydrateFunction implements HandledFunction<Object, byte[], HibernateException> {
+@SuppressWarnings("serial")
+public class FileContentByByteArrayType extends AbstractExplicitlyExtractedType<File, byte[]>
+		implements NoOperationSet {
 
-	public static final FileBytesHydrateFunction INSTANCE = new FileBytesHydrateFunction();
+	public static final String NAME = "adn.service.resource.metamodel.type.ExplicitlyHydratedFileContextType";
 	public static final int MAX_SIZE_IN_ONE_READ = 5 * 1024 * 1024; // 5MB
 
-	private FileBytesHydrateFunction() {}
+	public FileContentByByteArrayType() {
+		super(BinaryType.INSTANCE.getSqlTypeDescriptor(), BinaryType.INSTANCE.getJavaTypeDescriptor());
+	}
 
 	@Override
-	public byte[] apply(Object arg) throws HibernateException {
-		// TODO Auto-generated method stub
+	public byte[] apply(File arg) throws HibernateException {
 		try {
 			Path path = ((File) arg).toPath();
 
@@ -38,6 +40,11 @@ public class FileBytesHydrateFunction implements HandledFunction<Object, byte[],
 		} catch (Exception e) {
 			throw new HibernateException(e);
 		}
+	}
+
+	@Override
+	public String getName() {
+		return NAME;
 	}
 
 }

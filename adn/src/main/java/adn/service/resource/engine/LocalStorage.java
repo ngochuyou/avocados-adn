@@ -15,13 +15,13 @@ import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.service.Service;
 
 import adn.service.resource.engine.query.Query;
-import adn.service.resource.template.ResourceTemplate;
+import adn.service.resource.engine.template.ResourceTemplate;
 
 /**
  * @author Ngoc Huy
  *
  */
-public interface LocalStorage extends Service {
+public interface LocalStorage {
 
 	String LOCAL_DIRECTORY = "C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\";
 

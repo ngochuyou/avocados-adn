@@ -17,5 +17,7 @@ import java.lang.annotation.Target;
 public @interface LocalResource {
 
 	String name() default "";
-	
+
+	Class<?> systemType();
+
 }

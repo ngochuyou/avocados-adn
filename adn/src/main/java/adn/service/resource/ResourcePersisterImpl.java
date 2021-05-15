@@ -1,13 +1,9 @@
 package adn.service.resource;
 
 import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
-import javax.persistence.GeneratedValue;
-import javax.persistence.metamodel.Attribute;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
@@ -20,7 +16,6 @@ import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.loader.entity.UniqueEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.metadata.ClassMetadata;
-import org.hibernate.metamodel.model.domain.spi.EntityTypeDescriptor;
 import org.hibernate.persister.entity.Loadable;
 import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
@@ -28,10 +23,15 @@ import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.type.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
 import adn.service.resource.connection.LocalStorageConnection;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory;
+import adn.service.resource.engine.template.ResourceTemplateImpl;
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.factory.EntityPersisterImplementor;
+import adn.service.resource.type.AbstractExplicitlyExtractedType;
+import adn.service.resource.type.NoOperationSet;
 
 /**
  * @author Ngoc Huy
@@ -58,48 +58,69 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 
 	@Override
 	public void sessionFactoryCreated(SessionFactory factory) {
-		logger.trace(String.format("Registering template [%s]", getEntityName()));
-
 		SessionCreationOptions sessionCreationOptions = ResourceSession.getSessionCreationOptions();
 		Connection delegate = sessionCreationOptions.getConnection();
 
 		if (delegate instanceof LocalStorageConnection) {
-			try {
-				int span = getEntityMetamodel().getPropertySpan();
+			if (hasIdentifierProperty()) {
+				int span = getEntityMetamodel().getPropertySpan() + 1;
 				String[] columnNames = new String[span];
 				Class<?>[] columnTypes = new Class<?>[span];
 				PropertyAccess[] accessors = new PropertyAccess[span];
+				Class<?> systemType = getSystemType(getMappedClass());
 
-				if (hasIdentifierProperty()) {
-					columnNames[0] = getIdentifierPropertyName();
-					columnTypes[0] = getIdentifierType().getReturnedClass();
-					accessors[0] = determinePropertyAccess(getIdentifierPropertyName());
+				columnNames[0] = getIdentifierPropertyName();
+				columnTypes[0] = getIdentifierType().getReturnedClass();
+				accessors[0] = determinePropertyAccess(systemType, getIdentifierType(), getIdentifierPropertyName());
+
+				int i = 1;
+
+				for (String propertyName : getPropertyNames()) {
+					columnNames[i] = propertyName;
+					columnTypes[i] = getPropertyType(propertyName).getReturnedClass();
+					accessors[i] = determinePropertyAccess(systemType, getPropertyType(propertyName), propertyName);
+					i++;
 				}
 
-				LocalStorageConnection connection = delegate.unwrap(LocalStorageConnection.class);
-			} catch (SQLException e) {
-				e.printStackTrace();
+				LocalStorageConnection connection = (LocalStorageConnection) delegate;
+
+				logger.trace(String.format("Registering template [%s]", getEntityName()));
+				connection.registerTemplate(
+						new ResourceTemplateImpl(getEntityName(), systemType, columnNames, columnTypes, accessors));
+
 				return;
 			}
+
+			return;
 		}
+
+		throw new IllegalArgumentException(String.format(
+				"Unable to register resource template [%s] since connection mismatch, expect connection of type [%s]",
+				getEntityName(), LocalStorageConnection.class));
 	}
 
-	private PropertyAccess determinePropertyAccess(String name) {
-		EntityTypeDescriptor<D> descriptor = getFactory().getMetamodel().entity(getEntityName());
-		Attribute<? super D, ?> idAttribute = descriptor.getAttribute(name);
+	private Class<?> getSystemType(Class<?> entityType) {
+		LocalResource anno = entityType.getDeclaredAnnotation(LocalResource.class);
 
-		if (!(idAttribute.getJavaMember() instanceof Field)) {
-			throw new IllegalArgumentException(
-					String.format("Unable to locate [%s] for property named [%s]", PropertyAccess.class, name));
+		Assert.isTrue(anno != null && anno.systemType() != null,
+				String.format("[%s] System type must not be null", entityType.getName()));
+
+		return anno.systemType();
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T, R, E extends Throwable> PropertyAccess determinePropertyAccess(Class<T> systemType, Type type,
+			String name) {
+		if (type instanceof AbstractExplicitlyExtractedType) {
+			AbstractExplicitlyExtractedType<T, R> extractedType = (AbstractExplicitlyExtractedType<T, R>) type;
+
+			if (type instanceof NoOperationSet) {
+				return PropertyAccessStrategyFactory.HYBRID_ACCESS_STRATEGY.buildPropertyAccess(null, null,
+						extractedType::apply, null);
+			}
 		}
 
-		Field field = (Field) idAttribute.getJavaMember();
-
-		if (field.isAnnotationPresent(GeneratedValue.class)) {
-			return null;
-		}
-
-		return null;
+		return PropertyAccessStrategyFactory.DELEGATE_ACCESS_STRATEGY.buildPropertyAccess(systemType, name);
 	}
 
 	@Override
@@ -120,20 +141,7 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 
 	@Override
 	public PropertyAccess getPropertyAccess(int propertyIndex) {
-		// TODO Auto-generated method stub
 		return null;
-	}
-
-	@Override
-	public Serializable loadEntityIdByNaturalId(Object[] naturalIdValues, LockOptions lockOptions,
-			SharedSessionContractImplementor session) {
-		Object instance = getFactory().getStorage().select((Serializable) naturalIdValues[0]);
-
-		if (instance == null) {
-			return null;
-		}
-
-		return (Serializable) getIdentifierType().resolve(getIdentifier(instance), session, instance);
 	}
 
 	@Override
