@@ -30,7 +30,7 @@ import org.hibernate.persister.entity.Loadable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import adn.service.resource.engine.LocalResourceStorage.ResultSetImplementor;
+import adn.service.resource.engine.LocalStorage.ResultSetImplementor;
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
 
 /**

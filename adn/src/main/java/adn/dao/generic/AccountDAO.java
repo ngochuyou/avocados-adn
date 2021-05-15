@@ -19,7 +19,7 @@ import adn.model.Genetized;
 import adn.model.ModelManager;
 import adn.model.entities.Account;
 import adn.model.factory.extraction.AccountExtractor;
-import adn.service.resource.engine.LocalResourceStorage;
+import adn.service.resource.engine.LocalStorage;
 import adn.service.services.AccountService;
 
 /**
@@ -55,7 +55,7 @@ public class AccountDAO<T extends Account> extends EntityDAO<T> {
 				: StringHelper.normalizeString(model.getFirstName()));
 		model.setLastName(!StringHelper.hasLength(model.getLastName()) ? AccountService.UNKNOWN_USER_LASTNAME
 				: StringHelper.normalizeString(model.getLastName()));
-		model.setPhoto(!StringHelper.hasLength(model.getPhoto()) ? LocalResourceStorage.DEFAULT_USER_PHOTO_NAME : model.getPhoto());
+		model.setPhoto(!StringHelper.hasLength(model.getPhoto()) ? LocalStorage.DEFAULT_USER_PHOTO_NAME : model.getPhoto());
 
 		return model;
 	}

@@ -73,4 +73,8 @@ public class ResourceSession extends SessionImpl implements SessionImplementor, 
 		access = null;
 	}
 
+	public static SessionCreationOptions getSessionCreationOptions() {
+		return SESSION_CREATION_OPTIONS;
+	}
+
 }

@@ -64,8 +64,8 @@ import org.springframework.util.Assert;
 
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
-import adn.service.resource.engine.LocalResourceStorage;
-import adn.service.resource.engine.LocalResourceStorage.ResultSetMetaDataImplementor;
+import adn.service.resource.engine.LocalStorage;
+import adn.service.resource.engine.LocalStorage.ResultSetMetaDataImplementor;
 import adn.service.resource.engine.ResultSetMetaDataImpl;
 import adn.service.resource.factory.BootstrapContextImpl;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
@@ -95,7 +95,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 	private BootstrapContext bootstrapContext;
 
 	@Autowired
-	private LocalResourceStorage localStorage;
+	private LocalStorage localStorage;
 	// @formatter:off
 	private static final List<Class<? extends Service>> STANDARD_SERVICES_CLASSES = Collections.unmodifiableList(Arrays.asList(
 			MutableIdentifierGeneratorFactory.class,
@@ -164,14 +164,6 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 							return PropertyAccessStrategyFieldImpl.INSTANCE;
 						}
 					};
-				}
-				
-			},
-			ResultSetMetaDataImplementor.class, new Supplier<ResultSetMetaDataImplementor>() {
-
-				@Override
-				public ResultSetMetaDataImplementor get() {
-					return ResultSetMetaDataImpl.INSTANCE;
 				}
 				
 			}

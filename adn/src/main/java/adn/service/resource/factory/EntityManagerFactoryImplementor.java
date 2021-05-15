@@ -10,7 +10,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.type.TypeResolver;
 
 import adn.service.resource.ResourcePersister;
-import adn.service.resource.engine.LocalResourceStorage;
+import adn.service.resource.engine.LocalStorage;
 
 /**
  * @author Ngoc Huy
@@ -31,7 +31,7 @@ public interface EntityManagerFactoryImplementor extends SessionFactoryImplement
 		return null;
 	}
 
-	LocalResourceStorage getStorage();
+	LocalStorage getStorage();
 
 	@SuppressWarnings("unchecked")
 	default <D> ResourcePersister<D> getEntityPersister(Class<D> entityClass) {

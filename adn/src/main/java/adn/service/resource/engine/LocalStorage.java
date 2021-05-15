@@ -21,7 +21,7 @@ import adn.service.resource.template.ResourceTemplate;
  * @author Ngoc Huy
  *
  */
-public interface LocalResourceStorage extends Service {
+public interface LocalStorage extends Service {
 
 	String LOCAL_DIRECTORY = "C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\";
 

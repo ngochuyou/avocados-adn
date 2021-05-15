@@ -28,7 +28,7 @@ import adn.service.resource.template.ResourceTemplate;
  */
 @SuppressWarnings("serial")
 @Component
-public class LocalResourceStorageImpl implements LocalResourceStorage {
+public class LocalStorageImpl implements LocalStorage {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -36,7 +36,7 @@ public class LocalResourceStorageImpl implements LocalResourceStorage {
 	private final Map<String, ResourceTemplate> templates = new HashMap<>(8, .75f);
 
 	@Autowired
-	public LocalResourceStorageImpl() {}
+	public LocalStorageImpl() {}
 
 	public boolean isExists(String filename) {
 		// TODO Auto-generated method stub
@@ -47,23 +47,23 @@ public class LocalResourceStorageImpl implements LocalResourceStorage {
 
 	private File obtainImage(String filename) {
 
-		return new File(LocalResourceStorage.IMAGE_FILE_DIRECTORY + filename);
+		return new File(LocalStorage.IMAGE_FILE_DIRECTORY + filename);
 	}
 
 	@Override
 	public ResultSetImplementor select(Serializable identifier) {
 		return new ResourceResultSet(
-				Arrays.asList(validate(new File(LocalResourceStorage.IMAGE_FILE_DIRECTORY + identifier))));
+				Arrays.asList(validate(new File(LocalStorage.IMAGE_FILE_DIRECTORY + identifier))));
 	}
 
 	@Override
 	public ResultSetImplementor select(Serializable[] identifiers) {
 		logger.debug("Selecting identifiers: "
-				+ Stream.of(identifiers).map(id -> LocalResourceStorage.IMAGE_FILE_DIRECTORY + id.toString())
+				+ Stream.of(identifiers).map(id -> LocalStorage.IMAGE_FILE_DIRECTORY + id.toString())
 						.collect(Collectors.joining(", ")));
 		// @formatter:off
 		return new ResourceResultSet(Stream.of(identifiers)
-				.map(id -> new File(LocalResourceStorage.IMAGE_FILE_DIRECTORY + id.toString()))
+				.map(id -> new File(LocalStorage.IMAGE_FILE_DIRECTORY + id.toString()))
 				.map(this::validate).collect(Collectors.toList()));
 		// @formatter:on
 	}

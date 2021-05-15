@@ -10,7 +10,7 @@ import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.service.ServiceRegistry;
 import org.springframework.util.Assert;
 
-import adn.service.resource.engine.LocalResourceStorage;
+import adn.service.resource.engine.LocalStorage;
 
 /**
  * @author Ngoc Huy
@@ -20,11 +20,11 @@ public class ManagerFactory extends SessionFactoryImpl implements EntityManagerF
 
 	private static final long serialVersionUID = 1L;
 
-	private final LocalResourceStorage localStorage;
+	private final LocalStorage localStorage;
 
 	public ManagerFactory(
 	// @formatter:off
-			final LocalResourceStorage localStorage,
+			final LocalStorage localStorage,
 			final MetadataImplementor metadata,
 			final ServiceRegistry serviceRegistry,
 			final SessionFactoryOptions sessionFactoryOptions,
@@ -32,7 +32,7 @@ public class ManagerFactory extends SessionFactoryImpl implements EntityManagerF
 		// @formatter:on
 		super(metadata, sessionFactoryOptions, null);
 
-		Assert.notNull(localStorage, String.format("[%s] must not be null", LocalResourceStorage.class));
+		Assert.notNull(localStorage, String.format("[%s] must not be null", LocalStorage.class));
 		this.localStorage = localStorage;
 
 		modifyLoadEventListeners();
@@ -41,7 +41,7 @@ public class ManagerFactory extends SessionFactoryImpl implements EntityManagerF
 	private void modifyLoadEventListeners() {}
 
 	@Override
-	public LocalResourceStorage getStorage() {
+	public LocalStorage getStorage() {
 		return localStorage;
 	}
 

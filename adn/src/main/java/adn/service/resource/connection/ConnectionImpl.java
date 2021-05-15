@@ -24,25 +24,26 @@ import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import adn.service.resource.engine.LocalResourceStorage;
+import adn.service.resource.engine.LocalStorage;
+import adn.service.resource.template.ResourceTemplate;
 
 /**
  * @author Ngoc Huy
  *
  */
-class ConnectionImpl implements LocalResourceStorageConnection {
+class ConnectionImpl implements LocalStorageConnection {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private final LocalResourceStorage storage;
+	private final LocalStorage storage;
 
-	public ConnectionImpl(LocalResourceStorage storage) {
+	public ConnectionImpl(LocalStorage storage) {
 		this.storage = storage;
 	}
-
+	
 	@Override
-	public LocalResourceStorage getStorage() {
-		return storage;
+	public void registerTemplate(ResourceTemplate template) {
+		storage.registerTemplate(template);
 	}
 
 	@Override
@@ -52,7 +53,6 @@ class ConnectionImpl implements LocalResourceStorageConnection {
 
 	@Override
 	public boolean isWrapperFor(Class<?> iface) throws SQLException {
-
 		return false;
 	}
 

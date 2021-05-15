@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 
-import adn.service.resource.connection.LocalResourceStorageConnection;
+import adn.service.resource.connection.LocalStorageConnection;
 
 /**
  * @author Ngoc Huy
@@ -17,13 +17,13 @@ import adn.service.resource.connection.LocalResourceStorageConnection;
  */
 public class StatementImpl implements Statement {
 
-	private final LocalResourceStorageConnection connection;
+	private final LocalStorageConnection connection;
 
 	private static final int DEFAULT_FETCH_SIZE = 10;
 
 	private int fetchSize = DEFAULT_FETCH_SIZE;
 
-	public StatementImpl(LocalResourceStorageConnection connection) {
+	public StatementImpl(LocalStorageConnection connection) {
 		this.connection = connection;
 	}
 

@@ -32,7 +32,7 @@ import adn.service.resource.engine.StatementImpl;
  */
 public class PreparedStatementImpl extends StatementImpl implements PreparedStatement {
 
-	public PreparedStatementImpl(LocalResourceStorageConnection connection) {
+	public PreparedStatementImpl(LocalStorageConnection connection) {
 		super(connection);
 	}
 

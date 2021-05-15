@@ -29,7 +29,7 @@ import adn.model.Result;
 import adn.model.entities.Account;
 import adn.model.factory.extraction.AccountRoleExtractor;
 import adn.model.models.AccountModel;
-import adn.service.resource.engine.LocalResourceStorage;
+import adn.service.resource.engine.LocalStorage;
 import adn.service.services.AccountService;
 import adn.service.services.FileService;
 
@@ -110,7 +110,7 @@ public class AccountController extends BaseController {
 
 		if (Strings.isEmpty(username)) {
 			if (authentication == null) {
-				return fileService.getImageBytes(LocalResourceStorage.DEFAULT_USER_PHOTO_NAME);
+				return fileService.getImageBytes(LocalStorage.DEFAULT_USER_PHOTO_NAME);
 			}
 
 			username = authentication.getName();

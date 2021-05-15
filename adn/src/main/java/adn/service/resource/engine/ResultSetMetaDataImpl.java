@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import adn.helpers.StringHelper;
-import adn.service.resource.engine.LocalResourceStorage.ResultSetMetaDataImplementor;
+import adn.service.resource.engine.LocalStorage.ResultSetMetaDataImplementor;
 import adn.service.resource.engine.ResultSetMetaDataImpl.AccessImpl.DirectAccess;
 
 /**
