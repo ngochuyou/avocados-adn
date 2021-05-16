@@ -29,16 +29,22 @@ import adn.service.resource.type.FileExtensionType;
  * @author Ngoc Huy
  *
  */
-@LocalResource(systemType = File.class)
+// @formatter:off
+@LocalResource(
+	systemType = File.class,
+	columnNames = FileResource.ID_NAME,
+	constructorParameterTypes = String.class
+)
 @Entity
 @Persister(impl = ResourcePersisterImpl.class)
-// @formatter:off
 @TypeDefs(value = {
 	@TypeDef(name = FileCreationTimeStampType.NAME, typeClass = FileCreationTimeStampType.class),
 	@TypeDef(name = FileExtensionType.NAME, typeClass = FileExtensionType.class)
 })
 // @formatter:on
 public class FileResource implements Resource {
+
+	public static final String ID_NAME = "name";
 
 	@Id
 	@GeneratedValue(generator = DefaultResourceIdentifierGenerator.NAME)

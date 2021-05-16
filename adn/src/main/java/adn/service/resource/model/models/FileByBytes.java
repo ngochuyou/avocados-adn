@@ -20,7 +20,13 @@ import adn.service.resource.type.FileContentByByteArrayType;
  * @author Ngoc Huy
  *
  */
-@LocalResource(systemType = File.class)
+// @formatter:off
+@LocalResource(
+	systemType = File.class,
+	columnNames = FileResource.ID_NAME,
+	constructorParameterTypes = String.class
+)
+// @formatter:on
 @Entity
 @TypeDef(name = FileContentByByteArrayType.NAME, typeClass = FileContentByByteArrayType.class)
 @Proxy(lazy = false)

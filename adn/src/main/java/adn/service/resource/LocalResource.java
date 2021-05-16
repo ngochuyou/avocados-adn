@@ -20,6 +20,8 @@ public @interface LocalResource {
 
 	Class<?> systemType();
 
-	Class<?> instantiatorClass() default Void.class;
+	String[] columnNames() default { };
+
+	Class<?>[] constructorParameterTypes() default { };
 
 }

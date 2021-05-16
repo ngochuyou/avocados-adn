@@ -78,13 +78,9 @@ public abstract class AbstractPropertyAccess implements PropertyAccessBuilder {
 	}
 
 	@Override
-	public boolean isFieldRequired() {
-		return isFieldRequired;
-	}
-
-	@Override
-	public void setFieldRequired(boolean isFieldRequired) {
+	public PropertyAccessBuilder setFieldRequired(boolean isFieldRequired) {
 		this.isFieldRequired = isFieldRequired;
+		return this;
 	}
 
 	protected static Method tryToLocateSetterWithAlternativeParamTypes(Class<?> owner, Class<?> failedParamType,

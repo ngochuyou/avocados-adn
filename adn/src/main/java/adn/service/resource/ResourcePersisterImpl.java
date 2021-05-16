@@ -24,7 +24,9 @@ import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.property.access.spi.Getter;
 import org.hibernate.property.access.spi.PropertyAccess;
+import org.hibernate.property.access.spi.PropertyAccessStrategy;
 import org.hibernate.property.access.spi.Setter;
+import org.hibernate.tuple.Instantiator;
 import org.hibernate.type.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +38,7 @@ import adn.service.resource.connection.LocalStorageConnection;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.FunctionalPropertyAccess;
 import adn.service.resource.engine.template.ResourceTemplateImpl;
+import adn.service.resource.engine.tuple.InstantiatorFactory;
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.factory.EntityPersisterImplementor;
 import adn.service.resource.type.AbstractExplicitlyExtractedType;
@@ -70,37 +73,34 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		Connection delegate = sessionCreationOptions.getConnection();
 
 		if (delegate instanceof LocalStorageConnection) {
-			if (hasIdentifierProperty()) {
-				int span = getEntityMetamodel().getPropertySpan() + 1;
-				Class<?> systemType = getSystemType(getMappedClass());
-				String[] columnNames = new String[span];
-				Class<?>[] columnTypes = new Class<?>[span];
-				PropertyAccess[] accessors = new PropertyAccess[span];
+			int span = getEntityMetamodel().getPropertySpan() + 1;
+			Class<?> systemType = getSystemType(getMappedClass());
+			String[] columnNames = new String[span];
+			Class<?>[] columnTypes = new Class<?>[span];
+			Instantiator instantiator = determineInstantiator(systemType);
+			PropertyAccess[] accessors = new PropertyAccess[span];
 
-				columnNames[0] = getIdentifierColumnNames()[0];
-				columnTypes[0] = getIdentifierType().getReturnedClass();
-				accessors[0] = determinePropertyAccess(systemType, getIdentifierType(), getIdentifierPropertyName());
+			columnNames[0] = getIdentifierColumnNames()[0];
+			columnTypes[0] = getIdentifierType().getReturnedClass();
+			accessors[0] = determinePropertyAccess(systemType, getIdentifierType(), getIdentifierPropertyName());
 
-				String propertyName;
-				String propertyColumnName;
+			String propertyName;
+			String propertyColumnName;
 
-				for (int i = 0, j = 1; i < span - 1; i++, j++) {
-					propertyName = getPropertyNames()[i];
-					propertyColumnName = getPropertyColumnNames(i)[0];
+			for (int i = 0, j = 1; i < span - 1; i++, j++) {
+				propertyName = getPropertyNames()[i];
+				propertyColumnName = getPropertyColumnNames(i)[0];
 
-					columnNames[j] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName : propertyName;
-					columnTypes[j] = getPropertyType(propertyName).getReturnedClass();
-					accessors[j] = determinePropertyAccess(systemType, getPropertyType(propertyName), propertyName);
-				}
-
-				LocalStorageConnection connection = (LocalStorageConnection) delegate;
-
-				logger.trace(String.format("Registering template [%s]", getEntityName()));
-				connection.registerTemplate(
-						new ResourceTemplateImpl(getEntityName(), systemType, columnNames, columnTypes, accessors));
-
-				return;
+				columnNames[j] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName : propertyName;
+				columnTypes[j] = getPropertyType(propertyName).getReturnedClass();
+				accessors[j] = determinePropertyAccess(systemType, getPropertyType(propertyName), propertyName);
 			}
+
+			LocalStorageConnection connection = (LocalStorageConnection) delegate;
+
+			logger.trace(String.format("Registering template [%s]", getEntityName()));
+			connection.registerTemplate(new ResourceTemplateImpl(getEntityName(), systemType, columnNames, columnTypes,
+					accessors, instantiator));
 
 			return;
 		}
@@ -108,6 +108,18 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		throw new IllegalArgumentException(String.format(
 				"Unable to register resource template [%s] since connection mismatch, expect connection of type [%s]",
 				getEntityName(), LocalStorageConnection.class));
+	}
+
+	@SuppressWarnings("unchecked")
+	private Instantiator determineInstantiator(Class<?> systemType) {
+		LocalResource anno = (LocalResource) getMappedClass().getDeclaredAnnotation(LocalResource.class);
+
+		if (anno.columnNames().length == 0) {
+			return InstantiatorFactory.buildDefault(systemType);
+		}
+
+		return InstantiatorFactory.build(systemType, anno.columnNames(),
+				anno.constructorParameterTypes());
 	}
 
 	private Class<?> getSystemType(Class<?> entityType) {
@@ -154,11 +166,37 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		return PropertyAccessStrategyFactory.DELEGATE_ACCESS_STRATEGY.buildPropertyAccess(systemType, name);
 	}
 
+	/**
+	 * The type of the {@link PropertyAccessStrategy}
+	 * 
+	 * Local namspace scoped
+	 * 
+	 * @author Ngoc Huy
+	 *
+	 */
 	private enum AccessType {
 
-		STANDARD, FUNCTIONAL, HYBRID;
+		/**
+		 * Determines that we use {@link Getter} and {@link Setter} only
+		 */
+		STANDARD,
 
-		static AccessType determineAccessType(Object getter, Object setter) {
+		/**
+		 * Determines that we use {@link HandledFunction} getter and functional setter
+		 * only
+		 */
+		FUNCTIONAL,
+
+		/**
+		 * A mixed of those two other types. However, there must only be one instance of
+		 * each.
+		 * <p>
+		 * If there's a {@link Getter} then the <i>{@link HandledFunction} Getter</i>
+		 * must be null and vice versa
+		 */
+		HYBRID;
+
+		private static AccessType determineAccessType(Object getter, Object setter) {
 			if (getter instanceof Getter && setter instanceof Setter) {
 				return STANDARD;
 			}

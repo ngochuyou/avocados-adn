@@ -3,7 +3,9 @@
  */
 package adn.service.resource.engine.access;
 
+import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
@@ -25,11 +27,12 @@ public class PropertyAccessStrategyFactory {
 
 	private PropertyAccessStrategyFactory() {}
 
-	private static final Set<Class<?>> DATE_ALTERNATIVE_TYPE_SET = Set.of(Long.class, long.class, Timestamp.class);
+	public static final Set<Class<?>> GENERAL_DATE_ALTERNATIVE_TYPE_SET = Set.of(Long.class, long.class,
+			Timestamp.class, Calendar.class, Time.class);
 	// @formatter:off
 	public static final Map<Class<?>, Set<Class<?>>> TYPE_ALTERNATIVES_MAP = Map.of(
-			Date.class, DATE_ALTERNATIVE_TYPE_SET,
-			java.sql.Date.class, DATE_ALTERNATIVE_TYPE_SET
+			Date.class, GENERAL_DATE_ALTERNATIVE_TYPE_SET,
+			java.sql.Date.class, GENERAL_DATE_ALTERNATIVE_TYPE_SET
 		); 
 	// @formatter:on
 	public static final PropertyAccessStrategy NO_ACCESS_STRATEGY = new PropertyAccessStrategy() {
@@ -148,9 +151,7 @@ public class PropertyAccessStrategyFactory {
 
 		PropertyAccessBuilder setSetter(Setter setter);
 
-		void setFieldRequired(boolean isFieldRequired);
-
-		boolean isFieldRequired();
+		PropertyAccessBuilder setFieldRequired(boolean isFieldRequired);
 
 		PropertyAccessBuilder setPropertyAccessStrategy(PropertyAccessStrategy strategy);
 
@@ -168,22 +169,30 @@ public class PropertyAccessStrategyFactory {
 
 	}
 
-	public interface FunctionalPropertyAccess<T, R, E extends Throwable> extends PropertyAccessBuilder {
+	public interface FunctionalPropertyAccess<T, R, E extends Throwable> extends PropertyAccessDelegate {
 
 		HandledFunction<T, R, E> getGetterFunction();
 
 		HandledFunction<T, R, E> getSetterFunction();
 
-		public static final HandledFunction NO_OP_FNC = new HandledFunction<>() {
-			@Override
-			public Object apply(Object arg) throws Throwable {
-				return new MarkerObject("NULL");
-			}
-		};
-
 		FunctionalPropertyAccess<T, R, E> setGetterFunction(HandledFunction<T, R, E> getter);
 
 		FunctionalPropertyAccess<T, R, E> setSetterFunction(HandledFunction<T, R, E> setter);
+
+		default boolean hasGetterFunction() {
+			return getGetterFunction() != null && getGetterFunction() != NO_OP_FNC;
+		}
+
+		default boolean hasSetterFunction() {
+			return getSetterFunction() != null && getSetterFunction() != NO_OP_FNC;
+		}
+
+		public static final HandledFunction NO_OP_FNC = new HandledFunction<>() {
+			@Override
+			public Object apply(Object arg) throws Throwable {
+				return new MarkerObject("NO_OP_FNC");
+			}
+		};
 
 	}
 

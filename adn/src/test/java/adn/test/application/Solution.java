@@ -5,6 +5,8 @@ package adn.test.application;
 
 import java.io.File;
 
+import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
+
 /**
  * @author Ngoc Huy
  *
@@ -21,11 +23,9 @@ public class Solution {
 	 */
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
 			IllegalArgumentException, IllegalAccessException {
-		File file = new File("C:\\Users\\Ngoc Huy\\Pictures\\Saved Pictures\\IMG_20210301_162741.jpg");
+		LocalVariableTableParameterNameDiscoverer discoverer = new LocalVariableTableParameterNameDiscoverer();
 
-		System.out.println(file.getPath());
-		System.out.println(file.getName());
-		System.out.println(Object.class.isAssignableFrom(long.class));
+		System.out.println(discoverer.getParameterNames(File.class.getConstructor(String.class))[0]);
 	}
 
 }
