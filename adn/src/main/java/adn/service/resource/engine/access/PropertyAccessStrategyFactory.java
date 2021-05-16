@@ -3,6 +3,12 @@
  */
 package adn.service.resource.engine.access;
 
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.Map;
+import java.util.Set;
+
+import org.hibernate.internal.util.MarkerObject;
 import org.hibernate.property.access.spi.Getter;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.property.access.spi.PropertyAccessStrategy;
@@ -19,6 +25,13 @@ public class PropertyAccessStrategyFactory {
 
 	private PropertyAccessStrategyFactory() {}
 
+	private static final Set<Class<?>> DATE_ALTERNATIVE_TYPE_SET = Set.of(Long.class, long.class, Timestamp.class);
+	// @formatter:off
+	public static final Map<Class<?>, Set<Class<?>>> TYPE_ALTERNATIVES_MAP = Map.of(
+			Date.class, DATE_ALTERNATIVE_TYPE_SET,
+			java.sql.Date.class, DATE_ALTERNATIVE_TYPE_SET
+		); 
+	// @formatter:on
 	public static final PropertyAccessStrategy NO_ACCESS_STRATEGY = new PropertyAccessStrategy() {
 
 		private final PropertyAccess NO_ACCESS = new NoAccess();
@@ -52,7 +65,7 @@ public class PropertyAccessStrategyFactory {
 
 		@Override
 		public PropertyAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
-			return new LiterallyNamedAccess(containerJavaType, propertyName, Object.class);
+			return new LiterallyNamedAccess(containerJavaType, propertyName);
 		}
 
 	};
@@ -64,44 +77,12 @@ public class PropertyAccessStrategyFactory {
 			try {
 				return new StandardAccess(containerJavaType, propertyName);
 			} catch (IllegalArgumentException iae) {
-				return new PropertyAccessDelegateImpl(locateGetter(containerJavaType, propertyName),
-						locateSetter(containerJavaType, propertyName));
+				return new PropertyAccessDelegateImpl(locateGetter(containerJavaType, propertyName, true),
+						locateSetter(containerJavaType, propertyName, true));
 			}
 		}
 
 	};
-
-	public static Getter locateGetter(Class containerJavaType, String propertyName) {
-		Getter getter = StandardAccess.locateGetter(containerJavaType, propertyName).orElse(null);
-
-		if (getter != null) {
-			return getter;
-		}
-
-		getter = LiterallyNamedAccess.locateGetter(containerJavaType, propertyName).orElse(null);
-
-		if (getter != null) {
-			return getter;
-		}
-
-		return DirectAccess.locateGetter(containerJavaType, propertyName).orElse(NoAccess.NO_OP_GETTER);
-	}
-
-	public static Setter locateSetter(Class containerJavaType, String propertyName) {
-		Setter setter = StandardAccess.locateSetter(containerJavaType, propertyName).orElse(null);
-
-		if (setter != null) {
-			return setter;
-		}
-
-		setter = LiterallyNamedAccess.locateSetter(containerJavaType, propertyName, Object.class).orElse(null);
-
-		if (setter != null) {
-			return setter;
-		}
-
-		return DirectAccess.locateSetter(containerJavaType, propertyName).orElse(NoAccess.NO_OP_SETTER);
-	}
 
 	public static final SpecificPropertyAccessStrategy SPECIFIC_ACCESS_STRATEGY = new SpecificPropertyAccessStrategy() {
 
@@ -167,6 +148,10 @@ public class PropertyAccessStrategyFactory {
 
 		PropertyAccessBuilder setSetter(Setter setter);
 
+		void setFieldRequired(boolean isFieldRequired);
+
+		boolean isFieldRequired();
+
 		PropertyAccessBuilder setPropertyAccessStrategy(PropertyAccessStrategy strategy);
 
 	}
@@ -192,7 +177,7 @@ public class PropertyAccessStrategyFactory {
 		public static final HandledFunction NO_OP_FNC = new HandledFunction<>() {
 			@Override
 			public Object apply(Object arg) throws Throwable {
-				return null;
+				return new MarkerObject("NULL");
 			}
 		};
 
@@ -200,6 +185,25 @@ public class PropertyAccessStrategyFactory {
 
 		FunctionalPropertyAccess<T, R, E> setSetterFunction(HandledFunction<T, R, E> setter);
 
+	}
+
+	public static Getter locateGetter(Class containerJavaType, String propertyName, boolean isFieldRequired) {
+		// @formatter:off
+		return StandardAccess.locateGetter(containerJavaType, propertyName, isFieldRequired)
+				.orElse(LiterallyNamedAccess.locateGetter(containerJavaType, propertyName)
+						.orElse(DirectAccess.locateGetter(containerJavaType, propertyName)
+								.orElse(NoAccess.NO_OP_GETTER)));
+		// @formatter:on
+	}
+
+	public static Setter locateSetter(Class containerJavaType, String propertyName, boolean isFieldRequired,
+			Class<?>... paramTypes) {
+		// @formatter:off
+		return StandardAccess.locateSetter(containerJavaType, propertyName, isFieldRequired, paramTypes)
+				.orElse(LiterallyNamedAccess.locateSetter(containerJavaType, propertyName, paramTypes)
+						.orElse(DirectAccess.locateSetter(containerJavaType, propertyName)
+								.orElse(NoAccess.NO_OP_SETTER)));
+		// @formatter:on
 	}
 
 }

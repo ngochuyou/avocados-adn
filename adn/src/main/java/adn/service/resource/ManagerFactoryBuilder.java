@@ -313,7 +313,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 	}
 
 	private void traceSetting(String settingName, Object value) {
-		logger.trace(String.format("Setting default setting [%s] -> [%s]", settingName, value));
+		logger.trace(String.format("Setting default configuration [%s] -> [%s]", settingName, value));
 	}
 
 	private EntityManagerFactoryImplementor build(SessionFactoryImplementor hibernateSessionFactoryInstance,

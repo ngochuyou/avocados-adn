@@ -13,6 +13,4 @@ import adn.helpers.FunctionHelper.HandledFunction;
  */
 public interface Extractor<T, R> extends HandledFunction<T, R, HibernateException> {
 
-	public static final String EXTRACT_METHOD_NAME = "apply";
-
 }

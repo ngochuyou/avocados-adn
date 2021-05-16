@@ -20,7 +20,7 @@ import adn.service.resource.engine.access.PropertyAccessStrategyFactory.Property
  */
 public class LiterallyNamedAccess extends AbstractPropertyAccess implements PropertyAccessDelegate {
 
-	LiterallyNamedAccess(Class<?> owner, String fieldName, Class<?> paramType) {
+	LiterallyNamedAccess(Class<?> owner, String fieldName) {
 		this.getter = locateGetter(owner, fieldName).orElse(NoAccess.NO_OP_GETTER);
 
 		if (getter != NoAccess.NO_OP_GETTER) {
@@ -28,7 +28,7 @@ public class LiterallyNamedAccess extends AbstractPropertyAccess implements Prop
 			return;
 		}
 
-		this.setter = locateSetter(owner, fieldName, paramType).orElseThrow(() -> new IllegalArgumentException(
+		this.setter = locateSetter(owner, fieldName).orElseThrow(() -> new IllegalArgumentException(
 				String.format("Unable to locate neither getter nor setter access of [%s] for [%s#%s]",
 						LiterallyNamedAccess.class.getName(), owner.getName(), fieldName)));
 	}
@@ -43,9 +43,21 @@ public class LiterallyNamedAccess extends AbstractPropertyAccess implements Prop
 		}
 	}
 
-	static Optional<Setter> locateSetter(Class<?> owner, String fieldName_aka_methodname, Class<?> paramType) {
+	static Optional<Setter> locateSetter(Class<?> owner, String fieldName_aka_methodname, Class<?>... paramTypes) {
 		try {
-			Method method = owner.getDeclaredMethod(fieldName_aka_methodname, paramType);
+			Method method;
+
+			try {
+				method = owner.getDeclaredMethod(fieldName_aka_methodname, Object.class);
+			} catch (NoSuchMethodException nsme) {
+				method = paramTypes.length == 0 ? null
+						: tryToLocateSetterWithAlternativeParamTypes(owner, paramTypes[0], fieldName_aka_methodname);
+			}
+
+			if (method == null) {
+				throw new NoSuchMethodException(
+						String.format("[%s] not found in [%s]", fieldName_aka_methodname, owner.getName()));
+			}
 
 			return Optional.of(new SetterMethodImpl(owner, fieldName_aka_methodname, method));
 		} catch (SecurityException | NoSuchMethodException e) {

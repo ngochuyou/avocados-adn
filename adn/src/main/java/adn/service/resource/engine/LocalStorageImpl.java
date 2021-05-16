@@ -70,9 +70,7 @@ public class LocalStorageImpl implements LocalStorage {
 	}
 
 	@Override
-	public void lock(Serializable identifier) {
-		// TODO Auto-generated method stub
-	}
+	public void lock(Serializable identifier) {}
 
 	@Override
 	public ResultSetImplementor query(Query query) {

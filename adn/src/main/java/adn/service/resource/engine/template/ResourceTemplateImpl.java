@@ -59,7 +59,7 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 	@Override
 	public String toString() {
 		// @formatter:off
-		return String.format("%s:%s\n"
+		return String.format("%s: %s\n"
 				+ "\t-systemType: %s\n"
 				+ "\t-columnNames: [%s]\n"
 				+ "\t-columnTypes: [%s]\n"

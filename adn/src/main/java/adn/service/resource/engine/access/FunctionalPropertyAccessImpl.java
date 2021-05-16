@@ -21,5 +21,5 @@ public class FunctionalPropertyAccessImpl<T, R, E extends Throwable> extends Abs
 	public PropertyAccessStrategy getPropertyAccessStrategy() {
 		return PropertyAccessStrategyFactory.FUNCTIONAL_ACCESS_STRATEGY;
 	}
-	
+
 }

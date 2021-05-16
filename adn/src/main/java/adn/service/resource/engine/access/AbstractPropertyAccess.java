@@ -3,6 +3,7 @@
  */
 package adn.service.resource.engine.access;
 
+import java.lang.reflect.Method;
 import java.util.Optional;
 
 import org.hibernate.property.access.spi.Getter;
@@ -19,6 +20,7 @@ public abstract class AbstractPropertyAccess implements PropertyAccessBuilder {
 
 	protected Getter getter;
 	protected Setter setter;
+	protected boolean isFieldRequired = true;
 	protected PropertyAccessStrategy strategy = PropertyAccessStrategyFactory.DELEGATE_ACCESS_STRATEGY;
 
 	AbstractPropertyAccess() {}
@@ -73,6 +75,31 @@ public abstract class AbstractPropertyAccess implements PropertyAccessBuilder {
 	public String toString() {
 		return String.format("%s(getter=[%s], setter=[%s])", this.getClass().getSimpleName(), getter.toString(),
 				setter.toString());
+	}
+
+	@Override
+	public boolean isFieldRequired() {
+		return isFieldRequired;
+	}
+
+	@Override
+	public void setFieldRequired(boolean isFieldRequired) {
+		this.isFieldRequired = isFieldRequired;
+	}
+
+	protected static Method tryToLocateSetterWithAlternativeParamTypes(Class<?> owner, Class<?> failedParamType,
+			String setterName) {
+		if (!PropertyAccessStrategyFactory.TYPE_ALTERNATIVES_MAP.containsKey(failedParamType)) {
+			return null;
+		}
+
+		return PropertyAccessStrategyFactory.TYPE_ALTERNATIVES_MAP.get(failedParamType).stream().map(alternative -> {
+			try {
+				return owner.getDeclaredMethod(setterName, alternative);
+			} catch (NoSuchMethodException nsme) {
+				return null;
+			}
+		}).filter(ele -> ele != null).findFirst().orElse(null);
 	}
 
 }

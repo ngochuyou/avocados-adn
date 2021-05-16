@@ -17,7 +17,8 @@ import adn.service.resource.engine.access.Extractor;
 public abstract class AbstractExplicitlyExtractedType<T, R> extends AbstractSingleColumnStandardBasicType<R>
 		implements Extractor<T, R> {
 
-	public AbstractExplicitlyExtractedType(SqlTypeDescriptor sqlTypeDescriptor, JavaTypeDescriptor<R> javaTypeDescriptor) {
+	public AbstractExplicitlyExtractedType(SqlTypeDescriptor sqlTypeDescriptor,
+			JavaTypeDescriptor<R> javaTypeDescriptor) {
 		super(sqlTypeDescriptor, javaTypeDescriptor);
 	}
 

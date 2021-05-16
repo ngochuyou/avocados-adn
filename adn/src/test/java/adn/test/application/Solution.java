@@ -4,7 +4,6 @@
 package adn.test.application;
 
 import java.io.File;
-import java.lang.reflect.Field;
 
 /**
  * @author Ngoc Huy
@@ -22,10 +21,11 @@ public class Solution {
 	 */
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
 			IllegalArgumentException, IllegalAccessException {
-		Field path = File.class.getDeclaredField("status");
-		File file = new File("abc.jpg");
+		File file = new File("C:\\Users\\Ngoc Huy\\Pictures\\Saved Pictures\\IMG_20210301_162741.jpg");
 
-		path.set(file, "INVALID");
+		System.out.println(file.getPath());
+		System.out.println(file.getName());
+		System.out.println(Object.class.isAssignableFrom(long.class));
 	}
 
 }

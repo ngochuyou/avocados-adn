@@ -17,6 +17,7 @@ import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.TypeDefs;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.AccessType;
 
 import adn.service.resource.LocalResource;
 import adn.service.resource.ResourcePersisterImpl;
@@ -36,12 +37,13 @@ import adn.service.resource.type.FileExtensionType;
 	@TypeDef(name = FileCreationTimeStampType.NAME, typeClass = FileCreationTimeStampType.class),
 	@TypeDef(name = FileExtensionType.NAME, typeClass = FileExtensionType.class)
 })
-//@formatter:on
+// @formatter:on
 public class FileResource implements Resource {
 
 	@Id
 	@GeneratedValue(generator = DefaultResourceIdentifierGenerator.NAME)
 	@GenericGenerator(strategy = DefaultResourceIdentifierGenerator.PATH, name = DefaultResourceIdentifierGenerator.NAME)
+	@AccessType(value = AccessType.Type.PROPERTY)
 	private String name;
 
 	@Type(type = FileCreationTimeStampType.NAME)
@@ -49,6 +51,7 @@ public class FileResource implements Resource {
 
 	@Version
 	@UpdateTimestamp
+	@AccessType(value = AccessType.Type.PROPERTY)
 	private Date lastModified;
 
 	@Type(type = FileExtensionType.NAME)
