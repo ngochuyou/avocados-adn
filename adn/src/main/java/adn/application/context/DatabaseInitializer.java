@@ -3,6 +3,7 @@
  */
 package adn.application.context;
 
+import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
@@ -41,10 +42,12 @@ public class DatabaseInitializer implements ContextBuilder {
 	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
 		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
+		sessionFactory.getCurrentSession().setHibernateFlushMode(FlushMode.MANUAL);
 		this.insertAdmin();
 		this.insertCustomer();
 		this.insertManager();
 		this.insertEmployee();
+		sessionFactory.getCurrentSession().flush();
 		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}
 

@@ -8,8 +8,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import adn.service.resource.connection.LocalStorageConnection;
+import adn.service.resource.engine.query.Query;
+import adn.service.resource.engine.query.QueryCompiler;
 
 /**
  * @author Ngoc Huy
@@ -19,9 +24,17 @@ public class StatementImpl implements Statement {
 
 	private final LocalStorageConnection connection;
 
-	private static final int DEFAULT_FETCH_SIZE = 10;
-
+	public static final int DEFAULT_FETCH_SIZE = 10;
 	private int fetchSize = DEFAULT_FETCH_SIZE;
+	private volatile boolean isClosed = false;
+	private int timeout = LocalStorage.DEFAULT_QUERY_TIMEOUT;
+
+	private boolean processEscape = true;
+	private int maxFieldSize = LocalStorage.MAX_FIELD_SIZE;
+	private int resultSetMaxRows = LocalStorage.RESULT_SET_MAX_ROWS;
+
+	protected List<Query> queries = new ArrayList<>();
+	protected List<ResultSetImplementor> results = new ArrayList<>();
 
 	public StatementImpl(LocalStorageConnection connection) {
 		this.connection = connection;
@@ -40,7 +53,6 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public ResultSet executeQuery(String sql) throws SQLException {
-		
 		return null;
 	}
 
@@ -50,72 +62,61 @@ public class StatementImpl implements Statement {
 	}
 
 	@Override
-	public void close() throws SQLException {
-
+	public synchronized void close() throws SQLException {
+		this.isClosed = true;
 	}
 
 	@Override
 	public int getMaxFieldSize() throws SQLException {
-
-		return 0;
+		return maxFieldSize;
 	}
 
 	@Override
 	public void setMaxFieldSize(int max) throws SQLException {
-
+		this.maxFieldSize = max;
 	}
 
 	@Override
 	public int getMaxRows() throws SQLException {
-
-		return 0;
+		return resultSetMaxRows;
 	}
 
 	@Override
 	public void setMaxRows(int max) throws SQLException {
-
+		this.resultSetMaxRows = max > LocalStorage.RESULT_SET_MAX_ROWS ? LocalStorage.RESULT_SET_MAX_ROWS : max;
 	}
 
 	@Override
 	public void setEscapeProcessing(boolean enable) throws SQLException {
-
+		this.processEscape = enable;
 	}
 
 	@Override
 	public int getQueryTimeout() throws SQLException {
-
-		return 0;
+		return timeout;
 	}
 
 	@Override
 	public void setQueryTimeout(int seconds) throws SQLException {
-
+		this.timeout = seconds;
 	}
 
 	@Override
-	public void cancel() throws SQLException {
-
-	}
+	public void cancel() throws SQLException {}
 
 	@Override
 	public SQLWarning getWarnings() throws SQLException {
-
 		return null;
 	}
 
 	@Override
-	public void clearWarnings() throws SQLException {
-
-	}
+	public void clearWarnings() throws SQLException {}
 
 	@Override
-	public void setCursorName(String name) throws SQLException {
-
-	}
+	public void setCursorName(String name) throws SQLException {}
 
 	@Override
 	public boolean execute(String sql) throws SQLException {
-
 		return false;
 	}
 
@@ -141,13 +142,12 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public int getFetchDirection() throws SQLException {
-
 		return 0;
 	}
 
 	@Override
 	public void setFetchSize(int rows) throws SQLException {
-
+		this.fetchSize = rows;
 	}
 
 	@Override
@@ -167,12 +167,13 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public void addBatch(String sql) throws SQLException {
-
+		queries.add(QueryCompiler.compile(sql));
 	}
 
 	@Override
 	public void clearBatch() throws SQLException {
-
+		queries.clear();
+		results.clear();
 	}
 
 	@Override
@@ -218,26 +219,22 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public boolean execute(String sql, int[] columnIndexes) throws SQLException {
-
 		return false;
 	}
 
 	@Override
 	public boolean execute(String sql, String[] columnNames) throws SQLException {
-
 		return false;
 	}
 
 	@Override
 	public int getResultSetHoldability() throws SQLException {
-
 		return 0;
 	}
 
 	@Override
 	public boolean isClosed() throws SQLException {
-
-		return false;
+		return isClosed;
 	}
 
 	@Override
@@ -247,7 +244,6 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public boolean isPoolable() throws SQLException {
-
 		return false;
 	}
 
@@ -258,8 +254,13 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public boolean isCloseOnCompletion() throws SQLException {
+		return true;
+	}
 
-		return false;
+	@Override
+	public String toString() {
+		return String.format("%s=(\n\tqueries=[\n\t\t%s\n\t]\n)", this.getClass().getSimpleName(),
+				queries.stream().map(query -> query.toString()).collect(Collectors.joining("\n\t\t-")));
 	}
 
 }

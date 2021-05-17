@@ -4,7 +4,6 @@
 package adn.service.resource.engine;
 
 import java.io.Serializable;
-import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.List;
@@ -29,6 +28,12 @@ public interface LocalStorage {
 
 	String DEFAULT_USER_PHOTO_NAME = "aad81c87bd8316705c4568e72577eb62476a.jpg";
 
+	int RESULT_SET_MAX_ROWS = 1000;
+
+	int MAX_FIELD_SIZE = Integer.MAX_VALUE;
+
+	int DEFAULT_QUERY_TIMEOUT = 5;
+
 	void registerTemplate(ResourceTemplate template) throws IllegalArgumentException;
 
 	ResultSetImplementor select(Serializable identifier);
@@ -38,10 +43,6 @@ public interface LocalStorage {
 	ResultSetImplementor query(Query query);
 
 	void lock(Serializable identifier);
-
-	public interface ResultSetImplementor extends ResultSet {
-
-	}
 
 	public interface ResultSetMetaDataImplementor extends ResultSetMetaData, Service, SessionFactoryObserver {
 

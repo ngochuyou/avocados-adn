@@ -209,6 +209,7 @@ public class TestController extends BaseController {
 		file.setExtension(".jpg");
 
 		session.save(file);
+		session.flush();
 
 		return ResponseEntity.ok(null);
 	}

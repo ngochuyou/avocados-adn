@@ -40,7 +40,7 @@ class ConnectionImpl implements LocalStorageConnection {
 	public ConnectionImpl(LocalStorage storage) {
 		this.storage = storage;
 	}
-	
+
 	@Override
 	public void registerTemplate(ResourceTemplate template) {
 		storage.registerTemplate(template);
@@ -64,8 +64,13 @@ class ConnectionImpl implements LocalStorageConnection {
 	@Override
 	public PreparedStatement prepareStatement(String sql) throws SQLException {
 		logger.trace(String.format("Preparing statement: [%s]", sql));
+		PreparedStatement statement = new PreparedStatementImpl(this);
 
-		return null;
+		statement.addBatch(sql);
+
+		System.out.println(statement);
+
+		return statement;
 	}
 
 	@Override

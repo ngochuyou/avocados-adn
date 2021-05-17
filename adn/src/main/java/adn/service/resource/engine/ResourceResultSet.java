@@ -32,7 +32,6 @@ import java.util.function.Function;
 
 import org.hibernate.property.access.spi.PropertyAccess;
 
-import adn.service.resource.engine.LocalStorage.ResultSetImplementor;
 import adn.service.resource.engine.LocalStorage.ResultSetMetaDataImplementor;
 import adn.service.resource.engine.ResultSetMetaDataImpl.AccessImpl.PropertyAccessHolder;
 

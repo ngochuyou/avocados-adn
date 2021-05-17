@@ -24,7 +24,6 @@ import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.property.access.spi.Getter;
 import org.hibernate.property.access.spi.PropertyAccess;
-import org.hibernate.property.access.spi.PropertyAccessStrategy;
 import org.hibernate.property.access.spi.Setter;
 import org.hibernate.tuple.Instantiator;
 import org.hibernate.type.Type;
@@ -99,8 +98,9 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			LocalStorageConnection connection = (LocalStorageConnection) delegate;
 
 			logger.trace(String.format("Registering template [%s]", getEntityName()));
-			connection.registerTemplate(new ResourceTemplateImpl(getEntityName(), systemType, columnNames, columnTypes,
-					accessors, instantiator));
+			connection.registerTemplate(
+					new ResourceTemplateImpl(String.format("%s#%s", getTableName(), getDiscriminatorValue()),
+							systemType, columnNames, columnTypes, accessors, instantiator));
 
 			return;
 		}
@@ -118,8 +118,7 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			return InstantiatorFactory.buildDefault(systemType);
 		}
 
-		return InstantiatorFactory.build(systemType, anno.columnNames(),
-				anno.constructorParameterTypes());
+		return InstantiatorFactory.build(systemType, anno.columnNames(), anno.constructorParameterTypes());
 	}
 
 	private Class<?> getSystemType(Class<?> entityType) {
@@ -159,21 +158,9 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			}
 		}
 
-		if (getter instanceof Getter && setter instanceof Setter) {
-			return PropertyAccessStrategyFactory.DELEGATE_ACCESS_STRATEGY.buildPropertyAccess(systemType, name);
-		}
-
 		return PropertyAccessStrategyFactory.DELEGATE_ACCESS_STRATEGY.buildPropertyAccess(systemType, name);
 	}
 
-	/**
-	 * The type of the {@link PropertyAccessStrategy}
-	 * 
-	 * Local namspace scoped
-	 * 
-	 * @author Ngoc Huy
-	 *
-	 */
 	private enum AccessType {
 
 		/**
@@ -182,13 +169,13 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		STANDARD,
 
 		/**
-		 * Determines that we use {@link HandledFunction} getter and functional setter
-		 * only
+		 * Determines that we use {@link HandledFunction} getter and
+		 * {@link HandledFunction} setter only
 		 */
 		FUNCTIONAL,
 
 		/**
-		 * A mixed of those two other types. However, there must only be one instance of
+		 * A mix of those two other types. However, there must only be one instance of
 		 * each.
 		 * <p>
 		 * If there's a {@link Getter} then the <i>{@link HandledFunction} Getter</i>
@@ -215,14 +202,11 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			return null;
 		}
 
-		switch (locateAnnotatedAccessType(name)) {
-			case PROPERTY: {
-				// we've now known that the access to this field will be executed as a method,
-				// therefore,
-				// the factory can locate setter without checking field existence
-				return PropertyAccessStrategyFactory.locateSetter(systemType, name, false, type.getReturnedClass());
-			}
-			default: {}
+		if (locateAnnotatedAccessType(name) == org.springframework.data.annotation.AccessType.Type.PROPERTY) {
+			// we've now known that the access to this field will be executed as a method,
+			// therefore,
+			// the factory can locate setter without checking field existence
+			return PropertyAccessStrategyFactory.locateSetter(systemType, name, false, type.getReturnedClass());
 		}
 
 		return PropertyAccessStrategyFactory.locateSetter(systemType, name, true);
@@ -236,14 +220,11 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			return extractedType;
 		}
 
-		switch (locateAnnotatedAccessType(name)) {
-			case PROPERTY: {
-				// we've now known that the access to this field will be executed as a method,
-				// therefore,
-				// the factory can locate getter without checking field existence
-				return PropertyAccessStrategyFactory.locateGetter(systemType, name, false);
-			}
-			default: {}
+		if (locateAnnotatedAccessType(name) == org.springframework.data.annotation.AccessType.Type.PROPERTY) {
+			// we've now known that the access to this field will be executed as a method,
+			// therefore,
+			// the factory can locate getter without checking field existence
+			return PropertyAccessStrategyFactory.locateGetter(systemType, name, false);
 		}
 
 		return PropertyAccessStrategyFactory.locateGetter(systemType, name, true);
@@ -273,7 +254,6 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 
 	@Override
 	public PropertyAccess getPropertyAccess(String propertyName) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 

@@ -37,7 +37,6 @@ public class TestRunner implements ContextBuilder {
 	public void buildAfterStartUp() throws Exception {
 		// TODO Auto-generated method stub
 		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
-
 		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}
 

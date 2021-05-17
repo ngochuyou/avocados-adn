@@ -145,7 +145,7 @@ public class PropertyAccessStrategyFactory {
 
 	}
 
-	public interface PropertyAccessBuilder extends PropertyAccess {
+	interface PropertyAccessBuilder extends PropertyAccess {
 
 		PropertyAccessBuilder setGetter(Getter getter);
 

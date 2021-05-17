@@ -99,11 +99,11 @@ public class StringHelper extends StringUtils {
 	}
 
 	public static String normalizeString(String string) {
-		return string != null ? string.trim().replaceAll("[" + StringHelper.WHITESPACE_CHARS + "]+", " ") : null;
+		return string != null ? string.trim().replaceAll(ONE_OF_WHITESPACE_CHARS + "+", " ") : null;
 	}
 
 	public static String removeSpaces(String string) {
-		return string != null ? string.trim().replaceAll("[" + StringHelper.WHITESPACE_CHARS + "]+", "") : null;
+		return string != null ? string.trim().replaceAll(ONE_OF_WHITESPACE_CHARS + "+", "") : null;
 	}
 
 	public static String toCamel(String s, CharSequence seperator) {

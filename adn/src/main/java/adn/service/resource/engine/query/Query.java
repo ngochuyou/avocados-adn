@@ -3,7 +3,8 @@
  */
 package adn.service.resource.engine.query;
 
-import adn.helpers.StringHelper;
+import java.sql.SQLException;
+import java.util.Iterator;
 
 /**
  * @author Ngoc Huy
@@ -11,39 +12,26 @@ import adn.helpers.StringHelper;
  */
 public interface Query {
 
-	public enum QueryType {
+	QueryCompiler.QueryType getType();
 
-		INSERT, FIND, DELETE, REGISTER_TEMPLATE;
+	String getTemplateName();
 
-		public QueryType determineType(String sqlString) {
-			String firstWord = StringHelper.getFirstWord(sqlString).toLowerCase();
-
-			switch (firstWord) {
-				case "insert": {
-					return QueryType.INSERT;
-				}
-				case "select": {
-					return QueryType.FIND;
-				}
-				case "delete": {
-					return QueryType.DELETE;
-				}
-				case "register_template": {
-					return QueryType.REGISTER_TEMPLATE;
-				}
-				default: {
-					throw new IllegalArgumentException(
-							String.format("Unable to determine query type for [%s]", sqlString));
-				}
-			}
-		}
-
-	}
-
-	QueryType getType();
-
-	String[] getColumnNames();
+	Iterator<String> getColumnNames();
 
 	Object[] getParameters();
+	
+	Query clear();
+	
+	default Query addParameter(int index, Object param) throws SQLException {
+		return this;
+	}
+
+	default Query lockQuery() {
+		return this;
+	}
+
+	default Query unLockQuery() {
+		return this;
+	}
 
 }

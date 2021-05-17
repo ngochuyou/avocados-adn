@@ -18,7 +18,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import adn.helpers.StringHelper;
-import adn.service.resource.engine.query.InsertQuery;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.template.ResourceTemplate;
 
@@ -76,15 +75,7 @@ public class LocalStorageImpl implements LocalStorage {
 	public ResultSetImplementor query(Query query) {
 		logger.trace(String.format("Executing query: [%s] ", query.toString()));
 
-		if (query instanceof InsertQuery) {
-			insert((InsertQuery) query);
-		}
-
 		return null;
-	}
-
-	private void insert(InsertQuery query) {
-
 	}
 
 	@Override
