@@ -43,6 +43,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import adn.application.Constants;
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
 import adn.application.context.DatabaseInitializer;
@@ -50,7 +51,6 @@ import adn.model.ModelManager;
 import adn.model.entities.Account;
 import adn.model.entities.Admin;
 import adn.security.SecurityConfiguration;
-import adn.service.resource.engine.LocalStorage;
 
 /**
  * @author Ngoc Huy
@@ -86,7 +86,7 @@ public class ApplicationIntegrationTest {
 
 	@Test
 	private void testGetImageBytes() throws Exception {
-		File directory = new File(LocalStorage.IMAGE_FILE_DIRECTORY);
+		File directory = new File(Constants.IMAGE_FILE_DIRECTORY);
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
 				.get(MULTITHREADING_ENDPOINT + "/file/public/image/bytes");
 		int amount = directory.listFiles().length;

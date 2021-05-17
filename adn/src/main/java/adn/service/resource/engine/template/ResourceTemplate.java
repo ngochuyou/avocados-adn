@@ -3,25 +3,25 @@
  */
 package adn.service.resource.engine.template;
 
-import org.hibernate.property.access.spi.PropertyAccess;
-import org.hibernate.tuple.Instantiator;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessDelegate;
+import adn.service.resource.engine.tuple.InstantiatorFactory.ResourceInstantiator;
 
 /**
  * @author Ngoc Huy
  *
  */
-public interface ResourceTemplate {
+public interface ResourceTemplate<T> {
 
 	String getName();
 
-	Class<?> getSystemType();
+	Class<T> getSystemType();
 
 	String[] getColumnNames();
 
 	Class<?>[] getColumnTypes();
 
-	Instantiator getInstantiator();
+	ResourceInstantiator<T> getInstantiator();
 
-	PropertyAccess[] getPropertyAccessors();
+	PropertyAccessDelegate[] getPropertyAccessors();
 
 }

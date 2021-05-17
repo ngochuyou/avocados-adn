@@ -31,11 +31,15 @@ import adn.service.resource.engine.template.ResourceTemplate;
  * @author Ngoc Huy
  *
  */
-class ConnectionImpl implements LocalStorageConnection {
+public class ConnectionImpl implements LocalStorageConnection {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private final LocalStorage storage;
+
+	public static final int RESULT_SET_MAX_ROWS = 1000;
+	public static final int MAX_FIELD_SIZE = Integer.MAX_VALUE;
+	public static final int DEFAULT_QUERY_TIMEOUT = 5;
 
 	public ConnectionImpl(LocalStorage storage) {
 		this.storage = storage;
@@ -63,12 +67,9 @@ class ConnectionImpl implements LocalStorageConnection {
 
 	@Override
 	public PreparedStatement prepareStatement(String sql) throws SQLException {
-		logger.trace(String.format("Preparing statement: [%s]", sql));
 		PreparedStatement statement = new PreparedStatementImpl(this);
 
 		statement.addBatch(sql);
-
-		System.out.println(statement);
 
 		return statement;
 	}
@@ -92,19 +93,14 @@ class ConnectionImpl implements LocalStorageConnection {
 
 	@Override
 	public boolean getAutoCommit() throws SQLException {
-
 		return false;
 	}
 
 	@Override
-	public void commit() throws SQLException {
-
-	}
+	public void commit() throws SQLException {}
 
 	@Override
-	public void rollback() throws SQLException {
-
-	}
+	public void rollback() throws SQLException {}
 
 	@Override
 	public void close() throws SQLException {
@@ -354,8 +350,12 @@ class ConnectionImpl implements LocalStorageConnection {
 
 	@Override
 	public int getNetworkTimeout() throws SQLException {
-
 		return 0;
+	}
+
+	@Override
+	public LocalStorage getStorage() {
+		return storage;
 	}
 
 }

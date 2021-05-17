@@ -4,14 +4,10 @@
 package adn.service.resource.engine.query;
 
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Ngoc Huy
@@ -23,8 +19,9 @@ public class QueryImpl implements Query {
 
 	private String templateName;
 	private QueryCompiler.QueryType queryType;
-	private Set<String> columnNames = new LinkedHashSet<>();
-	private Object[] parameters = new Object[0];
+
+	private Map<Integer, String> paramNameMap = new HashMap<>();
+	private Map<String, Object> paramMap = new LinkedHashMap<>();
 
 	QueryImpl() {}
 
@@ -42,22 +39,17 @@ public class QueryImpl implements Query {
 	}
 
 	@Override
-	public Iterator<String> getColumnNames() {
-		return columnNames.iterator();
+	public Query setParameterValue(int i, Object value) throws SQLException {
+		int actualIndex = i - 1; // Hibernate sets query params from 1
+		
+		paramMap.put(paramNameMap.get(actualIndex), value);
+		
+		return this;
 	}
 
 	@Override
-	public Object[] getParameters() {
-		return parameters;
-	}
-
-	@Override
-	public Query addParameter(int index, Object param) throws SQLException {
-		int actualIndex = index - 1;
-		LoggerFactory.getLogger(this.getClass()).trace(String.format("Adding parameter [%s]:[%s] -> [%s]", index,
-				columnNames.toArray(String[]::new)[actualIndex], param == null ? "NULL" : param.toString()));
-
-		parameters[actualIndex] = param;
+	public Query setParameterValue(String name, Object param) throws SQLException {
+		paramMap.put(name, param);
 		return this;
 	}
 
@@ -75,8 +67,8 @@ public class QueryImpl implements Query {
 
 	QueryImpl addColumnName(String name) throws SQLException {
 		checkQueryLock();
-		columnNames.add(name);
-		parameters = new Object[columnNames.size()];
+		paramMap.put(name, null);
+		paramNameMap.put(paramMap.size() - 1, name);
 		return this;
 	}
 
@@ -99,14 +91,25 @@ public class QueryImpl implements Query {
 
 	@Override
 	public String toString() {
-		return String.format("%s %s (%s)", queryType, templateName,
-				Stream.of(columnNames.toArray(String[]::new)).collect(Collectors.joining(", ")));
+		// @formatter:off
+		return String.format("%s %s (%s) VALUES (%s)", queryType, templateName,
+				paramMap.keySet().stream()
+					.collect(Collectors.joining(", ")),
+				paramMap.values().stream().map(param -> param == null ? null : param.toString())
+					.collect(Collectors.joining(", ")));
+		// @formatter:on
 	}
 
 	@Override
 	public Query clear() {
-		Arrays.fill(parameters, null);
+		paramMap.clear();
+		paramNameMap.clear();
 		return this;
+	}
+
+	@Override
+	public Object getParameterValue(String paramName) {
+		return paramMap.get(paramName);
 	}
 
 }

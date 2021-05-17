@@ -3,7 +3,6 @@
  */
 package adn.service.resource.engine;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
@@ -12,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import adn.service.resource.connection.ConnectionImpl;
 import adn.service.resource.connection.LocalStorageConnection;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.query.QueryCompiler;
@@ -24,14 +24,13 @@ public class StatementImpl implements Statement {
 
 	private final LocalStorageConnection connection;
 
+	private volatile boolean isClosed = false;
+	protected int timeout = ConnectionImpl.DEFAULT_QUERY_TIMEOUT;
+
 	public static final int DEFAULT_FETCH_SIZE = 10;
 	private int fetchSize = DEFAULT_FETCH_SIZE;
-	private volatile boolean isClosed = false;
-	private int timeout = LocalStorage.DEFAULT_QUERY_TIMEOUT;
-
-	private boolean processEscape = true;
-	private int maxFieldSize = LocalStorage.MAX_FIELD_SIZE;
-	private int resultSetMaxRows = LocalStorage.RESULT_SET_MAX_ROWS;
+	private int maxFieldSize = ConnectionImpl.MAX_FIELD_SIZE;
+	private int resultSetMaxRows = ConnectionImpl.RESULT_SET_MAX_ROWS;
 
 	protected List<Query> queries = new ArrayList<>();
 	protected List<ResultSetImplementor> results = new ArrayList<>();
@@ -61,6 +60,12 @@ public class StatementImpl implements Statement {
 		return 0;
 	}
 
+	protected void checkClose() throws SQLException {
+		if (isClosed) {
+			throw new SQLException("Statement was closed");
+		}
+	}
+
 	@Override
 	public synchronized void close() throws SQLException {
 		this.isClosed = true;
@@ -83,13 +88,11 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public void setMaxRows(int max) throws SQLException {
-		this.resultSetMaxRows = max > LocalStorage.RESULT_SET_MAX_ROWS ? LocalStorage.RESULT_SET_MAX_ROWS : max;
+		this.resultSetMaxRows = max > ConnectionImpl.RESULT_SET_MAX_ROWS ? ConnectionImpl.RESULT_SET_MAX_ROWS : max;
 	}
 
 	@Override
-	public void setEscapeProcessing(boolean enable) throws SQLException {
-		this.processEscape = enable;
-	}
+	public void setEscapeProcessing(boolean enable) throws SQLException {}
 
 	@Override
 	public int getQueryTimeout() throws SQLException {
@@ -142,7 +145,7 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public int getFetchDirection() throws SQLException {
-		return 0;
+		return ResultSet.FETCH_FORWARD;
 	}
 
 	@Override
@@ -178,18 +181,17 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public int[] executeBatch() throws SQLException {
-
 		return null;
 	}
 
 	@Override
-	public Connection getConnection() throws SQLException {
+	public LocalStorageConnection getConnection() throws SQLException {
 		return connection;
 	}
 
 	@Override
 	public boolean getMoreResults(int current) throws SQLException {
-		return false;
+		return current < 0;
 	}
 
 	@Override

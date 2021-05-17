@@ -5,7 +5,6 @@ package adn.service.resource.engine;
 
 import static adn.helpers.FunctionHelper.reject;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -18,6 +17,7 @@ import java.sql.Clob;
 import java.sql.Date;
 import java.sql.NClob;
 import java.sql.Ref;
+import java.sql.ResultSetMetaData;
 import java.sql.RowId;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
@@ -30,34 +30,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.hibernate.property.access.spi.PropertyAccess;
-
-import adn.service.resource.engine.LocalStorage.ResultSetMetaDataImplementor;
-import adn.service.resource.engine.ResultSetMetaDataImpl.AccessImpl.PropertyAccessHolder;
-
 public class ResourceResultSet implements ResultSetImplementor {
 
 	private int current = 0;
-	private static final ResultSetMetaDataImplementor metadata = ResultSetMetaDataImpl.INSTANCE;
+	private final ResultSetMetaDataImpl metadata;
 	private int direction = FETCH_FORWARD;
 	private boolean isClosed = false;
 
-	private Object lastRead = null;
-	private final List<File> rows;
-	// @formatter:off
-	private final Map<Class<?>, Map<Class<?>, Function<Object, Object>>> resolvers = Map.of(
-			Timestamp.class, Map.of(
-					Long.class, (longVal) -> new Timestamp((Long) longVal),
-					Date.class, (date) -> new Timestamp(((Date) date).getTime())
-			),
-			Date.class, Map.of(
-					Long.class, (longVal) -> new Date((Long) longVal)
-			)
-	);
-	// @formatter:on
-	public ResourceResultSet(List<File> rows) {
-		// TODO Auto-generated constructor stub
+	private Object[] lastRead = null;
+	private final List<Object[]> rows;
+
+	ResourceResultSet(List<Object[]> rows, ResultSetMetaDataImpl metadata) {
 		this.rows = rows;
+		this.metadata = metadata;
 	}
 
 	private int getRightBound() throws SQLException {
@@ -79,8 +64,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 	@Override
 	public Object getObject(int columnIndex) throws SQLException {
 		assertBound();
-
-		return lastRead = metadata.getPropertyAccess(columnIndex).getGetter().get(getCurrentRow());
+		return (lastRead = getCurrentRow())[columnIndex];
 	}
 
 	@SuppressWarnings("unchecked")
@@ -124,13 +108,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 	private <T> T typeSafeGet(int columnIndex, Class<T> type) throws SQLException {
 		assertBound();
 
-		PropertyAccess propertyAccess = metadata.getPropertyAccess(columnIndex);
-
-		if (propertyAccess instanceof PropertyAccessHolder) {
-			return null;
-		}
-
-		Object val = (lastRead = propertyAccess.getGetter().get(rows.get(current - 1)));
+		Object[] val = (lastRead = getCurrentRow());
 
 		if (type.isAssignableFrom(val.getClass())) {
 			return (T) val;
@@ -138,8 +116,8 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 		Map<Class<?>, Function<Object, Object>> resolver;
 
-		if (resolvers.containsKey(type)) {
-			if ((resolver = resolvers.get(type)).containsKey(val.getClass())) {
+		if (LocalStorageImpl.resolvers.containsKey(type)) {
+			if ((resolver = LocalStorageImpl.resolvers.get(type)).containsKey(val.getClass())) {
 				try {
 					return (T) resolver.get(val.getClass()).apply(val);
 				} catch (Exception e) {
@@ -298,7 +276,6 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public double getDouble(String columnLabel) throws SQLException {
-
 		return typeSafeGet(columnLabel, double.class);
 	}
 
@@ -364,20 +341,17 @@ public class ResourceResultSet implements ResultSetImplementor {
 	}
 
 	@Override
-	public ResultSetMetaDataImplementor getMetaData() throws SQLException {
-
+	public ResultSetMetaData getMetaData() throws SQLException {
 		return metadata;
 	}
 
 	@Override
 	public Object getObject(String columnLabel) throws SQLException {
-
 		return getObject(metadata.getIndex(columnLabel));
 	}
 
 	@Override
 	public int findColumn(String columnLabel) throws SQLException {
-
 		return metadata.getIndex(columnLabel);
 	}
 
@@ -1221,7 +1195,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 		return getObject(findColumn(columnLabel), type);
 	}
 
-	public Object getCurrentRow() throws SQLException {
+	public Object[] getCurrentRow() throws SQLException {
 		if (inBound()) {
 			return rows.get(current - 1);
 		}

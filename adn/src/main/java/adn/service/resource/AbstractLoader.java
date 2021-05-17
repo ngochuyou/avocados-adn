@@ -31,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adn.service.resource.engine.ResultSetImplementor;
-import adn.service.resource.factory.EntityManagerFactoryImplementor;
 
 /**
  * @author Ngoc Huy
@@ -89,7 +88,7 @@ public abstract class AbstractLoader extends Loader implements UniqueEntityLoade
 
 		try {
 			applyLock(ids, lockOptions, manager, afterLoadActions);
-			result = ((EntityManagerFactoryImplementor) manager.getFactory()).getStorage().select(ids);
+			result = null;
 
 			return processResults(result, persister, manager, maxRows, lockOptions.getLockMode(), afterLoadActions);
 		} finally {

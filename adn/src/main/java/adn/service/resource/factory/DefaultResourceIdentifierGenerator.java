@@ -16,6 +16,7 @@ import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 
+import adn.application.Constants;
 import adn.helpers.StringHelper;
 import adn.service.resource.model.models.Resource;
 
@@ -38,7 +39,8 @@ public class DefaultResourceIdentifierGenerator implements IdentifierGenerator, 
 		if (object instanceof Resource) {
 			Resource instance = (Resource) object;
 
-			return new StringBuilder(String.valueOf(new Date().getTime()))
+			return new StringBuilder(String.valueOf(Constants.IMAGE_FILE_DIRECTORY))					
+					.append(new Date().getTime())
 					.append(IDENTIFIER_PARTS_SEPERATOR)
 					.append(StringHelper.hash(instance.getName()))
 					.append(instance.getExtension().startsWith(".") ? instance.getExtension() : "." + instance.getExtension())

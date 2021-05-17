@@ -19,7 +19,7 @@ public class InstantiatorFactory {
 
 	private InstantiatorFactory() {}
 
-	public static <T> Instantiator buildDefault(Class<T> type) throws IllegalArgumentException {
+	public static <T> ResourceInstantiator<T> buildDefault(Class<T> type) throws IllegalArgumentException {
 		try {
 			return new DefaultInstantiator<T>().setConstructor(type.getConstructor()).setClass(type);
 		} catch (NoSuchMethodException | SecurityException e) {
@@ -28,15 +28,15 @@ public class InstantiatorFactory {
 		}
 	}
 
-	public static <T> Instantiator build(Class<T> type, String[] paramNames, Class<?>[] paramTypes)
+	public static <T> ResourceInstantiator<T> build(Class<T> type, String[] paramNames, Class<?>[] paramTypes)
 			throws IllegalArgumentException {
 		Assert.isTrue(paramNames.length == paramTypes.length,
 				"Amount of parameter names and parameter types must match");
 
-		PluralInstantiatorBuilder<T> builder;
+		ParameterizedInstantiator<T> builder;
 
 		try {
-			builder = new PluralResourceInstantiator<T>().setConstructor(type.getConstructor(paramTypes));
+			builder = new ParameterizedResourceInstantiator<T>().setConstructor(type.getConstructor(paramTypes));
 
 			for (String name : paramNames) {
 				builder = builder.addColumnName(name);
@@ -70,18 +70,18 @@ public class InstantiatorFactory {
 
 	}
 
-	public interface PluralInstantiatorBuilder<T> extends ResourceInstantiator<T> {
+	public interface ParameterizedInstantiator<T> extends ResourceInstantiator<T> {
 
-		T instantiate(Object... values) throws IllegalArgumentException;
-
-		@Override
-		PluralInstantiatorBuilder<T> addColumnName(String name);
+		T instantiate(Object[] values) throws IllegalArgumentException;
 
 		@Override
-		PluralInstantiatorBuilder<T> setConstructor(Constructor<T> constructor) throws IllegalArgumentException;
+		ParameterizedInstantiator<T> addColumnName(String name);
 
 		@Override
-		PluralInstantiatorBuilder<T> setClass(Class<T> clazz);
+		ParameterizedInstantiator<T> setConstructor(Constructor<T> constructor) throws IllegalArgumentException;
+
+		@Override
+		ParameterizedInstantiator<T> setClass(Class<T> clazz);
 
 	}
 

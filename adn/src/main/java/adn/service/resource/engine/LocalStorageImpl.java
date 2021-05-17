@@ -4,13 +4,18 @@
 package adn.service.resource.engine;
 
 import java.io.File;
-import java.io.Serializable;
+import java.io.IOException;
+import java.sql.Date;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.hibernate.property.access.spi.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +23,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import adn.helpers.StringHelper;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.FunctionalPropertyAccess;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessDelegate;
 import adn.service.resource.engine.query.Query;
+import adn.service.resource.engine.query.QueryCompiler.QueryType;
 import adn.service.resource.engine.template.ResourceTemplate;
+import adn.service.resource.engine.tuple.InstantiatorFactory.ParameterizedInstantiator;
+import adn.service.resource.engine.tuple.InstantiatorFactory.ResourceInstantiator;
 
 /**
  * @author Ngoc Huy
@@ -30,56 +40,116 @@ public class LocalStorageImpl implements LocalStorage {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private static final ResultSetMetaDataImplementor metadata = ResultSetMetaDataImpl.INSTANCE;
-	private final Map<String, ResourceTemplate> templates = new HashMap<>(8, .75f);
-
+	private final Map<String, ResourceTemplate<?>> templates = new HashMap<>(8, .75f);
+	private final Map<String, ResultSetMetaDataImpl> metadataMap = new HashMap<>(8, .75f);
+	// @formatter:off
+	public static final Map<Class<?>, Map<Class<?>, Function<Object, Object>>> resolvers = Map.of(
+			Timestamp.class, Map.of(
+					Long.class, (longVal) -> new Timestamp((Long) longVal),
+					Date.class, (date) -> new Timestamp(((Date) date).getTime())
+			),
+			Date.class, Map.of(
+					Long.class, (longVal) -> new Date((Long) longVal)
+			),
+			long.class, Map.of(
+					Timestamp.class, (stamp) -> ((Timestamp) stamp).getTime()
+			)
+	);
+	
+	private final Map<Class<?>, Consumer<Object>> SAVE_EXECUTORS = Map.of(
+		File.class, (file) -> {
+			try {
+				((File) file).createNewFile();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	);	
+	// @formatter:on
 	@Autowired
 	public LocalStorageImpl() {}
 
-	public boolean isExists(String filename) {
-		// TODO Auto-generated method stub
-		File file = obtainImage(filename);
-
-		return file.exists() && !file.isDirectory();
-	}
-
-	private File obtainImage(String filename) {
-
-		return new File(LocalStorage.IMAGE_FILE_DIRECTORY + filename);
-	}
-
 	@Override
-	public ResultSetImplementor select(Serializable identifier) {
-		return new ResourceResultSet(Arrays.asList(validate(new File(LocalStorage.IMAGE_FILE_DIRECTORY + identifier))));
-	}
-
-	@Override
-	public ResultSetImplementor select(Serializable[] identifiers) {
-		logger.debug("Selecting identifiers: " + Stream.of(identifiers)
-				.map(id -> LocalStorage.IMAGE_FILE_DIRECTORY + id.toString()).collect(Collectors.joining(", ")));
-		// @formatter:off
-		return new ResourceResultSet(Stream.of(identifiers)
-				.map(id -> new File(LocalStorage.IMAGE_FILE_DIRECTORY + id.toString()))
-				.map(this::validate).collect(Collectors.toList()));
-		// @formatter:on
-	}
-
-	private File validate(File file) {
-		return file.exists() && !file.isDirectory() ? file : null;
-	}
-
-	@Override
-	public void lock(Serializable identifier) {}
-
-	@Override
-	public ResultSetImplementor query(Query query) {
+	public ResultSetImplementor query(Query query) throws SQLException {
 		logger.trace(String.format("Executing query: [%s] ", query.toString()));
 
-		return null;
+		if (query.getType() == QueryType.SAVE) {
+			return doSave(query);
+		}
+
+		throw new SQLException(String.format("Unknown query type [%s]", query.getType()));
+	}
+
+	private ResultSetImplementor doSave(Query query) throws SQLException {
+		ResourceTemplate<?> template = templates.get(query.getTemplateName());
+		String[] columnNames = template.getColumnNames();
+		PropertyAccessDelegate[] accessors = template.getPropertyAccessors();
+		int span = template.getColumnNames().length;
+		Object instance = instantiate(query, template);
+
+		for (int i = 0; i < span; i++) {
+			injectValue(accessors[i], columnNames[i], query, instance);
+		}
+
+		SAVE_EXECUTORS.get(template.getSystemType()).accept(instance);
+
+		return new ResourceResultSet(Arrays.asList(), metadataMap.get(template.getName()));
+	}
+
+	private <T> T instantiate(Query query, ResourceTemplate<T> template) {
+		ResourceInstantiator<T> instantiator = template.getInstantiator();
+
+		if (instantiator instanceof ParameterizedInstantiator) {
+			ParameterizedInstantiator<T> inst = (ParameterizedInstantiator<T>) instantiator;
+			String[] parameterNames = inst.getParameterNames();
+
+			return inst.instantiate(Stream.of(parameterNames).map(paramName -> query.getParameterValue(paramName))
+					.toArray(Object[]::new));
+		}
+
+		return instantiator.instantiate();
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T, E extends Throwable> void injectValue(PropertyAccessDelegate access, String name, Query query,
+			T systemInstance) throws SQLException {
+		try {
+			if (access instanceof FunctionalPropertyAccess) {
+				FunctionalPropertyAccess<T, ?, ?> accessFnc = (FunctionalPropertyAccess<T, ?, ?>) access;
+
+				if (accessFnc.hasSetterFunction()) {
+					accessFnc.getSetterFunction().apply(systemInstance);
+				}
+
+				return;
+			}
+
+			if (access.hasSetter()) {
+				checkTypeAndSet(systemInstance, access.getSetter(), query.getParameterValue(name));
+			}
+		} catch (Throwable e) {
+			throw new SQLException(e);
+		}
+	}
+
+	private <T> void checkTypeAndSet(T instance, Setter setter, Object value) throws SQLException {
+		Class<?> paramType = setter.getMethod().getParameterTypes()[0];
+
+		if (!paramType.equals(value.getClass())) {
+			if (!resolvers.containsKey(paramType)) {
+				throw new SQLException(String.format("Type mismatch [%s><%s]", paramType, value.getClass()));
+			}
+
+			logger.trace(String.format("Casting [%s] -> [%s]", value.getClass(), paramType));
+			setter.set(instance, resolvers.get(paramType).get(value.getClass()).apply(value), null);
+			return;
+		}
+
+		setter.set(instance, value, null);
 	}
 
 	@Override
-	public void registerTemplate(ResourceTemplate template) throws IllegalArgumentException {
+	public void registerTemplate(ResourceTemplate<?> template) throws IllegalArgumentException {
 		if (templates.containsKey(template.getName())) {
 			throw new IllegalArgumentException(String.format("Duplicate template: [%s]", template.getName()));
 		}
@@ -87,13 +157,14 @@ public class LocalStorageImpl implements LocalStorage {
 		validateAndPutTemplate(template);
 	}
 
-	private void validateAndPutTemplate(ResourceTemplate template) {
+	private void validateAndPutTemplate(ResourceTemplate<?> template) {
 		validateTemplate(template);
 		templates.put(template.getName(), template);
+		metadataMap.put(template.getName(), new ResultSetMetaDataImpl(template.getName(), template.getColumnNames()));
 		logger.trace(String.format("Registered new resource template: [\n%s\n]", template.toString()));
 	}
 
-	private void validateTemplate(ResourceTemplate template) throws IllegalArgumentException {
+	private void validateTemplate(ResourceTemplate<?> template) throws IllegalArgumentException {
 		logger.trace(String.format("Validating template: [%s]", template.getName()));
 
 		Assert.isTrue(StringHelper.hasLength(template.getName()), "Template name must not be empty");

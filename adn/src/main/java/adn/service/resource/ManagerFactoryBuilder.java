@@ -65,7 +65,6 @@ import org.springframework.util.Assert;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
 import adn.service.resource.engine.LocalStorage;
-import adn.service.resource.engine.ResultSetMetaDataImpl;
 import adn.service.resource.factory.BootstrapContextImpl;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
@@ -340,7 +339,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 
 	@SuppressWarnings("serial")
 	private void addSessionFactoryObservers(SessionFactoryOptionsBuilder optionsBuilder) {
-		optionsBuilder.addSessionFactoryObservers(ResultSetMetaDataImpl.INSTANCE, new SessionFactoryObserver() {
+		optionsBuilder.addSessionFactoryObservers(new SessionFactoryObserver() {
 			@Override
 			public void sessionFactoryCreated(SessionFactory factory) {
 				try {

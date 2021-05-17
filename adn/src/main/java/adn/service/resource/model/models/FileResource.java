@@ -19,6 +19,7 @@ import org.hibernate.annotations.TypeDefs;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.AccessType;
 
+import adn.application.Constants;
 import adn.service.resource.LocalResource;
 import adn.service.resource.ResourcePersisterImpl;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
@@ -32,6 +33,7 @@ import adn.service.resource.type.FileExtensionType;
 // @formatter:off
 @LocalResource(
 	systemType = File.class,
+	path = Constants.IMAGE_FILE_DIRECTORY,
 	columnNames = FileResource.ID_NAME,
 	constructorParameterTypes = String.class
 )

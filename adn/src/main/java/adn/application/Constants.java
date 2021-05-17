@@ -9,6 +9,12 @@ package adn.application;
  */
 public class Constants {
 
+	public static final String LOCAL_DIRECTORY = "C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\";
+
+	public static final String IMAGE_FILE_DIRECTORY = LOCAL_DIRECTORY + "images\\";
+
+	public static final String DEFAULT_USER_PHOTO_NAME = "aad81c87bd8316705c4568e72577eb62476a.jpg";
+
 	private Constants() {}
 
 	public static final String ROOT_PACKAGE = "adn";

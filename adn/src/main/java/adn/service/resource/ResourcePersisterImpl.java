@@ -25,7 +25,6 @@ import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.property.access.spi.Getter;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.property.access.spi.Setter;
-import org.hibernate.tuple.Instantiator;
 import org.hibernate.type.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,8 +35,10 @@ import adn.helpers.StringHelper;
 import adn.service.resource.connection.LocalStorageConnection;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.FunctionalPropertyAccess;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessDelegate;
 import adn.service.resource.engine.template.ResourceTemplateImpl;
 import adn.service.resource.engine.tuple.InstantiatorFactory;
+import adn.service.resource.engine.tuple.InstantiatorFactory.ResourceInstantiator;
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.factory.EntityPersisterImplementor;
 import adn.service.resource.type.AbstractExplicitlyExtractedType;
@@ -66,6 +67,7 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		resourceLoader = new ResourceLoader(this);
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public void sessionFactoryCreated(SessionFactory factory) {
 		SessionCreationOptions sessionCreationOptions = ResourceSession.getSessionCreationOptions();
@@ -76,8 +78,8 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			Class<?> systemType = getSystemType(getMappedClass());
 			String[] columnNames = new String[span];
 			Class<?>[] columnTypes = new Class<?>[span];
-			Instantiator instantiator = determineInstantiator(systemType);
-			PropertyAccess[] accessors = new PropertyAccess[span];
+			ResourceInstantiator<?> instantiator = determineInstantiator(systemType);
+			PropertyAccessDelegate[] accessors = new PropertyAccessDelegate[span];
 
 			columnNames[0] = getIdentifierColumnNames()[0];
 			columnTypes[0] = getIdentifierType().getReturnedClass();
@@ -111,7 +113,7 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 	}
 
 	@SuppressWarnings("unchecked")
-	private Instantiator determineInstantiator(Class<?> systemType) {
+	private <T> ResourceInstantiator<T> determineInstantiator(Class<T> systemType) {
 		LocalResource anno = (LocalResource) getMappedClass().getDeclaredAnnotation(LocalResource.class);
 
 		if (anno.columnNames().length == 0) {
@@ -131,15 +133,15 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T, R, E extends Throwable> PropertyAccess determinePropertyAccess(Class<T> systemType, Type type,
+	private <T, R, E extends Throwable> PropertyAccessDelegate determinePropertyAccess(Class<T> systemType, Type type,
 			String name) {
 		Object getter = determineGetter(systemType, type, name);
 		Object setter = determineSetter(systemType, type, name);
 
 		switch (AccessType.determineAccessType(getter, setter)) {
 			case STANDARD: {
-				return PropertyAccessStrategyFactory.SPECIFIC_ACCESS_STRATEGY.buildPropertyAccess((Getter) getter,
-						(Setter) setter);
+				return (PropertyAccessDelegate) PropertyAccessStrategyFactory.SPECIFIC_ACCESS_STRATEGY
+						.buildPropertyAccess((Getter) getter, (Setter) setter);
 			}
 
 			case FUNCTIONAL: {
@@ -158,7 +160,8 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			}
 		}
 
-		return PropertyAccessStrategyFactory.DELEGATE_ACCESS_STRATEGY.buildPropertyAccess(systemType, name);
+		return (PropertyAccessDelegate) PropertyAccessStrategyFactory.DELEGATE_ACCESS_STRATEGY
+				.buildPropertyAccess(systemType, name);
 	}
 
 	private enum AccessType {

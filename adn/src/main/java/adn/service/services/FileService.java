@@ -12,10 +12,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
+import adn.application.Constants;
 import adn.helpers.StringHelper;
 import adn.service.Service;
 import adn.service.ServiceResult;
-import adn.service.resource.engine.LocalStorage;
 
 @org.springframework.stereotype.Service
 public class FileService implements Service {
@@ -36,7 +36,7 @@ public class FileService implements Service {
 
 		try {
 			byte[] bytes = file.getBytes();
-			Path path = Paths.get(LocalStorage.IMAGE_FILE_DIRECTORY + filename);
+			Path path = Paths.get(Constants.IMAGE_FILE_DIRECTORY + filename);
 
 			logger.debug("Writing file: " + filename);
 			Files.write(path, bytes);
@@ -51,7 +51,7 @@ public class FileService implements Service {
 
 	public byte[] getImageBytes(String filename) {
 		try {
-			File file = new File(LocalStorage.IMAGE_FILE_DIRECTORY + filename);
+			File file = new File(Constants.IMAGE_FILE_DIRECTORY + filename);
 
 			if (!file.exists()) {
 				return null;

@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import adn.application.Constants;
 import adn.application.context.ContextProvider;
 import adn.helpers.Role;
 import adn.helpers.ReflectHelper;
@@ -29,7 +30,6 @@ import adn.model.Result;
 import adn.model.entities.Account;
 import adn.model.factory.extraction.AccountRoleExtractor;
 import adn.model.models.AccountModel;
-import adn.service.resource.engine.LocalStorage;
 import adn.service.services.AccountService;
 import adn.service.services.FileService;
 
@@ -110,7 +110,7 @@ public class AccountController extends BaseController {
 
 		if (Strings.isEmpty(username)) {
 			if (authentication == null) {
-				return fileService.getImageBytes(LocalStorage.DEFAULT_USER_PHOTO_NAME);
+				return fileService.getImageBytes(Constants.DEFAULT_USER_PHOTO_NAME);
 			}
 
 			username = authentication.getName();

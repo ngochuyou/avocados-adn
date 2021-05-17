@@ -6,25 +6,25 @@ package adn.service.resource.engine.template;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.hibernate.property.access.spi.PropertyAccess;
-import org.hibernate.tuple.Instantiator;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessDelegate;
+import adn.service.resource.engine.tuple.InstantiatorFactory.ResourceInstantiator;
 
 /**
  * @author Ngoc Huy
  *
  */
-public class ResourceTemplateImpl implements ResourceTemplate {
+public class ResourceTemplateImpl<T> implements ResourceTemplate<T> {
 
 	private final String name;
-	private final Class<?> systemType;
+	private final Class<T> systemType;
 
 	private final String[] columnNames;
 	private final Class<?>[] columnTypes;
-	private final PropertyAccess[] accessors;
-	private final Instantiator instantiator;
+	private final PropertyAccessDelegate[] accessors;
+	private final ResourceInstantiator<T> instantiator;
 
-	public ResourceTemplateImpl(String name, Class<?> systemType, String[] columnNames, Class<?>[] columnTypes,
-			PropertyAccess[] accessors, Instantiator instantiator) {
+	public ResourceTemplateImpl(String name, Class<T> systemType, String[] columnNames, Class<?>[] columnTypes,
+			PropertyAccessDelegate[] accessors, ResourceInstantiator<T> instantiator) {
 		super();
 		this.name = name;
 		this.systemType = systemType;
@@ -50,17 +50,17 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 	}
 
 	@Override
-	public PropertyAccess[] getPropertyAccessors() {
+	public PropertyAccessDelegate[] getPropertyAccessors() {
 		return accessors;
 	}
 
 	@Override
-	public Class<?> getSystemType() {
+	public Class<T> getSystemType() {
 		return systemType;
 	}
 
 	@Override
-	public Instantiator getInstantiator() {
+	public ResourceInstantiator<T> getInstantiator() {
 		return instantiator;
 	}
 

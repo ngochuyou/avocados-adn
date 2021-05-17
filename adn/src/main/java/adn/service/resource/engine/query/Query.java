@@ -4,7 +4,6 @@
 package adn.service.resource.engine.query;
 
 import java.sql.SQLException;
-import java.util.Iterator;
 
 /**
  * @author Ngoc Huy
@@ -16,13 +15,15 @@ public interface Query {
 
 	String getTemplateName();
 
-	Iterator<String> getColumnNames();
+	Object getParameterValue(String paramName);
 
-	Object[] getParameters();
-	
 	Query clear();
-	
-	default Query addParameter(int index, Object param) throws SQLException {
+
+	default Query setParameterValue(int i, Object value) throws SQLException {
+		return this;
+	}
+
+	default Query setParameterValue(String name, Object param) throws SQLException {
 		return this;
 	}
 

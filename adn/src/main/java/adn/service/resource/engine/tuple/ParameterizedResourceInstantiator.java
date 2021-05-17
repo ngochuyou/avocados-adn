@@ -8,26 +8,26 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.springframework.util.Assert;
 
-import adn.service.resource.engine.tuple.InstantiatorFactory.PluralInstantiatorBuilder;
+import adn.service.resource.engine.tuple.InstantiatorFactory.ParameterizedInstantiator;
 
 /**
  * @author Ngoc Huy
  *
  */
 @SuppressWarnings("serial")
-public class PluralResourceInstantiator<T> extends AbstractResourceInstantiator<T>
-		implements PluralInstantiatorBuilder<T> {
+public class ParameterizedResourceInstantiator<T> extends AbstractResourceInstantiator<T>
+		implements ParameterizedInstantiator<T> {
 
-	PluralResourceInstantiator() {}
+	ParameterizedResourceInstantiator() {}
 
 	@Override
-	public PluralInstantiatorBuilder<T> setClass(Class<T> type) {
+	public ParameterizedInstantiator<T> setClass(Class<T> type) {
 		this.type = type;
 		return this;
 	}
 
 	@Override
-	public PluralInstantiatorBuilder<T> addColumnName(String name) {
+	public ParameterizedInstantiator<T> addColumnName(String name) {
 		String[] paramNames = new String[this.columnNames.length + 1];
 
 		System.arraycopy(this.columnNames, 0, paramNames, 0, this.columnNames.length);
@@ -39,7 +39,7 @@ public class PluralResourceInstantiator<T> extends AbstractResourceInstantiator<
 	}
 
 	@Override
-	public PluralInstantiatorBuilder<T> setConstructor(Constructor<T> constructor) {
+	public ParameterizedInstantiator<T> setConstructor(Constructor<T> constructor) {
 		super.setConstructor(constructor);
 		return this;
 	}

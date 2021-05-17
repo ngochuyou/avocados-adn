@@ -43,8 +43,17 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 	}
 
 	@Override
-	public int executeUpdate() throws SQLException {
-		return 0;
+	public synchronized int executeUpdate() throws SQLException {
+		checkClose();
+
+		try {
+			getConnection().getStorage().query(getQuery());
+		} catch (Exception e) {
+			e.printStackTrace();
+			return 0;
+		}
+
+		return 1;
 	}
 
 	private Query getQuery() {
@@ -53,87 +62,87 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 
 	@Override
 	public void setNull(int parameterIndex, int sqlType) throws SQLException {
-		getQuery().addParameter(parameterIndex, null);
+		getQuery().setParameterValue(parameterIndex, null);
 	}
 
 	@Override
 	public void setBoolean(int parameterIndex, boolean x) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setByte(int parameterIndex, byte x) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setShort(int parameterIndex, short x) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setInt(int parameterIndex, int x) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setLong(int parameterIndex, long x) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setFloat(int parameterIndex, float x) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setDouble(int parameterIndex, double x) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setBigDecimal(int parameterIndex, BigDecimal x) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setString(int parameterIndex, String x) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setBytes(int parameterIndex, byte[] x) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setDate(int parameterIndex, Date x) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setTime(int parameterIndex, Time x) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setBinaryStream(int parameterIndex, InputStream x, int length) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
@@ -143,12 +152,12 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 
 	@Override
 	public void setObject(int parameterIndex, Object x, int targetSqlType) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setObject(int parameterIndex, Object x) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
@@ -194,17 +203,17 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 
 	@Override
 	public void setDate(int parameterIndex, Date x, Calendar cal) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setTime(int parameterIndex, Time x, Calendar cal) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
 	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) throws SQLException {
-		getQuery().addParameter(parameterIndex, x);
+		getQuery().setParameterValue(parameterIndex, x);
 	}
 
 	@Override
@@ -229,7 +238,7 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 
 	@Override
 	public void setNString(int parameterIndex, String value) throws SQLException {
-		getQuery().addParameter(parameterIndex, value);
+		getQuery().setParameterValue(parameterIndex, value);
 	}
 
 	@Override

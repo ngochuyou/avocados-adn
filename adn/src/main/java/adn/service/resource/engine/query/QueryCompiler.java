@@ -17,14 +17,14 @@ public final class QueryCompiler {
 
 	public static enum QueryType {
 
-		INSERT, FIND, DELETE, REGISTER_TEMPLATE;
+		SAVE, FIND, DELETE, REGISTER_TEMPLATE;
 
 		public static QueryType determineType(String sqlString) throws SQLException {
 			String firstWord = StringHelper.getFirstWord(sqlString).toLowerCase();
 
 			switch (firstWord) {
 				case "insert": {
-					return QueryType.INSERT;
+					return QueryType.SAVE;
 				}
 				case "select": {
 					return QueryType.FIND;

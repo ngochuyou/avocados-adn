@@ -49,7 +49,7 @@ public class PropertyAccessStrategyFactory {
 	public static final PropertyAccessStrategy DIRECT_ACCESS_STRATEGY = new PropertyAccessStrategy() {
 
 		@Override
-		public PropertyAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
+		public PropertyAccessDelegate buildPropertyAccess(Class containerJavaType, String propertyName) {
 			return new DirectAccess(containerJavaType, propertyName);
 		}
 
@@ -58,7 +58,7 @@ public class PropertyAccessStrategyFactory {
 	public static final PropertyAccessStrategy STANDARD_ACCESS_STRATEGY = new PropertyAccessStrategy() {
 
 		@Override
-		public PropertyAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
+		public PropertyAccessDelegate buildPropertyAccess(Class containerJavaType, String propertyName) {
 			return new StandardAccess(containerJavaType, propertyName);
 		}
 
@@ -67,7 +67,7 @@ public class PropertyAccessStrategyFactory {
 	public static final PropertyAccessStrategy LITERALLY_NAMED_ACCESS_STRATEGY = new PropertyAccessStrategy() {
 
 		@Override
-		public PropertyAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
+		public PropertyAccessDelegate buildPropertyAccess(Class containerJavaType, String propertyName) {
 			return new LiterallyNamedAccess(containerJavaType, propertyName);
 		}
 
@@ -76,7 +76,7 @@ public class PropertyAccessStrategyFactory {
 	public static final PropertyAccessStrategy DELEGATE_ACCESS_STRATEGY = new PropertyAccessStrategy() {
 
 		@Override
-		public PropertyAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
+		public PropertyAccessDelegate buildPropertyAccess(Class containerJavaType, String propertyName) {
 			try {
 				return new StandardAccess(containerJavaType, propertyName);
 			} catch (IllegalArgumentException iae) {
@@ -90,7 +90,7 @@ public class PropertyAccessStrategyFactory {
 	public static final SpecificPropertyAccessStrategy SPECIFIC_ACCESS_STRATEGY = new SpecificPropertyAccessStrategy() {
 
 		@Override
-		public PropertyAccess buildPropertyAccess(Getter getter, Setter setter) {
+		public PropertyAccessDelegate buildPropertyAccess(Getter getter, Setter setter) {
 			return new PropertyAccessDelegateImpl(getter, setter).setPropertyAccessStrategy(this);
 		}
 
@@ -99,7 +99,7 @@ public class PropertyAccessStrategyFactory {
 	public static final FunctionPropertyAccessStrategy FUNCTIONAL_ACCESS_STRATEGY = new FunctionPropertyAccessStrategy() {
 
 		@Override
-		public <T, R, E extends Throwable> PropertyAccess buildPropertyAccess(HandledFunction<T, R, E> getter,
+		public <T, R, E extends Throwable> PropertyAccessDelegate buildPropertyAccess(HandledFunction<T, R, E> getter,
 				HandledFunction<T, R, E> setter) {
 			return new FunctionalPropertyAccessImpl<>(getter, setter);
 		}
@@ -109,7 +109,7 @@ public class PropertyAccessStrategyFactory {
 	public static final HybridPropertyAccessStrategy HYBRID_ACCESS_STRATEGY = new HybridPropertyAccessStrategy() {
 
 		@Override
-		public <T, R, E extends Throwable> PropertyAccess buildPropertyAccess(Getter getter, Setter setter,
+		public <T, R, E extends Throwable> PropertyAccessDelegate buildPropertyAccess(Getter getter, Setter setter,
 				HandledFunction<T, R, E> getterFnc, HandledFunction<T, R, E> setterFnc) {
 			return new FunctionalPropertyAccessImpl<>(getterFnc, setterFnc).setGetter(getter).setSetter(setter)
 					.setPropertyAccessStrategy(this);
@@ -119,8 +119,8 @@ public class PropertyAccessStrategyFactory {
 	interface DelegateDefaultAccessStrategy extends PropertyAccessStrategy {
 
 		@Override
-		default PropertyAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
-			return DELEGATE_ACCESS_STRATEGY.buildPropertyAccess(containerJavaType, propertyName);
+		default PropertyAccessDelegate buildPropertyAccess(Class containerJavaType, String propertyName) {
+			return (PropertyAccessDelegate) DELEGATE_ACCESS_STRATEGY.buildPropertyAccess(containerJavaType, propertyName);
 		}
 
 	}
@@ -133,19 +133,19 @@ public class PropertyAccessStrategyFactory {
 
 	public interface FunctionPropertyAccessStrategy extends PropertyAccessStrategy, DelegateDefaultAccessStrategy {
 
-		<T, R, E extends Throwable> PropertyAccess buildPropertyAccess(HandledFunction<T, R, E> getter,
+		<T, R, E extends Throwable> PropertyAccessDelegate buildPropertyAccess(HandledFunction<T, R, E> getter,
 				HandledFunction<T, R, E> setter);
 
 	}
 
 	public interface HybridPropertyAccessStrategy extends PropertyAccessStrategy, DelegateDefaultAccessStrategy {
 
-		<T, R, E extends Throwable> PropertyAccess buildPropertyAccess(Getter getter, Setter setter,
+		<T, R, E extends Throwable> PropertyAccessDelegate buildPropertyAccess(Getter getter, Setter setter,
 				HandledFunction<T, R, E> getterFnc, HandledFunction<T, R, E> setterFnc);
 
 	}
 
-	interface PropertyAccessBuilder extends PropertyAccess {
+	interface PropertyAccessBuilder extends PropertyAccessDelegate {
 
 		PropertyAccessBuilder setGetter(Getter getter);
 
@@ -157,7 +157,7 @@ public class PropertyAccessStrategyFactory {
 
 	}
 
-	public interface PropertyAccessDelegate extends PropertyAccessBuilder {
+	public interface PropertyAccessDelegate extends PropertyAccess {
 
 		default boolean hasGetter() {
 			return getGetter() != null && getGetter() != NoAccess.NO_OP_GETTER;

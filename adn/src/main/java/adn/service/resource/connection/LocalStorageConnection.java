@@ -5,6 +5,7 @@ package adn.service.resource.connection;
 
 import java.sql.Connection;
 
+import adn.service.resource.engine.LocalStorage;
 import adn.service.resource.engine.template.ResourceTemplate;
 
 /**
@@ -14,5 +15,7 @@ import adn.service.resource.engine.template.ResourceTemplate;
 public interface LocalStorageConnection extends Connection {
 
 	void registerTemplate(ResourceTemplate template);
+
+	LocalStorage getStorage();
 
 }

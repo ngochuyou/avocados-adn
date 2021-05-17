@@ -159,7 +159,7 @@ public class TestController extends BaseController {
 										+ "\n\t-Error message: %s",
 							ex.getClass(), ex.getMessage())
 						);
-					}, doneSignal, TimeUnit.SECONDS.toMillis(5) 
+					}, doneSignal, TimeUnit.SECONDS.toMillis(5)
 				)).get(5, TimeUnit.SECONDS);
 			} catch (InterruptedException | ExecutionException | TimeoutException ex) {
 				// TODO Auto-generated catch block
