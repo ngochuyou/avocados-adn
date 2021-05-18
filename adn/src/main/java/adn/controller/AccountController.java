@@ -25,7 +25,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import adn.application.Constants;
 import adn.application.context.ContextProvider;
 import adn.helpers.Role;
-import adn.helpers.ReflectHelper;
+import adn.helpers.TypeHelper;
 import adn.model.Result;
 import adn.model.entities.Account;
 import adn.model.factory.extraction.AccountRoleExtractor;
@@ -83,7 +83,7 @@ public class AccountController extends BaseController {
 		}
 
 		Account account = extract(model, entityClass);
-		Result<? extends Account> insertionResult = dao.insert(ReflectHelper.cast(account), entityClass);
+		Result<? extends Account> insertionResult = dao.insert(TypeHelper.cast(account), entityClass);
 
 		if (insertionResult.isOk()) {
 			sessionFactory.getCurrentSession().flush();
@@ -168,7 +168,7 @@ public class AccountController extends BaseController {
 			account.setRole(null);
 		}
 
-		Result<? extends Account> result = dao.update(ReflectHelper.cast(account), entityClass, Account.class);
+		Result<? extends Account> result = dao.update(TypeHelper.cast(account), entityClass, Account.class);
 
 		closeSession(result.isOk());
 

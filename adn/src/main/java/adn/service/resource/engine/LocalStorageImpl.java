@@ -64,7 +64,18 @@ public class LocalStorageImpl implements LocalStorage {
 				e.printStackTrace();
 			}
 		}
-	);	
+	);
+	
+	private final Map<Class<?>, Function<Object, Boolean>> DUPLICATE_CHECKERS = Map.of(
+		File.class, (file) -> {
+			try {
+				return ((File) file).exists();
+			} catch (Exception e) {
+				e.printStackTrace();
+				return true;
+			}
+		}
+	);
 	// @formatter:on
 	@Autowired
 	public LocalStorageImpl() {}
@@ -91,9 +102,16 @@ public class LocalStorageImpl implements LocalStorage {
 			injectValue(accessors[i], columnNames[i], query, instance);
 		}
 
+		checkDuplicate(instance);
 		SAVE_EXECUTORS.get(template.getSystemType()).accept(instance);
 
 		return new ResourceResultSet(Arrays.asList(), metadataMap.get(template.getName()));
+	}
+
+	private void checkDuplicate(Object instance) throws SQLException {
+		if (DUPLICATE_CHECKERS.get(instance.getClass()).apply(instance)) {
+			throw new SQLException(String.format("Duplicate entry [%s]", instance));
+		}
 	}
 
 	private <T> T instantiate(Query query, ResourceTemplate<T> template) {

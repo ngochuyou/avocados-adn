@@ -3,7 +3,7 @@
  */
 package adn.service.resource.engine;
 
-import static adn.helpers.FunctionHelper.reject;
+import static adn.helpers.FunctionHelper.doThrow;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -216,7 +216,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 		InputStream stream = typeSafeGet(columnIndex, InputStream.class);
 
 		return new InputStreamReader(stream).getEncoding().equals(Charset.forName("ISO-8859-1").toString()) ? stream
-				: reject(
+				: doThrow(
 						new ClassCastException(
 								"Type mismatch when trying to get ascii-InputStream from col " + columnIndex),
 						ClassCastException.class);

@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component;
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
-import adn.helpers.ReflectHelper;
+import adn.helpers.TypeHelper;
 import adn.model.models.Model;
 
 /**
@@ -82,7 +82,7 @@ public class ModelManager implements ContextBuilder {
 			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.ENTITY_PACKAGE)) {
 				Class<? extends adn.model.entities.Entity> clazz = (Class<? extends adn.model.entities.Entity>) Class
 						.forName(beanDef.getBeanClassName());
-				Stack<Class<?>> stack = ReflectHelper.getClassStack(clazz);
+				Stack<Class<?>> stack = TypeHelper.getClassStack(clazz);
 
 				while (!stack.isEmpty()) {
 					this.entityTree.add((Class<adn.model.entities.Entity>) stack.pop());
@@ -113,7 +113,7 @@ public class ModelManager implements ContextBuilder {
 		try {
 			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.MODEL_PACKAGE)) {
 				Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(beanDef.getBeanClassName());
-				Stack<Class<?>> stack = ReflectHelper.getClassStack(clazz);
+				Stack<Class<?>> stack = TypeHelper.getClassStack(clazz);
 
 				while (!stack.isEmpty()) {
 					this.modelTree.add((Class<Model>) stack.pop());
@@ -146,7 +146,7 @@ public class ModelManager implements ContextBuilder {
 			try {
 				Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(bean.getBeanClassName());
 
-				if (!ReflectHelper.isExtendedFrom(clazz, Model.class)) {
+				if (!TypeHelper.isExtendedFrom(clazz, Model.class)) {
 					throw new Exception(clazz.getName() + " is a Non-standard Model. A Model must be extended from "
 							+ Entity.class);
 				}
@@ -165,17 +165,17 @@ public class ModelManager implements ContextBuilder {
 				Field[] fields = clazz.getDeclaredFields();
 
 				for (Field f : fields) {
-					if (ReflectHelper.isExtendedFrom(f.getType(), AbstractModel.class) && models.contains(clazz)
+					if (TypeHelper.isExtendedFrom(f.getType(), AbstractModel.class) && models.contains(clazz)
 							&& this.entityTree.contains((Class<? extends Model>) f.getType())) {
 						throw new Exception(clazz.getName() + " is a Non-standard Model. " + f.getType().getName()
 								+ " was modelized into a Model. Use the modelized type instead");
 					}
 
-					if (ReflectHelper.isImplementedFrom(f.getType(), Collection.class)) {
+					if (TypeHelper.isImplementedFrom(f.getType(), Collection.class)) {
 						ParameterizedType type = (ParameterizedType) f.getGenericType();
 						Class<?> clz = (Class<?>) type.getActualTypeArguments()[0];
 
-						if (ReflectHelper.isExtendedFrom(clz, Model.class) && models.contains(clazz)
+						if (TypeHelper.isExtendedFrom(clz, Model.class) && models.contains(clazz)
 								&& this.entityTree.contains((Class<? extends Model>) clz)) {
 							throw new Exception(clazz.getName() + " is a Non-standard Model. " + clz.getName()
 									+ " was modelized into a Model. Use the modelized type instead on field: "

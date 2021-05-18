@@ -50,7 +50,7 @@ public class ParameterizedResourceInstantiator<T> extends AbstractResourceInstan
 	}
 
 	@Override
-	public T instantiate(Object... values) throws IllegalArgumentException {
+	public T instantiate(Object[] values) throws IllegalArgumentException {
 		Assert.isTrue(values.length == columnNames.length,
 				String.format("Invalid amount of argument passed, expect [%s] argument(s)", columnNames.length));
 

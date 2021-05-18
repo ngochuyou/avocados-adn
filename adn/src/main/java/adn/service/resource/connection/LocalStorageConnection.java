@@ -14,7 +14,7 @@ import adn.service.resource.engine.template.ResourceTemplate;
  */
 public interface LocalStorageConnection extends Connection {
 
-	void registerTemplate(ResourceTemplate template);
+	void registerTemplate(ResourceTemplate<?> template);
 
 	LocalStorage getStorage();
 

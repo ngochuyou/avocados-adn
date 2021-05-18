@@ -9,6 +9,8 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 import java.util.function.BiConsumer;
 
@@ -24,10 +26,16 @@ import adn.model.models.Model;
  *
  */
 @Component
-public class ReflectHelper {
+public class TypeHelper {
 
-	private ReflectHelper() {};
-
+	private TypeHelper() {};
+	// @formatter:off
+	public static final Map<Class<?>, Set<Class<?>>> NON_PRIMITIVE_RELATION_MAP = Map.of(
+		Integer.class, Set.of(int.class),
+		Long.class, Set.of(int.class, long.class),
+		Float.class, Set.of(float.class)
+	);
+	// @formatter:on
 	public static <T extends Entity> String getEntityName(Class<T> clazz) {
 		javax.persistence.Entity anno = clazz.getDeclaredAnnotation(javax.persistence.Entity.class);
 
@@ -161,7 +169,7 @@ public class ReflectHelper {
 
 		return false;
 	}
-	
+
 	public static boolean hasSuperClass(Class<?> clz) {
 		return clz.getSuperclass() != null && clz.getSuperclass() != Object.class;
 	}

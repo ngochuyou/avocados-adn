@@ -199,8 +199,6 @@ public class TestController extends BaseController {
 	@Autowired
 	private ResourceSession session;
 
-	private String filename = "1619973416467_0c46022fcfda4d9f4bb8c09e8c42e9efc12d839d35c78c73e4dab1d24fac8a1c.jpg";
-
 	@GetMapping("/file/public/image/session-load")
 	public @ResponseBody ResponseEntity<?> testGetImageBytes() {
 		FileResource file = new FileResource();

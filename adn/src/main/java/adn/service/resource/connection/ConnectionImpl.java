@@ -21,9 +21,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import adn.service.resource.engine.LocalStorage;
 import adn.service.resource.engine.template.ResourceTemplate;
 
@@ -32,8 +29,6 @@ import adn.service.resource.engine.template.ResourceTemplate;
  *
  */
 public class ConnectionImpl implements LocalStorageConnection {
-
-	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private final LocalStorage storage;
 
@@ -46,7 +41,7 @@ public class ConnectionImpl implements LocalStorageConnection {
 	}
 
 	@Override
-	public void registerTemplate(ResourceTemplate template) {
+	public void registerTemplate(ResourceTemplate<?> template) {
 		storage.registerTemplate(template);
 	}
 
