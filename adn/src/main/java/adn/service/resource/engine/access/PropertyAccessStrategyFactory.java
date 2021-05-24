@@ -3,20 +3,15 @@
  */
 package adn.service.resource.engine.access;
 
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
-
-import org.hibernate.internal.util.MarkerObject;
 import org.hibernate.property.access.spi.Getter;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.property.access.spi.PropertyAccessStrategy;
 import org.hibernate.property.access.spi.Setter;
 
+import adn.helpers.FunctionHelper.HandledBiFunction;
+import adn.helpers.FunctionHelper.HandledConsumer;
 import adn.helpers.FunctionHelper.HandledFunction;
+import adn.helpers.FunctionHelper.HandledSupplier;
 
 /**
  * @author Ngoc Huy
@@ -25,194 +20,268 @@ import adn.helpers.FunctionHelper.HandledFunction;
 @SuppressWarnings("rawtypes")
 public class PropertyAccessStrategyFactory {
 
-	private PropertyAccessStrategyFactory() {}
-
-	public static final Set<Class<?>> GENERAL_DATE_ALTERNATIVE_TYPE_SET = Set.of(Long.class, long.class,
-			Timestamp.class, Calendar.class, Time.class);
-	// @formatter:off
-	public static final Map<Class<?>, Set<Class<?>>> TYPE_ALTERNATIVES_MAP = Map.of(
-			Date.class, GENERAL_DATE_ALTERNATIVE_TYPE_SET,
-			java.sql.Date.class, GENERAL_DATE_ALTERNATIVE_TYPE_SET
-		); 
-	// @formatter:on
-	public static final PropertyAccessStrategy NO_ACCESS_STRATEGY = new PropertyAccessStrategy() {
-
-		private final PropertyAccess NO_ACCESS = new NoAccess();
+	public static final PropertyAccessStrategyImplementor<NoAccess> NO_ACCESS_STRATEGY = new PropertyAccessStrategyImplementor<NoAccess>() {
 
 		@Override
-		public PropertyAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
-			return NO_ACCESS;
-		}
+		public NoAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
+			return NoAccess.INSTANCE;
+		};
 
 	};
 
-	public static final PropertyAccessStrategy DIRECT_ACCESS_STRATEGY = new PropertyAccessStrategy() {
+	public static final PropertyAccessStrategyImplementor<StandardAccess> STANDARD_ACCESS_STRATEGY = new PropertyAccessStrategyImplementor<StandardAccess>() {
 
 		@Override
-		public PropertyAccessDelegate buildPropertyAccess(Class containerJavaType, String propertyName) {
+		public StandardAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
+			return new StandardAccess(containerJavaType, propertyName);
+		};
+
+	};
+
+	public static final PropertyAccessStrategyImplementor<DirectAccess> DIRECT_ACCESS_STRATEGY = new PropertyAccessStrategyImplementor<DirectAccess>() {
+
+		@Override
+		public DirectAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
 			return new DirectAccess(containerJavaType, propertyName);
 		}
 
 	};
 
-	public static final PropertyAccessStrategy STANDARD_ACCESS_STRATEGY = new PropertyAccessStrategy() {
+	public static final PropertyAccessStrategyImplementor<LiterallyNamedAccess> LITERALLY_NAMED_ACCESS_STRATEGY = new PropertyAccessStrategyImplementor<LiterallyNamedAccess>() {
 
 		@Override
-		public PropertyAccessDelegate buildPropertyAccess(Class containerJavaType, String propertyName) {
-			return new StandardAccess(containerJavaType, propertyName);
-		}
-
-	};
-
-	public static final PropertyAccessStrategy LITERALLY_NAMED_ACCESS_STRATEGY = new PropertyAccessStrategy() {
-
-		@Override
-		public PropertyAccessDelegate buildPropertyAccess(Class containerJavaType, String propertyName) {
+		public LiterallyNamedAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
 			return new LiterallyNamedAccess(containerJavaType, propertyName);
 		}
 
 	};
 
-	public static final PropertyAccessStrategy DELEGATE_ACCESS_STRATEGY = new PropertyAccessStrategy() {
+	public static final PropertAccessDelegateStrategy DELEGATED_ACCESS_STRATEGY = new PropertAccessDelegateStrategy() {
 
 		@Override
-		public PropertyAccessDelegate buildPropertyAccess(Class containerJavaType, String propertyName) {
-			try {
-				return new StandardAccess(containerJavaType, propertyName);
-			} catch (IllegalArgumentException iae) {
-				return new PropertyAccessDelegateImpl(locateGetter(containerJavaType, propertyName, true),
-						locateSetter(containerJavaType, propertyName, true));
+		public PropertyAccessDelegate buildPropertyAccess(Class<?> containerJavaType, String propertyName,
+				Class<?>... parameterTypes) {
+			return new PropertyAccessDelegate(containerJavaType, propertyName, false, parameterTypes);
+		}
+
+	};
+
+	public static final SpecificAccessStrategy SPECIFIC_ACCESS_STRATEGY = new SpecificAccessStrategy() {};
+
+	public static final LambdaPropertyAccessStrategy<Object, Object, Object, RuntimeException, Object, Object, FunctionalNoAccess> FUNCTIONAL_NO_ACCESS_STRATEGY = new LambdaPropertyAccessStrategy<>() {
+
+		@Override
+		public FunctionalNoAccess buildPropertyAccess(Object getter, Object setter) {
+			return FunctionalNoAccess.INSTANCE;
+		}
+
+	};
+
+	public static final <T, R, E extends RuntimeException> LambdaPropertyAccessStrategy<T, Object, R, E, HandledFunction<T, R, E>, HandledFunction<T, R, E>, FunctionalPropertyAccess<T, R, E>> createFunctionalAccess() {
+		return new LambdaPropertyAccessStrategy<>() {
+
+			@Override
+			public FunctionalPropertyAccess buildPropertyAccess(HandledFunction<T, R, E> getter,
+					HandledFunction<T, R, E> setter) {
+				return new FunctionalPropertyAccess<>(getter, setter, this);
 			}
-		}
 
-	};
+		};
+	}
 
-	public static final SpecificPropertyAccessStrategy SPECIFIC_ACCESS_STRATEGY = new SpecificPropertyAccessStrategy() {
+	public static final <F, S, R, E extends RuntimeException> LambdaPropertyAccessStrategy<F, S, R, E, HandledBiFunction<F, S, R, E>, HandledBiFunction<F, S, R, E>, BiFunctionalPropertyAccess<F, S, R, E>> createBiFunctionalAccess() {
+		return new LambdaPropertyAccessStrategy<>() {
+
+			@Override
+			public BiFunctionalPropertyAccess buildPropertyAccess(HandledBiFunction<F, S, R, E> getter,
+					HandledBiFunction<F, S, R, E> setter) {
+				return new BiFunctionalPropertyAccess<>(getter, setter, this);
+			}
+
+		};
+	}
+
+	public static final <T, E extends RuntimeException> LambdaPropertyAccessStrategy<T, Object, Object, E, HandledConsumer<T, E>, HandledConsumer<T, E>, ConsumingPropertyAccess<T, E>> createConsumingAccess() {
+		return new LambdaPropertyAccessStrategy<>() {
+
+			@Override
+			public ConsumingPropertyAccess buildPropertyAccess(HandledConsumer<T, E> getter,
+					HandledConsumer<T, E> setter) {
+				return new ConsumingPropertyAccess<>(getter, setter, this);
+			}
+
+		};
+	}
+
+	public static final <R, E extends RuntimeException> LambdaPropertyAccessStrategy<Object, Object, R, E, HandledSupplier<R, E>, HandledSupplier<R, E>, SupplyingPropertyAccess<R, E>> createSupplyingAccess() {
+		return new LambdaPropertyAccessStrategy<>() {
+
+			@Override
+			public SupplyingPropertyAccess buildPropertyAccess(HandledSupplier<R, E> getter,
+					HandledSupplier<R, E> setter) {
+				return new SupplyingPropertyAccess<>(getter, setter, this);
+			}
+
+		};
+	}
+
+	public static final <E extends RuntimeException> LambdaPropertyAccessStrategy<Object, Object, Object, E, Object, Object, MixedLambdaPropertyAccess<E>> createMixedAccess() {
+		return new LambdaPropertyAccessStrategy<>() {
+
+			@Override
+			public MixedLambdaPropertyAccess buildPropertyAccess(Object getter, Object setter) {
+				return new MixedLambdaPropertyAccess<>(getter, setter, this);
+			}
+
+		};
+	}
+
+	public static final <F, S, R, E extends RuntimeException> HybridPropertyAccessStrategy<F, S, R, E> createHybridAccess() {
+		return new HybridPropertyAccessStrategy<F, S, R, E>() {
+
+			@Override
+			public HybridAccess<F, S, R, E> buildPropertyAccess(Getter getter, Setter setter, Object getterLambda,
+					Object setterLambda) {
+				return new HybridAccess<>(getter, setter, getterLambda, setterLambda, this);
+			}
+
+		};
+	}
+
+	public interface LambdaPropertyAccessStrategy<FIRSTARG, SECONDARG, RETURN, EXCEPTION extends RuntimeException, GETTER, SETTER, ACCESS extends LambdaPropertyAccess<FIRSTARG, SECONDARG, RETURN, EXCEPTION, GETTER, SETTER>>
+			extends PropertyAccessStrategy {
 
 		@Override
-		public PropertyAccessDelegate buildPropertyAccess(Getter getter, Setter setter) {
-			return new PropertyAccessDelegateImpl(getter, setter).setPropertyAccessStrategy(this);
+		default PropertyAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
+			return NO_ACCESS_STRATEGY.buildPropertyAccess(containerJavaType, propertyName);
 		}
 
-	};
+		ACCESS buildPropertyAccess(GETTER getter, SETTER setter);
 
-	public static final FunctionPropertyAccessStrategy FUNCTIONAL_ACCESS_STRATEGY = new FunctionPropertyAccessStrategy() {
+	}
+
+	public interface PropertyAccessStrategyImplementor<T extends PropertyAccessImplementor>
+			extends PropertyAccessStrategy {
 
 		@Override
-		public <T, R, E extends Throwable> PropertyAccessDelegate buildPropertyAccess(HandledFunction<T, R, E> getter,
-				HandledFunction<T, R, E> setter) {
-			return new FunctionalPropertyAccessImpl<>(getter, setter);
-		}
+		T buildPropertyAccess(Class containerJavaType, String propertyName);
 
-	};
+	}
 
-	public static final HybridPropertyAccessStrategy HYBRID_ACCESS_STRATEGY = new HybridPropertyAccessStrategy() {
+	public interface SpecificAccessStrategy extends PropertyAccessStrategyImplementor<SpecificAccess> {
 
 		@Override
-		public <T, R, E extends Throwable> PropertyAccessDelegate buildPropertyAccess(Getter getter, Setter setter,
-				HandledFunction<T, R, E> getterFnc, HandledFunction<T, R, E> setterFnc) {
-			return new FunctionalPropertyAccessImpl<>(getterFnc, setterFnc).setGetter(getter).setSetter(setter)
-					.setPropertyAccessStrategy(this);
+		default SpecificAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
+			return new SpecificAccess(
+					PropertyAccessDelegate.locateGetter(containerJavaType, propertyName, false)
+							.orElseThrow(() -> new IllegalArgumentException(
+									String.format("Unable to locate getter for property [%s] of type [%s]",
+											propertyName, containerJavaType.getName()))),
+					PropertyAccessDelegate.locateSetter(containerJavaType, propertyName, false)
+							.orElseThrow(() -> new IllegalArgumentException(
+									String.format("Unable to locate setter for property [%s] of type [%s]",
+											propertyName, containerJavaType.getName()))));
 		}
-	};
 
-	interface DelegateDefaultAccessStrategy extends PropertyAccessStrategy {
+		default SpecificAccess buildPropertyAccess(Getter getter, Setter setter) {
+			return new SpecificAccess(getter, setter);
+		}
+
+	}
+
+	public interface PropertAccessDelegateStrategy extends PropertyAccessStrategyImplementor<PropertyAccessDelegate> {
 
 		@Override
 		default PropertyAccessDelegate buildPropertyAccess(Class containerJavaType, String propertyName) {
-			return (PropertyAccessDelegate) DELEGATE_ACCESS_STRATEGY.buildPropertyAccess(containerJavaType, propertyName);
+			return buildPropertyAccess(containerJavaType, propertyName, Object.class);
 		}
 
-	}
-
-	public interface SpecificPropertyAccessStrategy extends PropertyAccessStrategy, DelegateDefaultAccessStrategy {
-
-		PropertyAccess buildPropertyAccess(Getter getter, Setter setter);
+		PropertyAccessDelegate buildPropertyAccess(Class<?> containerJavaType, String propertyName,
+				Class<?>... parameterTypes);
 
 	}
 
-	public interface FunctionPropertyAccessStrategy extends PropertyAccessStrategy, DelegateDefaultAccessStrategy {
-
-		<T, R, E extends Throwable> PropertyAccessDelegate buildPropertyAccess(HandledFunction<T, R, E> getter,
-				HandledFunction<T, R, E> setter);
-
-	}
-
-	public interface HybridPropertyAccessStrategy extends PropertyAccessStrategy, DelegateDefaultAccessStrategy {
-
-		<T, R, E extends Throwable> PropertyAccessDelegate buildPropertyAccess(Getter getter, Setter setter,
-				HandledFunction<T, R, E> getterFnc, HandledFunction<T, R, E> setterFnc);
-
-	}
-
-	interface PropertyAccessBuilder extends PropertyAccessDelegate {
-
-		PropertyAccessBuilder setGetter(Getter getter);
-
-		PropertyAccessBuilder setSetter(Setter setter);
-
-		PropertyAccessBuilder setFieldRequired(boolean isFieldRequired);
-
-		PropertyAccessBuilder setPropertyAccessStrategy(PropertyAccessStrategy strategy);
-
-	}
-
-	public interface PropertyAccessDelegate extends PropertyAccess {
+	public interface PropertyAccessImplementor extends PropertyAccess {
 
 		default boolean hasGetter() {
 			return getGetter() != null && getGetter() != NoAccess.NO_OP_GETTER;
 		}
 
 		default boolean hasSetter() {
-			return getSetter() != null && getSetter() != NoAccess.NO_OP_SETTER;
+			return getSetter() != null && getSetter() != NoAccess.NO_OP_GETTER;
 		}
 
 	}
 
-	public interface FunctionalPropertyAccess<T, R, E extends Throwable> extends PropertyAccessDelegate {
+	public interface LambdaPropertyAccess<F, S, R, E extends RuntimeException, GETTER, SETTER>
+			extends PropertyAccessImplementor {
 
-		HandledFunction<T, R, E> getGetterFunction();
+		@Override
+		default Getter getGetter() {
+			return NoAccess.NO_OP_GETTER;
+		}
 
-		HandledFunction<T, R, E> getSetterFunction();
+		@Override
+		default Setter getSetter() {
+			return NoAccess.NO_OP_SETTER;
+		}
 
-		FunctionalPropertyAccess<T, R, E> setGetterFunction(HandledFunction<T, R, E> getter);
+		@Override
+		default boolean hasGetter() {
+			return hasGetterFunction();
+		}
 
-		FunctionalPropertyAccess<T, R, E> setSetterFunction(HandledFunction<T, R, E> setter);
+		@Override
+		default boolean hasSetter() {
+			return hasSetterFunction();
+		}
 
 		default boolean hasGetterFunction() {
-			return getGetterFunction() != null && getGetterFunction() != NO_OP_FNC;
+			return getGetterFunction() != null && getGetterFunction() != FunctionalNoAccess.NO_OP;
 		}
 
 		default boolean hasSetterFunction() {
-			return getSetterFunction() != null && getSetterFunction() != NO_OP_FNC;
+			return getSetterFunction() != null && getSetterFunction() != FunctionalNoAccess.NO_OP;
 		}
 
-		public static final HandledFunction NO_OP_FNC = new HandledFunction<>() {
-			@Override
-			public Object apply(Object arg) throws Throwable {
-				return new MarkerObject("NO_OP_FNC");
-			}
-		};
+		GETTER getGetterFunction();
+
+		SETTER getSetterFunction();
+
+		LambdaType getGetterType();
+
+		LambdaType getSetterType();
+
+		public enum LambdaType {
+
+			FUNCTION, BIFUNCTION, CONSUMER, SUPPLIER, NO_ACCESS
+
+		}
 
 	}
 
-	public static Getter locateGetter(Class containerJavaType, String propertyName, boolean isFieldRequired) {
-		// @formatter:off
-		return StandardAccess.locateGetter(containerJavaType, propertyName, isFieldRequired)
-				.orElse(LiterallyNamedAccess.locateGetter(containerJavaType, propertyName)
-						.orElse(DirectAccess.locateGetter(containerJavaType, propertyName)
-								.orElse(NoAccess.NO_OP_GETTER)));
-		// @formatter:on
-	}
+	public interface HybridPropertyAccessStrategy<F, S, R, E extends RuntimeException>
+			extends LambdaPropertyAccessStrategy<F, S, R, E, Object, Object, HybridAccess<F, S, R, E>> {
 
-	public static Setter locateSetter(Class containerJavaType, String propertyName, boolean isFieldRequired,
-			Class<?>... paramTypes) {
-		// @formatter:off
-		return StandardAccess.locateSetter(containerJavaType, propertyName, isFieldRequired, paramTypes)
-				.orElse(LiterallyNamedAccess.locateSetter(containerJavaType, propertyName, paramTypes)
-						.orElse(DirectAccess.locateSetter(containerJavaType, propertyName)
-								.orElse(NoAccess.NO_OP_SETTER)));
-		// @formatter:on
+		@Override
+		default HybridAccess<F, S, R, E> buildPropertyAccess(Object getter, Object setter) {
+			MixedLambdaPropertyAccess<RuntimeException> access = createMixedAccess().buildPropertyAccess(getter,
+					setter);
+
+			return new HybridAccess<>(null, null, access.getGetterFunction(), access.getSetterFunction(), this);
+		}
+
+		@Override
+		default HybridAccess<F, S, R, E> buildPropertyAccess(Class containerJavaType, String propertyName) {
+			PropertyAccess access = PropertyAccessStrategyFactory.DELEGATED_ACCESS_STRATEGY
+					.buildPropertyAccess(containerJavaType, propertyName);
+
+			return new HybridAccess<>(access.getGetter(), access.getSetter(), null, null, this);
+		}
+
+		HybridAccess<F, S, R, E> buildPropertyAccess(Getter getter, Setter setter, Object getterLambda,
+				Object setterLambda);
+
 	}
 
 }

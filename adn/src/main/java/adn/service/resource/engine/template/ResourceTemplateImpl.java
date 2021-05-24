@@ -3,31 +3,32 @@
  */
 package adn.service.resource.engine.template;
 
+import java.io.File;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessDelegate;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.tuple.InstantiatorFactory.ResourceInstantiator;
 
 /**
  * @author Ngoc Huy
  *
  */
-public class ResourceTemplateImpl<T> implements ResourceTemplate<T> {
+public class ResourceTemplateImpl implements ResourceTemplate {
 
 	private final String name;
-	private final Class<T> systemType;
 
+	private final String pathColumnName;
 	private final String[] columnNames;
 	private final Class<?>[] columnTypes;
-	private final PropertyAccessDelegate[] accessors;
-	private final ResourceInstantiator<T> instantiator;
+	private final PropertyAccessImplementor[] accessors;
+	private final ResourceInstantiator<File> instantiator;
 
-	public ResourceTemplateImpl(String name, Class<T> systemType, String[] columnNames, Class<?>[] columnTypes,
-			PropertyAccessDelegate[] accessors, ResourceInstantiator<T> instantiator) {
+	public ResourceTemplateImpl(String name, String pathColumnName, String[] columnNames, Class<?>[] columnTypes,
+			PropertyAccessImplementor[] accessors, ResourceInstantiator<File> instantiator) {
 		super();
 		this.name = name;
-		this.systemType = systemType;
+		this.pathColumnName = pathColumnName;
 		this.columnNames = columnNames;
 		this.columnTypes = columnTypes;
 		this.accessors = accessors;
@@ -50,17 +51,12 @@ public class ResourceTemplateImpl<T> implements ResourceTemplate<T> {
 	}
 
 	@Override
-	public PropertyAccessDelegate[] getPropertyAccessors() {
+	public PropertyAccessImplementor[] getPropertyAccessors() {
 		return accessors;
 	}
 
 	@Override
-	public Class<T> getSystemType() {
-		return systemType;
-	}
-
-	@Override
-	public ResourceInstantiator<T> getInstantiator() {
+	public ResourceInstantiator<File> getInstantiator() {
 		return instantiator;
 	}
 
@@ -68,17 +64,20 @@ public class ResourceTemplateImpl<T> implements ResourceTemplate<T> {
 	public String toString() {
 		// @formatter:off
 		return String.format("%s: %s\n"
-				+ "\t-systemType: %s\n"
 				+ "\t-instantiator: [%s]\n"
 				+ "\t-columnNames: [%s]\n"
 				+ "\t-columnTypes: [%s]\n"
 				+ "\t-accessors: [\n\t\t-%s\n\t]", this.getClass().getSimpleName(), name,
-				systemType,
 				instantiator.toString(),
 				Stream.of(columnNames).collect(Collectors.joining(", ")),
 				Stream.of(columnTypes).map(type -> type.getName()).collect(Collectors.joining(", ")),
 				Stream.of(accessors).map(access -> access.toString()).collect(Collectors.joining("\n\t\t-")));
 		// @formatter:on
+	}
+
+	@Override
+	public String getPathColumnName() {
+		return pathColumnName;
 	}
 
 }

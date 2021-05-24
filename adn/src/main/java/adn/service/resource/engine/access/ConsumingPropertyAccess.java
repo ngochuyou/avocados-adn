@@ -1,12 +1,12 @@
 /**
  * 
  */
-package adn.service.resource.engine.access.migrate;
+package adn.service.resource.engine.access;
 
 import org.hibernate.property.access.spi.PropertyAccessStrategy;
 
 import adn.helpers.FunctionHelper.HandledConsumer;
-import adn.service.resource.engine.access.migrate.PropertyAccessStrategyFactory.LambdaPropertyAccessStrategy;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccessStrategy;
 
 /**
  * @author Ngoc Huy

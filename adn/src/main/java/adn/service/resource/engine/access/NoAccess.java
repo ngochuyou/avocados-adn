@@ -14,11 +14,20 @@ import org.hibernate.property.access.spi.PropertyAccessStrategy;
 import org.hibernate.property.access.spi.Setter;
 
 /**
+ * Getter and Setter of this strategy are no-op methods, they do absolutely
+ * bloody nothing
+ * 
  * @author Ngoc Huy
  *
  */
 @SuppressWarnings("serial")
 public class NoAccess extends AbstractPropertyAccess {
+
+	static final NoAccess INSTANCE = new NoAccess();
+
+	private NoAccess() {
+		super(NO_OP_GETTER, NO_OP_SETTER);
+	}
 
 	static final Getter NO_OP_GETTER = new Getter() {
 
@@ -78,10 +87,6 @@ public class NoAccess extends AbstractPropertyAccess {
 			}
 		}
 	};
-
-	NoAccess() {
-		super(NO_OP_GETTER, NO_OP_SETTER);
-	}
 
 	@Override
 	public PropertyAccessStrategy getPropertyAccessStrategy() {

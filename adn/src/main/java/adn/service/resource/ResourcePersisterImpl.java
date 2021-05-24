@@ -1,10 +1,12 @@
 package adn.service.resource;
 
+import java.io.File;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Optional;
 
 import javax.persistence.metamodel.Attribute;
 
@@ -28,14 +30,20 @@ import org.hibernate.property.access.spi.Setter;
 import org.hibernate.type.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
 
+import adn.helpers.FunctionHelper.HandledBiFunction;
+import adn.helpers.FunctionHelper.HandledConsumer;
 import adn.helpers.FunctionHelper.HandledFunction;
+import adn.helpers.FunctionHelper.HandledSupplier;
 import adn.helpers.StringHelper;
 import adn.service.resource.connection.LocalStorageConnection;
+import adn.service.resource.engine.access.DirectAccess;
+import adn.service.resource.engine.access.LiterallyNamedAccess;
+import adn.service.resource.engine.access.PropertyAccessDelegate;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory;
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.FunctionalPropertyAccess;
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessDelegate;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccess.LambdaType;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
+import adn.service.resource.engine.access.StandardAccess;
 import adn.service.resource.engine.template.ResourceTemplateImpl;
 import adn.service.resource.engine.tuple.InstantiatorFactory;
 import adn.service.resource.engine.tuple.InstantiatorFactory.ResourceInstantiator;
@@ -67,7 +75,6 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		resourceLoader = new ResourceLoader(this);
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public void sessionFactoryCreated(SessionFactory factory) {
 		SessionCreationOptions sessionCreationOptions = ResourceSession.getSessionCreationOptions();
@@ -75,15 +82,14 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 
 		if (delegate instanceof LocalStorageConnection) {
 			int span = getEntityMetamodel().getPropertySpan() + 1;
-			Class<?> systemType = getSystemType(getMappedClass());
 			String[] columnNames = new String[span];
 			Class<?>[] columnTypes = new Class<?>[span];
-			ResourceInstantiator<?> instantiator = determineInstantiator(systemType);
-			PropertyAccessDelegate[] accessors = new PropertyAccessDelegate[span];
+			ResourceInstantiator<File> instantiator = determineInstantiator();
+			PropertyAccessImplementor[] accessors = new PropertyAccessImplementor[span];
 
 			columnNames[0] = getIdentifierColumnNames()[0];
 			columnTypes[0] = getIdentifierType().getReturnedClass();
-			accessors[0] = determinePropertyAccess(systemType, getIdentifierType(), getIdentifierPropertyName());
+			accessors[0] = determinePropertyAccess(getIdentifierType(), getIdentifierPropertyName());
 
 			String propertyName;
 			String propertyColumnName;
@@ -94,7 +100,7 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 
 				columnNames[j] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName : propertyName;
 				columnTypes[j] = getPropertyType(propertyName).getReturnedClass();
-				accessors[j] = determinePropertyAccess(systemType, getPropertyType(propertyName), propertyName);
+				accessors[j] = determinePropertyAccess(getPropertyType(propertyName), propertyName);
 			}
 
 			LocalStorageConnection connection = (LocalStorageConnection) delegate;
@@ -102,7 +108,7 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			logger.trace(String.format("Registering template [%s]", getEntityName()));
 			connection.registerTemplate(
 					new ResourceTemplateImpl(String.format("%s#%s", getTableName(), getDiscriminatorValue()),
-							systemType, columnNames, columnTypes, accessors, instantiator));
+							columnNames[0], columnNames, columnTypes, accessors, instantiator));
 
 			return;
 		}
@@ -113,124 +119,108 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T> ResourceInstantiator<T> determineInstantiator(Class<T> systemType) {
+	private ResourceInstantiator<File> determineInstantiator() {
 		LocalResource anno = (LocalResource) getMappedClass().getDeclaredAnnotation(LocalResource.class);
 
-		if (anno.columnNames().length == 0) {
-			return InstantiatorFactory.buildDefault(systemType);
+		if (anno.constructorParameterColumnNames().length == 0) {
+			return InstantiatorFactory.buildDefault(File.class);
 		}
 
-		return InstantiatorFactory.build(systemType, anno.columnNames(), anno.constructorParameterTypes());
+		return InstantiatorFactory.build(File.class, anno.constructorParameterColumnNames(),
+				anno.constructorParameterTypes());
 	}
 
-	private Class<?> getSystemType(Class<?> entityType) {
-		LocalResource anno = entityType.getDeclaredAnnotation(LocalResource.class);
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private <F, S, R, E extends RuntimeException> PropertyAccessImplementor determinePropertyAccess(Type propertyType,
+			String propertyName) {
+		org.springframework.data.annotation.AccessType.Type accessTypeAnno = locateAnnotatedAccessType(propertyName);
+		if (accessTypeAnno != org.springframework.data.annotation.AccessType.Type.PROPERTY
+				&& !(propertyType instanceof AbstractExplicitlyExtractedType)) {
+			// @formatter:off
+			Getter getter = Optional.of(StandardAccess.locateGetter(File.class, propertyName)
+										.orElse(DirectAccess.locateGetter(File.class, propertyName)
+												.orElse(LiterallyNamedAccess.locateGetter(File.class, propertyName)
+														.orElse(null))))
+									.orElseThrow(() -> new IllegalArgumentException(String.format("Unable to locate getter for property [%s]", propertyName)));
+			Setter setter = Optional.of(StandardAccess.locateSetter(File.class, propertyName)
+										.orElse(DirectAccess.locateSetter(File.class, propertyName)
+												.orElse(!(getter instanceof LiterallyNamedAccess) ? LiterallyNamedAccess.locateSetter(File.class, propertyName)
+														.orElse(null) : null)))
+									.orElseThrow(() -> new IllegalArgumentException(String.format("Unable to locate setter for property [%s]", propertyName)));
+			// @formatter:on
+			return PropertyAccessStrategyFactory.SPECIFIC_ACCESS_STRATEGY.buildPropertyAccess(getter, setter);
+		}
 
-		Assert.isTrue(anno != null && anno.systemType() != null,
-				String.format("[%s] System type must not be null", entityType.getName()));
+		Setter setter;
 
-		return anno.systemType();
+		setter = propertyType instanceof NoOperationSet ? null
+				: PropertyAccessDelegate.locateSetter(File.class, propertyName, false, propertyType.getReturnedClass()).orElse(null);
+
+		if (!(propertyType instanceof AbstractExplicitlyExtractedType)) {
+			Getter getter = PropertyAccessDelegate.locateGetter(File.class, propertyName, false).orElse(null);
+
+			return PropertyAccessStrategyFactory.SPECIFIC_ACCESS_STRATEGY.buildPropertyAccess(getter, setter);
+		}
+
+		LambdaType getterLambdaType = determineLambdaType(propertyType);
+		LambdaType setterLambdaType = determineLambdaType(propertyType);
+
+		if (setter == null) {
+			if (getterLambdaType == LambdaType.NO_ACCESS && setterLambdaType == LambdaType.NO_ACCESS) {
+				throw new IllegalArgumentException(String
+						.format("Unable to locate access for property [%s] in type [%s]", propertyName, File.class));
+			}
+
+			if (getterLambdaType != setterLambdaType) {
+				return PropertyAccessStrategyFactory.createMixedAccess().buildPropertyAccess(getterLambdaType,
+						setterLambdaType);
+			}
+
+			if (getterLambdaType == LambdaType.FUNCTION) {
+				return PropertyAccessStrategyFactory.createFunctionalAccess()
+						.buildPropertyAccess((HandledFunction) propertyType, (HandledFunction) propertyType);
+			}
+
+			if (getterLambdaType == LambdaType.BIFUNCTION) {
+				return PropertyAccessStrategyFactory.createBiFunctionalAccess()
+						.buildPropertyAccess((HandledBiFunction) propertyType, (HandledBiFunction) propertyType);
+			}
+
+			if (getterLambdaType == LambdaType.CONSUMER) {
+				return PropertyAccessStrategyFactory.createConsumingAccess()
+						.buildPropertyAccess((HandledConsumer) propertyType, (HandledConsumer) propertyType);
+			}
+
+			return PropertyAccessStrategyFactory.createSupplyingAccess()
+					.buildPropertyAccess((HandledSupplier) propertyType, (HandledSupplier) propertyType);
+		}
+		// @formatter:off
+		return PropertyAccessStrategyFactory.createHybridAccess().buildPropertyAccess(
+					null,
+					setter,
+					getterLambdaType == LambdaType.NO_ACCESS ? null : propertyType,
+					setterLambdaType == LambdaType.NO_ACCESS ? null : propertyType);
+		// @formatter:on
 	}
 
-	@SuppressWarnings("unchecked")
-	private <T, R, E extends Throwable> PropertyAccessDelegate determinePropertyAccess(Class<T> systemType, Type type,
-			String name) {
-		Object getter = determineGetter(systemType, type, name);
-		Object setter = determineSetter(systemType, type, name);
-
-		switch (AccessType.determineAccessType(getter, setter)) {
-			case STANDARD: {
-				return (PropertyAccessDelegate) PropertyAccessStrategyFactory.SPECIFIC_ACCESS_STRATEGY
-						.buildPropertyAccess((Getter) getter, (Setter) setter);
-			}
-
-			case FUNCTIONAL: {
-				return PropertyAccessStrategyFactory.FUNCTIONAL_ACCESS_STRATEGY
-						.buildPropertyAccess((HandledFunction<T, R, E>) getter, (HandledFunction<T, R, E>) setter);
-			}
-
-			case HYBRID: {
-				if (getter instanceof Getter) {
-					return PropertyAccessStrategyFactory.HYBRID_ACCESS_STRATEGY.buildPropertyAccess((Getter) getter,
-							null, null, (HandledFunction<T, R, E>) setter);
-				}
-
-				return PropertyAccessStrategyFactory.HYBRID_ACCESS_STRATEGY.buildPropertyAccess(null, (Setter) setter,
-						(HandledFunction<T, R, E>) getter, null);
-			}
+	private LambdaType determineLambdaType(Type type) {
+		if (type instanceof HandledFunction) {
+			return LambdaType.FUNCTION;
 		}
 
-		return (PropertyAccessDelegate) PropertyAccessStrategyFactory.DELEGATE_ACCESS_STRATEGY
-				.buildPropertyAccess(systemType, name);
-	}
-
-	private enum AccessType {
-
-		/**
-		 * Determines that we use {@link Getter} and {@link Setter} only
-		 */
-		STANDARD,
-
-		/**
-		 * Determines that we use {@link HandledFunction} getter and
-		 * {@link HandledFunction} setter only
-		 */
-		FUNCTIONAL,
-
-		/**
-		 * A mix of those two other types. However, there must only be one instance of
-		 * each.
-		 * <p>
-		 * If there's a {@link Getter} then the <i>{@link HandledFunction} Getter</i>
-		 * must be null and vice versa
-		 */
-		HYBRID;
-
-		private static AccessType determineAccessType(Object getter, Object setter) {
-			if (getter instanceof Getter && setter instanceof Setter) {
-				return STANDARD;
-			}
-
-			if (getter instanceof FunctionalPropertyAccess && setter instanceof FunctionalPropertyAccess) {
-				return FUNCTIONAL;
-			}
-
-			return HYBRID;
+		if (type instanceof HandledBiFunction) {
+			return LambdaType.BIFUNCTION;
 		}
 
-	}
-
-	private <T, R> Object determineSetter(Class<?> systemType, Type type, String name) {
-		if (type instanceof NoOperationSet) {
-			return null;
+		if (type instanceof HandledConsumer) {
+			return LambdaType.CONSUMER;
 		}
 
-		if (locateAnnotatedAccessType(name) == org.springframework.data.annotation.AccessType.Type.PROPERTY) {
-			// we've now known that the access to this field will be executed as a method,
-			// therefore,
-			// the factory can locate setter without checking field existence
-			return PropertyAccessStrategyFactory.locateSetter(systemType, name, false, type.getReturnedClass());
+		if (type instanceof HandledSupplier) {
+			return LambdaType.SUPPLIER;
 		}
 
-		return PropertyAccessStrategyFactory.locateSetter(systemType, name, true);
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T, R> Object determineGetter(Class<?> systemType, Type type, String name) {
-		if (type instanceof AbstractExplicitlyExtractedType) {
-			AbstractExplicitlyExtractedType<T, R> extractedType = (AbstractExplicitlyExtractedType<T, R>) type;
-
-			return extractedType;
-		}
-
-		if (locateAnnotatedAccessType(name) == org.springframework.data.annotation.AccessType.Type.PROPERTY) {
-			// we've now known that the access to this field will be executed as a method,
-			// therefore,
-			// the factory can locate getter without checking field existence
-			return PropertyAccessStrategyFactory.locateGetter(systemType, name, false);
-		}
-
-		return PropertyAccessStrategyFactory.locateGetter(systemType, name, true);
+		return LambdaType.NO_ACCESS;
 	}
 
 	private org.springframework.data.annotation.AccessType.Type locateAnnotatedAccessType(String name) {

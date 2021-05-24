@@ -3,7 +3,6 @@
  */
 package adn.service.resource.model.models;
 
-import java.io.File;
 import java.util.Date;
 
 import javax.persistence.Column;
@@ -13,7 +12,6 @@ import org.hibernate.annotations.Proxy;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
-import adn.application.Constants;
 import adn.service.resource.LocalResource;
 import adn.service.resource.type.FileContentByByteArrayType;
 
@@ -23,9 +21,7 @@ import adn.service.resource.type.FileContentByByteArrayType;
  */
 // @formatter:off
 @LocalResource(
-	systemType = File.class,
-	path = Constants.IMAGE_FILE_DIRECTORY,
-	columnNames = FileResource.ID_NAME,
+	constructorParameterColumnNames = FileResource.ID_NAME,
 	constructorParameterTypes = String.class
 )
 // @formatter:on

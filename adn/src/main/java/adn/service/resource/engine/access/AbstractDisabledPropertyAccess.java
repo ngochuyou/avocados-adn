@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.engine.access.migrate;
+package adn.service.resource.engine.access;
 
 import org.hibernate.property.access.spi.Getter;
 import org.hibernate.property.access.spi.Setter;

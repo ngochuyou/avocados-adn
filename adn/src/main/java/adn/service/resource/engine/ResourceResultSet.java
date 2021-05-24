@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import adn.helpers.TypeHelper;
+
 public class ResourceResultSet implements ResultSetImplementor {
 
 	private int current = 0;
@@ -116,8 +118,8 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 		Map<Class<?>, Function<Object, Object>> resolver;
 
-		if (LocalStorageImpl.resolvers.containsKey(type)) {
-			if ((resolver = LocalStorageImpl.resolvers.get(type)).containsKey(val.getClass())) {
+		if (TypeHelper.TYPE_CONVERTER.containsKey(type)) {
+			if ((resolver = TypeHelper.TYPE_CONVERTER.get(type)).containsKey(val.getClass())) {
 				try {
 					return (T) resolver.get(val.getClass()).apply(val);
 				} catch (Exception e) {

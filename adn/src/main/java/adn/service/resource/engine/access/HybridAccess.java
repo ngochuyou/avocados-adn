@@ -1,16 +1,15 @@
 /**
  * 
  */
-package adn.service.resource.engine.access.migrate;
-
-import java.util.Map;
+package adn.service.resource.engine.access;
 
 import org.hibernate.property.access.spi.Getter;
 import org.hibernate.property.access.spi.PropertyAccessStrategy;
 import org.hibernate.property.access.spi.Setter;
 
-import adn.service.resource.engine.access.migrate.PropertyAccessStrategyFactory.LambdaPropertyAccess;
-import adn.service.resource.engine.access.migrate.PropertyAccessStrategyFactory.LambdaPropertyAccessStrategy;
+import adn.service.resource.engine.access.AbstractLambdaPropertyAccess.Entry;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccess;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccessStrategy;
 
 public class HybridAccess<F, S, R, E extends RuntimeException> extends AbstractPropertyAccess
 		implements LambdaPropertyAccess<F, S, R, E, Object, Object> {
@@ -27,15 +26,15 @@ public class HybridAccess<F, S, R, E extends RuntimeException> extends AbstractP
 			LambdaPropertyAccessStrategy<F, S, R, E, Object, Object, HybridAccess<F, S, R, E>> strategy) {
 		super(getter, setter);
 
-		Map.Entry<Object, LambdaPropertyAccess.LambdaType> getterEntry = AbstractLambdaPropertyAccess
+		Entry<Object, LambdaPropertyAccess.LambdaType> getterEntry = AbstractLambdaPropertyAccess
 				.validateGetter(getterLambda);
-		Map.Entry<Object, LambdaPropertyAccess.LambdaType> setterEntry = AbstractLambdaPropertyAccess
+		Entry<Object, LambdaPropertyAccess.LambdaType> setterEntry = AbstractLambdaPropertyAccess
 				.validateSetter(setterLambda);
 
-		this.getterLambda = getterEntry.getKey();
-		this.setterLambda = setterEntry.getKey();
-		this.getterType = getterEntry.getValue();
-		this.setterType = setterEntry.getValue();
+		this.getterLambda = getterEntry.key == null ? FunctionalNoAccess.NO_OP : getterEntry.key;
+		this.setterLambda = setterEntry.key == null ? FunctionalNoAccess.NO_OP : setterEntry.key;
+		this.getterType = getterEntry.value;
+		this.setterType = setterEntry.value;
 		this.strategy = strategy;
 	}
 
@@ -62,6 +61,17 @@ public class HybridAccess<F, S, R, E extends RuntimeException> extends AbstractP
 	@Override
 	public LambdaPropertyAccess.LambdaType getSetterType() {
 		return setterType;
+	}
+
+	@Override
+	public String toString() {
+		// @formatter:off
+		return String.format("%s(\n"
+				+ "\t\t\tgetter=[%s], setter=[%s]\n"
+				+ "\t\t\tgetterFunction=[%s], setterFunction=[%s]\n\t\t)",
+				this.getClass().getName(),
+				getGetter(), getSetter(), getterLambda, setterLambda);
+		// @formatter:on
 	}
 
 }

@@ -1,15 +1,13 @@
 /**
  * 
  */
-package adn.service.resource.engine.access.migrate;
-
-import java.util.Map;
+package adn.service.resource.engine.access;
 
 import adn.helpers.FunctionHelper.HandledBiFunction;
 import adn.helpers.FunctionHelper.HandledConsumer;
 import adn.helpers.FunctionHelper.HandledFunction;
 import adn.helpers.FunctionHelper.HandledSupplier;
-import adn.service.resource.engine.access.migrate.PropertyAccessStrategyFactory.LambdaPropertyAccess;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccess;
 
 /**
  * @author Ngoc Huy
@@ -24,55 +22,56 @@ public abstract class AbstractLambdaPropertyAccess<F, S, R, E extends RuntimeExc
 	private final LambdaType getterType;
 	private final LambdaType setterType;
 
+	@SuppressWarnings("unchecked")
 	AbstractLambdaPropertyAccess(GETTER getter, SETTER setter) {
-		Map.Entry<GETTER, LambdaType> getterEntry = validateGetter(getter);
-		Map.Entry<SETTER, LambdaType> setterEntry = validateSetter(setter);
+		Entry<GETTER, LambdaType> getterEntry = validateGetter(getter);
+		Entry<SETTER, LambdaType> setterEntry = validateSetter(setter);
 
-		this.getter = getterEntry.getKey();
-		this.setter = setterEntry.getKey();
-		this.getterType = getterEntry.getValue();
-		this.setterType = setterEntry.getValue();
+		this.getter = getterEntry.key == null ? (GETTER) FunctionalNoAccess.NO_OP : getterEntry.key;
+		this.setter = setterEntry.key == null ? (SETTER) FunctionalNoAccess.NO_OP : setterEntry.key;
+		this.getterType = getterEntry.value;
+		this.setterType = setterEntry.value;
 	}
 
-	static <GETTER> Map.Entry<GETTER, LambdaType> validateGetter(GETTER getter) {
+	static <GETTER> Entry<GETTER, LambdaType> validateGetter(GETTER getter) {
 		if (getter == null) {
-			return Map.entry(null, LambdaType.NO_ACCESS);
+			return new Entry<>(null, LambdaType.NO_ACCESS);
 		}
 
 		if (getter instanceof HandledSupplier) {
-			return Map.entry(getter, LambdaType.SUPPLIER);
+			return new Entry<>(getter, LambdaType.SUPPLIER);
 		}
 
 		if (getter instanceof HandledFunction) {
-			return Map.entry(getter, LambdaType.FUNCTION);
+			return new Entry<>(getter, LambdaType.FUNCTION);
 		}
 
 		if (getter instanceof HandledBiFunction) {
-			return Map.entry(getter, LambdaType.BIFUNCTION);
+			return new Entry<>(getter, LambdaType.BIFUNCTION);
 		}
 
 		throw new IllegalArgumentException(String.format("Unknown getter type [%s]", getter.getClass().getName()));
 	}
 
-	static <SETTER> Map.Entry<SETTER, LambdaType> validateSetter(SETTER setter) {
+	static <SETTER> Entry<SETTER, LambdaType> validateSetter(SETTER setter) {
 		if (setter == null) {
-			return Map.entry(null, LambdaType.NO_ACCESS);
+			return new Entry<>(null, LambdaType.NO_ACCESS);
 		}
 
 		if (setter instanceof HandledConsumer) {
-			return Map.entry(setter, LambdaType.CONSUMER);
+			return new Entry<>(setter, LambdaType.CONSUMER);
 		}
 
 		if (setter instanceof HandledSupplier) {
-			return Map.entry(setter, LambdaType.SUPPLIER);
+			return new Entry<>(setter, LambdaType.SUPPLIER);
 		}
 
 		if (setter instanceof HandledFunction) {
-			return Map.entry(setter, LambdaType.FUNCTION);
+			return new Entry<>(setter, LambdaType.FUNCTION);
 		}
 
 		if (setter instanceof HandledBiFunction) {
-			return Map.entry(setter, LambdaType.BIFUNCTION);
+			return new Entry<>(setter, LambdaType.BIFUNCTION);
 		}
 
 		throw new IllegalArgumentException(String.format("Unknown setter type [%s]", setter.getClass().getName()));
@@ -96,6 +95,24 @@ public abstract class AbstractLambdaPropertyAccess<F, S, R, E extends RuntimeExc
 	@Override
 	public LambdaType getSetterType() {
 		return setterType;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s(getter=[%s], setter=[%s])", this.getClass().getSimpleName(), getter, setter);
+	}
+
+	protected static class Entry<K, V> {
+
+		K key;
+		V value;
+
+		Entry(K key, V value) {
+			super();
+			this.key = key;
+			this.value = value;
+		}
+
 	}
 
 }

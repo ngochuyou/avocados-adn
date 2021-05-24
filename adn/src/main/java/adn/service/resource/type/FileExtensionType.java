@@ -10,13 +10,15 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.type.DiscriminatorType;
 import org.hibernate.type.StringType;
 
+import adn.helpers.FunctionHelper.HandledFunction;
+
 /**
  * @author Ngoc Huy
  *
  */
 @SuppressWarnings("serial")
-public class FileExtensionType extends AbstractExplicitlyExtractedType<File, String>
-		implements DiscriminatorType<String>, NoOperationSet {
+public class FileExtensionType extends AbstractExplicitlyExtractedType<File, String, RuntimeException>
+		implements DiscriminatorType<String>, NoOperationSet, HandledFunction<File, String, RuntimeException> {
 
 	public static final String NAME = "adn.service.resource.metamodel.type.FileExtensionType";
 

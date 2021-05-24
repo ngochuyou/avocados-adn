@@ -4,14 +4,10 @@
 package adn.service.resource.engine;
 
 import java.io.File;
-import java.io.IOException;
-import java.sql.Date;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -23,8 +19,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import adn.helpers.StringHelper;
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.FunctionalPropertyAccess;
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessDelegate;
+import adn.helpers.TypeHelper;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.query.QueryCompiler.QueryType;
 import adn.service.resource.engine.template.ResourceTemplate;
@@ -40,32 +36,8 @@ public class LocalStorageImpl implements LocalStorage {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private final Map<String, ResourceTemplate<?>> templates = new HashMap<>(8, .75f);
+	private final Map<String, ResourceTemplate> templates = new HashMap<>(8, .75f);
 	private final Map<String, ResultSetMetaDataImpl> metadataMap = new HashMap<>(8, .75f);
-	// @formatter:off
-	public static final Map<Class<?>, Map<Class<?>, Function<Object, Object>>> resolvers = Map.of(
-			Timestamp.class, Map.of(
-					Long.class, (longVal) -> new Timestamp((Long) longVal),
-					Date.class, (date) -> new Timestamp(((Date) date).getTime())
-			),
-			Date.class, Map.of(
-					Long.class, (longVal) -> new Date((Long) longVal)
-			),
-			long.class, Map.of(
-					Timestamp.class, (stamp) -> ((Timestamp) stamp).getTime()
-			)
-	);
-	
-	private final Map<Class<?>, Consumer<Object>> SAVE_EXECUTORS = Map.of(
-		File.class, (file) -> {
-			try {
-				((File) file).createNewFile();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	);
-	
 	private final Map<Class<?>, Function<Object, Boolean>> DUPLICATE_CHECKERS = Map.of(
 		File.class, (file) -> {
 			try {
@@ -92,9 +64,9 @@ public class LocalStorageImpl implements LocalStorage {
 	}
 
 	private ResultSetImplementor doSave(Query query) throws SQLException {
-		ResourceTemplate<?> template = templates.get(query.getTemplateName());
+		ResourceTemplate template = templates.get(query.getTemplateName());
 		String[] columnNames = template.getColumnNames();
-		PropertyAccessDelegate[] accessors = template.getPropertyAccessors();
+		PropertyAccessImplementor[] accessors = template.getPropertyAccessors();
 		int span = template.getColumnNames().length;
 		Object instance = instantiate(query, template);
 
@@ -103,7 +75,6 @@ public class LocalStorageImpl implements LocalStorage {
 		}
 
 		checkDuplicate(instance);
-		SAVE_EXECUTORS.get(template.getSystemType()).accept(instance);
 
 		return new ResourceResultSet(Arrays.asList(), metadataMap.get(template.getName()));
 	}
@@ -114,11 +85,11 @@ public class LocalStorageImpl implements LocalStorage {
 		}
 	}
 
-	private <T> T instantiate(Query query, ResourceTemplate<T> template) {
-		ResourceInstantiator<T> instantiator = template.getInstantiator();
+	private File instantiate(Query query, ResourceTemplate template) {
+		ResourceInstantiator<File> instantiator = template.getInstantiator();
 
 		if (instantiator instanceof ParameterizedInstantiator) {
-			ParameterizedInstantiator<T> inst = (ParameterizedInstantiator<T>) instantiator;
+			ParameterizedInstantiator<File> inst = (ParameterizedInstantiator<File>) instantiator;
 			String[] parameterNames = inst.getParameterNames();
 
 			return inst.instantiate(Stream.of(parameterNames).map(paramName -> query.getParameterValue(paramName))
@@ -129,22 +100,22 @@ public class LocalStorageImpl implements LocalStorage {
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T, E extends Throwable> void injectValue(PropertyAccessDelegate access, String name, Query query,
+	private <T, E extends Throwable> void injectValue(PropertyAccessImplementor access, String name, Query query,
 			T systemInstance) throws SQLException {
 		try {
-			if (access instanceof FunctionalPropertyAccess) {
-				FunctionalPropertyAccess<T, ?, ?> accessFnc = (FunctionalPropertyAccess<T, ?, ?>) access;
+//			if (access instanceof FunctionalPropertyAccess) {
+//				FunctionalPropertyAccess<T, ?, ?> accessFnc = (FunctionalPropertyAccess<T, ?, ?>) access;
+//
+//				if (accessFnc.hasSetterFunction()) {
+//					accessFnc.getSetterFunction().apply(systemInstance);
+//				}
+//
+//				return;
+//			}
 
-				if (accessFnc.hasSetterFunction()) {
-					accessFnc.getSetterFunction().apply(systemInstance);
-				}
-
-				return;
-			}
-
-			if (access.hasSetter()) {
-				checkTypeAndSet(systemInstance, access.getSetter(), query.getParameterValue(name));
-			}
+//			if (access.hasSetter()) {
+//				checkTypeAndSet(systemInstance, access.getSetter(), query.getParameterValue(name));
+//			}
 		} catch (Throwable e) {
 			throw new SQLException(e);
 		}
@@ -154,12 +125,12 @@ public class LocalStorageImpl implements LocalStorage {
 		Class<?> paramType = setter.getMethod().getParameterTypes()[0];
 
 		if (!paramType.equals(value.getClass())) {
-			if (!resolvers.containsKey(paramType)) {
+			if (!TypeHelper.TYPE_CONVERTER.containsKey(paramType)) {
 				throw new SQLException(String.format("Type mismatch [%s><%s]", paramType, value.getClass()));
 			}
 
 			logger.trace(String.format("Casting [%s] -> [%s]", value.getClass(), paramType));
-			setter.set(instance, resolvers.get(paramType).get(value.getClass()).apply(value), null);
+			setter.set(instance, TypeHelper.TYPE_CONVERTER.get(paramType).get(value.getClass()).apply(value), null);
 			return;
 		}
 
@@ -167,7 +138,7 @@ public class LocalStorageImpl implements LocalStorage {
 	}
 
 	@Override
-	public void registerTemplate(ResourceTemplate<?> template) throws IllegalArgumentException {
+	public void registerTemplate(ResourceTemplate template) throws IllegalArgumentException {
 		if (templates.containsKey(template.getName())) {
 			throw new IllegalArgumentException(String.format("Duplicate template: [%s]", template.getName()));
 		}
@@ -175,28 +146,34 @@ public class LocalStorageImpl implements LocalStorage {
 		validateAndPutTemplate(template);
 	}
 
-	private void validateAndPutTemplate(ResourceTemplate<?> template) {
+	private void validateAndPutTemplate(ResourceTemplate template) {
 		validateTemplate(template);
 		templates.put(template.getName(), template);
 		metadataMap.put(template.getName(), new ResultSetMetaDataImpl(template.getName(), template.getColumnNames()));
 		logger.trace(String.format("Registered new resource template: [\n%s\n]", template.toString()));
 	}
 
-	private void validateTemplate(ResourceTemplate<?> template) throws IllegalArgumentException {
+	private void validateTemplate(ResourceTemplate template) throws IllegalArgumentException {
 		logger.trace(String.format("Validating template: [%s]", template.getName()));
 
 		Assert.isTrue(StringHelper.hasLength(template.getName()), "Template name must not be empty");
-		Assert.notNull(template.getSystemType(), "Template system type must not be null");
+		Assert.isTrue(StringHelper.hasLength(template.getPathColumnName()), "Unable to locate pathname column");
+		Assert.notNull(template.getColumnNames(),
+				String.format("[%s]: Resource column names must not be null", template.getName()));
 
 		int span = template.getColumnNames().length;
 
 		Assert.isTrue(span == template.getColumnTypes().length, "Column names span and column types span must match");
 		Assert.isTrue(span == template.getPropertyAccessors().length,
 				"Column names span and property accessors span must match");
+		Assert.notNull(template.getPropertyAccessors()[0],
+				String.format("Property access of column [%s] must not be null", template.getColumnNames()[0]));
 
-		for (int i = 0; i < span; i++) {
+		for (int i = 1; i < span; i++) {
 			Assert.isTrue(StringHelper.hasLength(template.getColumnNames()[i]),
-					String.format("Column name must not be empty, found null at index [%s]", i));
+					String.format("Column name must not be empty, found null at index [%d]", i));
+			Assert.notNull(template.getColumnTypes()[i],
+					String.format("Column type must not be null, found null at index [%d]", i));
 			Assert.notNull(template.getPropertyAccessors()[i],
 					String.format("Property access of column [%s] must not be null", template.getColumnNames()[i]));
 		}

@@ -18,11 +18,7 @@ public @interface LocalResource {
 
 	String name() default "";
 
-	String path();
-
-	Class<?> systemType();
-
-	String[] columnNames() default { };
+	String[] constructorParameterColumnNames() default { };
 
 	Class<?>[] constructorParameterTypes() default { };
 

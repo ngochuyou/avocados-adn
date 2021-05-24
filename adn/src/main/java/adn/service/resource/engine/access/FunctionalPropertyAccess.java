@@ -1,10 +1,10 @@
 /**
  * 
  */
-package adn.service.resource.engine.access.migrate;
+package adn.service.resource.engine.access;
 
 import adn.helpers.FunctionHelper.HandledFunction;
-import adn.service.resource.engine.access.migrate.PropertyAccessStrategyFactory.LambdaPropertyAccessStrategy;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccessStrategy;
 
 /**
  * @author Ngoc Huy

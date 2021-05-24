@@ -3,25 +3,27 @@
  */
 package adn.service.resource.engine.template;
 
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessDelegate;
+import java.io.File;
+
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.tuple.InstantiatorFactory.ResourceInstantiator;
 
 /**
  * @author Ngoc Huy
  *
  */
-public interface ResourceTemplate<T> {
+public interface ResourceTemplate {
 
 	String getName();
 
-	Class<T> getSystemType();
+	String getPathColumnName();
 
 	String[] getColumnNames();
 
 	Class<?>[] getColumnTypes();
 
-	ResourceInstantiator<T> getInstantiator();
+	ResourceInstantiator<File> getInstantiator();
 
-	PropertyAccessDelegate[] getPropertyAccessors();
+	PropertyAccessImplementor[] getPropertyAccessors();
 
 }

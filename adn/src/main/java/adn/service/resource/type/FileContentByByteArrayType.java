@@ -10,13 +10,15 @@ import java.nio.file.Path;
 import org.hibernate.HibernateException;
 import org.hibernate.type.BinaryType;
 
+import adn.helpers.FunctionHelper.HandledFunction;
+
 /**
  * @author Ngoc Huy
  *
  */
 @SuppressWarnings("serial")
-public class FileContentByByteArrayType extends AbstractExplicitlyExtractedType<File, byte[]>
-		implements NoOperationSet {
+public class FileContentByByteArrayType extends AbstractExplicitlyExtractedType<File, byte[], RuntimeException>
+		implements NoOperationSet, HandledFunction<File, byte[], RuntimeException> {
 
 	public static final String NAME = "adn.service.resource.metamodel.type.ExplicitlyHydratedFileContextType";
 	public static final int MAX_SIZE_IN_ONE_READ = 5 * 1024 * 1024; // 5MB

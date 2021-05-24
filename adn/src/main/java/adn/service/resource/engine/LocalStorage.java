@@ -14,7 +14,7 @@ import adn.service.resource.engine.template.ResourceTemplate;
  */
 public interface LocalStorage {
 
-	void registerTemplate(ResourceTemplate<?> template) throws IllegalArgumentException;
+	void registerTemplate(ResourceTemplate template) throws IllegalArgumentException;
 
 	ResultSetImplementor query(Query query) throws SQLException;
 

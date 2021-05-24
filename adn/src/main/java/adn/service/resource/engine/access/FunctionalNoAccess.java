@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.engine.access.migrate;
+package adn.service.resource.engine.access;
 
 import org.hibernate.internal.util.MarkerObject;
 import org.hibernate.property.access.spi.PropertyAccessStrategy;
@@ -15,9 +15,7 @@ public class FunctionalNoAccess
 
 	public static final FunctionalNoAccess INSTANCE = new FunctionalNoAccess();
 
-	private static final MarkerObject NULL = new MarkerObject("NULL");
-
-	static final Object NO_OP = NULL;
+	static final Object NO_OP = new MarkerObject("NULL");
 
 	private FunctionalNoAccess() {
 		super(NO_OP, NO_OP);

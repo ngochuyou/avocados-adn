@@ -3,9 +3,6 @@
  */
 package adn.helpers;
 
-import java.lang.reflect.Method;
-import java.util.Optional;
-
 /**
  * @author Ngoc Huy
  *
@@ -26,37 +23,29 @@ public class FunctionHelper {
 		throw ex;
 	}
 
-	public static Optional<Method> getMethod(Class<?> owner, String methodName, Class<?> paramTypes) {
-		try {
-			return Optional.of(owner.getDeclaredMethod(methodName, paramTypes));
-		} catch (NoSuchMethodException | SecurityException e) {
-			return Optional.ofNullable(null);
-		}
-	}
-
 	@FunctionalInterface
-	public static interface HandledFunction<T, R, E extends Throwable> {
+	public static interface HandledFunction<T, R, E extends RuntimeException> {
 
 		R apply(T one) throws E;
 
 	}
 
 	@FunctionalInterface
-	public static interface HandledBiFunction<F, S, R, E extends Throwable> {
+	public static interface HandledBiFunction<F, S, R, E extends RuntimeException> {
 
 		R apply(F one, S two) throws E;
 
 	}
 
 	@FunctionalInterface
-	public static interface HandledConsumer<T, E extends Throwable> {
+	public static interface HandledConsumer<T, E extends RuntimeException> {
 
 		void apply(T one) throws E;
 
 	}
 
 	@FunctionalInterface
-	public static interface HandledSupplier<R, E extends Throwable> {
+	public static interface HandledSupplier<R, E extends RuntimeException> {
 
 		R apply() throws E;
 

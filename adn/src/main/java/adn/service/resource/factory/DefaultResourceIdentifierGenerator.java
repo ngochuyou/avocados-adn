@@ -16,7 +16,6 @@ import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 
-import adn.application.Constants;
 import adn.helpers.StringHelper;
 import adn.service.resource.model.models.Resource;
 
@@ -31,16 +30,15 @@ public class DefaultResourceIdentifierGenerator implements IdentifierGenerator, 
 	public static final String PATH = "adn.service.resource.factory.DefaultResourceIdentifierGenerator";
 
 	public static final String IDENTIFIER_PARTS_SEPERATOR = "_";
-	public static final int PART_COMPONENT_AMOUNT = 2;
+	public static final int PARTS_AMOUNT = 2;
 
 	@Override
 	public Serializable generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
 		// @formatter:off
 		if (object instanceof Resource) {
 			Resource instance = (Resource) object;
-
-			return new StringBuilder(String.valueOf(Constants.IMAGE_FILE_DIRECTORY))					
-					.append(new Date().getTime())
+			
+			return new StringBuilder("" + new Date().getTime())
 					.append(IDENTIFIER_PARTS_SEPERATOR)
 					.append(StringHelper.hash(instance.getName()))
 					.append(instance.getExtension().startsWith(".") ? instance.getExtension() : "." + instance.getExtension())
@@ -77,9 +75,9 @@ public class DefaultResourceIdentifierGenerator implements IdentifierGenerator, 
 		public static Date getCreationTimeStamp(String identifier) throws NumberFormatException, SQLException {
 			String[] parts = identifier.split(IDENTIFIER_PARTS_SEPERATOR);
 
-			if (parts.length != PART_COMPONENT_AMOUNT) {
+			if (parts.length != PARTS_AMOUNT) {
 				throw new SQLException(
-						String.format("Invalid Resource identifier value, expect %s part(s)", PART_COMPONENT_AMOUNT));
+						String.format("Invalid Resource identifier value, expect [%s] part(s)", PARTS_AMOUNT));
 			}
 
 			return new Date(Long.valueOf(parts[CREATION_TIMESTAMP.getPartPos()]));

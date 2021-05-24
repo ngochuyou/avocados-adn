@@ -41,7 +41,7 @@ public class ConnectionImpl implements LocalStorageConnection {
 	}
 
 	@Override
-	public void registerTemplate(ResourceTemplate<?> template) {
+	public void registerTemplate(ResourceTemplate template) {
 		storage.registerTemplate(template);
 	}
 

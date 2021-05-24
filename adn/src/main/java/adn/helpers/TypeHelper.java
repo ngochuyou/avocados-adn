@@ -6,6 +6,8 @@ package adn.helpers;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import javax.persistence.Table;
 
@@ -27,9 +30,30 @@ import adn.model.models.Model;
  */
 @Component
 public class TypeHelper {
-
 	private TypeHelper() {};
+	
 	// @formatter:off
+	public static final Map<Class<?>, Map<Class<?>, Function<Object, Object>>> TYPE_CONVERTER;
+	
+	static {
+		Map<Class<?>, Function<Object, Object>> dateResolvers = Map.of(
+				Long.class, (longVal) -> new Date((Long) longVal),
+				long.class, (longVal) -> new Date((long) longVal)
+		);
+		
+		TYPE_CONVERTER = Map.of(
+				Timestamp.class, Map.of(
+						Long.class, (longVal) -> new Timestamp((Long) longVal),
+						Date.class, (date) -> new Timestamp(((Date) date).getTime())
+				),
+				Date.class, dateResolvers,
+				java.util.Date.class, dateResolvers,
+				long.class, Map.of(
+						Timestamp.class, (stamp) -> ((Timestamp) stamp).getTime()
+				)
+		);
+	}
+
 	public static final Map<Class<?>, Set<Class<?>>> NON_PRIMITIVE_RELATION_MAP = Map.of(
 		Integer.class, Set.of(int.class),
 		Long.class, Set.of(int.class, long.class),

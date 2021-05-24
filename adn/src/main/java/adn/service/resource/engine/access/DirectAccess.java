@@ -4,6 +4,7 @@
 package adn.service.resource.engine.access;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Optional;
 
 import org.hibernate.property.access.spi.Getter;
@@ -12,56 +13,57 @@ import org.hibernate.property.access.spi.PropertyAccessStrategy;
 import org.hibernate.property.access.spi.Setter;
 import org.hibernate.property.access.spi.SetterFieldImpl;
 
-import javassist.Modifier;
-
 /**
+ * Provide direct access to a public field
+ * 
  * @author Ngoc Huy
  *
  */
 public class DirectAccess extends AbstractPropertyAccess {
 
-	DirectAccess(Class<?> owner, String fieldName) throws IllegalArgumentException {
-		try {
-			Field field = owner.getDeclaredField(fieldName);
-
-			if (!Modifier.isPublic(field.getModifiers())) {
-				throw new SecurityException(
-						String.format("Unable directly access non-public field [%s#%s]", owner.getName(), fieldName));
-			}
-
-			getter = new GetterFieldImpl(owner, fieldName, field);
-			setter = new SetterFieldImpl(owner, fieldName, field);
-		} catch (NoSuchFieldException | SecurityException e) {
-			throw new IllegalArgumentException(e);
-		}
+	DirectAccess(Class<?> ownerType, String fieldName) throws IllegalArgumentException {
+		// @formatter:off
+		this(locateGetter(ownerType, fieldName)
+				.orElseThrow(() -> new IllegalArgumentException(String.format("Unable to locate [%s] to field [%s] in type [%s]", DirectAccess.class.getSimpleName(), fieldName, ownerType.getName()))),
+			locateSetter(ownerType, fieldName)
+				.orElseThrow(() -> new IllegalArgumentException(String.format("Unable to locate [%s] to field [%s] in type [%s]", DirectAccess.class.getSimpleName(), fieldName, ownerType.getName()))));
+		// @formatter:on
 	}
 
-	static Optional<Getter> locateGetter(Class<?> owner, String fieldName) {
+	private DirectAccess(Getter getter, Setter setter) {
+		super(getter, setter);
+	}
+
+	public static Optional<Getter> locateGetter(Class<?> ownerType, String fieldName) {
 		try {
-			Field field = owner.getDeclaredField(fieldName);
+			Field field = ownerType.getDeclaredField(fieldName);
 
 			if (!Modifier.isPublic(field.getModifiers())) {
 				throw new SecurityException(
-						String.format("Unable directly access non-public field [%s#%s]", owner.getName(), fieldName));
+						String.format("Unable to directly access to non-public field [%s] in type [%s]", fieldName,
+								ownerType.getName()));
 			}
 
-			return Optional.of(new GetterFieldImpl(owner, fieldName, field));
+			return Optional.of(new GetterFieldImpl(ownerType, fieldName, field));
 		} catch (NoSuchFieldException | SecurityException e) {
+			e.printStackTrace();
 			return Optional.ofNullable(null);
 		}
 	}
 
-	static Optional<Setter> locateSetter(Class<?> owner, String fieldName) {
+	public static Optional<Setter> locateSetter(Class<?> ownerType, String fieldName) {
 		try {
-			Field field = owner.getDeclaredField(fieldName);
+			Field field = ownerType.getDeclaredField(fieldName);
 
 			if (!Modifier.isPublic(field.getModifiers())) {
 				throw new SecurityException(
-						String.format("Unable directly access non-public field [%s#%s]", owner.getName(), fieldName));
+						String.format("Unable to directly access to non-public field [%s] in type [%s]", fieldName,
+								ownerType.getName()));
 			}
 
-			return Optional.of(new SetterFieldImpl(owner, fieldName, field));
+			return Optional.of(new SetterFieldImpl(ownerType, fieldName, field));
 		} catch (NoSuchFieldException | SecurityException e) {
+			e.printStackTrace();
 			return Optional.ofNullable(null);
 		}
 	}
@@ -69,12 +71,6 @@ public class DirectAccess extends AbstractPropertyAccess {
 	@Override
 	public PropertyAccessStrategy getPropertyAccessStrategy() {
 		return PropertyAccessStrategyFactory.DIRECT_ACCESS_STRATEGY;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s(fieldName=[%s])", this.getClass().getSimpleName(),
-				((Field) getter.getMember()).getName());
 	}
 
 }

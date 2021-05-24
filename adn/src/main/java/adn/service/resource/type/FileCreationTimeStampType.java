@@ -10,6 +10,7 @@ import java.util.Date;
 import org.hibernate.HibernateException;
 import org.hibernate.type.DateType;
 
+import adn.helpers.FunctionHelper.HandledFunction;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator.ResourceIdentifierPart;
 
 /**
@@ -17,7 +18,8 @@ import adn.service.resource.factory.DefaultResourceIdentifierGenerator.ResourceI
  *
  */
 @SuppressWarnings("serial")
-public class FileCreationTimeStampType extends AbstractExplicitlyExtractedType<File, Date> implements NoOperationSet {
+public class FileCreationTimeStampType extends AbstractExplicitlyExtractedType<File, Date, RuntimeException>
+		implements NoOperationSet, HandledFunction<File, Date, RuntimeException> {
 
 	public static final String NAME = "adn.service.resource.metamodel.type.FileCreationTimeStampType";
 
