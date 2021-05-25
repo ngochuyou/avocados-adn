@@ -40,7 +40,6 @@ public class ResourceSession extends SessionImpl implements SessionImplementor, 
 
 		logger.debug(String.format("Creating new instance of [%s]", this.getClass().getName()));
 
-		setHibernateFlushMode(FlushMode.MANUAL); // by default
 		beginTransaction(); // begin the primary Transaction by default
 	}
 
@@ -57,6 +56,7 @@ public class ResourceSession extends SessionImpl implements SessionImplementor, 
 			SessionBuilderImpl<?> options = new SessionFactoryImpl.SessionBuilderImpl<>(sfi);
 
 			options.connection(ConnectionBuilder.INSTANCE.createConnection());
+			options.flushMode(FlushMode.MANUAL);
 			SESSION_CREATION_OPTIONS = options;
 		}
 

@@ -23,6 +23,26 @@ public class FunctionHelper {
 		throw ex;
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static HandledFunction from(HandledFunction target) {
+		return target::apply;
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static HandledBiFunction from(HandledBiFunction target) {
+		return target::apply;
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static HandledConsumer from(HandledConsumer target) {
+		return target::accept;
+	}
+
+	@SuppressWarnings({ "rawtypes" })
+	public static HandledSupplier from(HandledSupplier target) {
+		return target::get;
+	}
+
 	@FunctionalInterface
 	public static interface HandledFunction<T, R, E extends RuntimeException> {
 
@@ -40,14 +60,14 @@ public class FunctionHelper {
 	@FunctionalInterface
 	public static interface HandledConsumer<T, E extends RuntimeException> {
 
-		void apply(T one) throws E;
+		void accept(T one) throws E;
 
 	}
 
 	@FunctionalInterface
 	public static interface HandledSupplier<R, E extends RuntimeException> {
 
-		R apply() throws E;
+		R get() throws E;
 
 	}
 

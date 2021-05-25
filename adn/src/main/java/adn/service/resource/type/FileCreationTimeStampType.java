@@ -11,6 +11,8 @@ import org.hibernate.HibernateException;
 import org.hibernate.type.DateType;
 
 import adn.helpers.FunctionHelper.HandledFunction;
+import adn.service.resource.engine.access.PropertyAccess;
+import adn.service.resource.engine.access.PropertyAccess.Type;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator.ResourceIdentifierPart;
 
 /**
@@ -18,7 +20,7 @@ import adn.service.resource.factory.DefaultResourceIdentifierGenerator.ResourceI
  *
  */
 @SuppressWarnings("serial")
-public class FileCreationTimeStampType extends AbstractExplicitlyExtractedType<File, Date, RuntimeException>
+public class FileCreationTimeStampType extends AbstractExplicitlyBindedType<Date>
 		implements NoOperationSet, HandledFunction<File, Date, RuntimeException> {
 
 	public static final String NAME = "adn.service.resource.metamodel.type.FileCreationTimeStampType";
@@ -40,6 +42,7 @@ public class FileCreationTimeStampType extends AbstractExplicitlyExtractedType<F
 	}
 
 	@Override
+	@PropertyAccess(type = Type.GETTER, clazz = HandledFunction.class)
 	public Date apply(File file) throws HibernateException {
 		try {
 			return ResourceIdentifierPart.getCreationTimeStamp(file.getName());

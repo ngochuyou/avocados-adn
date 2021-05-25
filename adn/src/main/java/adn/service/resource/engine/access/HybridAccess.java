@@ -7,7 +7,7 @@ import org.hibernate.property.access.spi.Getter;
 import org.hibernate.property.access.spi.PropertyAccessStrategy;
 import org.hibernate.property.access.spi.Setter;
 
-import adn.service.resource.engine.access.AbstractLambdaPropertyAccess.Entry;
+import adn.helpers.Utils;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccess;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccessStrategy;
 
@@ -26,9 +26,9 @@ public class HybridAccess<F, S, R, E extends RuntimeException> extends AbstractP
 			LambdaPropertyAccessStrategy<F, S, R, E, Object, Object, HybridAccess<F, S, R, E>> strategy) {
 		super(getter, setter);
 
-		Entry<Object, LambdaPropertyAccess.LambdaType> getterEntry = AbstractLambdaPropertyAccess
+		Utils.Entry<Object, LambdaPropertyAccess.LambdaType> getterEntry = AbstractLambdaPropertyAccess
 				.validateGetter(getterLambda);
-		Entry<Object, LambdaPropertyAccess.LambdaType> setterEntry = AbstractLambdaPropertyAccess
+		Utils.Entry<Object, LambdaPropertyAccess.LambdaType> setterEntry = AbstractLambdaPropertyAccess
 				.validateSetter(setterLambda);
 
 		this.getterLambda = getterEntry.key == null ? FunctionalNoAccess.NO_OP : getterEntry.key;
@@ -41,6 +41,16 @@ public class HybridAccess<F, S, R, E extends RuntimeException> extends AbstractP
 	@Override
 	public PropertyAccessStrategy getPropertyAccessStrategy() {
 		return strategy;
+	}
+
+	@Override
+	public Getter getGetter() {
+		return super.getGetter();
+	}
+
+	@Override
+	public Setter getSetter() {
+		return super.getSetter();
 	}
 
 	@Override

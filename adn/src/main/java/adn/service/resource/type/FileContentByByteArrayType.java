@@ -11,13 +11,15 @@ import org.hibernate.HibernateException;
 import org.hibernate.type.BinaryType;
 
 import adn.helpers.FunctionHelper.HandledFunction;
+import adn.service.resource.engine.access.PropertyAccess;
+import adn.service.resource.engine.access.PropertyAccess.Type;
 
 /**
  * @author Ngoc Huy
  *
  */
 @SuppressWarnings("serial")
-public class FileContentByByteArrayType extends AbstractExplicitlyExtractedType<File, byte[], RuntimeException>
+public class FileContentByByteArrayType extends AbstractExplicitlyBindedType<byte[]>
 		implements NoOperationSet, HandledFunction<File, byte[], RuntimeException> {
 
 	public static final String NAME = "adn.service.resource.metamodel.type.ExplicitlyHydratedFileContextType";
@@ -28,6 +30,7 @@ public class FileContentByByteArrayType extends AbstractExplicitlyExtractedType<
 	}
 
 	@Override
+	@PropertyAccess(type = Type.GETTER, clazz = HandledFunction.class)
 	public byte[] apply(File arg) throws HibernateException {
 		try {
 			Path path = ((File) arg).toPath();

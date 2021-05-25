@@ -11,13 +11,15 @@ import org.hibernate.type.DiscriminatorType;
 import org.hibernate.type.StringType;
 
 import adn.helpers.FunctionHelper.HandledFunction;
+import adn.service.resource.engine.access.PropertyAccess;
+import adn.service.resource.engine.access.PropertyAccess.Type;
 
 /**
  * @author Ngoc Huy
  *
  */
 @SuppressWarnings("serial")
-public class FileExtensionType extends AbstractExplicitlyExtractedType<File, String, RuntimeException>
+public class FileExtensionType extends AbstractExplicitlyBindedType<String>
 		implements DiscriminatorType<String>, NoOperationSet, HandledFunction<File, String, RuntimeException> {
 
 	public static final String NAME = "adn.service.resource.metamodel.type.FileExtensionType";
@@ -50,6 +52,7 @@ public class FileExtensionType extends AbstractExplicitlyExtractedType<File, Str
 	}
 
 	@Override
+	@PropertyAccess(type = Type.GETTER, clazz = HandledFunction.class)
 	public String apply(File file) {
 		return "." + FilenameUtils.getExtension(file.getName());
 	}

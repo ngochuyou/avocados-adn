@@ -15,7 +15,7 @@ public class FunctionalNoAccess
 
 	public static final FunctionalNoAccess INSTANCE = new FunctionalNoAccess();
 
-	static final Object NO_OP = new MarkerObject("NULL");
+	static final Object NO_OP = new MarkerObject("FUNCTIONAL_NO_ACCESS");
 
 	private FunctionalNoAccess() {
 		super(NO_OP, NO_OP);

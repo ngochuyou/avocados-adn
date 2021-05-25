@@ -12,10 +12,9 @@ import org.hibernate.type.descriptor.sql.SqlTypeDescriptor;
  *
  */
 @SuppressWarnings("serial")
-public abstract class AbstractExplicitlyExtractedType<T, R, E extends RuntimeException>
-		extends AbstractSingleColumnStandardBasicType<R> {
+public abstract class AbstractExplicitlyBindedType<R> extends AbstractSingleColumnStandardBasicType<R> {
 
-	public AbstractExplicitlyExtractedType(SqlTypeDescriptor sqlTypeDescriptor,
+	public AbstractExplicitlyBindedType(SqlTypeDescriptor sqlTypeDescriptor,
 			JavaTypeDescriptor<R> javaTypeDescriptor) {
 		super(sqlTypeDescriptor, javaTypeDescriptor);
 	}
