@@ -22,7 +22,6 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 
 import adn.service.resource.engine.LocalStorage;
-import adn.service.resource.engine.template.ResourceTemplate;
 
 /**
  * @author Ngoc Huy
@@ -38,11 +37,6 @@ public class ConnectionImpl implements LocalStorageConnection {
 
 	public ConnectionImpl(LocalStorage storage) {
 		this.storage = storage;
-	}
-
-	@Override
-	public void registerTemplate(ResourceTemplate template) {
-		storage.registerTemplate(template);
 	}
 
 	@Override

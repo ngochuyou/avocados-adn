@@ -36,7 +36,7 @@ public class TypeHelper {
 	public static final Map<Class<?>, Map<Class<?>, Function<Object, Object>>> TYPE_CONVERTER;
 	
 	static {
-		Map<Class<?>, Function<Object, Object>> dateResolvers = Map.of(
+		Map<Class<?>, Function<Object, Object>> dateConverters = Map.of(
 				Long.class, (longVal) -> new Date((Long) longVal),
 				long.class, (longVal) -> new Date((long) longVal)
 		);
@@ -46,8 +46,8 @@ public class TypeHelper {
 						Long.class, (longVal) -> new Timestamp((Long) longVal),
 						Date.class, (date) -> new Timestamp(((Date) date).getTime())
 				),
-				Date.class, dateResolvers,
-				java.util.Date.class, dateResolvers,
+				Date.class, dateConverters,
+				java.util.Date.class, dateConverters,
 				long.class, Map.of(
 						Timestamp.class, (stamp) -> ((Timestamp) stamp).getTime()
 				)

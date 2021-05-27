@@ -5,7 +5,7 @@ package adn.service.resource.engine.tuple;
 
 import java.lang.reflect.InvocationTargetException;
 
-import adn.service.resource.engine.tuple.InstantiatorFactory.ResourceInstantiator;
+import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
 
 /**
  * @author Ngoc Huy
@@ -27,7 +27,7 @@ public class DefaultInstantiator<T> extends AbstractResourceInstantiator<T> {
 	}
 
 	@Override
-	public ResourceInstantiator<T> addColumnName(String name) {
+	public PojoInstantiator<T> addColumnName(String name) {
 		return this;
 	}
 

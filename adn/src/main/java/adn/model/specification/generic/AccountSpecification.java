@@ -32,7 +32,7 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 		Result<T> result = super.isSatisfiedBy(instance);
 
 		if (instance.getId() == null || instance.getId().length() < 8 || instance.getId().length() > 255) {
-			result.getMessageSet().put("id", "Id length must be between 8 and 255");
+			result.getMessageSet().put("id", "Id length must be between 8 and 31");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 

@@ -42,7 +42,7 @@ public class Account extends adn.model.entities.Entity {
 
 	protected String photo;
 
-	@Column(nullable = false)
+	@Column(nullable = false, length = 60) // maximum bcrypt-hash length
 	protected String password;
 
 	@Enumerated(EnumType.STRING)

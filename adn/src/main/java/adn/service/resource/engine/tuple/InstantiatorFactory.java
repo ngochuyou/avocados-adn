@@ -19,7 +19,7 @@ public class InstantiatorFactory {
 
 	private InstantiatorFactory() {}
 
-	public static <T> ResourceInstantiator<T> buildDefault(Class<T> type) throws IllegalArgumentException {
+	public static <T> PojoInstantiator<T> buildDefault(Class<T> type) throws IllegalArgumentException {
 		try {
 			return new DefaultInstantiator<T>().setConstructor(type.getConstructor()).setClass(type);
 		} catch (NoSuchMethodException | SecurityException e) {
@@ -28,7 +28,7 @@ public class InstantiatorFactory {
 		}
 	}
 
-	public static <T> ResourceInstantiator<T> build(Class<T> type, String[] paramNames, Class<?>[] paramTypes)
+	public static <T> PojoInstantiator<T> build(Class<T> type, String[] paramNames, Class<?>[] paramTypes)
 			throws IllegalArgumentException {
 		Assert.isTrue(paramNames.length == paramTypes.length,
 				"Amount of parameter names and parameter types must match");
@@ -50,13 +50,13 @@ public class InstantiatorFactory {
 		}
 	}
 
-	public interface ResourceInstantiator<T> extends Instantiator {
+	public interface PojoInstantiator<T> extends Instantiator {
 
-		ResourceInstantiator<T> setConstructor(Constructor<T> constructor) throws IllegalArgumentException;
+		PojoInstantiator<T> setConstructor(Constructor<T> constructor) throws IllegalArgumentException;
 
-		ResourceInstantiator<T> setClass(Class<T> clazz);
+		PojoInstantiator<T> setClass(Class<T> clazz);
 
-		ResourceInstantiator<T> addColumnName(String name);
+		PojoInstantiator<T> addColumnName(String name);
 
 		String[] getParameterNames();
 
@@ -68,20 +68,21 @@ public class InstantiatorFactory {
 			return instantiate();
 		}
 
+		Class<?>[] getParameterTypes();
+
 	}
 
-	public interface ParameterizedInstantiator<T> extends ResourceInstantiator<T> {
+	public interface ParameterizedInstantiator<T> extends PojoInstantiator<T> {
 
 		T instantiate(Object[] values) throws IllegalArgumentException;
 
 		@Override
+		default T instantiate(Serializable id) {
+			return instantiate(new Object[] { id });
+		}
+
+		@Override
 		ParameterizedInstantiator<T> addColumnName(String name);
-
-		@Override
-		ParameterizedInstantiator<T> setConstructor(Constructor<T> constructor) throws IllegalArgumentException;
-
-		@Override
-		ParameterizedInstantiator<T> setClass(Class<T> clazz);
 
 	}
 

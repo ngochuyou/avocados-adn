@@ -49,9 +49,8 @@ import adn.service.resource.engine.access.PropertyAccessStrategyFactory.Property
 import adn.service.resource.engine.access.StandardAccess;
 import adn.service.resource.engine.template.ResourceTemplateImpl;
 import adn.service.resource.engine.tuple.InstantiatorFactory;
-import adn.service.resource.engine.tuple.InstantiatorFactory.ResourceInstantiator;
+import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
-import adn.service.resource.factory.EntityPersisterImplementor;
 import adn.service.resource.type.AbstractExplicitlyBindedType;
 import adn.service.resource.type.NoOperationSet;
 
@@ -61,10 +60,9 @@ import adn.service.resource.type.NoOperationSet;
  * @param <D>
  */
 public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
-		implements EntityPersisterImplementor<D>, ClassMetadata, SharedSessionUnwrapper, SessionFactoryObserver {
+		implements ResourcePersister<D>, ClassMetadata, SharedSessionUnwrapper, SessionFactoryObserver {
 
 	private static final long serialVersionUID = 1L;
-
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private final UniqueEntityLoader resourceLoader;
@@ -87,7 +85,7 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			int span = getEntityMetamodel().getPropertySpan() + 1;
 			String[] columnNames = new String[span];
 			Class<?>[] columnTypes = new Class<?>[span];
-			ResourceInstantiator<File> instantiator = determineInstantiator();
+			PojoInstantiator<File> instantiator = determineInstantiator();
 			PropertyAccessImplementor[] accessors = new PropertyAccessImplementor[span];
 
 			columnNames[0] = getIdentifierColumnNames()[0];
@@ -109,7 +107,7 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			LocalStorageConnection connection = (LocalStorageConnection) delegate;
 
 			logger.trace(String.format("Registering template [%s]", getEntityName()));
-			connection.registerTemplate(
+			connection.getStorage().registerTemplate(
 					new ResourceTemplateImpl(String.format("%s#%s", getTableName(), getDiscriminatorValue()),
 							columnNames[0], columnNames, columnTypes, accessors, instantiator));
 
@@ -122,7 +120,7 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 	}
 
 	@SuppressWarnings("unchecked")
-	private ResourceInstantiator<File> determineInstantiator() {
+	private PojoInstantiator<File> determineInstantiator() {
 		LocalResource anno = (LocalResource) getMappedClass().getDeclaredAnnotation(LocalResource.class);
 
 		if (anno.constructorParameterColumnNames().length == 0) {

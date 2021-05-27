@@ -36,7 +36,7 @@ public class FileService implements Service {
 
 		try {
 			byte[] bytes = file.getBytes();
-			Path path = Paths.get(Constants.IMAGE_FILE_DIRECTORY + filename);
+			Path path = Paths.get(Constants.IMAGE_STORAGE_DIRECTORY + filename);
 
 			logger.debug("Writing file: " + filename);
 			Files.write(path, bytes);
@@ -51,7 +51,7 @@ public class FileService implements Service {
 
 	public byte[] getImageBytes(String filename) {
 		try {
-			File file = new File(Constants.IMAGE_FILE_DIRECTORY + filename);
+			File file = new File(Constants.IMAGE_STORAGE_DIRECTORY + filename);
 
 			if (!file.exists()) {
 				return null;

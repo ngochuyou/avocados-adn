@@ -54,12 +54,12 @@ public class HybridAccess<F, S, R, E extends RuntimeException> extends AbstractP
 	}
 
 	@Override
-	public Object getGetterFunction() {
+	public Object getGetterLambda() {
 		return getterLambda;
 	}
 
 	@Override
-	public Object getSetterFunction() {
+	public Object getSetterLambda() {
 		return setterLambda;
 	}
 

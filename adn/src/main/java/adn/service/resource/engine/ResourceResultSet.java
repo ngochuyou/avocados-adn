@@ -42,9 +42,9 @@ public class ResourceResultSet implements ResultSetImplementor {
 	private Object[] lastRead = null;
 	private final List<Object[]> rows;
 
-	ResourceResultSet(List<Object[]> rows, ResultSetMetaDataImpl metadata) {
+	ResourceResultSet(List<Object[]> rows, ResultSetMetaData metadata) {
 		this.rows = rows;
-		this.metadata = metadata;
+		this.metadata = (ResultSetMetaDataImpl) metadata;
 	}
 
 	private int getRightBound() throws SQLException {

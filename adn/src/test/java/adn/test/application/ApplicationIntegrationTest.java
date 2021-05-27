@@ -86,7 +86,7 @@ public class ApplicationIntegrationTest {
 
 	@Test
 	private void testGetImageBytes() throws Exception {
-		File directory = new File(Constants.IMAGE_FILE_DIRECTORY);
+		File directory = new File(Constants.IMAGE_STORAGE_DIRECTORY);
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
 				.get(MULTITHREADING_ENDPOINT + "/file/public/image/bytes");
 		int amount = directory.listFiles().length;

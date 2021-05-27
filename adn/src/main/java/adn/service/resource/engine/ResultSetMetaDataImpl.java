@@ -22,7 +22,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
 	private final Map<String, Integer> columnMap = new HashMap<>();
 	private final Map<Integer, String> indexMap = new HashMap<>();
 
-	ResultSetMetaDataImpl(String tableName, String[] columns) {
+	public ResultSetMetaDataImpl(String tableName, String[] columns) {
 		super();
 		this.tableName = tableName;
 

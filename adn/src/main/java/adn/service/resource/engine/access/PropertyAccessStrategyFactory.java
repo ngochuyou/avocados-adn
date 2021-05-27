@@ -18,7 +18,7 @@ import adn.helpers.FunctionHelper.HandledSupplier;
  *
  */
 @SuppressWarnings("rawtypes")
-public class PropertyAccessStrategyFactory {
+public final class PropertyAccessStrategyFactory {
 
 	public static final PropertyAccessStrategyImplementor<NoAccess> NO_ACCESS_STRATEGY = new PropertyAccessStrategyImplementor<NoAccess>() {
 
@@ -208,7 +208,7 @@ public class PropertyAccessStrategyFactory {
 		}
 
 		default boolean hasSetter() {
-			return getSetter() != null && getSetter() != NoAccess.NO_OP_GETTER;
+			return getSetter() != null && getSetter() != NoAccess.NO_OP_SETTER;
 		}
 
 	}
@@ -228,25 +228,25 @@ public class PropertyAccessStrategyFactory {
 
 		@Override
 		default boolean hasGetter() {
-			return hasGetterFunction();
+			return hasGetterLambda();
 		}
 
 		@Override
 		default boolean hasSetter() {
-			return hasSetterFunction();
+			return hasSetterLambda();
 		}
 
-		default boolean hasGetterFunction() {
-			return getGetterFunction() != null && getGetterFunction() != FunctionalNoAccess.NO_OP;
+		default boolean hasGetterLambda() {
+			return getGetterLambda() != null && getGetterLambda() != FunctionalNoAccess.NO_OP;
 		}
 
-		default boolean hasSetterFunction() {
-			return getSetterFunction() != null && getSetterFunction() != FunctionalNoAccess.NO_OP;
+		default boolean hasSetterLambda() {
+			return getSetterLambda() != null && getSetterLambda() != FunctionalNoAccess.NO_OP;
 		}
 
-		GETTER getGetterFunction();
+		GETTER getGetterLambda();
 
-		SETTER getSetterFunction();
+		SETTER getSetterLambda();
 
 		LambdaType getGetterType();
 
@@ -268,7 +268,7 @@ public class PropertyAccessStrategyFactory {
 			MixedLambdaPropertyAccess<RuntimeException> access = createMixedAccess().buildPropertyAccess(getter,
 					setter);
 
-			return new HybridAccess<>(null, null, access.getGetterFunction(), access.getSetterFunction(), this);
+			return new HybridAccess<>(null, null, access.getGetterLambda(), access.getSetterLambda(), this);
 		}
 
 		@Override

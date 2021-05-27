@@ -79,12 +79,12 @@ public abstract class AbstractLambdaPropertyAccess<F, S, R, E extends RuntimeExc
 	}
 
 	@Override
-	public GETTER getGetterFunction() {
+	public GETTER getGetterLambda() {
 		return getter;
 	}
 
 	@Override
-	public SETTER getSetterFunction() {
+	public SETTER getSetterLambda() {
 		return setter;
 	}
 
