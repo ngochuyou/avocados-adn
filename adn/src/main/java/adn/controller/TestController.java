@@ -3,6 +3,9 @@
  */
 package adn.controller;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Timer;
@@ -32,7 +35,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 import adn.security.SecurityConfiguration;
 import adn.service.resource.ResourceSession;
-import adn.service.resource.model.models.FileResource;
+import adn.service.resource.model.models.ImageByBytes;
 
 /**
  * @author Ngoc Huy
@@ -200,13 +203,17 @@ public class TestController extends BaseController {
 	private ResourceSession session;
 
 	@GetMapping("/file/public/image/session-load")
-	public @ResponseBody ResponseEntity<?> testGetImageBytes() {
-		FileResource file = new FileResource();
+	public @ResponseBody ResponseEntity<?> testGetImageBytes() throws IOException {
+		for (int i = 0; i < 10; i++) {
+			ImageByBytes file = new ImageByBytes();
 
-		file.setName("new_file");
-		file.setExtension(".jpg");
+			file.setExtension(".jpg");
+			file.setContent(Files
+					.readAllBytes(Paths.get("C:\\Users\\Ngoc Huy\\Pictures\\Saved Pictures\\IMG_20210301_162741.jpg")));
+			file.setName("new_file_" + i);
+			session.save(file);
+		}
 
-		session.save(file);
 		session.flush();
 
 		return ResponseEntity.ok(null);

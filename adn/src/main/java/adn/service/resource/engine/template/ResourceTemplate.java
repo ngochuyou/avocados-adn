@@ -6,6 +6,7 @@ package adn.service.resource.engine.template;
 import java.io.File;
 import java.sql.ResultSetMetaData;
 
+import org.hibernate.internal.util.MarkerObject;
 import org.hibernate.tuple.Tuplizer;
 
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
@@ -17,6 +18,8 @@ import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
  */
 public interface ResourceTemplate {
 
+	static final MarkerObject NULL_COLUMN = new MarkerObject("<null_column>");
+
 	String getName();
 
 	String getPathColumnName();
@@ -24,6 +27,10 @@ public interface ResourceTemplate {
 	String[] getColumnNames();
 
 	Class<?>[] getColumnTypes();
+
+	default String getDirectoryName() {
+		return "";
+	}
 
 	PojoInstantiator<File> getInstantiator();
 

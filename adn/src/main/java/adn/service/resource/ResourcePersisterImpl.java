@@ -41,12 +41,14 @@ import adn.helpers.FunctionHelper.HandledSupplier;
 import adn.helpers.StringHelper;
 import adn.helpers.Utils;
 import adn.service.resource.connection.LocalStorageConnection;
+import adn.service.resource.engine.Content;
 import adn.service.resource.engine.access.DirectAccess;
 import adn.service.resource.engine.access.LiterallyNamedAccess;
 import adn.service.resource.engine.access.PropertyAccessDelegate;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.access.StandardAccess;
+import adn.service.resource.engine.template.ResourceTemplate;
 import adn.service.resource.engine.template.ResourceTemplateImpl;
 import adn.service.resource.engine.tuple.InstantiatorFactory;
 import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
@@ -82,20 +84,45 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		Connection delegate = sessionCreationOptions.getConnection();
 
 		if (delegate instanceof LocalStorageConnection) {
-			int span = getEntityMetamodel().getPropertySpan() + 1;
+			Attribute<? super D, ?> contentAttr = locateContentProperty();
+			int span = contentAttr == null ? getEntityMetamodel().getPropertySpan() + 2
+					: getEntityMetamodel().getPropertySpan() + 1;
 			String[] columnNames = new String[span];
 			Class<?>[] columnTypes = new Class<?>[span];
-			PojoInstantiator<File> instantiator = determineInstantiator();
 			PropertyAccessImplementor[] accessors = new PropertyAccessImplementor[span];
+			PojoInstantiator<File> instantiator = determineInstantiator();
 
 			columnNames[0] = getIdentifierColumnNames()[0];
 			columnTypes[0] = getIdentifierType().getReturnedClass();
 			accessors[0] = determinePropertyAccess(getIdentifierType(), getIdentifierPropertyName());
 
+			int contentIndex = -1;
 			String propertyName;
 			String propertyColumnName;
 
-			for (int i = 0, j = 1; i < span - 1; i++, j++) {
+			if (contentAttr != null) {
+				contentIndex = getPropertyIndex(contentAttr.getName());
+				propertyColumnName = getPropertyColumnNames(contentIndex)[0];
+
+				columnNames[1] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName
+						: contentAttr.getName();
+				columnTypes[1] = getPropertyTypes()[contentIndex].getReturnedClass();
+				accessors[1] = determinePropertyAccess(getPropertyType(contentAttr.getName()), contentAttr.getName());
+				logger.trace(String.format("Found content property [%s]: [%s] at index [%d]", contentAttr.getName(),
+						columnTypes[1], contentIndex));
+			} else {
+				columnNames[1] = ResourceTemplate.NULL_COLUMN.toString();
+				columnTypes[1] = ResourceTemplate.NULL_COLUMN.getClass();
+				accessors[1] = PropertyAccessStrategyFactory.NO_ACCESS_STRATEGY.buildPropertyAccess(null, null);
+			}
+
+			int arrayBound = contentAttr == null ? span - 2 : span - 1;
+
+			for (int i = 0, j = 2; i < arrayBound; i++, j++) {
+				if (i == contentIndex) {
+					continue;
+				}
+
 				propertyName = getPropertyNames()[i];
 				propertyColumnName = getPropertyColumnNames(i)[0];
 
@@ -107,9 +134,10 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			LocalStorageConnection connection = (LocalStorageConnection) delegate;
 
 			logger.trace(String.format("Registering template [%s]", getEntityName()));
-			connection.getStorage().registerTemplate(
-					new ResourceTemplateImpl(String.format("%s#%s", getTableName(), getDiscriminatorValue()),
-							columnNames[0], columnNames, columnTypes, accessors, instantiator));
+			connection.getStorage()
+					.registerTemplate(new ResourceTemplateImpl(
+							String.format("%s#%s", getTableName(), getDiscriminatorValue()), columnNames[0],
+							columnNames, columnTypes, accessors, instantiator, determineDirectoryName()));
 
 			return;
 		}
@@ -129,6 +157,17 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 
 		return InstantiatorFactory.build(File.class, anno.constructorParameterColumnNames(),
 				anno.constructorParameterTypes());
+	}
+
+	@SuppressWarnings("unchecked")
+	private String determineDirectoryName() {
+		LocalResource anno = (LocalResource) getMappedClass().getDeclaredAnnotation(LocalResource.class);
+
+		if (anno.constructorParameterColumnNames().length == 0) {
+			return null;
+		}
+
+		return anno.directoryName();
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -265,6 +304,16 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		}
 
 		return null;
+	}
+
+	private Attribute<? super D, ?> locateContentProperty() {
+		return getFactory().getMetamodel().entity(getEntityName()).getAttributes().stream().filter(attr -> {
+			if (attr.getJavaMember() instanceof Field) {
+				return ((Field) attr.getJavaMember()).isAnnotationPresent(Content.class);
+			}
+
+			return false;
+		}).findFirst().orElse(null);
 	}
 
 	@Override

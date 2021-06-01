@@ -68,6 +68,7 @@ public class WebConfiguration implements WebMvcConfigurer {
 		properties.put("hibernate.id.new_generator_mappings", "false");
 		properties.put("hibernate.hbm2ddl.auto", "update");
 		properties.put("hibernate.flush_mode", "MANUAL");
+		properties.put("hibernate.jdbc.batch_size", 500);
 		sessionFactory.setHibernateProperties(properties);
 
 		return sessionFactory;

@@ -23,6 +23,7 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 
 	private final String name;
 
+	private final String directoryName;
 	private final String pathColumnName;
 	private final String[] columnNames;
 	private final Class<?>[] columnTypes;
@@ -33,7 +34,7 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 	private final ResultSetMetaData metadata;
 
 	public ResourceTemplateImpl(String name, String pathColumnName, String[] columnNames, Class<?>[] columnTypes,
-			PropertyAccessImplementor[] accessors, PojoInstantiator<File> instantiator) {
+			PropertyAccessImplementor[] accessors, PojoInstantiator<File> instantiator, String directoryName) {
 		super();
 		this.name = name;
 		this.pathColumnName = pathColumnName;
@@ -43,6 +44,7 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 		this.instantiator = instantiator;
 		this.tuplizer = new ResourceTuplizer(this);
 		this.metadata = new ResultSetMetaDataImpl(getName(), getColumnNames());
+		this.directoryName = directoryName == null ? "" : directoryName;
 	}
 
 	@Override
@@ -98,6 +100,11 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 	@Override
 	public ResultSetMetaData getResultSetMetaData() {
 		return metadata;
+	}
+
+	@Override
+	public String getDirectoryName() {
+		return directoryName;
 	}
 
 }

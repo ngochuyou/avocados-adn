@@ -22,10 +22,12 @@ import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
 
 import adn.service.resource.engine.StatementImpl;
 import adn.service.resource.engine.query.Query;
+import adn.service.resource.engine.query.QueryCompiler;
 
 /**
  * @author Ngoc Huy
@@ -33,13 +35,21 @@ import adn.service.resource.engine.query.Query;
  */
 public class PreparedStatementImpl extends StatementImpl implements PreparedStatement {
 
+	private Query query;
+	private int current = -1;
+
 	public PreparedStatementImpl(LocalStorageConnection connection) {
 		super(connection);
 	}
 
 	@Override
 	public ResultSet executeQuery() throws SQLException {
-		return null;
+		checkClose();
+
+		results = new ArrayList<>();
+		results.add(getConnection().getStorage().query(getQuery()));
+
+		return results.get(0);
 	}
 
 	@Override
@@ -47,7 +57,8 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 		checkClose();
 
 		try {
-			getConnection().getStorage().query(getQuery());
+			results = new ArrayList<>();
+			results.add(getConnection().getStorage().query(getQuery()));
 		} catch (Exception e) {
 			e.printStackTrace();
 			return 0;
@@ -57,7 +68,7 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 	}
 
 	private Query getQuery() {
-		return queries.get(0);
+		return query;
 	}
 
 	@Override
@@ -165,9 +176,21 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 		return false;
 	}
 
+	private Query getBatch() {
+		return batchList.get(current);
+	}
+
 	@Override
 	public void addBatch() throws SQLException {
+		getBatch().batch(query);
+		query = QueryCompiler.compile(query);
+	}
 
+	@Override
+	public void addBatch(String sql) throws SQLException {
+		super.addBatch(sql);
+		current++;
+		query = batchList.get(current);
 	}
 
 	@Override
@@ -197,7 +220,6 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 
 	@Override
 	public ResultSetMetaData getMetaData() throws SQLException {
-
 		return null;
 	}
 

@@ -23,7 +23,25 @@ public class QueryImpl implements Query {
 	private Map<Integer, String> paramNameMap = new HashMap<>();
 	private Map<String, Object> paramMap = new LinkedHashMap<>();
 
+	private Query next = null;
+
 	QueryImpl() {}
+
+	QueryImpl(Query parent) {
+		if (parent instanceof QueryImpl) {
+			QueryImpl sibling = (QueryImpl) parent;
+
+			this.templateName = sibling.templateName;
+			this.queryType = sibling.queryType;
+			this.paramNameMap = sibling.paramNameMap;
+			lockQuery();
+
+			return;
+		}
+
+		this.templateName = parent.getTemplateName();
+		this.queryType = parent.getType();
+	}
 
 	private void checkQueryLock() throws SQLException {
 		if (!isLocked) {
@@ -41,9 +59,9 @@ public class QueryImpl implements Query {
 	@Override
 	public Query setParameterValue(int i, Object value) throws SQLException {
 		int actualIndex = i - 1; // Hibernate sets query params from 1
-		
+
 		paramMap.put(paramNameMap.get(actualIndex), value);
-		
+
 		return this;
 	}
 
@@ -92,11 +110,11 @@ public class QueryImpl implements Query {
 	@Override
 	public String toString() {
 		// @formatter:off
-		return String.format("%s %s (%s) VALUES (%s)", queryType, templateName,
+		return String.format("\n\t%s %s (%s) VALUES (%s)%s", queryType, templateName,
 				paramMap.keySet().stream()
 					.collect(Collectors.joining(", ")),
 				paramMap.values().stream().map(param -> param == null ? null : param.toString())
-					.collect(Collectors.joining(", ")));
+					.collect(Collectors.joining(", ")), next == null ? "" : "" + next.toString());
 		// @formatter:on
 	}
 
@@ -110,6 +128,25 @@ public class QueryImpl implements Query {
 	@Override
 	public Object getParameterValue(String paramName) {
 		return paramMap.get(paramName);
+	}
+
+	@Override
+	public void batch(Query query) {
+		if (query.equals(this)) {
+			return;
+		}
+
+		if (this.next == null) {
+			this.next = query;
+			return;
+		}
+
+		this.next.batch(query);
+	}
+
+	@Override
+	public Query next() {
+		return next;
 	}
 
 }

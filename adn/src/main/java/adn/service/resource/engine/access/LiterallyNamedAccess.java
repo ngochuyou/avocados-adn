@@ -17,8 +17,7 @@ import org.hibernate.property.access.spi.SetterMethodImpl;
  * Access of this type can be used in scenarios where either getter or setter
  * method is named exactly like the field name.
  * </p>
- * In such cases, if the method is a getter, then the setter must be a
- * non-access
+ * In such cases, if a getter was given, then the setter must be a non-access
  * 
  * @author Ngoc Huy
  *

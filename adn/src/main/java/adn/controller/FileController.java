@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import adn.service.resource.model.models.FileByBytes;
+import adn.service.resource.model.models.ImageByBytes;
 import adn.service.services.FileService;
 
 /**
@@ -29,10 +29,10 @@ public class FileController extends BaseController {
 	@Autowired
 	private FileService fileService;
 
-	protected FileByBytes toFileResource(String filename, Date timestamp) {
+	protected ImageByBytes toFileResource(String filename, Date timestamp) {
 		String ext = FilenameUtils.getExtension(filename);
 
-		return new FileByBytes(filename.substring(0, filename.indexOf(ext)), ext, timestamp);
+		return new ImageByBytes(filename.substring(0, filename.indexOf(ext)), ext, timestamp);
 	}
 
 	@GetMapping("/public/image/bytes")
@@ -40,7 +40,7 @@ public class FileController extends BaseController {
 			@RequestParam(name = "filename", required = true) String filename) {
 		byte[] bytes = fileService.getImageBytes(filename);
 
-		FileByBytes resource = toFileResource(filename, new Date());
+		ImageByBytes resource = toFileResource(filename, new Date());
 
 //		resourceManager.save(resource);
 

@@ -11,6 +11,10 @@ import java.sql.SQLException;
  */
 public interface Query {
 
+	void batch(Query query);
+
+	Query next();
+
 	QueryCompiler.QueryType getType();
 
 	String getTemplateName();

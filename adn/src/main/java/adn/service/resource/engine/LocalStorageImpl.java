@@ -6,9 +6,12 @@ package adn.service.resource.engine;
 import java.io.File;
 import java.net.URI;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -19,6 +22,8 @@ import org.springframework.util.Assert;
 import org.springframework.validation.Validator;
 
 import adn.application.Constants;
+import adn.service.resource.engine.action.SaveAction;
+import adn.service.resource.engine.action.SaveActionImpl;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.query.QueryCompiler.QueryType;
 import adn.service.resource.engine.template.ResourceTemplate;
@@ -38,6 +43,8 @@ public class LocalStorageImpl implements LocalStorage {
 	private Validator templateValidator;
 	private final Map<String, ResourceTemplate> templates = new HashMap<>(8, .75f);
 
+	private final SaveAction saveAction = new SaveActionImpl(this);
+
 	@Autowired
 	public LocalStorageImpl() {}
 
@@ -53,27 +60,25 @@ public class LocalStorageImpl implements LocalStorage {
 	}
 
 	private ResultSetImplementor doSave(Query query) throws SQLException {
-		ResourceTemplate template = templates.get(query.getTemplateName());
-		File instance = instantiate(query, template);
-		// @formatter:off
-		template.getTuplizer().setPropertyValues(
-				instance,
-				Stream.of(template.getColumnNames())
-						.map(columnName -> query.getParameterValue(columnName))
-						.toArray(Object[]::new));
-		// @formatter:on
-		checkDuplicate(instance);
+		Query current = query;
+		List<Integer> results = new ArrayList<>();
 
-		return new ResourceResultSet(Arrays.asList(), template.getResultSetMetaData());
-	}
+		while (current != null) {
+			try {
+				saveAction.execute(current);
+				results.add(1);
+			} catch (Exception e) {
+				results.add(0);
+			}
 
-	private void checkDuplicate(File file) throws SQLException {
-		if (file.exists()) {
-			throw new SQLException(String.format("Duplicate entry [%s]", file.getPath()));
+			current = current.next();
 		}
+
+		return new ResourceResultSet(Arrays.asList(results.toArray()),
+				templates.get(query.getTemplateName()).getResultSetMetaData());
 	}
 
-	private File instantiate(Query query, ResourceTemplate template) {
+	public File instantiate(Query query, ResourceTemplate template) {
 		PojoInstantiator<File> instantiator = template.getInstantiator();
 
 		if (instantiator instanceof ParameterizedInstantiator) {
@@ -83,7 +88,7 @@ public class LocalStorageImpl implements LocalStorage {
 			Object[] parameters = Stream.of(parameterNames).map(paramName -> query.getParameterValue(paramName))
 					.toArray(Object[]::new);
 
-			preInstantiate(parameterTypes, parameters);
+			preInstantiate(parameterTypes, parameters, template.getDirectoryName());
 
 			return inst.instantiate(parameters);
 		}
@@ -91,13 +96,15 @@ public class LocalStorageImpl implements LocalStorage {
 		return instantiator.instantiate();
 	}
 
-	private void preInstantiate(Class<?>[] parameterTypes, Object[] parameters) throws IllegalArgumentException {
+	private void preInstantiate(Class<?>[] parameterTypes, Object[] parameters, String... additionalDirectory)
+			throws IllegalArgumentException {
 		if (parameterTypes[0].equals(String.class)) {
 			// new File(String [,String])
 			Assert.isTrue(parameters[0] instanceof String,
 					String.format("Parameter type mismatch at index [0], [%s><%s]",
 							parameters[0] != null ? parameters[0].getClass() : null, String.class));
-			parameters[0] = Constants.LOCAL_STORAGE_DIRECTORY + parameters[0];
+			parameters[0] = Constants.LOCAL_STORAGE_DIRECTORY
+					+ Stream.of(additionalDirectory).collect(Collectors.joining()) + parameters[0];
 			return;
 		}
 
@@ -136,6 +143,11 @@ public class LocalStorageImpl implements LocalStorage {
 		templateValidator.validate(template, null);
 		templates.put(template.getName(), template);
 		logger.trace(String.format("Registered new resource template: [\n%s\n]", template.toString()));
+	}
+
+	@Override
+	public ResourceTemplate getTemplate(String templateName) {
+		return templates.get(templateName);
 	}
 
 }

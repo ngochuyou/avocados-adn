@@ -48,6 +48,10 @@ public final class QueryCompiler {
 	private static final String INSERT_REGEX = "((?<=(insert\\sinto\\s))[\\w\\d_]+(?=\\s+))|((?<=\\()([\\w\\d_,\\s+]+)+(?=\\)))|values\\s+.+";
 	private static final Pattern INSERT_PATTERN = Pattern.compile(INSERT_REGEX);
 
+	public static Query compile(Query other) throws SQLException {
+		return new QueryImpl(other);
+	}
+
 	public static Query compile(String sql) throws SQLException {
 		QueryImpl query = new QueryImpl().setQueryType(QueryType.determineType(sql));
 		Matcher matcher = INSERT_PATTERN.matcher(sql);

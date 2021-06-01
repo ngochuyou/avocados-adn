@@ -22,4 +22,6 @@ public @interface LocalResource {
 
 	Class<?>[] constructorParameterTypes() default { };
 
+	String directoryName() default "";
+
 }

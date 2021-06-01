@@ -27,13 +27,13 @@ public class StatementImpl implements Statement {
 	private volatile boolean isClosed = false;
 	protected int timeout = ConnectionImpl.DEFAULT_QUERY_TIMEOUT;
 
-	public static final int DEFAULT_FETCH_SIZE = 10;
+	public static final int DEFAULT_FETCH_SIZE = 500;
 	private int fetchSize = DEFAULT_FETCH_SIZE;
 	private int maxFieldSize = ConnectionImpl.MAX_FIELD_SIZE;
 	private int resultSetMaxRows = ConnectionImpl.RESULT_SET_MAX_ROWS;
 
-	protected List<Query> queries = new ArrayList<>();
-	protected List<ResultSetImplementor> results = new ArrayList<>();
+	protected List<Query> batchList = new ArrayList<>();
+	protected List<ResultSetImplementor> results;
 
 	public StatementImpl(LocalStorageConnection connection) {
 		this.connection = connection;
@@ -52,7 +52,7 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public ResultSet executeQuery(String sql) throws SQLException {
-		return null;
+		return getConnection().getStorage().query(QueryCompiler.compile(sql));
 	}
 
 	@Override
@@ -170,18 +170,33 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public void addBatch(String sql) throws SQLException {
-		queries.add(QueryCompiler.compile(sql));
+		batchList.add(QueryCompiler.compile(sql));
 	}
 
 	@Override
 	public void clearBatch() throws SQLException {
-		queries.clear();
+		batchList.clear();
 		results.clear();
 	}
 
 	@Override
 	public int[] executeBatch() throws SQLException {
-		return null;
+		int size = batchList.size();
+		int[] batchResults = new int[size];
+
+		results = new ArrayList<>();
+
+		for (int i = 0; i < size; i++) {
+			try {
+				results.add(getConnection().getStorage().query(batchList.get(i)));
+				batchResults[i] = 1;
+			} catch (RuntimeException any) {
+				results.add(null);
+				batchResults[i] = 0;
+			}
+		}
+
+		return batchResults;
 	}
 
 	@Override
@@ -191,7 +206,7 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public boolean getMoreResults(int current) throws SQLException {
-		return current < 0;
+		return current < results.size();
 	}
 
 	@Override
@@ -262,7 +277,7 @@ public class StatementImpl implements Statement {
 	@Override
 	public String toString() {
 		return String.format("%s=(\n\tqueries=[\n\t\t%s\n\t]\n)", this.getClass().getSimpleName(),
-				queries.stream().map(query -> query.toString()).collect(Collectors.joining("\n\t\t-")));
+				batchList.stream().map(query -> query.toString()).collect(Collectors.joining("\n\t\t-")));
 	}
 
 }

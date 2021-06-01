@@ -9,6 +9,7 @@ import java.nio.file.Path;
 
 import org.hibernate.HibernateException;
 import org.hibernate.type.BinaryType;
+import org.hibernate.type.descriptor.java.PrimitiveByteArrayTypeDescriptor;
 
 import adn.helpers.FunctionHelper.HandledFunction;
 import adn.service.resource.engine.access.PropertyAccess;
@@ -26,7 +27,7 @@ public class FileContentByByteArrayType extends AbstractExplicitlyBindedType<byt
 	public static final int MAX_SIZE_IN_ONE_READ = 5 * 1024 * 1024; // 5MB
 
 	public FileContentByByteArrayType() {
-		super(BinaryType.INSTANCE.getSqlTypeDescriptor(), BinaryType.INSTANCE.getJavaTypeDescriptor());
+		super(BinaryType.INSTANCE.getSqlTypeDescriptor(), OptimalLogPrimitiveByteArrayTypeDescriptor.INSTANCE);
 	}
 
 	@Override
@@ -50,6 +51,28 @@ public class FileContentByByteArrayType extends AbstractExplicitlyBindedType<byt
 	@Override
 	public String getName() {
 		return NAME;
+	}
+
+	/**
+	 * The
+	 * {@link PrimitiveByteArrayTypeDescriptor#extractLoggableRepresentation(byte[])}
+	 * takes too long trying to log the whole byte[], this subclass is to override
+	 * that method so that we log the byte[].length instead
+	 * 
+	 * @author Ngoc Huy
+	 *
+	 */
+	public static class OptimalLogPrimitiveByteArrayTypeDescriptor extends PrimitiveByteArrayTypeDescriptor {
+
+		public static final OptimalLogPrimitiveByteArrayTypeDescriptor INSTANCE = new OptimalLogPrimitiveByteArrayTypeDescriptor();
+
+		private OptimalLogPrimitiveByteArrayTypeDescriptor() {}
+
+		@Override
+		public String extractLoggableRepresentation(byte[] value) {
+			return String.format("<byte_array:[%d]>", value.length);
+		}
+
 	}
 
 }

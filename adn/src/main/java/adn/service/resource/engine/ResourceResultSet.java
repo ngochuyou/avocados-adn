@@ -39,10 +39,10 @@ public class ResourceResultSet implements ResultSetImplementor {
 	private int direction = FETCH_FORWARD;
 	private boolean isClosed = false;
 
-	private Object[] lastRead = null;
-	private final List<Object[]> rows;
+	private Object lastRead = null;
+	private final List<Object> rows;
 
-	ResourceResultSet(List<Object[]> rows, ResultSetMetaData metadata) {
+	ResourceResultSet(List<Object> rows, ResultSetMetaData metadata) {
 		this.rows = rows;
 		this.metadata = (ResultSetMetaDataImpl) metadata;
 	}
@@ -66,7 +66,14 @@ public class ResourceResultSet implements ResultSetImplementor {
 	@Override
 	public Object getObject(int columnIndex) throws SQLException {
 		assertBound();
-		return (lastRead = getCurrentRow())[columnIndex];
+
+		lastRead = getCurrentRow();
+
+		if (lastRead instanceof Object[]) {
+			return ((Object[]) lastRead)[columnIndex];
+		}
+
+		return lastRead;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -110,7 +117,15 @@ public class ResourceResultSet implements ResultSetImplementor {
 	private <T> T typeSafeGet(int columnIndex, Class<T> type) throws SQLException {
 		assertBound();
 
-		Object[] val = (lastRead = getCurrentRow());
+		lastRead = getCurrentRow();
+
+		if (!(lastRead instanceof Object[])) {
+			if (type.isAssignableFrom(lastRead.getClass())) {
+				return (T) lastRead;
+			}
+		}
+
+		Object val = ((Object[]) lastRead)[columnIndex];
 
 		if (type.isAssignableFrom(val.getClass())) {
 			return (T) val;
@@ -1197,7 +1212,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 		return getObject(findColumn(columnLabel), type);
 	}
 
-	public Object[] getCurrentRow() throws SQLException {
+	public Object getCurrentRow() throws SQLException {
 		if (inBound()) {
 			return rows.get(current - 1);
 		}

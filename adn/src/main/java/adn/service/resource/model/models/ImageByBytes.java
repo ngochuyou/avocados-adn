@@ -12,7 +12,9 @@ import org.hibernate.annotations.Proxy;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
+import adn.application.Constants;
 import adn.service.resource.LocalResource;
+import adn.service.resource.engine.Content;
 import adn.service.resource.type.FileContentByByteArrayType;
 
 /**
@@ -22,27 +24,29 @@ import adn.service.resource.type.FileContentByByteArrayType;
 // @formatter:off
 @LocalResource(
 	constructorParameterColumnNames = FileResource.ID_NAME,
-	constructorParameterTypes = String.class
+	constructorParameterTypes = String.class,
+	directoryName = Constants.IMAGE_STORAGE_DIRECTORY
 )
 // @formatter:on
 @Entity
 @TypeDef(name = FileContentByByteArrayType.NAME, typeClass = FileContentByByteArrayType.class)
 @Proxy(lazy = false)
-public class FileByBytes extends FileResource {
+public class ImageByBytes extends FileResource {
 
 	@Column(nullable = false)
 	@Type(type = FileContentByByteArrayType.NAME)
+	@Content
 	private byte[] content;
 
-	public FileByBytes() {
+	public ImageByBytes() {
 		super();
 	}
 
-	public FileByBytes(String name, String extension, Date timestamp) {
+	public ImageByBytes(String name, String extension, Date timestamp) {
 		super(name, extension, timestamp);
 	}
 
-	public FileByBytes(String name, String extension, Date timestamp, byte[] content) {
+	public ImageByBytes(String name, String extension, Date timestamp, byte[] content) {
 		super(name, extension, timestamp);
 		this.content = content;
 	}
