@@ -102,8 +102,8 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 				logger.trace(String.format("Found content property [%s]: [%s] at index [%d]", contentAttr.getName(),
 						columnTypes[1], contentIndex));
 			} else {
-				columnNames[1] = ResourceTemplate.NULL_COLUMN.toString();
-				columnTypes[1] = ResourceTemplate.NULL_COLUMN.getClass();
+				columnNames[1] = ResourceTemplate.NO_CONTENT.toString();
+				columnTypes[1] = ResourceTemplate.NO_CONTENT.getClass();
 				accessors[1] = PropertyAccessStrategyFactory.NO_ACCESS_STRATEGY.buildPropertyAccess(null, null);
 			}
 

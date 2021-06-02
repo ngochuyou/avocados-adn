@@ -18,7 +18,7 @@ import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
  */
 public interface ResourceTemplate {
 
-	static final MarkerObject NULL_COLUMN = new MarkerObject("<null_column>");
+	static final MarkerObject NO_CONTENT = new MarkerObject("<null_content>");
 
 	String getName();
 

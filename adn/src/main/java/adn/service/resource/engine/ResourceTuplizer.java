@@ -222,6 +222,17 @@ public class ResourceTuplizer implements Tuplizer {
 				false);
 	}
 
+	public Object[] getPropertyValues(File instance) {
+		int span = template.getColumnNames().length;
+		Object[] values = new Object[span];
+
+		for (int i = 0; i < span; i++) {
+			values[i] = getPropertyValue(instance, i);
+		}
+
+		return values;
+	}
+
 	@Override
 	public File instantiate() {
 		if (template.getInstantiator() instanceof ParameterizedInstantiator) {

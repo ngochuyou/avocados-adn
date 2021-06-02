@@ -59,7 +59,7 @@ public class ConnectionImpl implements LocalStorageConnection {
 		PreparedStatement statement = new PreparedStatementImpl(this);
 
 		statement.addBatch(sql);
-
+		
 		return statement;
 	}
 

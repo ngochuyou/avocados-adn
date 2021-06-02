@@ -31,7 +31,7 @@ import adn.model.models.Model;
 @Component
 public class TypeHelper {
 	private TypeHelper() {};
-	
+
 	// @formatter:off
 	public static final Map<Class<?>, Map<Class<?>, Function<Object, Object>>> TYPE_CONVERTER;
 	
@@ -53,6 +53,9 @@ public class TypeHelper {
 				),
 				int.class, Map.of(
 						Integer.class, (nonPrim) -> ((Integer) nonPrim).intValue()
+				),
+				Integer.class, Map.of(
+						int.class, (nonPrim) -> (int) nonPrim
 				)
 		);
 	}

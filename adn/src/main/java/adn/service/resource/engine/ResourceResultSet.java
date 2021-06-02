@@ -26,7 +26,6 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -39,13 +38,13 @@ public class ResourceResultSet implements ResultSetImplementor {
 	private int direction = FETCH_FORWARD;
 	private boolean isClosed = false;
 
-	private Object lastRead = null;
-	private List<Object> rows;
+	private Object[] lastRead = null;
+	private Object[][] rows;
 
-	public ResourceResultSet(List<Object> rows, ResultSetMetaData metadata) {
+	public ResourceResultSet(Object[][] rows, ResultSetMetaData metadata) {
 		this.rows = rows;
 		this.metadata = (ResultSetMetaDataImpl) metadata;
-		current = rows.size();
+		current = 0;
 	}
 
 	private int getRightBound() throws SQLException {
@@ -64,17 +63,19 @@ public class ResourceResultSet implements ResultSetImplementor {
 		throw new SQLException(String.format("Fetch bound exceeded, current cursor position is [%d]", current));
 	}
 
+	private void checkColumnIndex(int requested) throws SQLException {
+		if (requested >= lastRead.length) {
+			throw new SQLException(String.format("Column [%d] not found on current row", requested));
+		}
+	}
+
 	@Override
 	public Object getObject(int columnIndex) throws SQLException {
 		assertBound();
+		readCurrentRow();
+		checkColumnIndex(columnIndex);
 
-		lastRead = readCurrentRow();
-
-		if (lastRead instanceof Object[]) {
-			return ((Object[]) lastRead)[columnIndex];
-		}
-
-		return lastRead;
+		return lastRead[columnIndex];
 	}
 
 	@SuppressWarnings("unchecked")
@@ -89,7 +90,6 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public boolean isWrapperFor(Class<?> iface) throws SQLException {
-
 		return iface.isAssignableFrom(this.getClass());
 	}
 
@@ -118,16 +118,9 @@ public class ResourceResultSet implements ResultSetImplementor {
 	private <T> T typeSafeGet(int columnIndex, Class<T> type) throws SQLException {
 		assertBound();
 		readCurrentRow();
+		checkColumnIndex(columnIndex);
 
-		if (!(lastRead instanceof Object[])) {
-			if (type.isAssignableFrom(lastRead.getClass())) {
-				return tryCast(lastRead, type,
-						String.format("Type mismatch when trying to get value from column result set row: [%s><%s]",
-								lastRead.getClass(), type));
-			}
-		}
-
-		Object val = ((Object[]) lastRead)[columnIndex];
+		Object val = lastRead[columnIndex];
 
 		if (type.isAssignableFrom(val.getClass())) {
 			return (T) val;
@@ -401,7 +394,6 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public boolean isBeforeFirst() throws SQLException {
-
 		return current == 0;
 	}
 
@@ -526,7 +518,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public int getFetchSize() throws SQLException {
-		return rows.size();
+		return rows.length;
 	}
 
 	@Override
@@ -1217,13 +1209,10 @@ public class ResourceResultSet implements ResultSetImplementor {
 		return getObject(findColumn(columnLabel), type);
 	}
 
-	public Object readCurrentRow() throws SQLException {
+	public void readCurrentRow() throws SQLException {
 		if (inBound()) {
-			lastRead = rows.get(current - 1);
-			return lastRead;
+			lastRead = rows[current - 1];
 		}
-
-		return null;
 	}
 
 }

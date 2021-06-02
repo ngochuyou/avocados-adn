@@ -38,14 +38,14 @@ public class SaveActionImpl implements SaveAction {
 
 	@Override
 	public void execute(Query query) throws RuntimeException {
-		ResourceTemplate template = storage.getTemplate(query.getTemplateName());
+		ResourceTemplate template = storage.getResourceTemplate(query.getTemplateName());
 
 		Assert.notNull(template, String.format("Unable to locate %s for name [%s]", ResourceTemplate.class.getName(),
 				query.getTemplateName()));
 
 		String contentColumnName;
 
-		if ((contentColumnName = template.getColumnNames()[1]).equals(ResourceTemplate.NULL_COLUMN.toString())) {
+		if ((contentColumnName = template.getColumnNames()[1]).equals(ResourceTemplate.NO_CONTENT.toString())) {
 			logger.trace(String.format("Ignoring save action on unsavable template[%s]", template.getName()));
 			return;
 		}

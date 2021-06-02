@@ -20,10 +20,10 @@ import org.springframework.util.Assert;
 import org.springframework.validation.Validator;
 
 import adn.application.Constants;
+import adn.service.resource.engine.action.Finder;
 import adn.service.resource.engine.action.SaveAction;
 import adn.service.resource.engine.action.SaveActionImpl;
 import adn.service.resource.engine.query.Query;
-import adn.service.resource.engine.query.QueryCompiler.QueryType;
 import adn.service.resource.engine.template.ResourceTemplate;
 import adn.service.resource.engine.tuple.InstantiatorFactory.ParameterizedInstantiator;
 import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
@@ -42,22 +42,52 @@ public class LocalStorageImpl implements LocalStorage {
 	private final Map<String, ResourceTemplate> templates = new HashMap<>(8, .75f);
 
 	private final SaveAction saveAction = new SaveActionImpl(this);
+	private final Finder finder = new Finder(this);
 
 	@Autowired
-	public LocalStorageImpl() {}
+	private LocalStorageImpl() {}
 
 	@Override
 	public ResultSetImplementor query(Query query) {
 		logger.trace(String.format("Executing query: [%s\n] ", query.toString()));
 
-		if (query.getType() == QueryType.SAVE) {
-			return doSave(query);
+		switch (query.getType()) {
+			case SAVE: {
+				return doSave(query);
+			}
+			case FIND: {
+				return doFind(query);
+			}
+			default: {
+				return new ExceptionResultSet(
+						new RuntimeException(String.format("Unknown query type [%s]", query.getType())));
+			}
 		}
-
-		return new ExceptionResultSet(new RuntimeException(String.format("Unknown query type [%s]", query.getType())));
 	}
 
-	private ResultSetImplementor doSave(Query query) throws RuntimeException {
+	private ResultSetImplementor doFind(Query query) {
+		ResourceTemplate template = getResourceTemplate(query.getTemplateName());
+		File file = finder.find(query, template);
+
+		if (file != null) {
+			logger.trace(String.format("Found one file with path [%s]", file.getPath()));
+
+			ResourceTuplizer tuplizer = (ResourceTuplizer) template.getTuplizer();
+			Object[] values;
+
+			try {
+				values = tuplizer.getPropertyValues(file);
+
+				return new ResourceResultSet(new Object[][] { values }, template.getResultSetMetaData());
+			} catch (RuntimeException any) {
+				return new ExceptionResultSet(any);
+			}
+		}
+
+		return new ResourceResultSet(new Object[0][0], template.getResultSetMetaData());
+	}
+
+	private ResultSetImplementor doSave(Query query) {
 		Query current = query;
 		List<Integer> results = new ArrayList<>();
 
@@ -72,7 +102,7 @@ public class LocalStorageImpl implements LocalStorage {
 			current = current.next();
 		}
 
-		return new ResourceUpdateCount(results.stream().mapToInt(Integer::intValue).toArray(), query.getTemplateName());
+		return new ResourceUpdateCount(results.toArray(Integer[]::new), query.getTemplateName());
 	}
 
 	public File instantiate(Query query, ResourceTemplate template) {
@@ -143,7 +173,7 @@ public class LocalStorageImpl implements LocalStorage {
 	}
 
 	@Override
-	public ResourceTemplate getTemplate(String templateName) {
+	public ResourceTemplate getResourceTemplate(String templateName) {
 		return templates.get(templateName);
 	}
 

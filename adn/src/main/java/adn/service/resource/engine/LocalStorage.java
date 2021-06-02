@@ -20,7 +20,7 @@ public interface LocalStorage {
 
 	ResultSetImplementor execute(Query query);
 
-	ResourceTemplate getTemplate(String templateName);
+	ResourceTemplate getResourceTemplate(String templateName);
 
 	File instantiate(Query query, ResourceTemplate template);
 

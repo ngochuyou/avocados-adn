@@ -3,7 +3,7 @@
  */
 package adn.service.resource.engine;
 
-import java.util.Arrays;
+import java.io.Serializable;
 
 /**
  * @author Ngoc Huy
@@ -12,7 +12,7 @@ import java.util.Arrays;
 public class ExceptionResultSet extends ResourceResultSet {
 
 	public ExceptionResultSet(RuntimeException re) {
-		super(Arrays.asList(new Object[] { re.getClass(), re.getMessage() }), new ExceptionResultSetMetadata());
+		super(new Serializable[][] { new Serializable[] { re.getClass(), re.getMessage() } }, new ExceptionResultSetMetadata());
 	}
 
 	public static class ExceptionResultSetMetadata extends ResultSetMetaDataImpl {
