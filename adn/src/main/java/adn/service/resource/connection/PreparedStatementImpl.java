@@ -381,7 +381,7 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 	}
 
 	@Override
-	public int[] executeBatch() throws SQLException {
+	public synchronized int[] executeBatch() throws SQLException {
 		checkClose();
 
 		int batchSize = batches.size();

@@ -22,6 +22,9 @@ public class ManagerFactory extends SessionFactoryImpl implements EntityManagerF
 
 	private final LocalStorage localStorage;
 
+	public static final String DTYPE_COLUMNNAME = "DTYPE";
+	public static final String DTYPE_SEPERATOR = "_";
+
 	public ManagerFactory(
 	// @formatter:off
 			final LocalStorage localStorage,
@@ -34,11 +37,7 @@ public class ManagerFactory extends SessionFactoryImpl implements EntityManagerF
 
 		Assert.notNull(localStorage, String.format("[%s] must not be null", LocalStorage.class));
 		this.localStorage = localStorage;
-
-		modifyLoadEventListeners();
 	}
-
-	private void modifyLoadEventListeners() {}
 
 	@Override
 	public LocalStorage getStorage() {

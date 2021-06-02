@@ -68,7 +68,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 	public Object getObject(int columnIndex) throws SQLException {
 		assertBound();
 
-		lastRead = getCurrentRow();
+		lastRead = readCurrentRow();
 
 		if (lastRead instanceof Object[]) {
 			return ((Object[]) lastRead)[columnIndex];
@@ -117,12 +117,13 @@ public class ResourceResultSet implements ResultSetImplementor {
 	@SuppressWarnings("unchecked")
 	private <T> T typeSafeGet(int columnIndex, Class<T> type) throws SQLException {
 		assertBound();
-
-		lastRead = getCurrentRow();
+		readCurrentRow();
 
 		if (!(lastRead instanceof Object[])) {
 			if (type.isAssignableFrom(lastRead.getClass())) {
-				return (T) lastRead;
+				return tryCast(lastRead, type,
+						String.format("Type mismatch when trying to get value from column result set row: [%s><%s]",
+								lastRead.getClass(), type));
 			}
 		}
 
@@ -132,6 +133,12 @@ public class ResourceResultSet implements ResultSetImplementor {
 			return (T) val;
 		}
 
+		return tryCast(val, type, String.format("Type mismatch when trying to get value from column {%d} [%s><%s]",
+				columnIndex, val.getClass(), type));
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> T tryCast(Object val, Class<?> type, String message) throws SQLException {
 		Map<Class<?>, Function<Object, Object>> resolver;
 
 		if (TypeHelper.TYPE_CONVERTER.containsKey(type)) {
@@ -144,8 +151,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 			}
 		}
 
-		throw new SQLException(String.format("Type mismatch when trying to get value from column {%d} [%s><%s]",
-				columnIndex, val.getClass(), type));
+		throw new SQLException(message);
 	}
 
 	private <T> T typeSafeGet(String name, Class<T> type) throws SQLException {
@@ -1211,9 +1217,10 @@ public class ResourceResultSet implements ResultSetImplementor {
 		return getObject(findColumn(columnLabel), type);
 	}
 
-	public Object getCurrentRow() throws SQLException {
+	public Object readCurrentRow() throws SQLException {
 		if (inBound()) {
-			return rows.get(current - 1);
+			lastRead = rows.get(current - 1);
+			return lastRead;
 		}
 
 		return null;

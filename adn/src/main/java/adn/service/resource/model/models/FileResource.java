@@ -5,13 +5,12 @@ package adn.service.resource.model.models;
 
 import java.util.Date;
 
-import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.MappedSuperclass;
 import javax.persistence.Version;
 
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Persister;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.TypeDefs;
@@ -19,7 +18,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.AccessType;
 
 import adn.service.resource.LocalResource;
-import adn.service.resource.ResourcePersisterImpl;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
 import adn.service.resource.type.FileCreationTimeStampType;
 import adn.service.resource.type.FileExtensionType;
@@ -33,8 +31,7 @@ import adn.service.resource.type.FileExtensionType;
 	constructorParameterColumnNames = FileResource.ID_NAME,
 	constructorParameterTypes = String.class
 )
-@Entity
-@Persister(impl = ResourcePersisterImpl.class)
+@MappedSuperclass
 @TypeDefs(value = {
 	@TypeDef(name = FileCreationTimeStampType.NAME, typeClass = FileCreationTimeStampType.class),
 	@TypeDef(name = FileExtensionType.NAME, typeClass = FileExtensionType.class)

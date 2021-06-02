@@ -8,12 +8,14 @@ import java.util.Date;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 
+import org.hibernate.annotations.Persister;
 import org.hibernate.annotations.Proxy;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import adn.application.Constants;
 import adn.service.resource.LocalResource;
+import adn.service.resource.ResourcePersisterImpl;
 import adn.service.resource.engine.Content;
 import adn.service.resource.type.FileContentByByteArrayType;
 
@@ -28,6 +30,7 @@ import adn.service.resource.type.FileContentByByteArrayType;
 	directoryName = Constants.IMAGE_STORAGE_DIRECTORY
 )
 // @formatter:on
+@Persister(impl = ResourcePersisterImpl.class)
 @Entity
 @TypeDef(name = FileContentByByteArrayType.NAME, typeClass = FileContentByByteArrayType.class)
 @Proxy(lazy = false)

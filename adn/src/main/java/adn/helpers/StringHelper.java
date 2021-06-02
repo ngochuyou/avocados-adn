@@ -135,4 +135,8 @@ public class StringHelper extends StringUtils {
 		return str;
 	}
 
+	public static String get(Object in, String orElse) {
+		return in != null && hasLength(in.toString()) ? in.toString() : orElse;
+	}
+
 }

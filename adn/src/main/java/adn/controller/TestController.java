@@ -4,8 +4,6 @@
 package adn.controller;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Timer;
@@ -204,19 +202,10 @@ public class TestController extends BaseController {
 
 	@GetMapping("/file/public/image/session-load")
 	public @ResponseBody ResponseEntity<?> testGetImageBytes() throws IOException {
-		for (int i = 0; i < 10; i++) {
-			ImageByBytes file = new ImageByBytes();
+		ImageByBytes image = session.get(ImageByBytes.class,
+				"1619973416467_0c46022fcfda4d9f4bb8c09e8c42e9efc12d839d35c78c73e4dab1d24fac8a1c.jpg");
 
-			file.setExtension(".jpg");
-			file.setContent(Files
-					.readAllBytes(Paths.get("C:\\Users\\Ngoc Huy\\Pictures\\Saved Pictures\\IMG_20210301_162741.jpg")));
-			file.setName("new_file_" + i);
-			session.save(file);
-		}
-
-		session.flush();
-
-		return ResponseEntity.ok(null);
+		return ResponseEntity.ok(image);
 	}
 
 }
