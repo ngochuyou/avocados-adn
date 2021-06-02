@@ -24,8 +24,13 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import adn.service.resource.engine.StatementImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import adn.service.resource.engine.ResultSetImplementor;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.query.QueryCompiler;
 
@@ -35,36 +40,63 @@ import adn.service.resource.engine.query.QueryCompiler;
  */
 public class PreparedStatementImpl extends StatementImpl implements PreparedStatement {
 
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
 	private Query query;
+
 	private int current = -1;
+	private List<Query> batches = new ArrayList<>();
+	private List<ResultSetImplementor> results = new ArrayList<>();
 
 	public PreparedStatementImpl(LocalStorageConnection connection) {
 		super(connection);
 	}
 
 	@Override
-	public ResultSet executeQuery() throws SQLException {
+	protected void clearResults() throws SQLException {
+		current = -1;
+		results.clear();
+	}
+
+	@Override
+	public synchronized ResultSet executeQuery() throws SQLException {
 		checkClose();
+		clearResults();
 
-		results = new ArrayList<>();
-		results.add(getConnection().getStorage().query(getQuery()));
+		for (Query batch : batches) {
+			results.add(getConnection().getStorage().query(batch));
+		}
 
-		return results.get(0);
+		current = 0;
+
+		return getResultSet();
 	}
 
 	@Override
 	public synchronized int executeUpdate() throws SQLException {
 		checkClose();
+		clearResults();
 
 		try {
-			results = new ArrayList<>();
-			results.add(getConnection().getStorage().query(getQuery()));
+			for (Query batch : batches) {
+				if (batch.getType().equals(QueryCompiler.QueryType.FIND)) {
+					logger.trace(String.format("Skipping FIND query [%s]", batch.toString()));
+					continue;
+				}
+
+				results.add(getConnection().getStorage().execute(batch));
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			return 0;
 		}
 
 		return 1;
+	}
+
+	@Override
+	public ResultSet getResultSet() throws SQLException {
+		return results.get(current);
 	}
 
 	private Query getQuery() {
@@ -177,7 +209,7 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 	}
 
 	private Query getBatch() {
-		return batchList.get(current);
+		return batches.get(current);
 	}
 
 	@Override
@@ -188,9 +220,9 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 
 	@Override
 	public void addBatch(String sql) throws SQLException {
-		super.addBatch(sql);
+		batches.add(QueryCompiler.compile(sql));
 		current++;
-		query = batchList.get(current);
+		query = getBatch();
 	}
 
 	@Override
@@ -346,6 +378,34 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 	@Override
 	public void setNClob(int parameterIndex, Reader reader) throws SQLException {
 
+	}
+
+	@Override
+	public int[] executeBatch() throws SQLException {
+		checkClose();
+
+		int batchSize = batches.size();
+		int[] updateCounts = new int[batches.size()];
+
+		clearResults();
+
+		for (int i = 0; i < batchSize; i++) {
+			try {
+				this.results.add(getConnection().getStorage().query(batches.get(i)));
+				updateCounts[i] = this.results.get(i).getInt(0);
+			} catch (RuntimeException e) {
+				e.printStackTrace();
+				updateCounts[i] = 0;
+			}
+		}
+
+		return updateCounts;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s=(\n\tbatches=[\n\t\t%s\n\t]\n)", this.getClass().getSimpleName(),
+				batches.stream().map(query -> query.toString()).collect(Collectors.joining("\n\t\t-")));
 	}
 
 }

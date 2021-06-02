@@ -35,16 +35,17 @@ import adn.helpers.TypeHelper;
 public class ResourceResultSet implements ResultSetImplementor {
 
 	private int current = 0;
-	private final ResultSetMetaDataImpl metadata;
+	private ResultSetMetaDataImpl metadata;
 	private int direction = FETCH_FORWARD;
 	private boolean isClosed = false;
 
 	private Object lastRead = null;
-	private final List<Object> rows;
+	private List<Object> rows;
 
-	ResourceResultSet(List<Object> rows, ResultSetMetaData metadata) {
+	public ResourceResultSet(List<Object> rows, ResultSetMetaData metadata) {
 		this.rows = rows;
 		this.metadata = (ResultSetMetaDataImpl) metadata;
+		current = rows.size();
 	}
 
 	private int getRightBound() throws SQLException {
@@ -177,13 +178,11 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public int getInt(int columnIndex) throws SQLException {
-
 		return typeSafeGet(columnIndex, int.class);
 	}
 
 	@Override
 	public long getLong(int columnIndex) throws SQLException {
-
 		return typeSafeGet(columnIndex, long.class);
 	}
 

@@ -5,9 +5,7 @@ package adn.service.resource.engine;
 
 import java.io.File;
 import java.net.URI;
-import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,17 +47,17 @@ public class LocalStorageImpl implements LocalStorage {
 	public LocalStorageImpl() {}
 
 	@Override
-	public ResultSetImplementor query(Query query) throws SQLException {
-		logger.trace(String.format("Executing query: [%s] ", query.toString()));
+	public ResultSetImplementor query(Query query) {
+		logger.trace(String.format("Executing query: [%s\n] ", query.toString()));
 
 		if (query.getType() == QueryType.SAVE) {
 			return doSave(query);
 		}
 
-		throw new SQLException(String.format("Unknown query type [%s]", query.getType()));
+		return new ExceptionResultSet(new RuntimeException(String.format("Unknown query type [%s]", query.getType())));
 	}
 
-	private ResultSetImplementor doSave(Query query) throws SQLException {
+	private ResultSetImplementor doSave(Query query) throws RuntimeException {
 		Query current = query;
 		List<Integer> results = new ArrayList<>();
 
@@ -74,8 +72,7 @@ public class LocalStorageImpl implements LocalStorage {
 			current = current.next();
 		}
 
-		return new ResourceResultSet(Arrays.asList(results.toArray()),
-				templates.get(query.getTemplateName()).getResultSetMetaData());
+		return new ResourceUpdateCount(results.stream().mapToInt(Integer::intValue).toArray(), query.getTemplateName());
 	}
 
 	public File instantiate(Query query, ResourceTemplate template) {
@@ -148,6 +145,11 @@ public class LocalStorageImpl implements LocalStorage {
 	@Override
 	public ResourceTemplate getTemplate(String templateName) {
 		return templates.get(templateName);
+	}
+
+	@Override
+	public ResultSetImplementor execute(Query query) throws RuntimeException {
+		return null;
 	}
 
 }

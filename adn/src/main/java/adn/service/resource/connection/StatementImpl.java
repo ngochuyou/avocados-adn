@@ -1,18 +1,18 @@
 /**
  * 
  */
-package adn.service.resource.engine;
+package adn.service.resource.connection;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
-import adn.service.resource.connection.ConnectionImpl;
-import adn.service.resource.connection.LocalStorageConnection;
+import org.springframework.util.Assert;
+
+import adn.helpers.StringHelper;
+import adn.service.resource.engine.ResourceUpdateCount;
+import adn.service.resource.engine.ResultSetImplementor;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.query.QueryCompiler;
 
@@ -22,18 +22,15 @@ import adn.service.resource.engine.query.QueryCompiler;
  */
 public class StatementImpl implements Statement {
 
-	private final LocalStorageConnection connection;
+	private volatile LocalStorageConnection connection;
+	private boolean isClosed = false;
 
-	private volatile boolean isClosed = false;
-	protected int timeout = ConnectionImpl.DEFAULT_QUERY_TIMEOUT;
+	private int maxRowsSize = LocalStorageConnection.Settings.MAX_RESULT_SET_ROWS;
+	private int maxFieldSize = LocalStorageConnection.Settings.MAX_FIELD_SIZE;
 
-	public static final int DEFAULT_FETCH_SIZE = 500;
-	private int fetchSize = DEFAULT_FETCH_SIZE;
-	private int maxFieldSize = ConnectionImpl.MAX_FIELD_SIZE;
-	private int resultSetMaxRows = ConnectionImpl.RESULT_SET_MAX_ROWS;
-
-	protected List<Query> batchList = new ArrayList<>();
-	protected List<ResultSetImplementor> results;
+	protected int updateCount = -1;
+	private Query query;
+	private ResultSetImplementor result;
 
 	public StatementImpl(LocalStorageConnection connection) {
 		this.connection = connection;
@@ -57,18 +54,48 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public int executeUpdate(String sql) throws SQLException {
-		return 0;
+		return executeUpdateInternal(sql);
+	}
+
+	protected synchronized int executeUpdateInternal(String sql) throws SQLException {
+		checkClose();
+		checkSQL(sql);
+
+		Query query = QueryCompiler.compile(sql);
+
+		Assert.isTrue(query.getType() != QueryCompiler.QueryType.FIND,
+				String.format("Unable to execute update from a SELECT query: [%s]", sql));
+
+		try {
+			result = getConnection().getStorage().execute(query);
+		} catch (Exception any) {
+			updateCount = 0;
+			throw new SQLException(any);
+		} finally {
+			updateCount = this.result.getInt(0);
+		}
+
+		return updateCount;
+	}
+
+	protected void checkSQL(String sql) throws SQLException {
+		if (!StringHelper.hasLength(sql)) {
+			throw new SQLException("Unable to execute empty statement");
+		}
 	}
 
 	protected void checkClose() throws SQLException {
-		if (isClosed) {
+		if (connection == null) {
 			throw new SQLException("Statement was closed");
 		}
 	}
 
 	@Override
 	public synchronized void close() throws SQLException {
-		this.isClosed = true;
+		connection = null;
+		isClosed = true;
+		query = null;
+		result.close();
 	}
 
 	@Override
@@ -78,17 +105,21 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public void setMaxFieldSize(int max) throws SQLException {
-		this.maxFieldSize = max;
+		maxFieldSize = max > LocalStorageConnection.Settings.MAX_FIELD_SIZE
+				? LocalStorageConnection.Settings.MAX_FIELD_SIZE
+				: max;
 	}
 
 	@Override
 	public int getMaxRows() throws SQLException {
-		return resultSetMaxRows;
+		return maxRowsSize;
 	}
 
 	@Override
 	public void setMaxRows(int max) throws SQLException {
-		this.resultSetMaxRows = max > ConnectionImpl.RESULT_SET_MAX_ROWS ? ConnectionImpl.RESULT_SET_MAX_ROWS : max;
+		maxRowsSize = max > LocalStorageConnection.Settings.MAX_RESULT_SET_ROWS
+				? LocalStorageConnection.Settings.MAX_RESULT_SET_ROWS
+				: max;
 	}
 
 	@Override
@@ -96,13 +127,11 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public int getQueryTimeout() throws SQLException {
-		return timeout;
+		return 0;
 	}
 
 	@Override
-	public void setQueryTimeout(int seconds) throws SQLException {
-		this.timeout = seconds;
-	}
+	public void setQueryTimeout(int seconds) throws SQLException {}
 
 	@Override
 	public void cancel() throws SQLException {}
@@ -120,17 +149,18 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public boolean execute(String sql) throws SQLException {
-		return false;
+		executeUpdateInternal(sql);
+		return result != null && !(result instanceof ResourceUpdateCount);
 	}
 
 	@Override
 	public ResultSet getResultSet() throws SQLException {
-		return null;
+		return result;
 	}
 
 	@Override
 	public int getUpdateCount() throws SQLException {
-		return 0;
+		return updateCount;
 	}
 
 	@Override
@@ -150,12 +180,12 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public void setFetchSize(int rows) throws SQLException {
-		this.fetchSize = rows;
+
 	}
 
 	@Override
 	public int getFetchSize() throws SQLException {
-		return fetchSize;
+		return 0;
 	}
 
 	@Override
@@ -169,34 +199,26 @@ public class StatementImpl implements Statement {
 	}
 
 	@Override
-	public void addBatch(String sql) throws SQLException {
-		batchList.add(QueryCompiler.compile(sql));
+	public synchronized void addBatch(String sql) throws SQLException {
+		query = QueryCompiler.compile(sql);
 	}
 
 	@Override
-	public void clearBatch() throws SQLException {
-		batchList.clear();
-		results.clear();
+	public synchronized void clearBatch() throws SQLException {
+		if (query != null) {
+			query.clear();
+		}
+	}
+
+	protected void clearResults() throws SQLException {
+		result.close();
 	}
 
 	@Override
 	public int[] executeBatch() throws SQLException {
-		int size = batchList.size();
-		int[] batchResults = new int[size];
+		result = getConnection().getStorage().query(query);
 
-		results = new ArrayList<>();
-
-		for (int i = 0; i < size; i++) {
-			try {
-				results.add(getConnection().getStorage().query(batchList.get(i)));
-				batchResults[i] = 1;
-			} catch (RuntimeException any) {
-				results.add(null);
-				batchResults[i] = 0;
-			}
-		}
-
-		return batchResults;
+		return new int[] { result.getInt(0) };
 	}
 
 	@Override
@@ -205,8 +227,8 @@ public class StatementImpl implements Statement {
 	}
 
 	@Override
-	public boolean getMoreResults(int current) throws SQLException {
-		return current < results.size();
+	public synchronized boolean getMoreResults(int current) throws SQLException {
+		return false;
 	}
 
 	@Override
@@ -216,37 +238,47 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
-		return 0;
+		return executeUpdateInternal(sql);
 	}
 
 	@Override
 	public int executeUpdate(String sql, int[] columnIndexes) throws SQLException {
-		return 0;
+		return executeUpdateInternal(sql);
 	}
 
 	@Override
 	public int executeUpdate(String sql, String[] columnNames) throws SQLException {
-		return 0;
+		return executeUpdateInternal(sql);
+	}
+
+	private boolean isLastEmptyOrUpdateCount() {
+		return result == null || result instanceof ResourceUpdateCount;
 	}
 
 	@Override
 	public boolean execute(String sql, int autoGeneratedKeys) throws SQLException {
-		return false;
+		executeUpdateInternal(sql);
+
+		return !isLastEmptyOrUpdateCount();
 	}
 
 	@Override
 	public boolean execute(String sql, int[] columnIndexes) throws SQLException {
-		return false;
+		executeUpdateInternal(sql);
+
+		return !isLastEmptyOrUpdateCount();
 	}
 
 	@Override
 	public boolean execute(String sql, String[] columnNames) throws SQLException {
-		return false;
+		executeUpdateInternal(sql);
+
+		return !isLastEmptyOrUpdateCount();
 	}
 
 	@Override
 	public int getResultSetHoldability() throws SQLException {
-		return 0;
+		return result.getHoldability();
 	}
 
 	@Override
@@ -276,8 +308,7 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public String toString() {
-		return String.format("%s=(\n\tqueries=[\n\t\t%s\n\t]\n)", this.getClass().getSimpleName(),
-				batchList.stream().map(query -> query.toString()).collect(Collectors.joining("\n\t\t-")));
+		return String.format("%s=(\n\tquery=[\n\t\t%s\n\t]\n)", this.getClass().getSimpleName(), query);
 	}
 
 }

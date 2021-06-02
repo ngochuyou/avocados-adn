@@ -4,7 +4,6 @@
 package adn.service.resource.engine;
 
 import java.io.File;
-import java.sql.SQLException;
 
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.template.ResourceTemplate;
@@ -17,7 +16,9 @@ public interface LocalStorage {
 
 	void registerTemplate(ResourceTemplate template) throws IllegalArgumentException;
 
-	ResultSetImplementor query(Query query) throws SQLException;
+	ResultSetImplementor query(Query query);
+
+	ResultSetImplementor execute(Query query);
 
 	ResourceTemplate getTemplate(String templateName);
 

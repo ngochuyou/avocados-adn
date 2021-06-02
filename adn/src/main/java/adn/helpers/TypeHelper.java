@@ -50,6 +50,9 @@ public class TypeHelper {
 				java.util.Date.class, dateConverters,
 				long.class, Map.of(
 						Timestamp.class, (stamp) -> ((Timestamp) stamp).getTime()
+				),
+				int.class, Map.of(
+						Integer.class, (nonPrim) -> ((Integer) nonPrim).intValue()
 				)
 		);
 	}
