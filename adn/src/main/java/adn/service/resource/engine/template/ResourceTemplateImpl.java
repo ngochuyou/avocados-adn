@@ -4,14 +4,14 @@
 package adn.service.resource.engine.template;
 
 import java.io.File;
-import java.sql.ResultSetMetaData;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.hibernate.tuple.Tuplizer;
 
 import adn.service.resource.engine.ResourceTuplizer;
-import adn.service.resource.engine.ResultSetMetaDataImpl;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
 
@@ -25,13 +25,13 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 
 	private final String directoryName;
 	private final String pathColumnName;
+	private final Map<String, Integer> indexMap;
 	private final String[] columnNames;
 	private final Class<?>[] columnTypes;
 	private final PropertyAccessImplementor[] accessors;
 	private final PojoInstantiator<File> instantiator;
 
 	private final Tuplizer tuplizer;
-	private final ResultSetMetaData metadata;
 
 	public ResourceTemplateImpl(String name, String pathColumnName, String[] columnNames, Class<?>[] columnTypes,
 			PropertyAccessImplementor[] accessors, PojoInstantiator<File> instantiator, String directoryName) {
@@ -39,11 +39,13 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 		this.name = name;
 		this.pathColumnName = pathColumnName;
 		this.columnNames = columnNames;
+		indexMap = IntStream.range(0, this.columnNames.length)
+				.mapToObj(index -> Map.entry(this.columnNames[index], index))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		this.columnTypes = columnTypes;
 		this.accessors = accessors;
 		this.instantiator = instantiator;
 		this.tuplizer = new ResourceTuplizer(this);
-		this.metadata = new ResultSetMetaDataImpl(getName(), getColumnNames());
 		this.directoryName = directoryName == null ? "" : directoryName;
 	}
 
@@ -98,13 +100,18 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 	}
 
 	@Override
-	public ResultSetMetaData getResultSetMetaData() {
-		return metadata;
+	public String getDirectoryName() {
+		return directoryName;
 	}
 
 	@Override
-	public String getDirectoryName() {
-		return directoryName;
+	public PropertyAccessImplementor getPropertyAccessor(Integer i) {
+		return i == null || i < 0 || i > accessors.length ? null : accessors[i];
+	}
+
+	@Override
+	public PropertyAccessImplementor getPropertyAccessor(String columnName) {
+		return getPropertyAccessor(indexMap.get(columnName));
 	}
 
 }

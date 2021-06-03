@@ -4,7 +4,6 @@
 package adn.service.resource.engine;
 
 import java.io.File;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,21 +14,30 @@ import org.springframework.util.Assert;
  * @author Ngoc Huy
  *
  */
-public class ResultSetMetaDataImpl implements ResultSetMetaData {
+public class ResultSetMetaDataImpl implements ResultSetMetadataImplementor {
 
 	private final String tableName;
 
-	private final Map<String, Integer> columnMap = new HashMap<>();
-	private final Map<Integer, String> indexMap = new HashMap<>();
+	private final String[] actualColumnNames;
+	private final Map<String, Integer> aliasColumnMap = new HashMap<>();
+	private final Map<Integer, String> aliasIndexMap = new HashMap<>();
 
-	public ResultSetMetaDataImpl(String tableName, String[] columns) {
+	public ResultSetMetaDataImpl(String tableName, String[] aliasColumnNames, String[]... actualColumnNames) {
 		super();
 		this.tableName = tableName;
 
-		for (int i = 0; i < columns.length; i++) {
-			columnMap.put(columns[i], i);
-			indexMap.put(i, columns[i]);
+		for (int i = 0; i < aliasColumnNames.length; i++) {
+			aliasColumnMap.put(aliasColumnNames[i], i);
+			aliasIndexMap.put(i, aliasColumnNames[i]);
 		}
+
+		if (actualColumnNames.length == 0) {
+			this.actualColumnNames = aliasColumnNames;
+
+			return;
+		}
+
+		this.actualColumnNames = actualColumnNames[0];
 	}
 
 	@SuppressWarnings("unchecked")
@@ -49,11 +57,11 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
 
 	@Override
 	public int getColumnCount() throws SQLException {
-		return columnMap.size();
+		return aliasColumnMap.size();
 	}
 
 	private void assertIndex(int index) throws IllegalArgumentException, SQLException {
-		Assert.isTrue(index >= 0 && index < getColumnCount(), "Index " + index + " is out of bound");
+		Assert.isTrue(index >= 0 && index < getColumnCount(), String.format("Index [%d] is out of bound", index));
 	}
 
 	@Override
@@ -105,7 +113,7 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
 	@Override
 	public String getColumnName(int column) throws SQLException {
 		assertIndex(column);
-		return indexMap.get(column);
+		return aliasIndexMap.get(column);
 	}
 
 	@Override
@@ -164,7 +172,30 @@ public class ResultSetMetaDataImpl implements ResultSetMetaData {
 	}
 
 	public int getIndex(String name) {
-		return columnMap.get(name);
+		return aliasColumnMap.get(name);
+	}
+
+	@Override
+	public String[] getActualColumnNames() {
+		return actualColumnNames;
+	}
+
+	@Override
+	public Integer getColumnIndexFromActualName(String actualColumnName) {
+		int span = actualColumnNames.length;
+
+		for (int i = 0; i < span; i++) {
+			if (actualColumnNames[i].equals(actualColumnName)) {
+				return i;
+			}
+		}
+
+		return null;
+	}
+
+	@Override
+	public Integer getColumnIndexfromAlias(String aliasName) {
+		return aliasColumnMap.get(aliasName);
 	}
 
 }

@@ -28,10 +28,17 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import adn.helpers.TypeHelper;
 
 public class ResourceResultSet implements ResultSetImplementor {
+
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private int current = 0;
 	private ResultSetMetaDataImpl metadata;
@@ -121,6 +128,10 @@ public class ResourceResultSet implements ResultSetImplementor {
 		checkColumnIndex(columnIndex);
 
 		Object val = lastRead[columnIndex];
+
+		if (val == null) {
+			return null;
+		}
 
 		if (type.isAssignableFrom(val.getClass())) {
 			return (T) val;
@@ -1212,6 +1223,15 @@ public class ResourceResultSet implements ResultSetImplementor {
 	public void readCurrentRow() throws SQLException {
 		if (inBound()) {
 			lastRead = rows[current - 1];
+			logger.trace(String.format("\n" + "Reading row:\n\t" + "%s",
+					lastRead == null ? null : IntStream.range(0, lastRead.length).mapToObj(index -> {
+						try {
+							return metadata.getColumnName(index) + "|"
+									+ (lastRead[index] == null ? "NULL" : lastRead[index].toString());
+						} catch (SQLException e) {
+							return e.getMessage();
+						}
+					}).collect(Collectors.joining("\n\t"))));
 		}
 	}
 

@@ -64,7 +64,7 @@ public final class QueryCompiler {
 	private static final String PARAM_VALUE_GROUP_NAME = "value";
 
 	static {
-		String any = "\\w\\d\\?\\=\\,\\.\\s";
+		String any = "\\w\\d\\?\\=\\,\\.\\s_";
 		String quotedAny = any + "''";
 		String name = "\\w\\d_";
 		// @formatter:off
@@ -94,7 +94,7 @@ public final class QueryCompiler {
 	}
 
 	public static Query compile(String sql) throws SQLException {
-		QueryImpl query = new QueryImpl().setQueryType(QueryType.determineType(sql));
+		QueryImpl query = new QueryImpl().setActualSQLString(sql).setQueryType(QueryType.determineType(sql));
 
 		switch (query.getType()) {
 			case FIND: {

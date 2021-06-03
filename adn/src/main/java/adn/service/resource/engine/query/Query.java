@@ -23,6 +23,8 @@ public interface Query {
 
 	Query clear();
 
+	String getActualSQLString();
+
 	default Query setParameterValue(int i, Object value) throws SQLException {
 		return this;
 	}

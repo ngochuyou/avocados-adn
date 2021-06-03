@@ -5,6 +5,7 @@ package adn.service.resource.engine;
 
 import java.io.File;
 import java.net.URI;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,7 +21,6 @@ import org.springframework.util.Assert;
 import org.springframework.validation.Validator;
 
 import adn.application.Constants;
-import adn.service.resource.engine.action.Finder;
 import adn.service.resource.engine.action.SaveAction;
 import adn.service.resource.engine.action.SaveActionImpl;
 import adn.service.resource.engine.query.Query;
@@ -40,6 +40,7 @@ public class LocalStorageImpl implements LocalStorage {
 	@Autowired
 	private Validator templateValidator;
 	private final Map<String, ResourceTemplate> templates = new HashMap<>(8, .75f);
+	private final MetadataFactory metadataFactory = MetadataFactory.INSTANCE;
 
 	private final SaveAction saveAction = new SaveActionImpl(this);
 	private final Finder finder = new Finder(this);
@@ -72,19 +73,47 @@ public class LocalStorageImpl implements LocalStorage {
 		if (file != null) {
 			logger.trace(String.format("Found one file with path [%s]", file.getPath()));
 
-			ResourceTuplizer tuplizer = (ResourceTuplizer) template.getTuplizer();
 			Object[] values;
 
 			try {
-				values = tuplizer.getPropertyValues(file);
+				ResultSetMetadataImplementor metadata = metadataFactory.produce(query, template);
 
-				return new ResourceResultSet(new Object[][] { values }, template.getResultSetMetaData());
-			} catch (RuntimeException any) {
-				return new ExceptionResultSet(any);
+				values = extractValues(file, template, metadata);
+
+				return new ResourceResultSet(new Object[][] { values }, metadata);
+			} catch (Exception any) {
+				any.printStackTrace();
+				return new ExceptionResultSet(new RuntimeException(any));
 			}
 		}
 
-		return new ResourceResultSet(new Object[0][0], template.getResultSetMetaData());
+		try {
+			return new ResourceResultSet(new Object[0][0], metadataFactory.produce(query, template));
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			return new ExceptionResultSet(new RuntimeException(sqle));
+		}
+	}
+
+	private Object[] extractValues(File file, ResourceTemplate template, ResultSetMetadataImplementor metadata) {
+		Object[] values = ((ResourceTuplizer) template.getTuplizer()).getPropertyValues(file,
+				metadata.getActualColumnNames());
+
+		return postValueExtractions(values, template, metadata);
+	}
+
+	private Object[] postValueExtractions(Object[] states, ResourceTemplate template,
+			ResultSetMetadataImplementor metadata) {
+		String filenameColumnName = template.getColumnNames()[0];
+
+		if (Stream.of(metadata.getActualColumnNames()).filter(name -> name == filenameColumnName).count() == 1) {
+			int i = metadata.getColumnIndexFromActualName(filenameColumnName);
+			String path = String.valueOf(states[i]);
+
+			states[i] = path.replaceFirst(Constants.LOCAL_STORAGE_DIRECTORY + template.getDirectoryName(), "");
+		}
+
+		return states;
 	}
 
 	private ResultSetImplementor doSave(Query query) {

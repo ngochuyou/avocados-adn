@@ -38,7 +38,9 @@ public class TypeHelper {
 	static {
 		Map<Class<?>, Function<Object, Object>> dateConverters = Map.of(
 				Long.class, (longVal) -> new Date((Long) longVal),
-				long.class, (longVal) -> new Date((long) longVal)
+				long.class, (longVal) -> new Date((long) longVal),
+				Date.class, (javaDate) -> new java.util.Date(((Date) javaDate).getTime()),
+				java.util.Date.class, (sqlDate) -> new Date(((java.util.Date) sqlDate).getTime())
 		);
 		
 		TYPE_CONVERTER = Map.of(

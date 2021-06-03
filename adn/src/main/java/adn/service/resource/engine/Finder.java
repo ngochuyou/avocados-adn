@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.engine.action;
+package adn.service.resource.engine;
 
 import java.io.File;
 
@@ -9,7 +9,6 @@ import org.springframework.util.Assert;
 
 import adn.application.Constants;
 import adn.helpers.StringHelper;
-import adn.service.resource.engine.LocalStorage;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.template.ResourceTemplate;
 
@@ -39,12 +38,7 @@ public class Finder {
 	}
 
 	public File find(Query query) {
-		ResourceTemplate template = storage.getResourceTemplate(query.getTemplateName());
-
-		Assert.notNull(template, String.format("Unable to locate %s from template name [%s]", ResourceTemplate.class,
-				query.getTemplateName()));
-
-		return find(query, template);
+		return find(query, storage.getResourceTemplate(query.getTemplateName()));
 	}
 
 	private String toPath(String filename, String... additionalDirectory) {

@@ -17,6 +17,8 @@ public class QueryImpl implements Query {
 
 	private volatile boolean isLocked = false;
 
+	private String actualSQLString;
+
 	private String templateName;
 	private QueryCompiler.QueryType queryType;
 
@@ -31,19 +33,15 @@ public class QueryImpl implements Query {
 		if (parent instanceof QueryImpl) {
 			QueryImpl sibling = (QueryImpl) parent;
 
-			this.templateName = sibling.templateName;
-			this.queryType = sibling.queryType;
 			this.paramNameMap = sibling.paramNameMap;
-			lockQuery();
-
-			return;
 		}
 
+		this.actualSQLString = parent.getActualSQLString();
 		this.templateName = parent.getTemplateName();
 		this.queryType = parent.getType();
 	}
 
-	private void checkQueryLock() throws SQLException {
+	private void checkLock() throws SQLException {
 		if (!isLocked) {
 			return;
 		}
@@ -84,21 +82,27 @@ public class QueryImpl implements Query {
 	}
 
 	QueryImpl addColumnName(String name) throws SQLException {
-		checkQueryLock();
+		checkLock();
 		paramMap.put(name, null);
 		paramNameMap.put(paramMap.size() - 1, name);
 		return this;
 	}
 
 	QueryImpl setQueryType(QueryCompiler.QueryType type) throws SQLException {
-		checkQueryLock();
+		checkLock();
 		this.queryType = type;
 		return this;
 	}
 
 	QueryImpl setTemplateName(String templateName) throws SQLException {
-		checkQueryLock();
+		checkLock();
 		this.templateName = templateName;
+		return this;
+	}
+
+	QueryImpl setActualSQLString(String actualSQLString) throws SQLException {
+		checkLock();
+		this.actualSQLString = actualSQLString;
 		return this;
 	}
 
@@ -147,6 +151,11 @@ public class QueryImpl implements Query {
 	@Override
 	public Query next() {
 		return next;
+	}
+
+	@Override
+	public String getActualSQLString() {
+		return actualSQLString;
 	}
 
 }

@@ -4,7 +4,6 @@
 package adn.service.resource.engine.template;
 
 import java.io.File;
-import java.sql.ResultSetMetaData;
 
 import org.hibernate.internal.util.MarkerObject;
 import org.hibernate.tuple.Tuplizer;
@@ -36,8 +35,10 @@ public interface ResourceTemplate {
 
 	PropertyAccessImplementor[] getPropertyAccessors();
 
-	Tuplizer getTuplizer();
+	PropertyAccessImplementor getPropertyAccessor(Integer i);
 
-	ResultSetMetaData getResultSetMetaData();
+	PropertyAccessImplementor getPropertyAccessor(String columnName);
+
+	Tuplizer getTuplizer();
 
 }

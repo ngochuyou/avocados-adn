@@ -24,44 +24,40 @@ public class Solution {
 	 */
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
 			IllegalArgumentException, IllegalAccessException, SQLException {
-//		String SELECT_REGEX = "(select[\\w\\d\\?\\=\\,\\.\\s]+)(from[\\w\\d\\?\\=\\,\\.\\s]+)(where[\\w\\d\\?\\=\\,\\.\\s\'\']+)";
-		String any = "\\w\\d\\?\\=\\,\\.\\s";
+		String any = "\\w\\d\\?\\=\\,\\.\\s\\_";
 		String quotedAny = any + "''";
 		String name = "\\w\\d_";
 		// @formatter:off
 		String sql = ""
-			+ "select imagebybyt0_.name as name2_0_0_, imagebybyt0_.createdDate as createdd3_0_0_, imagebybyt0_.extension as extensio4_0_0_, imagebybyt0_.lastModified as lastmodi5_0_0_, imagebybyt0_.content as content6_0_0_ "
-			+ "from FileResource imagebybyt0_ "
-			+ "where imagebybyt0_.name=? and imagebybyt0_.DTYPE='ImageByBytes'";
-		String SELECT_REGEX = String.format(""
-				+ "select[%s]+"
-				+ "from\\s(?<tablename>[%s]+)\\s[%s]+"
-				+ "where\\s(?<values>([%s]+\\.[%s]+\\=[%s]+)+)", any, name,
-				any, name, name, quotedAny);
+				+ "select imagebybyt0_.name as name2_0_0_, imagebybyt0_.createdDate as createdd3_0_0_, imagebybyt0_.extension as extensio4_0_0_, imagebybyt0_.lastModified as lastmodi5_0_0_, imagebybyt0_.content "
+				+ "from FileResource imagebybyt0_ "
+				+ "where imagebybyt0_.name=? and imagebybyt0_.DTYPE='ImageByBytes'";
+		Pattern p = Pattern.compile(
+				String.format("select\\s(?<columns>[%s]+)\\sfrom[%s]+", any, quotedAny)
+		);
 		// @formatter:on
-		Pattern p = Pattern.compile(SELECT_REGEX);
 		Matcher m = p.matcher(sql);
 
 		if (m.matches()) {
-			String templateName = null;
-			String vPS;
-			String values[] = m.group("values").split("\\sand\\s");
-			Pattern vP = Pattern
-					.compile(vPS = String.format("[%s]+\\.(?<name>[%s]+)\\=(?<val>[%s]+)", name, name, quotedAny));
-			Matcher vM;
-
-			System.out.println(vPS);
-
-			for (String value : values) {
-				if ((vM = vP.matcher(value)).matches()) {
-					if (vM.group("name").equals("DTYPE")) {
-						templateName = m.group("tablename") + '_' + vM.group("val").replaceAll("'", "");
-						continue;
-					}
-				}
+			String[] columns = m.group("columns").split(",\\s|,");
+			// @formatter:off
+			Pattern columnPattern = Pattern.compile(
+				String.format(""
+					+ "^(?<tablename>[%s]+)"
+					+ "\\."
+					+ "(?<actualcolumnname>[%s]+)"
+					+ "(\\sas\\s"
+					+ "(?<columnalias>[%s]+))?",
+					name, name, name)
+			);
+			// @formatter:on
+			Matcher columnMatcher;
+			for (String column : columns) {
+				System.out.println("-----origi" + column);
+				(columnMatcher = columnPattern.matcher(column)).matches();
+				System.out.println(columnMatcher.group("actualcolumnname"));
+				System.out.println(columnMatcher .group("columnalias"));
 			}
-
-			System.out.println(templateName);
 		}
 	}
 
