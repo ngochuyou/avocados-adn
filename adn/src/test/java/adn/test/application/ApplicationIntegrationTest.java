@@ -218,9 +218,9 @@ public class ApplicationIntegrationTest {
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
 				.get(PREFIX + "/file/public/image/session-load");
 
-		mock.perform(reqBuilder).andExpect(status().isOk()).andDo(result -> {
-			logger.debug(result.getResponse().getContentAsString());
-		});
+		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
+
+		assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
 	}
 
 }

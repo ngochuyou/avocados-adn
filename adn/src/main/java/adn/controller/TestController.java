@@ -205,7 +205,13 @@ public class TestController extends BaseController {
 		ImageByBytes image = session.get(ImageByBytes.class,
 				"1619973416467_0c46022fcfda4d9f4bb8c09e8c42e9efc12d839d35c78c73e4dab1d24fac8a1c.jpg");
 
-		return ResponseEntity.ok(image);
+		image.setExtension("png");
+
+		session.update(image);
+		session.flush();
+
+		return image != null ? ResponseEntity.ok(image)
+				: ResponseEntity.status(HttpStatus.NOT_FOUND).body("asb.jpg not found");
 	}
 
 }

@@ -4,6 +4,7 @@
 package adn.service.resource.engine.query;
 
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -17,6 +18,7 @@ public class QueryImpl implements Query {
 
 	private volatile boolean isLocked = false;
 
+	private Statement statement;
 	private String actualSQLString;
 
 	private String templateName;
@@ -36,6 +38,7 @@ public class QueryImpl implements Query {
 			this.paramNameMap = sibling.paramNameMap;
 		}
 
+		this.statement = parent.getStatement();
 		this.actualSQLString = parent.getActualSQLString();
 		this.templateName = parent.getTemplateName();
 		this.queryType = parent.getType();
@@ -106,6 +109,12 @@ public class QueryImpl implements Query {
 		return this;
 	}
 
+	QueryImpl setStatement(Statement statement) throws SQLException {
+		checkLock();
+		this.statement = statement;
+		return this;
+	}
+
 	@Override
 	public String getTemplateName() {
 		return templateName;
@@ -156,6 +165,11 @@ public class QueryImpl implements Query {
 	@Override
 	public String getActualSQLString() {
 		return actualSQLString;
+	}
+
+	@Override
+	public Statement getStatement() {
+		return statement;
 	}
 
 }

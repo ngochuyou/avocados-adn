@@ -49,7 +49,7 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public ResultSet executeQuery(String sql) throws SQLException {
-		return getConnection().getStorage().query(QueryCompiler.compile(sql));
+		return getConnection().getStorage().query(QueryCompiler.compile(sql, this));
 	}
 
 	@Override
@@ -61,7 +61,7 @@ public class StatementImpl implements Statement {
 		checkClose();
 		checkSQL(sql);
 
-		Query query = QueryCompiler.compile(sql);
+		Query query = QueryCompiler.compile(sql, this);
 
 		Assert.isTrue(query.getType() != QueryCompiler.QueryType.FIND,
 				String.format("Unable to execute update from a SELECT query: [%s]", sql));
@@ -200,7 +200,7 @@ public class StatementImpl implements Statement {
 
 	@Override
 	public synchronized void addBatch(String sql) throws SQLException {
-		query = QueryCompiler.compile(sql);
+		query = QueryCompiler.compile(sql, this);
 	}
 
 	@Override

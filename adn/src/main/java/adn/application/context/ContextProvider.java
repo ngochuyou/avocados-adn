@@ -45,7 +45,6 @@ public class ContextProvider implements ApplicationContextAware {
 		if (auth instanceof AnonymousAuthenticationToken) {
 			return Role.ANONYMOUS;
 		}
-
 		// handle with care when working with unit testing
 		// e.g: using @WithMockUser may make the test unit inject
 		// an instance of type org.springframework.security.core.userdetails.User
@@ -70,16 +69,24 @@ public class ContextProvider implements ApplicationContextAware {
 		return access;
 	}
 
+	/**
+	 * Efficient final modifier
+	 * 
+	 * @author Ngoc Huy
+	 *
+	 */
 	public static class Access {
 
 		public void setLocalResourceSessionFactory(SessionFactoryImpl LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE) {
-			LoggerFactory.getLogger("Setting an instance of " + SessionFactoryImpl.class + " to " + this.getClass());
+			LoggerFactory.getLogger(this.getClass())
+					.info("Created an instance of " + LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE.getClass());
 			ContextProvider.LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE = LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE;
+			closeAccess();
 		}
 
 	}
 
-	public static void closeAccess() {
+	private static void closeAccess() {
 		LoggerFactory.getLogger(ContextProvider.class)
 				.trace(String.format("Closing access in [%s]", ContextProvider.class));
 		access = null;

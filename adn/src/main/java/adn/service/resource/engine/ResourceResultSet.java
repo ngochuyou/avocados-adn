@@ -40,18 +40,21 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private int current = 0;
-	private ResultSetMetaDataImpl metadata;
+	private final Statement statement;
+
+	private final Index currentIndex;
+	private final ResultSetMetaDataImpl metadata;
 	private int direction = FETCH_FORWARD;
 	private boolean isClosed = false;
 
 	private Object[] lastRead = null;
 	private Object[][] rows;
 
-	public ResourceResultSet(Object[][] rows, ResultSetMetaData metadata) {
+	public ResourceResultSet(Object[][] rows, ResultSetMetaData metadata, Statement statement) {
 		this.rows = rows;
 		this.metadata = (ResultSetMetaDataImpl) metadata;
-		current = 0;
+		this.statement = statement;
+		currentIndex = new Index(0, this);
 	}
 
 	private int getRightBound() throws SQLException {
@@ -59,7 +62,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 	}
 
 	private boolean inBound() throws SQLException {
-		return current > 0 && current < getRightBound();
+		return currentIndex.get() > 0 && currentIndex.get() < getRightBound();
 	}
 
 	private void assertBound() throws SQLException {
@@ -67,7 +70,8 @@ public class ResourceResultSet implements ResultSetImplementor {
 			return;
 		}
 
-		throw new SQLException(String.format("Fetch bound exceeded, current cursor position is [%d]", current));
+		throw new SQLException(
+				String.format("Fetch bound exceeded, current cursor position is [%d]", currentIndex.get()));
 	}
 
 	private void checkColumnIndex(int requested) throws SQLException {
@@ -79,7 +83,6 @@ public class ResourceResultSet implements ResultSetImplementor {
 	@Override
 	public Object getObject(int columnIndex) throws SQLException {
 		assertBound();
-		readCurrentRow();
 		checkColumnIndex(columnIndex);
 
 		return lastRead[columnIndex];
@@ -102,8 +105,8 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public boolean next() throws SQLException {
-		if (current < getRightBound()) {
-			current++;
+		if (currentIndex.get() < getRightBound()) {
+			currentIndex.increaseOne();
 
 			return inBound();
 		}
@@ -124,7 +127,6 @@ public class ResourceResultSet implements ResultSetImplementor {
 	@SuppressWarnings("unchecked")
 	private <T> T typeSafeGet(int columnIndex, Class<T> type) throws SQLException {
 		assertBound();
-		readCurrentRow();
 		checkColumnIndex(columnIndex);
 
 		Object val = lastRead[columnIndex];
@@ -362,7 +364,6 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public String getCursorName() throws SQLException {
-
 		return "LIST_INDEX";
 	}
 
@@ -393,45 +394,42 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
-
 		return typeSafeGet(columnIndex, BigDecimal.class);
 	}
 
 	@Override
 	public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
-
 		return typeSafeGet(columnLabel, BigDecimal.class);
 	}
 
 	@Override
 	public boolean isBeforeFirst() throws SQLException {
-		return current == 0;
+		return currentIndex.get() == 0;
 	}
 
 	@Override
 	public boolean isAfterLast() throws SQLException {
-		return current == getRightBound();
+		return currentIndex.get() == getRightBound();
 	}
 
 	@Override
 	public boolean isFirst() throws SQLException {
-
-		return current == 1;
+		return currentIndex.get() == 1;
 	}
 
 	@Override
 	public boolean isLast() throws SQLException {
-		return current == getRightBound() - 1;
+		return currentIndex.get() == getRightBound() - 1;
 	}
 
 	@Override
 	public void beforeFirst() throws SQLException {
-		current = 0;
+		currentIndex.set(0);
 	}
 
 	@Override
 	public void afterLast() throws SQLException {
-		current = getRightBound();
+		currentIndex.set(getRightBound());
 	}
 
 	@Override
@@ -440,7 +438,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 			return false;
 		}
 
-		current = 1;
+		currentIndex.set(1);
 
 		return true;
 	}
@@ -451,30 +449,31 @@ public class ResourceResultSet implements ResultSetImplementor {
 			return false;
 		}
 
-		current = getFetchSize() - 1;
+		currentIndex.set(getFetchSize() - 1);
 
 		return true;
 	}
 
 	@Override
 	public int getRow() throws SQLException {
-
-		return current;
+		return currentIndex.get();
 	}
 
 	@Override
 	public boolean absolute(int row) throws SQLException {
 		if (row == 0) {
-			current = 0;
+			beforeFirst();
+
+			return false;
 		}
 
 		if (row > 0) {
-			current = row;
+			currentIndex.set(row);
 
 			return inBound();
 		}
 
-		current = getFetchSize() - Math.abs(row);
+		currentIndex.set(getFetchSize() - Math.abs(row));
 
 		return inBound();
 	}
@@ -485,17 +484,17 @@ public class ResourceResultSet implements ResultSetImplementor {
 			return inBound();
 		}
 
-		int newCursor = current + rows;
+		int newCursor = currentIndex.get() + rows;
 
-		current = newCursor < 0 ? 0 : newCursor > getFetchSize() ? getFetchSize() : newCursor;
+		currentIndex.set(newCursor < 0 ? 0 : newCursor > getFetchSize() ? getFetchSize() : newCursor);
 
 		return inBound();
 	}
 
 	@Override
 	public boolean previous() throws SQLException {
-		if (current > 0) {
-			current--;
+		if (currentIndex.get() > 0) {
+			currentIndex.decreaseOne();
 
 			return inBound();
 		}
@@ -784,8 +783,7 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public Statement getStatement() throws SQLException {
-		// TODO:
-		return null;
+		return statement;
 	}
 
 	@Override
@@ -967,12 +965,12 @@ public class ResourceResultSet implements ResultSetImplementor {
 
 	@Override
 	public RowId getRowId(int columnIndex) throws SQLException {
-		return new IndexedRowId(current);
+		return new IndexedRowId(currentIndex.get());
 	}
 
 	@Override
 	public RowId getRowId(String columnLabel) throws SQLException {
-		return new IndexedRowId(current);
+		return new IndexedRowId(currentIndex.get());
 	}
 
 	@Override
@@ -1220,19 +1218,59 @@ public class ResourceResultSet implements ResultSetImplementor {
 		return getObject(findColumn(columnLabel), type);
 	}
 
-	public void readCurrentRow() throws SQLException {
+	public boolean readCurrentRow() throws SQLException {
 		if (inBound()) {
-			lastRead = rows[current - 1];
-			logger.trace(String.format("\n" + "Reading row:\n\t" + "%s",
-					lastRead == null ? null : IntStream.range(0, lastRead.length).mapToObj(index -> {
-						try {
-							return metadata.getColumnName(index) + "|"
-									+ (lastRead[index] == null ? "NULL" : lastRead[index].toString());
-						} catch (SQLException e) {
-							return e.getMessage();
-						}
-					}).collect(Collectors.joining("\n\t"))));
+			lastRead = rows[currentIndex.get() - 1];
+			
+			if (logger.isTraceEnabled()) {
+				logger.trace(String.format("\n" + "Reading row:\n\t" + "%s",
+						lastRead == null ? null : IntStream.range(0, lastRead.length).mapToObj(index -> {
+							try {
+								return metadata.getColumnName(index) + "\t"
+										+ (lastRead[index] == null ? "NULL" : lastRead[index].toString());
+							} catch (SQLException e) {
+								return e.getMessage();
+							}
+						}).collect(Collectors.joining("\n\t"))));
+			}
+
+			return true;
 		}
+
+		lastRead = null;
+
+		return false;
+	}
+
+}
+
+class Index {
+
+	private final ResourceResultSet resultSet;
+
+	private int current;
+
+	Index(int index, ResourceResultSet resultSet) {
+		this.resultSet = resultSet;
+	}
+
+	synchronized void set(int index) throws SQLException {
+		this.current = index;
+		resultSet.readCurrentRow();
+	}
+
+	synchronized int get() {
+		return current;
+	}
+
+	synchronized void increaseOne() throws SQLException {
+		this.current++;
+		resultSet.readCurrentRow();
+	}
+
+	synchronized void decreaseOne() throws SQLException {
+		this.current--;
+		resultSet.readCurrentRow();
 	}
 
 }

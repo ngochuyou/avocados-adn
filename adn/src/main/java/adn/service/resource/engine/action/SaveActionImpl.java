@@ -46,7 +46,10 @@ public class SaveActionImpl implements SaveAction {
 		String contentColumnName;
 
 		if ((contentColumnName = template.getColumnNames()[1]).equals(ResourceTemplate.NO_CONTENT.toString())) {
-			logger.trace(String.format("Ignoring save action on unsavable template[%s]", template.getName()));
+			if (logger.isTraceEnabled()) {
+				logger.trace(String.format("Ignoring save action on unsavable template[%s]", template.getName()));
+			}
+
 			return;
 		}
 
@@ -72,7 +75,10 @@ public class SaveActionImpl implements SaveAction {
 			byte[] content = contentExtractors.get(template.getColumnTypes()[1])
 					.apply(query.getParameterValue(contentColumnName));
 
-			logger.trace(String.format("Saving [%s], content length [%s]", instance.getPath(), content.length));
+			if (logger.isTraceEnabled()) {
+				logger.trace(String.format("Saving [%s], content length [%s]", instance.getPath(), content.length));
+			}
+
 			Files.write(Paths.get(instance.getPath()), content);
 		} catch (IOException ioe) {
 			throw new RuntimeException(ioe);

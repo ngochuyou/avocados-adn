@@ -77,6 +77,7 @@ import adn.service.resource.factory.MetadataBuildingOptionsImpl;
  * @author Ngoc Huy
  *
  */
+@SuppressWarnings("serial")
 @Component
 @Order(6)
 public class ManagerFactoryBuilder implements ContextBuilder {
@@ -94,6 +95,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 
 	@Autowired
 	private LocalStorage localStorage;
+
 	// @formatter:off
 	private static final List<Class<? extends Service>> STANDARD_SERVICES_CLASSES = Collections.unmodifiableList(Arrays.asList(
 			MutableIdentifierGeneratorFactory.class,
@@ -151,7 +153,6 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 			},
 			PropertyAccessStrategyResolver.class, new Supplier<PropertyAccessStrategyResolver>() {
 
-				@SuppressWarnings("serial")
 				@Override
 				public PropertyAccessStrategyResolver get() {
 					return new PropertyAccessStrategyResolver() {
@@ -199,7 +200,6 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 	private void assertSessionFactoryAndInject(SessionFactory sf) throws IllegalAccessException {
 		Assert.notNull(sf, String.format("[%s] is NULL after building process", EntityManagerFactoryImplementor.class));
 		ContextProvider.getAccess().setLocalResourceSessionFactory(sf.unwrap(SessionFactoryImpl.class));
-		ContextProvider.closeAccess();
 	}
 
 	private MutableIdentifierGeneratorFactory registerCustomIdentifierGeneratorFactory(
@@ -245,7 +245,6 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 		return serviceRegistry;
 	}
 
-	@SuppressWarnings("serial")
 	public class SessionFactoryServiceRegistryFactoryImpl implements SessionFactoryServiceRegistryFactory {
 
 		private final SessionFactoryImplementor sfi;
@@ -337,7 +336,6 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 		return sf;
 	}
 
-	@SuppressWarnings("serial")
 	private void addSessionFactoryObservers(SessionFactoryOptionsBuilder optionsBuilder) {
 		optionsBuilder.addSessionFactoryObservers(new SessionFactoryObserver() {
 			@Override

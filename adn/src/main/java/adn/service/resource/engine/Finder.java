@@ -5,9 +5,12 @@ package adn.service.resource.engine;
 
 import java.io.File;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import adn.application.Constants;
+import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.template.ResourceTemplate;
@@ -16,15 +19,17 @@ import adn.service.resource.engine.template.ResourceTemplate;
  * @author Ngoc Huy
  *
  */
+@Component
 public class Finder {
 
 	private final LocalStorage storage;
 
-	public Finder(LocalStorage storage) {
-		this.storage = storage;
+	@Autowired
+	private Finder() {
+		this.storage = ContextProvider.getApplicationContext().getBean(LocalStorage.class);
 	}
 
-	public File find(Query query, ResourceTemplate template) {
+	File find(Query query, ResourceTemplate template) {
 		String pathColumnName = template.getColumnNames()[0];
 		Object pathValue = query.getParameterValue(pathColumnName);
 		String path = "";
@@ -37,7 +42,7 @@ public class Finder {
 		return file.exists() ? file : null;
 	}
 
-	public File find(Query query) {
+	File find(Query query) {
 		return find(query, storage.getResourceTemplate(query.getTemplateName()));
 	}
 

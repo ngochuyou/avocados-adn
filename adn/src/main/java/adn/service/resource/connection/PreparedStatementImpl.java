@@ -220,7 +220,7 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 
 	@Override
 	public void addBatch(String sql) throws SQLException {
-		batches.add(QueryCompiler.compile(sql));
+		batches.add(QueryCompiler.compile(sql, this));
 		current++;
 		query = getBatch();
 	}
@@ -389,10 +389,18 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 
 		clearResults();
 
+		ResultSetImplementor rs;
+
 		for (int i = 0; i < batchSize; i++) {
 			try {
-				this.results.add(getConnection().getStorage().query(batches.get(i)));
-				updateCounts[i] = this.results.get(i).getInt(0);
+				this.results.add(rs = getConnection().getStorage().query(batches.get(i)));
+
+				if (rs.next()) {
+					updateCounts[i] = rs.getInt(0);
+					continue;
+				}
+
+				updateCounts[i] = 0;
 			} catch (RuntimeException e) {
 				e.printStackTrace();
 				updateCounts[i] = 0;

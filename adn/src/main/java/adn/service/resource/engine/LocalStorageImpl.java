@@ -43,14 +43,15 @@ public class LocalStorageImpl implements LocalStorage {
 	private final MetadataFactory metadataFactory = MetadataFactory.INSTANCE;
 
 	private final SaveAction saveAction = new SaveActionImpl(this);
-	private final Finder finder = new Finder(this);
 
 	@Autowired
 	private LocalStorageImpl() {}
 
 	@Override
 	public ResultSetImplementor query(Query query) {
-		logger.trace(String.format("Executing query: [%s\n] ", query.toString()));
+		if (logger.isTraceEnabled()) {
+			logger.trace(String.format("Executing query: [%s\n] ", query.toString()));
+		}
 
 		switch (query.getType()) {
 			case SAVE: {
@@ -59,11 +60,20 @@ public class LocalStorageImpl implements LocalStorage {
 			case FIND: {
 				return doFind(query);
 			}
+			case UPDATE: {
+				return doUpdate(query);
+			}
 			default: {
 				return new ExceptionResultSet(
-						new RuntimeException(String.format("Unknown query type [%s]", query.getType())));
+						new RuntimeException(String.format("Unknown query [%s]", query.getActualSQLString())),
+						query.getStatement());
 			}
 		}
+	}
+
+	private ResultSetImplementor doUpdate(Query query) {
+
+		return null;
 	}
 
 	private ResultSetImplementor doFind(Query query) {
@@ -71,7 +81,9 @@ public class LocalStorageImpl implements LocalStorage {
 		File file = finder.find(query, template);
 
 		if (file != null) {
-			logger.trace(String.format("Found one file with path [%s]", file.getPath()));
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format("Found one file with path [%s]", file.getPath()));
+			}
 
 			Object[] values;
 
@@ -80,18 +92,19 @@ public class LocalStorageImpl implements LocalStorage {
 
 				values = extractValues(file, template, metadata);
 
-				return new ResourceResultSet(new Object[][] { values }, metadata);
+				return new ResourceResultSet(new Object[][] { values }, metadata, query.getStatement());
 			} catch (Exception any) {
 				any.printStackTrace();
-				return new ExceptionResultSet(new RuntimeException(any));
+				return new ExceptionResultSet(new RuntimeException(any), query.getStatement());
 			}
 		}
 
 		try {
-			return new ResourceResultSet(new Object[0][0], metadataFactory.produce(query, template));
+			return new ResourceResultSet(new Object[0][0], metadataFactory.produce(query, template),
+					query.getStatement());
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
-			return new ExceptionResultSet(new RuntimeException(sqle));
+			return new ExceptionResultSet(new RuntimeException(sqle), query.getStatement());
 		}
 	}
 
@@ -131,7 +144,7 @@ public class LocalStorageImpl implements LocalStorage {
 			current = current.next();
 		}
 
-		return new ResourceUpdateCount(results.toArray(Integer[]::new), query.getTemplateName());
+		return new ResourceUpdateCount(results.toArray(Integer[]::new), query.getTemplateName(), query.getStatement());
 	}
 
 	public File instantiate(Query query, ResourceTemplate template) {
