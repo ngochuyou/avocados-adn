@@ -12,14 +12,17 @@ import java.sql.Statement;
  */
 public class ExceptionResultSet extends ResourceResultSet {
 
-	public ExceptionResultSet(RuntimeException re, Statement statement) {
-		super(new Serializable[][] { new Serializable[] { re.getClass(), re.getMessage() } }, new ExceptionResultSetMetadata(), statement);
+	public ExceptionResultSet(Exception re, Statement statement) {
+		super(new Serializable[][] { new Serializable[] { 0, re.getClass(), re.getMessage() } },
+				ExceptionResultSetMetadata.INSTANCE, statement);
 	}
 
 	public static class ExceptionResultSetMetadata extends ResultSetMetaDataImpl {
 
+		private static final ExceptionResultSetMetadata INSTANCE = new ExceptionResultSetMetadata();
+
 		private ExceptionResultSetMetadata() {
-			super(null, new String[] { "type", "message" });
+			super(null, new String[] { "modCount", "type", "message" });
 		}
 
 	}

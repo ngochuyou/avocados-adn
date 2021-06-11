@@ -27,7 +27,7 @@ public class MetadataFactory {
 				: new String[0][0];
 		// @formatter:off
 		return new ResultSetMetaDataImpl(
-				template.getName(),
+				template.getTemplateName(),
 				columnPairs[1], columnPairs[0]);
 		// @formatter:on
 	}

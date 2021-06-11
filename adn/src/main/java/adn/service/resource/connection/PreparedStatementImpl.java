@@ -412,7 +412,7 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 
 	@Override
 	public String toString() {
-		return String.format("%s=(\n\tbatches=[\n\t\t%s\n\t]\n)", this.getClass().getSimpleName(),
+		return String.format("%s=(\n\tbatches=[\t%s\n\t]\n)", this.getClass().getSimpleName(),
 				batches.stream().map(query -> query.toString()).collect(Collectors.joining("\n\t\t-")));
 	}
 

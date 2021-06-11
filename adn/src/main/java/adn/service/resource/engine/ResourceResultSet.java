@@ -1221,17 +1221,17 @@ public class ResourceResultSet implements ResultSetImplementor {
 	public boolean readCurrentRow() throws SQLException {
 		if (inBound()) {
 			lastRead = rows[currentIndex.get() - 1];
-			
+
 			if (logger.isTraceEnabled()) {
 				logger.trace(String.format("\n" + "Reading row:\n\t" + "%s",
-						lastRead == null ? null : IntStream.range(0, lastRead.length).mapToObj(index -> {
-							try {
-								return metadata.getColumnName(index) + "\t"
-										+ (lastRead[index] == null ? "NULL" : lastRead[index].toString());
-							} catch (SQLException e) {
-								return e.getMessage();
-							}
-						}).collect(Collectors.joining("\n\t"))));
+					lastRead == null ? null : IntStream.range(0, lastRead.length).mapToObj(index -> {
+						try {
+							return String.format("{%s} -> [%s]", metadata.getColumnName(index),
+									lastRead[index] == null ? "NULL" : lastRead[index].toString());
+						} catch (SQLException e) {
+							return e.getMessage();
+						}
+					}).collect(Collectors.joining("\n\t"))));
 			}
 
 			return true;

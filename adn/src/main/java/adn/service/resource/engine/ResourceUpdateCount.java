@@ -11,8 +11,8 @@ import java.sql.Statement;
  */
 public class ResourceUpdateCount extends ResourceResultSet {
 
-	ResourceUpdateCount(Integer[] updateCounts, String tablename, Statement statement) {
-		super(new Integer[][] { updateCounts }, new ResourceUpdateCountMetadata(tablename), statement);
+	ResourceUpdateCount(Long[] updateCounts, String tablename, Statement statement) {
+		super(new Long[][] { updateCounts }, new ResourceUpdateCountMetadata(tablename), statement);
 	}
 
 	public static class ResourceUpdateCountMetadata extends ResultSetMetaDataImpl {

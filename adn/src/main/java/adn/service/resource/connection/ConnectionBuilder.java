@@ -6,7 +6,7 @@ package adn.service.resource.connection;
 import java.sql.Connection;
 
 import adn.application.context.ContextProvider;
-import adn.service.resource.engine.LocalStorage;
+import adn.service.resource.engine.Storage;
 
 /**
  * @author Ngoc Huy
@@ -19,7 +19,7 @@ public class ConnectionBuilder {
 	private ConnectionBuilder() {}
 
 	public Connection createConnection() {
-		return new ConnectionImpl(ContextProvider.getApplicationContext().getBean(LocalStorage.class));
+		return new ConnectionImpl(ContextProvider.getApplicationContext().getBean(Storage.class));
 	}
 
 }

@@ -22,7 +22,7 @@ public class DefaultInstantiator<T> extends AbstractResourceInstantiator<T> {
 			return constructor.newInstance();
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
 				| InvocationTargetException e) {
-			return null;
+			throw new RuntimeException(e);
 		}
 	}
 

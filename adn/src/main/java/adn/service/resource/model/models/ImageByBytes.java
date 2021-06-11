@@ -14,22 +14,20 @@ import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import adn.application.Constants;
-import adn.service.resource.LocalResource;
 import adn.service.resource.ResourcePersisterImpl;
-import adn.service.resource.engine.Content;
+import adn.service.resource.annotation.Constructor;
+import adn.service.resource.annotation.Content;
+import adn.service.resource.annotation.Directory;
+import adn.service.resource.annotation.LocalResource;
 import adn.service.resource.type.FileContentByByteArrayType;
 
 /**
  * @author Ngoc Huy
  *
  */
-// @formatter:off
-@LocalResource(
-	constructorParameterColumnNames = FileResource.ID_NAME,
-	constructorParameterTypes = String.class,
-	directoryName = Constants.IMAGE_STORAGE_DIRECTORY
-)
-// @formatter:on
+@LocalResource
+@Directory(path = Constants.IMAGE_STORAGE_DIRECTORY)
+@Constructor(columnNames = FileResource.ID_NAME, argumentTypes = String.class)
 @Persister(impl = ResourcePersisterImpl.class)
 @Entity
 @TypeDef(name = FileContentByByteArrayType.NAME, typeClass = FileContentByByteArrayType.class)

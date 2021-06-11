@@ -5,11 +5,13 @@ package adn.service.resource.model.models;
 
 import java.util.Date;
 
+import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Version;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
@@ -17,7 +19,8 @@ import org.hibernate.annotations.TypeDefs;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.AccessType;
 
-import adn.service.resource.LocalResource;
+import adn.service.resource.annotation.Extension;
+import adn.service.resource.annotation.LocalResource;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
 import adn.service.resource.type.FileCreationTimeStampType;
 import adn.service.resource.type.FileExtensionType;
@@ -27,10 +30,7 @@ import adn.service.resource.type.FileExtensionType;
  *
  */
 // @formatter:off
-@LocalResource(
-	constructorParameterColumnNames = FileResource.ID_NAME,
-	constructorParameterTypes = String.class
-)
+@LocalResource
 @MappedSuperclass
 @TypeDefs(value = {
 	@TypeDef(name = FileCreationTimeStampType.NAME, typeClass = FileCreationTimeStampType.class),
@@ -47,7 +47,9 @@ public class FileResource implements Resource {
 	@AccessType(value = AccessType.Type.PROPERTY)
 	private String name;
 
+	@CreationTimestamp
 	@Type(type = FileCreationTimeStampType.NAME)
+	@Column(updatable = false, nullable = false)
 	private Date createdDate;
 
 	@Version
@@ -56,6 +58,8 @@ public class FileResource implements Resource {
 	private Date lastModified;
 
 	@Type(type = FileExtensionType.NAME)
+	@Extension
+	@Column(nullable = false)
 	private String extension;
 
 	public FileResource() {}
@@ -93,10 +97,6 @@ public class FileResource implements Resource {
 
 	public Date getLastModified() {
 		return lastModified;
-	}
-
-	public void setLastModified(Date lastModified) {
-		this.lastModified = lastModified;
 	}
 
 }

@@ -54,7 +54,8 @@ public class TypeHelper {
 						Timestamp.class, (stamp) -> ((Timestamp) stamp).getTime()
 				),
 				int.class, Map.of(
-						Integer.class, (nonPrim) -> ((Integer) nonPrim).intValue()
+						Integer.class, (nonPrim) -> ((Integer) nonPrim).intValue(),
+						Long.class, (nonPrim) -> Long.valueOf((long) nonPrim).intValue()
 				),
 				Integer.class, Map.of(
 						int.class, (nonPrim) -> (int) nonPrim

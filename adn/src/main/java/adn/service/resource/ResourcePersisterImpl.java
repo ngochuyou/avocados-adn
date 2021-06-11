@@ -33,8 +33,11 @@ import adn.helpers.FunctionHelper.HandledFunction;
 import adn.helpers.FunctionHelper.HandledSupplier;
 import adn.helpers.StringHelper;
 import adn.helpers.Utils;
+import adn.service.resource.annotation.Constructor;
+import adn.service.resource.annotation.Content;
+import adn.service.resource.annotation.Directory;
+import adn.service.resource.annotation.Extension;
 import adn.service.resource.connection.LocalStorageConnection;
-import adn.service.resource.engine.Content;
 import adn.service.resource.engine.access.DirectAccess;
 import adn.service.resource.engine.access.LiterallyNamedAccess;
 import adn.service.resource.engine.access.PropertyAccessDelegate;
@@ -83,56 +86,41 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			PropertyAccessImplementor[] accessors = new PropertyAccessImplementor[span];
 			PojoInstantiator<File> instantiator = determineInstantiator();
 
-			columnNames[0] = getIdentifierColumnNames()[0];
-			columnTypes[0] = getIdentifierType().getReturnedClass();
-			accessors[0] = determinePropertyAccess(getIdentifierType(), getIdentifierPropertyName());
+			processPathColumn(columnNames, columnTypes, accessors);
 
-			int contentIndex = -1;
+			int contentIndex = processContentColumn(contentAttr, columnNames, columnTypes, accessors);
+			int extensionIndex = processExtensionColumn(columnNames, columnTypes, accessors);
+			int arrayBound = contentAttr == null ? span - 2 : span - 1;
 			String propertyName;
 			String propertyColumnName;
 
-			if (contentAttr != null) {
-				contentIndex = getPropertyIndex(contentAttr.getName());
-				propertyColumnName = getPropertyColumnNames(contentIndex)[0];
-
-				columnNames[1] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName
-						: contentAttr.getName();
-				columnTypes[1] = getPropertyTypes()[contentIndex].getReturnedClass();
-				accessors[1] = determinePropertyAccess(getPropertyType(contentAttr.getName()), contentAttr.getName());
-				logger.trace(String.format("Found content property [%s]: [%s] at index [%d]", contentAttr.getName(),
-						columnTypes[1], contentIndex));
-			} else {
-				columnNames[1] = ResourceTemplate.NO_CONTENT.toString();
-				columnTypes[1] = ResourceTemplate.NO_CONTENT.getClass();
-				accessors[1] = PropertyAccessStrategyFactory.NO_ACCESS_STRATEGY.buildPropertyAccess(null, null);
-			}
-
-			int arrayBound = contentAttr == null ? span - 2 : span - 1;
-
-			for (int i = 0, j = 2; i < arrayBound; i++, j++) {
+			for (int i = 0, j = 3; i < arrayBound; i++) {
 				if (i == contentIndex) {
+					j++;
+					continue;
+				}
+
+				if (i == extensionIndex) {
 					continue;
 				}
 
 				propertyName = getPropertyNames()[i];
 				propertyColumnName = getPropertyColumnNames(i)[0];
-
 				columnNames[j] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName : propertyName;
 				columnTypes[j] = getPropertyType(propertyName).getReturnedClass();
 				accessors[j] = determinePropertyAccess(getPropertyType(propertyName), propertyName);
+				j++;
 			}
 
 			LocalStorageConnection connection = (LocalStorageConnection) delegate;
 			// @formatter:off
 			logger.trace(String.format("Registering template [%s]", getEntityName()));
-			connection.getStorage().registerTemplate(new ResourceTemplateImpl(
-					String.format("%s%s%s", getTableName(), ManagerFactory.DTYPE_SEPERATOR, StringHelper.get(getDiscriminatorValue(), "")),
-					columnNames[0],
-					columnNames, 
+			connection.getStorage().registerTemplate(String.format("%s%s%s", getTableName(), ManagerFactory.DTYPE_SEPERATOR, StringHelper.get(getDiscriminatorValue(), "")),
+					determineDirectoryName(getMappedClass()),
+					columnNames,
 					columnTypes,
-					accessors, 
-					instantiator, 
-					determineDirectoryName()));
+					accessors,
+					instantiator);
 			// @formatter:on
 			return;
 		}
@@ -142,27 +130,97 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 				getEntityName(), LocalStorageConnection.class));
 	}
 
-	@SuppressWarnings("unchecked")
-	private PojoInstantiator<File> determineInstantiator() {
-		LocalResource anno = (LocalResource) getMappedClass().getDeclaredAnnotation(LocalResource.class);
+	private void processPathColumn(String[] columnNames, Class<?>[] columnTypes,
+			PropertyAccessImplementor[] accessors) {
+		columnNames[ResourceTemplateImpl.DEFAULT_PATH_INDEX] = getIdentifierColumnNames()[0];
+		columnTypes[ResourceTemplateImpl.DEFAULT_PATH_INDEX] = getIdentifierType().getReturnedClass();
+		accessors[ResourceTemplateImpl.DEFAULT_PATH_INDEX] = determinePropertyAccess(getIdentifierType(),
+				getIdentifierPropertyName());
+	}
 
-		if (anno.constructorParameterColumnNames().length == 0) {
-			return InstantiatorFactory.buildDefault(File.class);
+	private int processExtensionColumn(String[] columnNames, Class<?>[] columnTypes,
+			PropertyAccessImplementor[] accessors) {
+		Attribute<? super D, ?> extensionAttr = locateExtensionProperty();
+
+		if (extensionAttr == null) {
+			throw new IllegalArgumentException(
+					String.format("Unable to locate extension info of [%s]", getEntityName()));
 		}
 
-		return InstantiatorFactory.build(File.class, anno.constructorParameterColumnNames(),
-				anno.constructorParameterTypes());
+		final int defaultExtensionIndexInTemplate = ResourceTemplateImpl.DEFAULT_EXTENSION_INDEX;
+		int extensionIndex = getPropertyIndex(extensionAttr.getName());
+		String propertyColumnName = getPropertyColumnNames(extensionIndex)[0];
+
+		columnNames[defaultExtensionIndexInTemplate] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName
+				: extensionAttr.getName();
+		columnTypes[defaultExtensionIndexInTemplate] = getPropertyTypes()[extensionIndex].getReturnedClass();
+		accessors[defaultExtensionIndexInTemplate] = determinePropertyAccess(getPropertyType(extensionAttr.getName()),
+				extensionAttr.getName());
+
+		logger.trace(String.format("Found extension property [%s]: [%s] at index [%d]", extensionAttr.getName(),
+				columnTypes[defaultExtensionIndexInTemplate], extensionIndex));
+
+		return extensionIndex;
+	}
+
+	private int processContentColumn(Attribute<? super D, ?> contentAttr, String[] columnNames, Class<?>[] columnTypes,
+			PropertyAccessImplementor[] accessors) {
+		String propertyColumnName;
+		final int defaultContentIndexInTemplate = ResourceTemplateImpl.DEFAULT_CONTENT_INDEX;
+
+		if (contentAttr != null) {
+			int contentIndex = getPropertyIndex(contentAttr.getName());
+
+			propertyColumnName = getPropertyColumnNames(contentIndex)[0];
+			columnNames[defaultContentIndexInTemplate] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName
+					: contentAttr.getName();
+			columnTypes[defaultContentIndexInTemplate] = getPropertyTypes()[contentIndex].getReturnedClass();
+			accessors[defaultContentIndexInTemplate] = determinePropertyAccess(getPropertyType(contentAttr.getName()),
+					contentAttr.getName());
+
+			logger.trace(String.format("Found content property [%s]: [%s] at index [%d]", contentAttr.getName(),
+					columnTypes[defaultContentIndexInTemplate], contentIndex));
+
+			return contentIndex;
+		}
+
+		columnNames[defaultContentIndexInTemplate] = ResourceTemplate.NO_CONTENT.toString();
+		columnTypes[defaultContentIndexInTemplate] = ResourceTemplate.NO_CONTENT.getClass();
+		accessors[defaultContentIndexInTemplate] = PropertyAccessStrategyFactory.NO_ACCESS_STRATEGY
+				.buildPropertyAccess(null, null);
+
+		return -1;
 	}
 
 	@SuppressWarnings("unchecked")
-	private String determineDirectoryName() {
-		LocalResource anno = (LocalResource) getMappedClass().getDeclaredAnnotation(LocalResource.class);
-
-		if (anno.constructorParameterColumnNames().length == 0) {
-			return null;
+	private PojoInstantiator<File> determineInstantiator() {
+		if (!getMappedClass().isAnnotationPresent(Constructor.class)) {
+			throw new IllegalArgumentException(
+					String.format("[%s] is required on [%s]", Constructor.class, getMappedClass().getName()));
 		}
 
-		return anno.directoryName();
+		Constructor anno = (Constructor) getMappedClass().getDeclaredAnnotation(Constructor.class);
+
+		if (anno.columnNames().length == 0) {
+			return InstantiatorFactory.buildDefault(File.class);
+		}
+
+		return InstantiatorFactory.build(File.class, anno.columnNames(), anno.argumentTypes());
+	}
+
+	@SuppressWarnings("unchecked")
+	private String determineDirectoryName(Class<?> mappedClass) {
+		if (mappedClass == null) {
+			return "";
+		}
+
+		if (!mappedClass.isAnnotationPresent(Directory.class)) {
+			return determineDirectoryName(mappedClass.getSuperclass());
+		}
+
+		Directory anno = (Directory) getMappedClass().getDeclaredAnnotation(Directory.class);
+
+		return anno.path();
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -173,12 +231,12 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		if (accessTypeAnno != org.springframework.data.annotation.AccessType.Type.PROPERTY
 				&& !(propertyType instanceof AbstractExplicitlyBindedType)) {
 			// @formatter:off
-			Getter getter = Optional.of(StandardAccess.locateGetter(File.class, propertyName)
+			Getter getter = Optional.ofNullable(StandardAccess.locateGetter(File.class, propertyName)
 										.orElse(DirectAccess.locateGetter(File.class, propertyName)
 												.orElse(LiterallyNamedAccess.locateGetter(File.class, propertyName)
 														.orElse(null))))
 									.orElseThrow(() -> new IllegalArgumentException(String.format("Unable to locate getter for property [%s]", propertyName)));
-			Setter setter = Optional.of(StandardAccess.locateSetter(File.class, propertyName)
+			Setter setter = Optional.ofNullable(StandardAccess.locateSetter(File.class, propertyName)
 										.orElse(DirectAccess.locateSetter(File.class, propertyName)
 												.orElse(!(getter instanceof LiterallyNamedAccess) ? LiterallyNamedAccess.locateSetter(File.class, propertyName)
 														.orElse(null) : null)))
@@ -207,7 +265,8 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 						.format("Unable to locate access for property [%s] in type [%s]", propertyName, File.class));
 			}
 
-			if (getterLambda.getClass().equals(setterLambda)) {
+			if (getterLambda != null && setterLambda != null
+					&& !getterLambda.getClass().equals(setterLambda.getClass())) {
 				return PropertyAccessStrategyFactory.createMixedAccess().buildPropertyAccess(getterLambda,
 						setterLambda);
 			}
@@ -301,6 +360,16 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		return null;
 	}
 
+	private Attribute<? super D, ?> locateExtensionProperty() {
+		return getFactory().getMetamodel().entity(getEntityName()).getAttributes().stream().filter(attr -> {
+			if (attr.getJavaMember() instanceof Field) {
+				return ((Field) attr.getJavaMember()).isAnnotationPresent(Extension.class);
+			}
+
+			return false;
+		}).findFirst().orElse(null);
+	}
+
 	private Attribute<? super D, ?> locateContentProperty() {
 		return getFactory().getMetamodel().entity(getEntityName()).getAttributes().stream().filter(attr -> {
 			if (attr.getJavaMember() instanceof Field) {
@@ -320,34 +389,5 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 	public ResourcePersister<D> getEntityPersister() {
 		return this;
 	}
-
-//	@Override
-//	public Object load(Serializable id, Object optionalObject, LockOptions lockOptions,
-//			SharedSessionContractImplementor session) throws HibernateException {
-//		return resourceLoader.load(id, optionalObject, session, lockOptions);
-//	}
-//
-//	@Override
-//	public Object load(Serializable id, Object optionalObject, LockOptions lockOptions,
-//			SharedSessionContractImplementor session, Boolean readOnly) throws HibernateException {
-//		return resourceLoader.load(id, optionalObject, session, lockOptions, readOnly);
-//	}
-//
-//	@Override
-//	public Object[] hydrate(ResultSet rs, Serializable id, Object object, Loadable rootLoadable,
-//			String[][] suffixedPropertyColumns, boolean allProperties, SharedSessionContractImplementor session)
-//			throws SQLException, HibernateException {
-//		logger.trace(String.format("[Row-Hydrate: %s]", id.toString()));
-//
-//		Type[] propertyTypes = getPropertyTypes();
-//		int n = propertyTypes.length;
-//		Object[] values = new Object[n];
-//
-//		for (int i = 0; i < n; i++) {
-//			values[i] = propertyTypes[i].hydrate(rs, getPropertyColumnNames(i), session, object);
-//		}
-//
-//		return values;
-//	}
 
 }

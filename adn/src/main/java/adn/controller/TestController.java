@@ -4,6 +4,8 @@
 package adn.controller;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Timer;
@@ -33,12 +35,12 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 import adn.security.SecurityConfiguration;
 import adn.service.resource.ResourceSession;
-import adn.service.resource.model.models.ImageByBytes;
 
 /**
  * @author Ngoc Huy
  *
  */
+@SuppressWarnings("unused")
 @Controller
 @RequestMapping(SecurityConfiguration.TESTUNIT_PREFIX)
 public class TestController extends BaseController {
@@ -202,16 +204,12 @@ public class TestController extends BaseController {
 
 	@GetMapping("/file/public/image/session-load")
 	public @ResponseBody ResponseEntity<?> testGetImageBytes() throws IOException {
-		ImageByBytes image = session.get(ImageByBytes.class,
-				"1619973416467_0c46022fcfda4d9f4bb8c09e8c42e9efc12d839d35c78c73e4dab1d24fac8a1c.jpg");
+		return ResponseEntity.ok(null);
+	}
 
-		image.setExtension("png");
-
-		session.update(image);
-		session.flush();
-
-		return image != null ? ResponseEntity.ok(image)
-				: ResponseEntity.status(HttpStatus.NOT_FOUND).body("asb.jpg not found");
+	private byte[] getDummyBytes() throws IOException {
+		return Files.readAllBytes(
+				Paths.get("C:\\Users\\Ngoc Huy\\Pictures\\Saved Pictures\\alesia-kazantceva-XLm6-fPwK5Q-unsplash.jpg"));
 	}
 
 }

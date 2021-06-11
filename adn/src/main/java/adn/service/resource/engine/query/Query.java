@@ -5,6 +5,7 @@ package adn.service.resource.engine.query;
 
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
 
 /**
  * @author Ngoc Huy
@@ -22,12 +23,14 @@ public interface Query {
 
 	Object getParameterValue(String paramName);
 
+	Collection<String> getParameterNames();
+
 	Query clear();
 
 	String getActualSQLString();
-	
+
 	Statement getStatement();
-	
+
 	default Query setParameterValue(int i, Object value) throws SQLException {
 		return this;
 	}

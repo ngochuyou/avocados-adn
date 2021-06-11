@@ -3,6 +3,9 @@
  */
 package adn.application.context;
 
+import org.hibernate.SessionFactory;
+import org.hibernate.SessionFactoryObserver;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -75,13 +78,20 @@ public class ContextProvider implements ApplicationContextAware {
 	 * @author Ngoc Huy
 	 *
 	 */
-	public static class Access {
+	@SuppressWarnings("serial")
+	public static class Access implements SessionFactoryObserver {
 
 		public void setLocalResourceSessionFactory(SessionFactoryImpl LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE) {
 			LoggerFactory.getLogger(this.getClass())
 					.info("Created an instance of " + LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE.getClass());
 			ContextProvider.LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE = LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE;
+			applicationContext.getBean(SessionFactory.class).unwrap(SessionFactoryImplementor.class).addObserver(this);
 			closeAccess();
+		}
+
+		@Override
+		public void sessionFactoryClosed(SessionFactory factory) {
+			ContextProvider.LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE.close();
 		}
 
 	}

@@ -41,7 +41,6 @@ public class DefaultResourceIdentifierGenerator implements IdentifierGenerator, 
 			return new StringBuilder("" + new Date().getTime())
 					.append(IDENTIFIER_PARTS_SEPERATOR)
 					.append(StringHelper.hash(instance.getName()))
-					.append(instance.getExtension().startsWith(".") ? instance.getExtension() : "." + instance.getExtension())
 					.toString();
 		}
 		// @formatter:on
@@ -53,7 +52,7 @@ public class DefaultResourceIdentifierGenerator implements IdentifierGenerator, 
 
 	public static enum ResourceIdentifierPart {
 
-		CREATION_TIMESTAMP("CREATION_TIMESTAMP", 0), HASHED_FILENAME("HASHED_FILENAME", 2);
+		CREATION_TIMESTAMP("CREATION_TIMESTAMP", 0), HASHED_FILENAME("HASHED_FILENAME", 1);
 
 		private final String partName;
 

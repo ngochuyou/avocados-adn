@@ -109,6 +109,7 @@ public final class QueryCompiler {
 				"select\\s+(?<%s>[%s]+)\\sfrom[%s]+",
 				COLUMNGROUP_GROUP_NAME, letter + mark, letter + mark + ops)
 		);
+		
 		SELECT_COLUMN_PATTERN = Pattern.compile(
 			String.format(""
 				+ "^[%s]+"
@@ -120,6 +121,7 @@ public final class QueryCompiler {
 				COLUMNGROUP_ACTUAL_NAME_GROUP_NAME, letter,
 				COLUMNGROUP_ALIAS_NAME_GROUP_NAME, letter)
 		);
+		
 		SET_STATEMENT_PATTERN = Pattern.compile(
 			String.format(""
 				+ "(?<%s>[%s]+)"
@@ -154,8 +156,8 @@ public final class QueryCompiler {
 		}
 	}
 
-	public static final String SET_MARKER = "set";
-	public static final String WHERE_MARKER = "where";
+	public static final String SET_MARKER = "set$";
+	public static final String WHERE_MARKER = "where$";
 
 	private static Query compileUpdate(QueryImpl query, String sql) throws SQLException {
 		Matcher matcher = UPDATE_PATTERN.matcher(sql);
@@ -167,13 +169,34 @@ public final class QueryCompiler {
 		try {
 			String templateName = matcher.group(FROM_TABLENAME_GROUP_NAME) + ManagerFactory.DTYPE_SEPERATOR;
 
-			if (matcher.group(WHERE_CONDITIONS_GROUP_NAME) == null) {
-				throw new SQLException(String
-						.format("Query [%s] doesn't include any criteria column, expect at least 1 criteria", sql));
+			if (matcher.group(SET_STATEMENTGROUP_GROUP_NAME) == null) {
+				throw new SQLException(
+						String.format("Query [%s] doesn't include any SET portion, expect at least 1", sql));
 			}
 
-			String parts[] = matcher.group(WHERE_CONDITIONS_GROUP_NAME).split("\\sand\\s");
+			String[] parts = StringHelper.removeSpaces(matcher.group(SET_STATEMENTGROUP_GROUP_NAME)).split(",");
 			Matcher innerMatcher;
+
+			for (String statement : parts) {
+				if ((innerMatcher = SET_STATEMENT_PATTERN.matcher(statement)).matches()) {
+					if (innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME).equals(ManagerFactory.DTYPE_COLUMNNAME)) {
+						continue;
+					}
+
+					query.addColumnName(
+							String.format("%s%s", SET_MARKER, innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME)));
+					continue;
+				}
+
+				throw new SQLException(String.format("Invalid set statement pattern [%s]", statement));
+			}
+
+			if (matcher.group(WHERE_CONDITIONS_GROUP_NAME) == null) {
+				throw new SQLException(
+						String.format("Query [%s] doesn't include any WHERE portion, expect at least 1", sql));
+			}
+
+			parts = matcher.group(WHERE_CONDITIONS_GROUP_NAME).split("\\sand\\s");
 
 			for (String condition : parts) {
 				if ((innerMatcher = WHERE_CONDITION_PATTERN.matcher(condition)).matches()) {
@@ -183,27 +206,11 @@ public final class QueryCompiler {
 					}
 
 					query.addColumnName(
-							String.format("%s_%s", WHERE_MARKER, innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME)));
+							String.format("%s%s", WHERE_MARKER, innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME)));
 					continue;
 				}
 
 				throw new SQLException(String.format("Invalid where statement pattern [%s]", condition));
-			}
-
-			parts = StringHelper.removeSpaces(matcher.group(SET_STATEMENTGROUP_GROUP_NAME)).split(",");
-
-			for (String statement : parts) {
-				if ((innerMatcher = SET_STATEMENT_PATTERN.matcher(statement)).matches()) {
-					if (innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME).equals(ManagerFactory.DTYPE_COLUMNNAME)) {
-						continue;
-					}
-
-					query.addColumnName(
-							String.format("%s_%s", SET_MARKER, innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME)));
-					continue;
-				}
-
-				throw new SQLException(String.format("Invalid set statement pattern [%s]", statement));
 			}
 
 			return query.setTemplateName(templateName).lockQuery();

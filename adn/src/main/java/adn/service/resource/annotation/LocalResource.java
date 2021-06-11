@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource;
+package adn.service.resource.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -17,11 +17,5 @@ import java.lang.annotation.Target;
 public @interface LocalResource {
 
 	String name() default "";
-
-	String[] constructorParameterColumnNames() default { };
-
-	Class<?>[] constructorParameterTypes() default { };
-
-	String directoryName() default "";
 
 }

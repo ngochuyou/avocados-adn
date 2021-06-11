@@ -33,12 +33,12 @@ public class TemplateValidator implements Validator {
 	public void validate(Object target, Errors errors) {
 		ResourceTemplate template = (ResourceTemplate) target;
 
-		logger.trace(String.format("Validating template: [%s]", template.getName()));
+		logger.trace(String.format("Validating template: [%s]", template.getTemplateName()));
 
-		Assert.isTrue(StringHelper.hasLength(template.getName()), "Template name must not be empty");
-		Assert.isTrue(StringHelper.hasLength(template.getPathColumnName()), "Unable to locate pathname column");
+		Assert.isTrue(StringHelper.hasLength(template.getTemplateName()), "Template name must not be empty");
+		Assert.isTrue(StringHelper.hasLength(template.getPathColumn()), "Unable to locate pathname column");
 		Assert.notNull(template.getColumnNames(),
-				String.format("[%s]: Resource column names must not be null", template.getName()));
+				String.format("[%s]: Resource column names must not be null", template.getTemplateName()));
 
 		int span = template.getColumnNames().length;
 

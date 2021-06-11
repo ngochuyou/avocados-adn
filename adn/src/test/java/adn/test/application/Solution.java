@@ -3,13 +3,15 @@
  */
 package adn.test.application;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 
-import adn.helpers.StringHelper;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.query.QueryCompiler;
 
@@ -29,47 +31,10 @@ public class Solution {
 	 * @throws SQLException
 	 */
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
-			IllegalArgumentException, IllegalAccessException, SQLException {
-		String sql = "update ImageByBytes set createdDate=?, extension=?, lastModified=?, content=? where name=? and lastModified=?";
-		String mark = "\\?,\\.''\"\\s\\t\\n><\\=\\(\\)";
-		String letter = "\\w\\d_";
-		String ops = "(\\=|like|LIKE|is|IS|>|<)";
-		// @formatter:off
-		Pattern p = Pattern.compile(
-			String.format(""
-				+ "update\\s+(?<tablename>[%s]+)\\s+"
-				+ "set\\s+(?<columns>[%s]+)\\s+"
-				+ "where\\s+(?<conditions>[%s]+)",
-				letter,
-				mark + letter,
-				letter + mark + ops)
-		);
-		// @formatter:on
-		Matcher m = p.matcher(sql);
-
-		if (m.matches()) {
-			System.out.println(m.group("tablename"));
-
-			String[] columnParts = StringHelper.removeSpaces(m.group("columns")).split(",");
-
-			for (String s : columnParts) {
-				// @formatter:off
-				Matcher columnMatcher = Pattern.compile(String.format(""
-					+ "(?<columnname>[%s]+)[%s]+",
-					letter, mark)
-				).matcher(s);
-				// @formatter:on
-				if (columnMatcher.matches()) {
-					System.out.println(columnMatcher.group("columnname"));
-				}
-			}
-
-			System.out.println(m.group("conditions"));
-		}
-	}
+			IllegalArgumentException, IllegalAccessException, SQLException {}
 
 	@Test
-	public void testCompileFind() throws SQLException {
+	private void testCompileFind() throws SQLException {
 		// @formatter:off
 		String sql = ""
 				+ "select imagebybyt0_.name as name1_0_0_, imagebybyt0_.createdDate as createdd2_0_0_, imagebybyt0_.extension as extensio3_0_0_, imagebybyt0_.lastModified as lastmodi4_0_0_, imagebybyt0_.content as content5_0_0_ "
@@ -79,6 +44,23 @@ public class Solution {
 		System.out.println(sql);
 		Query query = QueryCompiler.compile(sql, null);
 		System.out.println(query);
+	}
+
+	@Test
+	public void test() throws IOException {
+		File file = new File("C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\images\\aaaa.jpg");
+		file = move(file, "bbbb.jpg");
+
+		System.out.println(file.getPath());
+		System.out.println(file.exists());
+	}
+
+	private File move(File file, String newName) throws IOException {
+		Path source = Paths.get(file.getPath());
+
+		Files.move(source, source.resolveSibling(newName));
+
+		return new File(file.getParent() + "\\" + newName);
 	}
 
 }

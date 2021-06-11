@@ -11,8 +11,8 @@ public class FunctionHelper {
 
 	private FunctionHelper() {}
 
-	public static <T> T doThrow(String message) throws IllegalAccessException {
-		throw new IllegalAccessException(message);
+	public static <T> T doThrow(String message) {
+		throw new IllegalArgumentException(message);
 	}
 
 	public static <T> T doThrow(Throwable ex) throws Throwable {

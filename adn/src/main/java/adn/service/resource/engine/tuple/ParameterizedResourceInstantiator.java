@@ -5,6 +5,7 @@ package adn.service.resource.engine.tuple;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 
 import org.springframework.util.Assert;
 
@@ -31,7 +32,6 @@ public class ParameterizedResourceInstantiator<T> extends AbstractResourceInstan
 		String[] paramNames = new String[this.columnNames.length + 1];
 
 		System.arraycopy(this.columnNames, 0, paramNames, 0, this.columnNames.length);
-
 		paramNames[this.columnNames.length] = name;
 		this.columnNames = paramNames;
 
@@ -51,11 +51,11 @@ public class ParameterizedResourceInstantiator<T> extends AbstractResourceInstan
 
 	@Override
 	public T instantiate(Object[] values) throws IllegalArgumentException {
-		Assert.isTrue(values.length == columnNames.length,
+		Assert.isTrue(values.length >= columnNames.length,
 				String.format("Invalid amount of argument passed, expect [%s] argument(s)", columnNames.length));
 
 		try {
-			return constructor.newInstance(values);
+			return constructor.newInstance(Arrays.copyOf(values, columnNames.length));
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
 				| InvocationTargetException e) {
 			throw new IllegalArgumentException(e);

@@ -21,7 +21,7 @@ import adn.service.resource.factory.DefaultResourceIdentifierGenerator.ResourceI
  */
 @SuppressWarnings("serial")
 public class FileCreationTimeStampType extends AbstractExplicitlyBindedType<Date>
-		implements NoOperationSet, HandledFunction<File, Date, RuntimeException> {
+		implements HandledFunction<File, Date, RuntimeException>, NoOperationSet {
 
 	public static final String NAME = "adn.service.resource.metamodel.type.FileCreationTimeStampType";
 

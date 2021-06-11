@@ -1,100 +1,55 @@
 /**
  * 
  */
-package adn.service.resource.engine;
+package adn.service.resource.engine.tuple;
 
 import java.io.File;
-import java.sql.SQLException;
 
 import org.hibernate.property.access.spi.Getter;
-import org.hibernate.property.access.spi.Setter;
 import org.hibernate.tuple.Tuplizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adn.helpers.FunctionHelper.HandledFunction;
 import adn.helpers.FunctionHelper.HandledSupplier;
-import adn.helpers.TypeHelper;
 import adn.service.resource.engine.access.AbstractPropertyAccess;
 import adn.service.resource.engine.access.HybridAccess;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccess;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccess.LambdaType;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.template.ResourceTemplate;
-import adn.service.resource.engine.tuple.InstantiatorFactory.ParameterizedInstantiator;
+import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
 
 /**
  * @author Ngoc Huy
  *
  */
-public class ResourceTuplizer implements Tuplizer {
+public class ResourceTuplizerImpl extends ResourceTuplizerContract implements Tuplizer {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private final ResourceTemplate template;
 
-	public ResourceTuplizer(ResourceTemplate template) {
+	private final PojoInstantiator<File> instantiator;
+
+	public ResourceTuplizerImpl(ResourceTemplate template, PojoInstantiator<File> instantiator) {
 		this.template = template;
+		this.instantiator = instantiator;
+	}
+
+	@Override
+	protected ResourceTemplate getResourceTemplate() {
+		return template;
+	}
+
+	@Override
+	protected PojoInstantiator<File> getInstantiator() {
+		return instantiator;
 	}
 
 	@Override
 	public Object[] getPropertyValues(Object entity) {
 		return getPropertyValues(entity, null);
-	}
-
-	private void checkTypeAndSet(File instance, Setter setter, Object value) throws SQLException {
-		Class<?> paramType = setter.getMethod().getParameterTypes()[0];
-
-		if (!paramType.equals(value.getClass())) {
-			if (!TypeHelper.TYPE_CONVERTER.containsKey(paramType)) {
-				throw new SQLException(String.format("Type mismatch [%s><%s]", paramType, value.getClass()));
-			}
-
-			logger.trace(String.format("Casting [%s] -> [%s]", value.getClass(), paramType));
-			setter.set(instance, TypeHelper.TYPE_CONVERTER.get(paramType).get(value.getClass()).apply(value), null);
-			return;
-		}
-
-		setter.set(instance, value, null);
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public void setPropertyValues(Object entity, Object[] values) {
-		File file = (File) entity;
-
-		int span = template.getColumnNames().length;
-		PropertyAccessImplementor[] accessors = template.getPropertyAccessors();
-
-		for (int i = 0; i < span; i++) {
-			if (accessors[i] instanceof HybridAccess) {
-				HybridAccess<?, ?, ?, ? extends RuntimeException> accessor = (HybridAccess<?, ?, ?, ? extends RuntimeException>) accessors[i];
-
-				if (accessor.hasSetter()) {
-					try {
-						invokeSetter(accessor, file, values[i]);
-						continue;
-					} catch (RuntimeException re) {
-						if (!accessor.hasSetterLambda()) {
-							throw re;
-						}
-
-						logger.trace("Trying setter lambda");
-					}
-				}
-
-				invokeSetterLambda(accessor, file, values[i], true);
-				continue;
-			}
-
-			if (accessors[i] instanceof AbstractPropertyAccess) {
-				invokeSetter((AbstractPropertyAccess) accessors[i], file, values[i]);
-				continue;
-			}
-
-			invokeSetterLambda((LambdaPropertyAccess<?, ?, ?, ? extends RuntimeException, ?, ?>) accessors[i], file,
-					values[i], true);
-		}
 	}
 
 	private Object invokeGetter(AbstractPropertyAccess accessor, File instance) throws RuntimeException {
@@ -108,20 +63,6 @@ public class ResourceTuplizer implements Tuplizer {
 			logger.trace(String.format("Exception thrown while invoking getter [%s] with message [%s]",
 					accessor.getGetter(), re.getMessage()));
 			throw re;
-		}
-	}
-
-	private void invokeSetter(AbstractPropertyAccess accessor, File instance, Object value) throws RuntimeException {
-		if (!accessor.hasSetter()) {
-			return;
-		}
-
-		try {
-			checkTypeAndSet(instance, accessor.getSetter(), value);
-		} catch (Exception any) {
-			logger.trace(String.format("Exception thrown while invoking setter [%s] using value [%s] with message [%s]",
-					accessor.getSetter(), value, any.getMessage()));
-			throw new RuntimeException(any);
 		}
 	}
 
@@ -146,25 +87,6 @@ public class ResourceTuplizer implements Tuplizer {
 		}
 
 		return null;
-	}
-
-	@SuppressWarnings("unchecked")
-	private void invokeSetterLambda(LambdaPropertyAccess<?, ?, ?, ? extends RuntimeException, ?, ?> lambdaAccess,
-			File instance, Object value, boolean shouldThrowLambdaTypeMismatchException) {
-		if (!lambdaAccess.hasSetterLambda()) {
-			return;
-		}
-
-		if (lambdaAccess.getSetterType().equals(LambdaType.FUNCTION)) {
-			((HandledFunction<File, ?, RuntimeException>) lambdaAccess.getSetterLambda()).apply(instance);
-			return;
-		}
-
-		if (shouldThrowLambdaTypeMismatchException) {
-			throw new IllegalArgumentException(String.format(
-					"Exception thrown while invoking setter lambda using value [%s]. Setter access must be of type [%s], type [%s] given",
-					value, HandledFunction.class, lambdaAccess.getSetterLambda().getClass()));
-		}
 	}
 
 	@Override
@@ -192,27 +114,6 @@ public class ResourceTuplizer implements Tuplizer {
 	}
 
 	@Override
-	public File instantiate() {
-		if (template.getInstantiator() instanceof ParameterizedInstantiator) {
-			throw new IllegalArgumentException(String.format(
-					"Unable to instaniate instance of type [%s] with no-param instantiator, built instantiator is [%s]",
-					File.class, template.getInstantiator()));
-		}
-
-		return template.getInstantiator().instantiate();
-	}
-
-	@Override
-	public boolean isInstance(Object object) {
-		return getMappedClass().isAssignableFrom(object.getClass());
-	}
-
-	@Override
-	public final Class<?> getMappedClass() {
-		return File.class;
-	}
-
-	@Override
 	public Getter getGetter(int i) {
 		PropertyAccessImplementor pa = template.getPropertyAccessors()[i];
 
@@ -220,6 +121,7 @@ public class ResourceTuplizer implements Tuplizer {
 	}
 
 	@SuppressWarnings("unchecked")
+	@Deprecated
 	public Object[] getPropertyValues(Object entity, String[] columnOrder) {
 		File instance = (File) entity;
 		int span = columnOrder == null ? template.getColumnNames().length : columnOrder.length;
@@ -228,7 +130,7 @@ public class ResourceTuplizer implements Tuplizer {
 		PropertyAccessImplementor currentAccessor;
 
 		for (int i = 0; i < span; i++) {
-			currentAccessor = columnOrder != null ? template.getPropertyAccessor(columnOrder[i]) : accessors[i];
+			currentAccessor = columnOrder != null ? template.getPropertyAccess(columnOrder[i]) : accessors[i];
 
 			if (currentAccessor instanceof HybridAccess) {
 				HybridAccess<?, ?, ?, RuntimeException> accessor = (HybridAccess<?, ?, ?, RuntimeException>) currentAccessor;

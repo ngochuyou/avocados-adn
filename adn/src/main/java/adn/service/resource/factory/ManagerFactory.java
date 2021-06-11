@@ -10,7 +10,7 @@ import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.service.ServiceRegistry;
 import org.springframework.util.Assert;
 
-import adn.service.resource.engine.LocalStorage;
+import adn.service.resource.engine.Storage;
 
 /**
  * @author Ngoc Huy
@@ -20,14 +20,14 @@ public class ManagerFactory extends SessionFactoryImpl implements EntityManagerF
 
 	private static final long serialVersionUID = 1L;
 
-	private final LocalStorage localStorage;
+	private final Storage localStorage;
 
 	public static final String DTYPE_COLUMNNAME = "DTYPE";
 	public static final String DTYPE_SEPERATOR = "_";
 
 	public ManagerFactory(
 	// @formatter:off
-			final LocalStorage localStorage,
+			final Storage localStorage,
 			final MetadataImplementor metadata,
 			final ServiceRegistry serviceRegistry,
 			final SessionFactoryOptions sessionFactoryOptions,
@@ -35,12 +35,12 @@ public class ManagerFactory extends SessionFactoryImpl implements EntityManagerF
 		// @formatter:on
 		super(metadata, sessionFactoryOptions, null);
 
-		Assert.notNull(localStorage, String.format("[%s] must not be null", LocalStorage.class));
+		Assert.notNull(localStorage, String.format("[%s] must not be null", Storage.class));
 		this.localStorage = localStorage;
 	}
 
 	@Override
-	public LocalStorage getStorage() {
+	public Storage getStorage() {
 		return localStorage;
 	}
 

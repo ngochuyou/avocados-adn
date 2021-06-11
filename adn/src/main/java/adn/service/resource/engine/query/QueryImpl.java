@@ -5,6 +5,7 @@ package adn.service.resource.engine.query;
 
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -84,10 +85,12 @@ public class QueryImpl implements Query {
 		return this;
 	}
 
+	private int nextIndex = 0;
+
 	QueryImpl addColumnName(String name) throws SQLException {
 		checkLock();
 		paramMap.put(name, null);
-		paramNameMap.put(paramMap.size() - 1, name);
+		paramNameMap.put(nextIndex++, name);
 		return this;
 	}
 
@@ -123,7 +126,7 @@ public class QueryImpl implements Query {
 	@Override
 	public String toString() {
 		// @formatter:off
-		return String.format("\n\t%s %s (%s) VALUES (%s)%s", queryType, templateName,
+		return String.format("\n\t%s %s\n\t(%s)\n\tVALUES (%s)%s", queryType, templateName,
 				paramMap.keySet().stream()
 					.collect(Collectors.joining(", ")),
 				paramMap.values().stream().map(param -> param == null ? null : param.toString())
@@ -170,6 +173,11 @@ public class QueryImpl implements Query {
 	@Override
 	public Statement getStatement() {
 		return statement;
+	}
+
+	@Override
+	public Collection<String> getParameterNames() {
+		return paramNameMap.values();
 	}
 
 }

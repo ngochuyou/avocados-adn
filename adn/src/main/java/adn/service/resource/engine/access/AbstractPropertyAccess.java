@@ -114,8 +114,7 @@ public abstract class AbstractPropertyAccess implements PropertyAccessImplemento
 				}
 			}
 
-			Map<Class<?>, Function<Object, Object>> alternativeResolvers = TypeHelper.TYPE_CONVERTER
-					.get(parameterType);
+			Map<Class<?>, Function<Object, Object>> alternativeResolvers = TypeHelper.TYPE_CONVERTER.get(parameterType);
 
 			if (alternativeResolvers == null || alternativeResolvers.isEmpty()) {
 				throw new NoSuchMethodException(String.format("Setter name [%s(%s)] not found in type [%s]", setterName,
@@ -137,7 +136,9 @@ public abstract class AbstractPropertyAccess implements PropertyAccessImplemento
 
 	@Override
 	public String toString() {
-		return String.format("%s(getter=[%s], setter=[%s])", this.getClass().getSimpleName(), getter, setter);
+		return String.format("%s(getter=[%s], setter=[%s])", this.getClass().getSimpleName(),
+				getter == NoAccess.NO_OP_GETTER ? "<no_op>" : getter.getMethodName(),
+				setter == NoAccess.NO_OP_SETTER ? "<no_op>" : setter.getMethodName());
 	}
 
 }

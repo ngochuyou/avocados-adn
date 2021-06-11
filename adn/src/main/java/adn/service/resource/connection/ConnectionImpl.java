@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
-import adn.service.resource.engine.LocalStorage;
+import adn.service.resource.engine.Storage;
 
 /**
  * @author Ngoc Huy
@@ -29,13 +29,13 @@ import adn.service.resource.engine.LocalStorage;
  */
 public class ConnectionImpl implements LocalStorageConnection {
 
-	private final LocalStorage storage;
+	private final Storage storage;
 
 	public static final int RESULT_SET_MAX_ROWS = 1000;
 	public static final int MAX_FIELD_SIZE = Integer.MAX_VALUE;
 	public static final int DEFAULT_QUERY_TIMEOUT = 5;
 
-	public ConnectionImpl(LocalStorage storage) {
+	public ConnectionImpl(Storage storage) {
 		this.storage = storage;
 	}
 
@@ -343,7 +343,7 @@ public class ConnectionImpl implements LocalStorageConnection {
 	}
 
 	@Override
-	public LocalStorage getStorage() {
+	public Storage getStorage() {
 		return storage;
 	}
 

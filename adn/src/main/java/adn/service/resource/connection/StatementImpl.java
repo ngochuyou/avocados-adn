@@ -95,7 +95,10 @@ public class StatementImpl implements Statement {
 		connection = null;
 		isClosed = true;
 		query = null;
-		result.close();
+
+		if (result != null) {
+			result.close();
+		}
 	}
 
 	@Override

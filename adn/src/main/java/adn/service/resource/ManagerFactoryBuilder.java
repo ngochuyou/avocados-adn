@@ -64,7 +64,8 @@ import org.springframework.util.Assert;
 
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
-import adn.service.resource.engine.LocalStorage;
+import adn.service.resource.annotation.LocalResource;
+import adn.service.resource.engine.Storage;
 import adn.service.resource.factory.BootstrapContextImpl;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
@@ -94,7 +95,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 	private BootstrapContext bootstrapContext;
 
 	@Autowired
-	private LocalStorage localStorage;
+	private Storage localStorage;
 
 	// @formatter:off
 	private static final List<Class<? extends Service>> STANDARD_SERVICES_CLASSES = Collections.unmodifiableList(Arrays.asList(

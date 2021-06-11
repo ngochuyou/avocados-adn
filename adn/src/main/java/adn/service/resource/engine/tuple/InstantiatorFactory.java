@@ -74,7 +74,7 @@ public class InstantiatorFactory {
 
 	public interface ParameterizedInstantiator<T> extends PojoInstantiator<T> {
 
-		T instantiate(Object[] values) throws IllegalArgumentException;
+		T instantiate(Object[] values);
 
 		@Override
 		default T instantiate(Serializable id) {

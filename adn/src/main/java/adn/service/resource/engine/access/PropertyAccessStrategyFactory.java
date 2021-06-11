@@ -14,11 +14,15 @@ import adn.helpers.FunctionHelper.HandledFunction;
 import adn.helpers.FunctionHelper.HandledSupplier;
 
 /**
+ * Central factory for producing {@link PropertyAccessImplementor} instances
+ * 
  * @author Ngoc Huy
  *
  */
 @SuppressWarnings("rawtypes")
 public final class PropertyAccessStrategyFactory {
+	// static only
+	private PropertyAccessStrategyFactory() {}
 
 	public static final PropertyAccessStrategyImplementor<NoAccess> NO_ACCESS_STRATEGY = new PropertyAccessStrategyImplementor<NoAccess>() {
 
