@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Optional;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.util.StringUtils;
@@ -135,8 +136,8 @@ public class StringHelper extends StringUtils {
 		return str;
 	}
 
-	public static String get(Object in, String orElse) {
-		return in != null && hasLength(in.toString()) ? in.toString() : orElse;
+	public static Optional<String> get(String in) {
+		return Optional.ofNullable(hasLength(in) ? in : null);
 	}
 
 }

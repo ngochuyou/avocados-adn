@@ -27,11 +27,11 @@ public interface ResourceTuplizer extends Tuplizer {
 	File instantiate(Object[] arguments);
 
 	/**
-	 * Validate the passed values to make sure that they respect what ever the
+	 * Validate the passed values to make sure that they respect whatever the
 	 * configured business of creating a {@link File}
 	 * 
 	 * @param values
 	 */
-	void validateValues(Object[] values);
+	void validate(Object[] values, String[] columnNames);
 
 }

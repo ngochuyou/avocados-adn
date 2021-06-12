@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 import adn.security.SecurityConfiguration;
 import adn.service.resource.ResourceSession;
+import adn.service.resource.model.models.ImageByBytes;
 
 /**
  * @author Ngoc Huy
@@ -202,9 +203,14 @@ public class TestController extends BaseController {
 	@Autowired
 	private ResourceSession session;
 
+	private String filename = "1623406220771_12d4fc19efc1899e0731cd4d7e67f66daec3c271105cc0eb0ed6757f94822615.jpg";
+
 	@GetMapping("/file/public/image/session-load")
 	public @ResponseBody ResponseEntity<?> testGetImageBytes() throws IOException {
-		return ResponseEntity.ok(null);
+		ImageByBytes image = session.find(ImageByBytes.class, filename);
+
+		return image != null ? ResponseEntity.ok(image.getLastModified())
+				: ResponseEntity.status(HttpStatus.NOT_FOUND).body(String.format("File [%s] not found", filename));
 	}
 
 	private byte[] getDummyBytes() throws IOException {

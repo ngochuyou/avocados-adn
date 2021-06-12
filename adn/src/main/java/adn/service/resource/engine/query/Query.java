@@ -5,9 +5,11 @@ package adn.service.resource.engine.query;
 
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collection;
 
 /**
+ * Methods of this instance always assumes that validity of their arguments were
+ * asserted
+ * 
  * @author Ngoc Huy
  *
  */
@@ -23,9 +25,15 @@ public interface Query {
 
 	Object getParameterValue(String paramName);
 
-	Collection<String> getParameterNames();
+	String[] getColumnNames();
 
-	Query clear();
+	String[] getColumnAlias();
+
+	String getColumnName(String alias);
+
+	String getAliasName(String columnName);
+
+	void clear();
 
 	String getActualSQLString();
 

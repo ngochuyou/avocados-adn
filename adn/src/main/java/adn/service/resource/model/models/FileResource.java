@@ -44,7 +44,6 @@ public class FileResource implements Resource {
 	@Id
 	@GeneratedValue(generator = DefaultResourceIdentifierGenerator.NAME)
 	@GenericGenerator(strategy = DefaultResourceIdentifierGenerator.PATH, name = DefaultResourceIdentifierGenerator.NAME)
-	@AccessType(value = AccessType.Type.PROPERTY)
 	private String name;
 
 	@CreationTimestamp

@@ -143,13 +143,13 @@ public final class QueryCompiler {
 
 		switch (query.getType()) {
 			case FIND: {
-				return compileFind(query, sql.trim());
+				return compileFind(query, sql.trim()).lockQuery();
 			}
 			case SAVE: {
-				return compileSave(query, sql.trim());
+				return compileSave(query, sql.trim()).lockQuery();
 			}
 			case UPDATE: {
-				return compileUpdate(query, sql.trim());
+				return compileUpdate(query, sql.trim()).lockQuery();
 			}
 			default:
 				throw new SQLException(String.format("Unable to compile query [%s], unknown query type", sql));
@@ -213,7 +213,7 @@ public final class QueryCompiler {
 				throw new SQLException(String.format("Invalid where statement pattern [%s]", condition));
 			}
 
-			return query.setTemplateName(templateName).lockQuery();
+			return query.setTemplateName(templateName);
 		} catch (RuntimeException any) {
 			throw new SQLException(any);
 		}
@@ -230,7 +230,7 @@ public final class QueryCompiler {
 			String templateName = matcher.group(FROM_TABLENAME_GROUP_NAME) + ManagerFactory.DTYPE_SEPERATOR;
 
 			if (matcher.group(WHERE_CONDITIONS_GROUP_NAME) == null) {
-				return query.setTemplateName(templateName).lockQuery();
+				return query.setTemplateName(templateName);
 			}
 
 			String conditions[] = matcher.group(WHERE_CONDITIONS_GROUP_NAME).split("\\sand\\s");
@@ -251,7 +251,7 @@ public final class QueryCompiler {
 				throw new SQLException(String.format("Invalid where pattern [%s]", condition));
 			}
 
-			return query.setTemplateName(templateName).lockQuery();
+			return query.setTemplateName(templateName);
 		} catch (RuntimeException any) {
 			throw new SQLException(any);
 		}
@@ -278,7 +278,7 @@ public final class QueryCompiler {
 				query.addColumnName(columnName);
 			}
 
-			return query.setTemplateName(templateName).lockQuery();
+			return query.setTemplateName(templateName);
 		} catch (RuntimeException any) {
 			throw new SQLException(any);
 		}

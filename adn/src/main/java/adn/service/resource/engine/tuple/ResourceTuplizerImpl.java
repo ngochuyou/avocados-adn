@@ -48,8 +48,50 @@ public class ResourceTuplizerImpl extends ResourceTuplizerContract implements Tu
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Object[] getPropertyValues(Object entity) {
-		return getPropertyValues(entity, null);
+		File instance = (File) entity;
+		int span = template.getColumnNames().length;
+		Object[] values = new Object[span];
+		PropertyAccessImplementor[] accessors = template.getPropertyAccessors().clone();
+		PropertyAccessImplementor currentAccessor;
+
+		for (int i = 0; i < span; i++) {
+			currentAccessor = accessors[i];
+
+			if (currentAccessor instanceof HybridAccess) {
+				HybridAccess<?, ?, ?, RuntimeException> accessor = (HybridAccess<?, ?, ?, RuntimeException>) currentAccessor;
+
+				if (accessor.hasGetter()) {
+					try {
+						values[i] = invokeGetter(accessor, instance);
+						continue;
+					} catch (RuntimeException re) {
+						if (!accessor.hasGetterLambda()) {
+							throw re;
+						}
+
+						if (logger.isTraceEnabled()) {
+							logger.trace(
+									String.format("Trying getter lambda on colunm [%s]", template.getColumnNames()[i]));
+						}
+					}
+				}
+
+				values[i] = invokeGetterLambda(accessor, instance, true);
+				continue;
+			}
+
+			if (currentAccessor instanceof AbstractPropertyAccess) {
+				values[i] = invokeGetter((AbstractPropertyAccess) currentAccessor, instance);
+				continue;
+			}
+
+			values[i] = invokeGetterLambda(
+					(LambdaPropertyAccess<?, ?, ?, ? extends RuntimeException, ?, ?>) currentAccessor, instance, true);
+		}
+
+		return values;
 	}
 
 	private Object invokeGetter(AbstractPropertyAccess accessor, File instance) throws RuntimeException {
@@ -118,50 +160,6 @@ public class ResourceTuplizerImpl extends ResourceTuplizerContract implements Tu
 		PropertyAccessImplementor pa = template.getPropertyAccessors()[i];
 
 		return pa instanceof AbstractPropertyAccess ? pa.getGetter() : null;
-	}
-
-	@SuppressWarnings("unchecked")
-	@Deprecated
-	public Object[] getPropertyValues(Object entity, String[] columnOrder) {
-		File instance = (File) entity;
-		int span = columnOrder == null ? template.getColumnNames().length : columnOrder.length;
-		Object[] values = new Object[span];
-		PropertyAccessImplementor[] accessors = template.getPropertyAccessors().clone();
-		PropertyAccessImplementor currentAccessor;
-
-		for (int i = 0; i < span; i++) {
-			currentAccessor = columnOrder != null ? template.getPropertyAccess(columnOrder[i]) : accessors[i];
-
-			if (currentAccessor instanceof HybridAccess) {
-				HybridAccess<?, ?, ?, RuntimeException> accessor = (HybridAccess<?, ?, ?, RuntimeException>) currentAccessor;
-
-				if (accessor.hasGetter()) {
-					try {
-						values[i] = invokeGetter(accessor, instance);
-						continue;
-					} catch (RuntimeException re) {
-						if (!accessor.hasGetterLambda()) {
-							throw re;
-						}
-
-						logger.trace("Trying getter lambda");
-					}
-				}
-
-				values[i] = invokeGetterLambda(accessor, instance, true);
-				continue;
-			}
-
-			if (currentAccessor instanceof AbstractPropertyAccess) {
-				values[i] = invokeGetter((AbstractPropertyAccess) currentAccessor, instance);
-				continue;
-			}
-
-			values[i] = invokeGetterLambda(
-					(LambdaPropertyAccess<?, ?, ?, ? extends RuntimeException, ?, ?>) currentAccessor, instance, true);
-		}
-
-		return values;
 	}
 
 }

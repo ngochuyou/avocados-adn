@@ -17,9 +17,16 @@ public class ArrayHelper {
 		return elements == null ? FunctionHelper.doThrow("Cannot build Array from null") : new ArrayBuilder<>(elements);
 	}
 
+	/**
+	 * Use for cases which performance matter is not crucial
+	 *
+	 * @param <T>
+	 */
 	public static class ArrayBuilder<T> {
 
 		private final T[] array;
+		private T lastFound;
+		private int lastFoundIndex;
 
 		private ArrayBuilder(T[] array) {
 			this.array = array;
@@ -29,6 +36,7 @@ public class ArrayHelper {
 			for (T ele : array) {
 
 				if (Objects.deepEquals(target, ele)) {
+					lastFound = ele;
 					return true;
 				}
 			}
@@ -51,6 +59,14 @@ public class ArrayHelper {
 
 		public T[] get() {
 			return array;
+		}
+
+		public T getLastFound() {
+			return lastFound;
+		}
+
+		public int getLastFoundIndex() {
+			return lastFoundIndex;
 		}
 
 	}

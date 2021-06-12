@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.hibernate.tuple.Tuplizer;
 import org.slf4j.Logger;
@@ -17,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import adn.service.resource.engine.Finder;
+import adn.service.resource.engine.FinderImpl;
 import adn.service.resource.engine.Storage;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.query.QueryCompiler;
@@ -34,12 +35,12 @@ public class PersistenceContext {
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private final Storage storage;
-	private final Finder finder;
+	private final FinderImpl finder;
 
 	private final Map<String, Mutex> mutexMap = new MutexMap();
 
 	@Autowired
-	public PersistenceContext(@Autowired Storage storage, @Autowired Finder finder) {
+	public PersistenceContext(@Autowired Storage storage, @Autowired FinderImpl finder) {
 		super();
 		this.storage = storage;
 		this.finder = finder;
@@ -71,8 +72,7 @@ public class PersistenceContext {
 			}
 		}
 
-		File[] files = finder.find(query, wherePortionColumnNames, template,
-				String.format("%s%s", QueryCompiler.WHERE_MARKER, template.getPathColumn()));
+		File[] files = finder.find(template, null);
 		Tuplizer tuplizer = template.getTuplizer();
 		Object[] values;
 		String mutexKey;
@@ -121,8 +121,8 @@ public class PersistenceContext {
 
 	private String[] getSetPortionParameterNames(Query query) {
 		// @formatter:off
-		return query.getParameterNames()
-				.stream().filter(paramName -> paramName.startsWith(QueryCompiler.SET_MARKER))
+		return Stream.of(query.getColumnNames())
+				.filter(paramName -> paramName.startsWith(QueryCompiler.SET_MARKER))
 				.map(name -> name.replaceFirst(Pattern.quote(QueryCompiler.SET_MARKER), ""))
 				.toArray(String[]::new);
 		// @formatter:on
@@ -130,8 +130,8 @@ public class PersistenceContext {
 
 	private String[] getWherePortionParameterNames(Query query) {
 		// @formatter:off
-		return query.getParameterNames()
-				.stream().filter(paramName -> paramName.startsWith(Pattern.quote(QueryCompiler.WHERE_MARKER)))
+		return Stream.of(query.getColumnNames())
+				.filter(paramName -> paramName.startsWith(Pattern.quote(QueryCompiler.WHERE_MARKER)))
 				.map(name -> name.replaceFirst(Pattern.quote(QueryCompiler.WHERE_MARKER), ""))
 				.toArray(String[]::new);
 		// @formatter:on

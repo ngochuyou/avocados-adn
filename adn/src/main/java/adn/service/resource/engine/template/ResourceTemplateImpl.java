@@ -31,6 +31,7 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 	private final Map<String, Integer> indexMap;
 	private final String[] columnNames;
 	private final Class<?>[] columnTypes;
+	private final boolean[] columnNullabilities;
 	private final PropertyAccessImplementor[] accessors;
 	private final PojoInstantiator<File> instantiator;
 
@@ -44,6 +45,7 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 			String directoryPath,
 			String[] columnNames,
 			Class<?>[] columnTypes,
+			boolean[] columnNullabilities,
 			PropertyAccessImplementor[] accessors,
 			PojoInstantiator<File> instantiator,
 			Storage storage) {
@@ -55,6 +57,7 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 				.mapToObj(index -> Map.entry(this.columnNames[index], index))
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		this.columnTypes = columnTypes;
+		this.columnNullabilities = columnNullabilities;
 		this.accessors = accessors;
 		this.instantiator = instantiator;
 		this.tuplizer = new ResourceTuplizerImpl(this, instantiator);
@@ -91,11 +94,13 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 				+ "\t-instantiator: [%s]\n"
 				+ "\t-columnNames: [%s]\n"
 				+ "\t-columnTypes: [%s]\n"
+				+ "\t-columnNullabilities: [%s]\n"
 				+ "\t-accessors: [\n\t\t-%s\n\t]", this.getClass().getSimpleName(), name,
 				directoryPath,
 				instantiator.toString(),
 				Stream.of(columnNames).collect(Collectors.joining(", ")),
 				Stream.of(columnTypes).map(type -> type.getName()).collect(Collectors.joining(", ")),
+				IntStream.range(0, columnNullabilities.length).mapToObj(index -> String.valueOf(columnNullabilities[index])).collect(Collectors.joining(", ")),
 				Stream.of(accessors).map(access -> access.toString()).collect(Collectors.joining("\n\t\t-")));
 		// @formatter:on
 	}
@@ -163,6 +168,16 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 	@Override
 	public Storage getStorage() {
 		return storage;
+	}
+
+	@Override
+	public boolean isColumnNullable(int i) {
+		return columnNullabilities[i];
+	}
+
+	@Override
+	public boolean isColumnNullable(String columnName) {
+		return isColumnNullable(indexMap.get(columnName));
 	}
 
 }

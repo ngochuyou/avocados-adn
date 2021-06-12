@@ -43,18 +43,12 @@ public class TemplateValidator implements Validator {
 		int span = template.getColumnNames().length;
 
 		Assert.isTrue(span == template.getColumnTypes().length, "Column names span and column types span must match");
-		Assert.isTrue(span == template.getPropertyAccessors().length,
-				"Column names span and property accessors span must match");
-		Assert.notNull(template.getPropertyAccessors()[0],
-				String.format("Property access of column [%s] must not be null", template.getColumnNames()[0]));
 
 		for (int i = 1; i < span; i++) {
 			Assert.isTrue(StringHelper.hasLength(template.getColumnNames()[i]),
 					String.format("Column name must not be empty, found null at index [%d]", i));
 			Assert.notNull(template.getColumnTypes()[i],
 					String.format("Column type must not be null, found null at index [%d]", i));
-			Assert.notNull(template.getPropertyAccessors()[i],
-					String.format("Property access of column [%s] must not be null", template.getColumnNames()[i]));
 		}
 	}
 

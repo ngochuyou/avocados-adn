@@ -41,20 +41,24 @@ public abstract class ResourceTuplizerContract implements ResourceTuplizer {
 	protected abstract PojoInstantiator<File> getInstantiator();
 
 	@Override
-	public void validateValues(Object[] values) {
+	public void validate(Object[] values, String[] columnNames) {
 		ResourceTemplate template = getResourceTemplate();
-		int span = template.getPropertySpan();
-
-		Assert.isTrue(values.length == span,
-				String.format(
-						"Values length mismatch, given {%s} value(s) while registered {%s} value(s) in template [%s]",
-						values.length, span, template.getTemplateName()));
+		int span = columnNames.length;
 
 		Class<?>[] columnTypes = template.getColumnTypes();
 		Class<?> registeredType, givenType;
+		int columnIndex;
 
 		for (int i = 0; i < span; i++) {
-			registeredType = columnTypes[i];
+			columnIndex = template.getColumnIndex(columnNames[i]);
+
+			if (values[i] == null && !template.isColumnNullable(columnIndex)) {
+				throw new IllegalArgumentException(
+						String.format("Found null value on column [%s] while registered non-nullable, template: [%s]",
+								template.getColumnNames()[i], template.getTemplateName()));
+			}
+
+			registeredType = columnTypes[columnIndex];
 			givenType = values[i].getClass();
 
 			if (registeredType.equals(givenType)) {
@@ -86,13 +90,10 @@ public abstract class ResourceTuplizerContract implements ResourceTuplizer {
 		final File file = (File) entity;
 		final ResourceTemplate template = getResourceTemplate();
 		final int pathColumnIndex = template.getColumnIndex(template.getPathColumn());
-		// we don't have to invoke path hydration since it can only been done via
-		// constructor call
 		final int extensionColumnIndex = template.getColumnIndex(template.getExtensionColumn());
-		// invoke extension hydration
-		invokeSetAccess(template.getPropertyAccess(extensionColumnIndex), file, values);
-		// indicates this resource has no content
-		int contentColumnIndex = -1;
+		// we don't have to invoke path and extension hydration since it can only been
+		// done via constructor call
+		int contentColumnIndex = -1; // indicates this resource has no content
 
 		if (!template.getContentColumn().equals(ResourceTemplate.NO_CONTENT.toString())) {
 			contentColumnIndex = template.getColumnIndex(template.getContentColumn());
@@ -201,10 +202,6 @@ public abstract class ResourceTuplizerContract implements ResourceTuplizer {
 		Class<?> paramType = setter.getMethod().getParameterTypes()[0];
 
 		if (!paramType.equals(value.getClass())) {
-			if (!TypeHelper.TYPE_CONVERTER.containsKey(paramType)) {
-				throw new SQLException(String.format("Type mismatch [%s><%s]", paramType, value.getClass()));
-			}
-
 			if (logger.isTraceEnabled()) {
 				logger.trace(String.format("Casting [%s] -> [%s]", value.getClass(), paramType));
 			}

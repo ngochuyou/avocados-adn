@@ -6,6 +6,8 @@ package adn.service.resource.engine.access;
 import org.hibernate.internal.util.MarkerObject;
 import org.hibernate.property.access.spi.PropertyAccessStrategy;
 
+import adn.helpers.FunctionHelper.HandledSupplier;
+
 /**
  * @author Ngoc Huy
  *
@@ -15,7 +17,7 @@ public class FunctionalNoAccess
 
 	public static final FunctionalNoAccess INSTANCE = new FunctionalNoAccess();
 
-	static final Object NO_OP = new MarkerObject("FUNCTIONAL_NO_ACCESS (O_ O)!");
+	static final HandledSupplier<Object, RuntimeException> NO_OP = () -> new MarkerObject("FUNCTIONAL_NO_ACCESS");
 
 	private FunctionalNoAccess() {
 		super(NO_OP, NO_OP);

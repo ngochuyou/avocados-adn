@@ -7,14 +7,19 @@ import java.io.File;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
+import adn.helpers.ArrayHelper;
+import adn.helpers.ArrayHelper.ArrayBuilder;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.action.SaveAction;
 import adn.service.resource.engine.action.SaveActionImpl;
@@ -23,7 +28,7 @@ import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.template.ResourceTemplate;
 import adn.service.resource.engine.template.ResourceTemplateImpl;
 import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
-import adn.service.resource.engine.tuple.ResourceTuplizerImpl;
+import adn.service.resource.engine.tuple.ResourceTuplizer;
 import javassist.NotFoundException;
 
 /**
@@ -36,6 +41,7 @@ public class LocalStorage implements Storage {
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Autowired
+	@Qualifier("default_finder")
 	private Finder finder;
 
 	private final Validator templateValidator;
@@ -101,55 +107,108 @@ public class LocalStorage implements Storage {
 
 	private ResultSetImplementor doFind(Query query) {
 		ResourceTemplate template = getResourceTemplate(query.getTemplateName());
-		File file = finder.findByFileName(query, template, template.getPathColumn());
+		String[] queriedColumns = query.getColumnNames();
 
-		if (file != null) {
-			if (logger.isDebugEnabled()) {
-				logger.debug(String.format("Found one file with path [%s]", file.getPath()));
-			}
-
-			Object[] values;
-
-			try {
-				ResultSetMetadataImplementor metadata = metadataFactory.produce(query, template);
-
-				values = extractValues(file, template, metadata);
-
-				return new ResourceResultSet(new Object[][] { values }, metadata, query.getStatement());
-			} catch (Exception any) {
-				any.printStackTrace();
-				return new ExceptionResultSet(new RuntimeException(any), query.getStatement());
+		for (String column : queriedColumns) {
+			if (template.getColumnIndex(column) == null) {
+				return new ExceptionResultSet(new IllegalArgumentException(
+						String.format("Unknown column [%s] in template [%s]", column, template.getTemplateName())),
+						query.getStatement());
 			}
 		}
+
+		Object[] values = new Object[queriedColumns.length];
+		int span = queriedColumns.length;
+
+		for (int i = 0; i < span; i++) {
+			values[i] = query.getParameterValue(queriedColumns[i]);
+		}
+
+		template.getTuplizer().validate(values, queriedColumns);
+
+		File[] fileList = finder.find(template, values, queriedColumns);
 
 		try {
-			return new ResourceResultSet(new Object[0][0], metadataFactory.produce(query, template),
-					query.getStatement());
-		} catch (SQLException sqle) {
-			sqle.printStackTrace();
-			return new ExceptionResultSet(new RuntimeException(sqle), query.getStatement());
+			ResultSetMetadataImplementor metadata = metadataFactory.produce(query, template);
+			Object[][] rows = toRows(metadata, template, fileList, queriedColumns);
+
+			return new ResourceResultSet(rows, metadata, query.getStatement());
+		} catch (Exception any) {
+			any.printStackTrace();
+			return new ExceptionResultSet(new RuntimeException(any), query.getStatement());
 		}
 	}
 
-	private Object[] extractValues(File file, ResourceTemplate template, ResultSetMetadataImplementor metadata) {
-		Object[] values = ((ResourceTuplizerImpl) template.getTuplizer()).getPropertyValues(file,
-				metadata.getActualColumnNames());
+	private Object[][] toRows(ResultSetMetadataImplementor metadata, ResourceTemplate template, File[] fileList,
+			String[] queriedColumns) {
+		int filesAmount = fileList.length;
+		Object[][] results = new Object[filesAmount][queriedColumns.length];
 
-		return postValueExtractions(values, template, metadata);
-	}
-
-	private Object[] postValueExtractions(Object[] states, ResourceTemplate template,
-			ResultSetMetadataImplementor metadata) {
-		String filenameColumnName = template.getColumnNames()[0];
-
-		if (Stream.of(metadata.getActualColumnNames()).filter(name -> name == filenameColumnName).count() == 1) {
-			int i = metadata.getColumnIndexFromActualName(filenameColumnName);
-			String path = String.valueOf(states[i]);
-
-			states[i] = path.replaceFirst(LocalStorage.DIRECTORY + template.getDirectory(), "");
+		if (logger.isTraceEnabled()) {
+			logger.trace(String.format("Producing {%d} row(s) for ResultSet", results.length));
 		}
 
-		return states;
+		for (int i = 0; i < filesAmount; i++) {
+			results[i] = extractValues(metadata, template, fileList[i], template.getColumnNames());
+		}
+
+		return results;
+	}
+
+	private Object[] extractValues(ResultSetMetadataImplementor metadata, ResourceTemplate template, File file,
+			String[] columnsToExtract) {
+		int span = columnsToExtract.length;
+		Object[] values = new Object[span];
+		ResourceTuplizer tuplizer = template.getTuplizer();
+
+		for (int i = 0; i < span; i++) {
+			values[i] = tuplizer.getPropertyValue(file, i);
+		}
+
+		return doPostValueExtractions(metadata, template, values, columnsToExtract);
+	}
+
+	private static final String PATHNAME_GROUPNAME = "pathname";
+	private static final Pattern PATHNAME_PATTERN;
+
+	static {
+		String path = "[\\w\\d_-]+(\\\\)?";
+		PATHNAME_PATTERN = Pattern.compile(String.format("^(?<dir>(%s)+)?(?<%s>(%s)+)(?<extension>\\.[\\w\\d]+)$",
+				Pattern.quote("[\\w\\d]+:\\") + path, PATHNAME_GROUPNAME, path));
+	}
+
+	private static final String FILENAME_TRIMMING_STRING = String.format("${%s}", PATHNAME_GROUPNAME);
+
+	/**
+	 * If the path column of a {@link File} is being extracted, get rid of the
+	 * extension and the directory path if they present
+	 * </p>
+	 * Then, we order the columns so that they respect the columns order in the
+	 * {@link Query}
+	 * 
+	 */
+	private Object[] doPostValueExtractions(ResultSetMetadataImplementor metadata, ResourceTemplate template,
+			Object[] extractedValues, String[] columnsToExtract) {
+		ArrayBuilder<String> builder = ArrayHelper.from(columnsToExtract);
+
+		if (!builder.contains(template.getPathColumn())) {
+			return extractedValues;
+		}
+
+		int pathIndex = builder.getLastFoundIndex();
+		String extractedPath = (String) extractedValues[pathIndex];
+		final Matcher m = PATHNAME_PATTERN.matcher(extractedPath);
+
+		if (m.matches()) {
+			extractedPath = m.replaceAll(FILENAME_TRIMMING_STRING);
+		}
+
+		extractedValues[pathIndex] = extractedPath;
+		// @formatter:off
+		return Stream.of(metadata.getActualColumnNames())
+				.map(requestedColumn -> extractedValues[template.getColumnIndex(requestedColumn)])
+				.toArray();
+		// @formatter:on
 	}
 
 	private ResultSetImplementor doSave(Query batch) {
@@ -173,13 +232,22 @@ public class LocalStorage implements Storage {
 
 	@Override
 	public void registerTemplate(String templateName, String directoryName, String[] columnNames,
-			Class<?>[] columnTypes, PropertyAccessImplementor[] accessors, PojoInstantiator<File> instantiator) throws IllegalArgumentException {
+			Class<?>[] columnTypes, boolean[] columnNullabilities, PropertyAccessImplementor[] accessors,
+			PojoInstantiator<File> instantiator) throws IllegalArgumentException {
 		if (templates.containsKey(templateName)) {
 			throw new IllegalArgumentException(String.format("Duplicate template: [%s]", templateName));
 		}
-
-		validateAndPutTemplate(new ResourceTemplateImpl(templateName, directoryName, columnNames, columnTypes,
-				accessors, instantiator, this));
+		// @formatter:off
+		validateAndPutTemplate(new ResourceTemplateImpl(
+				templateName,
+				directoryName,
+				columnNames,
+				columnTypes,
+				columnNullabilities,
+				accessors,
+				instantiator,
+				this));
+		// @formatter:on
 	}
 
 	private void validateAndPutTemplate(ResourceTemplate template) {

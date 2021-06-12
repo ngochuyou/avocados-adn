@@ -3,17 +3,9 @@
  */
 package adn.test.application;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
-
-import org.junit.jupiter.api.Test;
-
-import adn.service.resource.engine.query.Query;
-import adn.service.resource.engine.query.QueryCompiler;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Ngoc Huy
@@ -31,36 +23,22 @@ public class Solution {
 	 * @throws SQLException
 	 */
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
-			IllegalArgumentException, IllegalAccessException, SQLException {}
+			IllegalArgumentException, IllegalAccessException, SQLException {
+		String directory = "C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\";
+		String sub = "image\\";
+		String pat;
+		Pattern p = Pattern
+				.compile(pat = String.format("^(?<dir>%s)(?<mid>([\\w\\d_-]+(\\\\)?)+)(?<extension>\\.[\\w\\d]+)$",
+						Pattern.quote(directory + sub)));
+		String filename = "C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\image\\123asd\\asdasd.jpg";
+		Matcher m = p.matcher(filename);
 
-	@Test
-	private void testCompileFind() throws SQLException {
-		// @formatter:off
-		String sql = ""
-				+ "select imagebybyt0_.name as name1_0_0_, imagebybyt0_.createdDate as createdd2_0_0_, imagebybyt0_.extension as extensio3_0_0_, imagebybyt0_.lastModified as lastmodi4_0_0_, imagebybyt0_.content as content5_0_0_ "
-				+ "from ImageByBytes imagebybyt0_ "
-				+ "where imagebybyt0_.name=? ";
-		// @formatter:on
-		System.out.println(sql);
-		Query query = QueryCompiler.compile(sql, null);
-		System.out.println(query);
+		System.out.println(pat);
+
+		if (m.matches()) {
+			System.out.println(m.replaceAll("${mid}${extension}"));
+		}
 	}
 
-	@Test
-	public void test() throws IOException {
-		File file = new File("C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\images\\aaaa.jpg");
-		file = move(file, "bbbb.jpg");
-
-		System.out.println(file.getPath());
-		System.out.println(file.exists());
-	}
-
-	private File move(File file, String newName) throws IOException {
-		Path source = Paths.get(file.getPath());
-
-		Files.move(source, source.resolveSibling(newName));
-
-		return new File(file.getParent() + "\\" + newName);
-	}
-
+	
 }

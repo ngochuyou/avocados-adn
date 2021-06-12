@@ -47,6 +47,10 @@ public interface ResourceTemplate {
 
 	PropertyAccessImplementor getPropertyAccess(String columnName);
 
+	boolean isColumnNullable(int i);
+
+	boolean isColumnNullable(String columnName);
+
 	ResourceTuplizer getTuplizer();
 
 	Storage getStorage();

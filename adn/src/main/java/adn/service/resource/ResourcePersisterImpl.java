@@ -85,11 +85,13 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			Class<?>[] columnTypes = new Class<?>[span];
 			PropertyAccessImplementor[] accessors = new PropertyAccessImplementor[span];
 			PojoInstantiator<File> instantiator = determineInstantiator();
+			boolean[] columnNullabilities = new boolean[span];
 
-			processPathColumn(columnNames, columnTypes, accessors);
+			processPathColumn(columnNames, columnTypes, accessors, columnNullabilities);
 
-			int contentIndex = processContentColumn(contentAttr, columnNames, columnTypes, accessors);
-			int extensionIndex = processExtensionColumn(columnNames, columnTypes, accessors);
+			int contentIndex = processContentColumn(contentAttr, columnNames, columnTypes, columnNullabilities,
+					accessors);
+			int extensionIndex = processExtensionColumn(columnNames, columnTypes, columnNullabilities, accessors);
 			int arrayBound = contentAttr == null ? span - 2 : span - 1;
 			String propertyName;
 			String propertyColumnName;
@@ -109,16 +111,18 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 				columnNames[j] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName : propertyName;
 				columnTypes[j] = getPropertyType(propertyName).getReturnedClass();
 				accessors[j] = determinePropertyAccess(getPropertyType(propertyName), propertyName);
+				columnNullabilities[j] = getEntityMetamodel().getPropertyNullability()[i];
 				j++;
 			}
 
 			LocalStorageConnection connection = (LocalStorageConnection) delegate;
 			// @formatter:off
 			logger.trace(String.format("Registering template [%s]", getEntityName()));
-			connection.getStorage().registerTemplate(String.format("%s%s%s", getTableName(), ManagerFactory.DTYPE_SEPERATOR, StringHelper.get(getDiscriminatorValue(), "")),
+			connection.getStorage().registerTemplate(String.format("%s%s%s", getTableName(), ManagerFactory.DTYPE_SEPERATOR, StringHelper.get((String) getDiscriminatorValue()).orElse("")),
 					determineDirectoryName(getMappedClass()),
 					columnNames,
 					columnTypes,
+					columnNullabilities,
 					accessors,
 					instantiator);
 			// @formatter:on
@@ -130,15 +134,36 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 				getEntityName(), LocalStorageConnection.class));
 	}
 
-	private void processPathColumn(String[] columnNames, Class<?>[] columnTypes,
-			PropertyAccessImplementor[] accessors) {
-		columnNames[ResourceTemplateImpl.DEFAULT_PATH_INDEX] = getIdentifierColumnNames()[0];
-		columnTypes[ResourceTemplateImpl.DEFAULT_PATH_INDEX] = getIdentifierType().getReturnedClass();
-		accessors[ResourceTemplateImpl.DEFAULT_PATH_INDEX] = determinePropertyAccess(getIdentifierType(),
-				getIdentifierPropertyName());
+	/**
+	 * @see File#getName()
+	 */
+	private static final String FILE_NAME_FIELD_NAME = "name";
+
+	private void processPathColumn(String[] columnNames, Class<?>[] columnTypes, PropertyAccessImplementor[] accessors,
+			boolean[] columnNullabilities) {
+		int defaultPathColumnIndex = ResourceTemplateImpl.DEFAULT_PATH_INDEX;
+
+		columnNames[defaultPathColumnIndex] = getIdentifierColumnNames()[0];
+		columnTypes[defaultPathColumnIndex] = getIdentifierType().getReturnedClass();
+		columnNullabilities[defaultPathColumnIndex] = false;
+
+		org.springframework.data.annotation.AccessType.Type accessTypeAnno = locateAnnotatedAccessType(
+				columnNames[defaultPathColumnIndex]);
+
+		if (accessTypeAnno == null) {
+			logger.trace(String.format("Using default path access strategy on identifier [%s]",
+					columnNames[defaultPathColumnIndex]));
+			accessors[defaultPathColumnIndex] = PropertyAccessStrategyFactory.DELEGATED_ACCESS_STRATEGY
+					.buildPropertyAccess(File.class, FILE_NAME_FIELD_NAME, String.class);
+
+			return;
+		}
+
+		accessors[defaultPathColumnIndex] = determinePropertyAccess(
+				getPropertyType(columnNames[defaultPathColumnIndex]), columnNames[defaultPathColumnIndex]);
 	}
 
-	private int processExtensionColumn(String[] columnNames, Class<?>[] columnTypes,
+	private int processExtensionColumn(String[] columnNames, Class<?>[] columnTypes, boolean[] columnNullabilities,
 			PropertyAccessImplementor[] accessors) {
 		Attribute<? super D, ?> extensionAttr = locateExtensionProperty();
 
@@ -147,47 +172,50 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 					String.format("Unable to locate extension info of [%s]", getEntityName()));
 		}
 
-		final int defaultExtensionIndexInTemplate = ResourceTemplateImpl.DEFAULT_EXTENSION_INDEX;
+		final int defaultExtensionIndex = ResourceTemplateImpl.DEFAULT_EXTENSION_INDEX;
 		int extensionIndex = getPropertyIndex(extensionAttr.getName());
 		String propertyColumnName = getPropertyColumnNames(extensionIndex)[0];
 
-		columnNames[defaultExtensionIndexInTemplate] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName
+		columnNames[defaultExtensionIndex] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName
 				: extensionAttr.getName();
-		columnTypes[defaultExtensionIndexInTemplate] = getPropertyTypes()[extensionIndex].getReturnedClass();
-		accessors[defaultExtensionIndexInTemplate] = determinePropertyAccess(getPropertyType(extensionAttr.getName()),
+		columnTypes[defaultExtensionIndex] = getPropertyTypes()[extensionIndex].getReturnedClass();
+		accessors[defaultExtensionIndex] = determinePropertyAccess(getPropertyType(extensionAttr.getName()),
 				extensionAttr.getName());
 
 		logger.trace(String.format("Found extension property [%s]: [%s] at index [%d]", extensionAttr.getName(),
-				columnTypes[defaultExtensionIndexInTemplate], extensionIndex));
+				columnTypes[defaultExtensionIndex], extensionIndex));
+		columnNullabilities[defaultExtensionIndex] = false;
 
 		return extensionIndex;
 	}
 
 	private int processContentColumn(Attribute<? super D, ?> contentAttr, String[] columnNames, Class<?>[] columnTypes,
-			PropertyAccessImplementor[] accessors) {
+			boolean[] columnNullabilities, PropertyAccessImplementor[] accessors) {
 		String propertyColumnName;
-		final int defaultContentIndexInTemplate = ResourceTemplateImpl.DEFAULT_CONTENT_INDEX;
+		final int defaultContentIndex = ResourceTemplateImpl.DEFAULT_CONTENT_INDEX;
 
 		if (contentAttr != null) {
 			int contentIndex = getPropertyIndex(contentAttr.getName());
 
 			propertyColumnName = getPropertyColumnNames(contentIndex)[0];
-			columnNames[defaultContentIndexInTemplate] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName
+			columnNames[defaultContentIndex] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName
 					: contentAttr.getName();
-			columnTypes[defaultContentIndexInTemplate] = getPropertyTypes()[contentIndex].getReturnedClass();
-			accessors[defaultContentIndexInTemplate] = determinePropertyAccess(getPropertyType(contentAttr.getName()),
+			columnTypes[defaultContentIndex] = getPropertyTypes()[contentIndex].getReturnedClass();
+			accessors[defaultContentIndex] = determinePropertyAccess(getPropertyType(contentAttr.getName()),
 					contentAttr.getName());
 
 			logger.trace(String.format("Found content property [%s]: [%s] at index [%d]", contentAttr.getName(),
-					columnTypes[defaultContentIndexInTemplate], contentIndex));
+					columnTypes[defaultContentIndex], contentIndex));
+			columnNullabilities[defaultContentIndex] = false;
 
 			return contentIndex;
 		}
 
-		columnNames[defaultContentIndexInTemplate] = ResourceTemplate.NO_CONTENT.toString();
-		columnTypes[defaultContentIndexInTemplate] = ResourceTemplate.NO_CONTENT.getClass();
-		accessors[defaultContentIndexInTemplate] = PropertyAccessStrategyFactory.NO_ACCESS_STRATEGY
-				.buildPropertyAccess(null, null);
+		columnNames[defaultContentIndex] = ResourceTemplate.NO_CONTENT.toString();
+		columnTypes[defaultContentIndex] = ResourceTemplate.NO_CONTENT.getClass();
+		accessors[defaultContentIndex] = PropertyAccessStrategyFactory.NO_ACCESS_STRATEGY.buildPropertyAccess(null,
+				null);
+		columnNullabilities[defaultContentIndex] = true;
 
 		return -1;
 	}
