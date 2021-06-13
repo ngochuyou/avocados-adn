@@ -23,70 +23,65 @@ import org.hibernate.property.access.spi.Setter;
 @SuppressWarnings("serial")
 public class NoAccess extends AbstractPropertyAccess {
 
-	static final NoAccess INSTANCE = new NoAccess();
-
-	private NoAccess() {
+	NoAccess() {
 		super(NO_OP_GETTER, NO_OP_SETTER);
 	}
 
-	static final Getter NO_OP_GETTER = new Getter() {
+	static final Getter NO_OP_GETTER;
 
-		@Override
-		public Class<?> getReturnType() {
-			return Void.class;
-		}
+	static final Setter NO_OP_SETTER;
 
-		@Override
-		public String getMethodName() {
-			return "get";
-		}
+	static {
+		NO_OP_GETTER = new Getter() {
 
-		@Override
-		public Method getMethod() {
-			try {
-				return this.getClass().getDeclaredMethod(getMethodName());
-			} catch (NoSuchMethodException | SecurityException e) {
+			@Override
+			public Class<?> getReturnType() {
+				return Void.class;
+			}
+
+			@Override
+			public String getMethodName() {
+				return "get";
+			}
+
+			@Override
+			public Method getMethod() {
 				return null;
 			}
-		}
 
-		@Override
-		public Member getMember() {
-			return getMethod();
-		}
+			@Override
+			public Member getMember() {
+				return getMethod();
+			}
 
-		@Override
-		public Object getForInsert(Object owner, @SuppressWarnings("rawtypes") Map mergeMap,
-				SharedSessionContractImplementor session) {
-			return null;
-		}
-
-		@Override
-		public Object get(Object owner) {
-			return null;
-		}
-	};
-
-	static final Setter NO_OP_SETTER = new Setter() {
-
-		@Override
-		public void set(Object target, Object value, SessionFactoryImplementor factory) {}
-
-		@Override
-		public String getMethodName() {
-			return "set";
-		}
-
-		@Override
-		public Method getMethod() {
-			try {
-				return this.getClass().getDeclaredMethod(getMethodName(), Object.class, Object.class,
-						SharedSessionContractImplementor.class);
-			} catch (NoSuchMethodException | SecurityException e) {
+			@Override
+			public Object getForInsert(Object owner, @SuppressWarnings("rawtypes") Map mergeMap,
+					SharedSessionContractImplementor session) {
 				return null;
 			}
-		}
-	};
+
+			@Override
+			public Object get(Object owner) {
+				return null;
+			}
+		};
+
+		NO_OP_SETTER = new Setter() {
+
+			@Override
+			public void set(Object target, Object value, SessionFactoryImplementor factory) {}
+
+			@Override
+			public String getMethodName() {
+				return "set";
+			}
+
+			@Override
+			public Method getMethod() {
+				return null;
+			}
+		};
+	}
 
 	@Override
 	public PropertyAccessStrategy getPropertyAccessStrategy() {

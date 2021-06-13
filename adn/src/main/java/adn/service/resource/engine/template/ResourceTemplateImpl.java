@@ -4,12 +4,24 @@
 package adn.service.resource.engine.template;
 
 import java.io.File;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.apache.commons.io.FilenameUtils;
+import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.property.access.spi.Getter;
+
 import adn.service.resource.engine.Storage;
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
 import adn.service.resource.engine.tuple.ResourceTuplizer;
@@ -58,6 +70,14 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		this.columnTypes = columnTypes;
 		this.columnNullabilities = columnNullabilities;
+
+		accessors[DEFAULT_PATH_INDEX] = PropertyAccessStrategyFactory.SPECIFIC_ACCESS_STRATEGY
+				.buildPropertyAccess(FILENAME_GETTER, null);
+		accessors[DEFAULT_EXTENSION_INDEX] = PropertyAccessStrategyFactory.SPECIFIC_ACCESS_STRATEGY
+				.buildPropertyAccess(EXTENSION_GETTER, null);
+		accessors[DEFAULT_CONTENT_INDEX] = PropertyAccessStrategyFactory.SPECIFIC_ACCESS_STRATEGY
+				.buildPropertyAccess(BYTE_ARRAY_CONTENT_GETTER, null);
+
 		this.accessors = accessors;
 		this.instantiator = instantiator;
 		this.tuplizer = new ResourceTuplizerImpl(this, instantiator);
@@ -100,7 +120,9 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 				instantiator.toString(),
 				Stream.of(columnNames).collect(Collectors.joining(", ")),
 				Stream.of(columnTypes).map(type -> type.getName()).collect(Collectors.joining(", ")),
-				IntStream.range(0, columnNullabilities.length).mapToObj(index -> String.valueOf(columnNullabilities[index])).collect(Collectors.joining(", ")),
+				IntStream.range(0, columnNullabilities.length)
+						.mapToObj(index -> String.valueOf(columnNullabilities[index]))
+						.collect(Collectors.joining(", ")),
 				Stream.of(accessors).map(access -> access.toString()).collect(Collectors.joining("\n\t\t-")));
 		// @formatter:on
 	}
@@ -179,5 +201,154 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 	public boolean isColumnNullable(String columnName) {
 		return isColumnNullable(indexMap.get(columnName));
 	}
+
+	@SuppressWarnings("serial")
+	private static final Getter BYTE_ARRAY_CONTENT_GETTER = new Getter() {
+
+		private final int MAX_SIZE_IN_ONE_READ = 5 * 1024 * 1024; // 5MB
+
+		@Override
+		public Class<byte[]> getReturnType() {
+			return byte[].class;
+		}
+
+		@Override
+		public String getMethodName() {
+			return "<synthetic_byte_array_content_getter>";
+		}
+
+		@Override
+		public Method getMethod() {
+			try {
+				return this.getClass().getDeclaredMethod("get", Object.class);
+			} catch (NoSuchMethodException | SecurityException e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+
+		@Override
+		public Member getMember() {
+			return getMethod();
+		}
+
+		@Override
+		public Object getForInsert(Object owner, @SuppressWarnings("rawtypes") Map mergeMap,
+				SharedSessionContractImplementor session) {
+			return get(owner);
+		}
+
+		@Override
+		public Object get(Object owner) {
+			try {
+				Path path = ((File) owner).toPath();
+
+				if (Files.size(path) > MAX_SIZE_IN_ONE_READ) {
+					throw new HibernateException(String.format(
+							"File size is too large to read into one byte[], max size in one read is [%s] MB",
+							MAX_SIZE_IN_ONE_READ));
+				}
+
+				return Files.readAllBytes(path);
+			} catch (Exception e) {
+				throw new HibernateException(e);
+			}
+		}
+	};
+
+	private static final String FILENAME_GROUPNAME = "pathname";
+	private static final String EXTENSION_GROUPNAME = "extension";
+	private static final Pattern PATH_PATTERN;
+
+	static {
+		String path = "[\\w\\d_-]+(\\\\)?";
+		PATH_PATTERN = Pattern.compile(String.format("^(?<dir>(%s)+)?(?<%s>(%s)+)(?<%s>\\.[\\w\\d]+)$",
+				Pattern.quote("[\\w\\d]+:\\") + path, FILENAME_GROUPNAME, path, EXTENSION_GROUPNAME));
+	}
+
+	@SuppressWarnings("serial")
+	private static final Getter FILENAME_GETTER = new Getter() {
+
+		@Override
+		public Class<String> getReturnType() {
+			return String.class;
+		}
+
+		@Override
+		public String getMethodName() {
+			return "<synthetic_filename_getter>";
+		}
+
+		@Override
+		public Method getMethod() {
+			try {
+				return this.getClass().getDeclaredMethod("get", Object.class);
+			} catch (NoSuchMethodException | SecurityException e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+
+		@Override
+		public Member getMember() {
+			return getMethod();
+		}
+
+		@Override
+		public Object getForInsert(Object owner, @SuppressWarnings("rawtypes") Map mergeMap,
+				SharedSessionContractImplementor session) {
+			return get(owner);
+		}
+
+		@Override
+		public Object get(Object owner) {
+			File file = (File) owner;
+			Matcher matcher = PATH_PATTERN.matcher(file.getName());
+
+			matcher.matches();
+
+			return matcher.group(FILENAME_GROUPNAME);
+		}
+	};
+
+	@SuppressWarnings("serial")
+	private static final Getter EXTENSION_GETTER = new Getter() {
+
+		@Override
+		public Class<String> getReturnType() {
+			return String.class;
+		}
+
+		@Override
+		public String getMethodName() {
+			return "<synthetic_extension_getter>";
+		}
+
+		@Override
+		public Method getMethod() {
+			try {
+				return this.getClass().getDeclaredMethod("get", Object.class);
+			} catch (NoSuchMethodException | SecurityException e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+
+		@Override
+		public Member getMember() {
+			return getMethod();
+		}
+
+		@Override
+		public Object getForInsert(Object owner, @SuppressWarnings("rawtypes") Map mergeMap,
+				SharedSessionContractImplementor session) {
+			return get(owner);
+		}
+
+		@Override
+		public Object get(Object owner) {
+			return FilenameUtils.getExtension(((File) owner).getName());
+		}
+	};
 
 }

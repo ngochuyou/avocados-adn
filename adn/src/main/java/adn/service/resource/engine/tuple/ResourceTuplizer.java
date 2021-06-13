@@ -7,6 +7,8 @@ import java.io.File;
 
 import org.hibernate.tuple.Tuplizer;
 
+import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
+
 /**
  * @author Ngoc Huy
  *
@@ -33,5 +35,9 @@ public interface ResourceTuplizer extends Tuplizer {
 	 * @param values
 	 */
 	void validate(Object[] values, String[] columnNames);
+
+	interface ContentPropertyAccess extends PropertyAccessImplementor {
+
+	}
 
 }

@@ -25,18 +25,24 @@ public class ArrayHelper {
 	public static class ArrayBuilder<T> {
 
 		private final T[] array;
-		private T lastFound;
-		private int lastFoundIndex;
+		private T lastFound = null;
+		private int lastFoundIndex = -1;
+		private final int size;
 
 		private ArrayBuilder(T[] array) {
 			this.array = array;
+			size = array.length;
 		}
 
 		public boolean contains(T target) {
-			for (T ele : array) {
+			T ele;
+
+			for (int i = 0; i < size; i++) {
+				ele = array[i];
 
 				if (Objects.deepEquals(target, ele)) {
 					lastFound = ele;
+					lastFoundIndex = i;
 					return true;
 				}
 			}

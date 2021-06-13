@@ -62,6 +62,7 @@ import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
 import adn.service.resource.annotation.LocalResource;
@@ -85,7 +86,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	public static final String MODEL_PACKAGE = "adn.service.resource.model.models";
+	public static final String MODEL_PACKAGE = Constants.ROOT_PACKAGE;
 
 	private MetadataSources metadataSources;
 
@@ -96,9 +97,10 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 
 	@Autowired
 	private Storage localStorage;
-
 	// @formatter:off
-	private static final List<Class<? extends Service>> STANDARD_SERVICES_CLASSES = Collections.unmodifiableList(Arrays.asList(
+	// TODO: Clone all of these so that we have completely different instances.
+	// If so, we can destroy the ManagerFactory by hooking it's destruction into Spring's container and not the Hibernate's SessionFactory
+	private static List<Class<? extends Service>> STANDARD_SERVICES_CLASSES = Collections.unmodifiableList(Arrays.asList(
 			MutableIdentifierGeneratorFactory.class,
 			JdbcServices.class,
 			JdbcEnvironment.class,
@@ -111,7 +113,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 			SessionFactoryServiceRegistryFactory.class,
 			PropertyAccessStrategyResolver.class
 	));
-	private final BiFunction<SessionFactoryImplementor, Class<? extends Service>, ? extends Service> defaultServiceGetter = new BiFunction<>() {
+	private BiFunction<SessionFactoryImplementor, Class<? extends Service>, ? extends Service> defaultServiceGetter = new BiFunction<>() {
 
 		@Override
 		public Service apply(SessionFactoryImplementor t, Class<? extends Service> type) {
@@ -119,7 +121,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 		}
 		
 	};
-	private final Map<Class<? extends Service>, Object> serviceGetters = Collections.unmodifiableMap(Map.of(
+	private Map<Class<? extends Service>, Object> serviceGetters = Collections.unmodifiableMap(Map.of(
 			JdbcServices.class, new Function<SessionFactoryImplementor, JdbcServices>() {
 				
 				@Override
@@ -201,6 +203,9 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 	private void assertSessionFactoryAndInject(SessionFactory sf) throws IllegalAccessException {
 		Assert.notNull(sf, String.format("[%s] is NULL after building process", EntityManagerFactoryImplementor.class));
 		ContextProvider.getAccess().setLocalResourceSessionFactory(sf.unwrap(SessionFactoryImpl.class));
+		defaultServiceGetter = null;
+		serviceGetters = null;
+		STANDARD_SERVICES_CLASSES = null;
 	}
 
 	private MutableIdentifierGeneratorFactory registerCustomIdentifierGeneratorFactory(
@@ -349,7 +354,8 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 						return;
 					}
 
-					throw new IllegalArgumentException();
+					throw new IllegalArgumentException(
+							String.format("factory must be instance of [%s]", SessionFactoryImpl.class));
 				} catch (IllegalAccessException | IllegalArgumentException ex) {
 					ex.printStackTrace();
 					SpringApplication.exit(ContextProvider.getApplicationContext());

@@ -24,7 +24,6 @@ import org.hibernate.property.access.spi.Setter;
 import org.hibernate.type.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
 
 import adn.helpers.FunctionHelper;
 import adn.helpers.FunctionHelper.HandledBiFunction;
@@ -50,8 +49,8 @@ import adn.service.resource.engine.tuple.InstantiatorFactory;
 import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
 import adn.service.resource.factory.ManagerFactory;
-import adn.service.resource.type.AbstractExplicitlyBindedType;
-import adn.service.resource.type.NoOperationSet;
+import adn.service.resource.model.type.AbstractExplicitlyBindedType;
+import adn.service.resource.model.type.NoOperationSet;
 
 /**
  * @author Ngoc Huy
@@ -146,21 +145,8 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		columnNames[defaultPathColumnIndex] = getIdentifierColumnNames()[0];
 		columnTypes[defaultPathColumnIndex] = getIdentifierType().getReturnedClass();
 		columnNullabilities[defaultPathColumnIndex] = false;
-
-		org.springframework.data.annotation.AccessType.Type accessTypeAnno = locateAnnotatedAccessType(
-				columnNames[defaultPathColumnIndex]);
-
-		if (accessTypeAnno == null) {
-			logger.trace(String.format("Using default path access strategy on identifier [%s]",
-					columnNames[defaultPathColumnIndex]));
-			accessors[defaultPathColumnIndex] = PropertyAccessStrategyFactory.DELEGATED_ACCESS_STRATEGY
-					.buildPropertyAccess(File.class, FILE_NAME_FIELD_NAME, String.class);
-
-			return;
-		}
-
-		accessors[defaultPathColumnIndex] = determinePropertyAccess(
-				getPropertyType(columnNames[defaultPathColumnIndex]), columnNames[defaultPathColumnIndex]);
+		accessors[defaultPathColumnIndex] = PropertyAccessStrategyFactory.DELEGATED_ACCESS_STRATEGY
+				.buildPropertyAccess(File.class, FILE_NAME_FIELD_NAME, String.class);
 	}
 
 	private int processExtensionColumn(String[] columnNames, Class<?>[] columnTypes, boolean[] columnNullabilities,
@@ -179,8 +165,8 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		columnNames[defaultExtensionIndex] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName
 				: extensionAttr.getName();
 		columnTypes[defaultExtensionIndex] = getPropertyTypes()[extensionIndex].getReturnedClass();
-		accessors[defaultExtensionIndex] = determinePropertyAccess(getPropertyType(extensionAttr.getName()),
-				extensionAttr.getName());
+		accessors[defaultExtensionIndex] = PropertyAccessStrategyFactory.NO_ACCESS_STRATEGY
+				.buildPropertyAccess(File.class, columnNames[defaultExtensionIndex]);
 
 		logger.trace(String.format("Found extension property [%s]: [%s] at index [%d]", extensionAttr.getName(),
 				columnTypes[defaultExtensionIndex], extensionIndex));
@@ -201,8 +187,8 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			columnNames[defaultContentIndex] = StringHelper.hasLength(propertyColumnName) ? propertyColumnName
 					: contentAttr.getName();
 			columnTypes[defaultContentIndex] = getPropertyTypes()[contentIndex].getReturnedClass();
-			accessors[defaultContentIndex] = determinePropertyAccess(getPropertyType(contentAttr.getName()),
-					contentAttr.getName());
+			accessors[defaultContentIndex] = PropertyAccessStrategyFactory.NO_ACCESS_STRATEGY
+					.buildPropertyAccess(File.class, null);
 
 			logger.trace(String.format("Found content property [%s]: [%s] at index [%d]", contentAttr.getName(),
 					columnTypes[defaultContentIndex], contentIndex));
@@ -349,8 +335,6 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			}
 
 			Class<?> accessClazz = pa.clazz();
-
-			Assert.isTrue(accessClazz != null && accessType != null, "Access type and access class must not be null");
 
 			if (HandledFunction.class.isAssignableFrom(accessClazz)) {
 				consumer.accept(FunctionHelper.from((HandledFunction) type));

@@ -26,10 +26,10 @@ import adn.application.context.ContextProvider;
 @SpringBootApplication
 @EnableAutoConfiguration(exclude = HibernateJpaAutoConfiguration.class)
 @EnableCaching(proxyTargetClass = true)
-public class ADNApplication {
+public class BootEntry {
 
 	public static void main(String[] args) {
-		SpringApplication.run(ADNApplication.class, args);
+		SpringApplication.run(BootEntry.class, args);
 	}
 
 	@SuppressWarnings("unchecked")

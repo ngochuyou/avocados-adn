@@ -7,8 +7,6 @@ import java.io.File;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -18,8 +16,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
-import adn.helpers.ArrayHelper;
-import adn.helpers.ArrayHelper.ArrayBuilder;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.action.SaveAction;
 import adn.service.resource.engine.action.SaveActionImpl;
@@ -41,7 +37,7 @@ public class LocalStorage implements Storage {
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Autowired
-	@Qualifier("default_finder")
+	@Qualifier("defaultFinder")
 	private Finder finder;
 
 	private final Validator templateValidator;
@@ -168,42 +164,11 @@ public class LocalStorage implements Storage {
 		return doPostValueExtractions(metadata, template, values, columnsToExtract);
 	}
 
-	private static final String PATHNAME_GROUPNAME = "pathname";
-	private static final Pattern PATHNAME_PATTERN;
-
-	static {
-		String path = "[\\w\\d_-]+(\\\\)?";
-		PATHNAME_PATTERN = Pattern.compile(String.format("^(?<dir>(%s)+)?(?<%s>(%s)+)(?<extension>\\.[\\w\\d]+)$",
-				Pattern.quote("[\\w\\d]+:\\") + path, PATHNAME_GROUPNAME, path));
-	}
-
-	private static final String FILENAME_TRIMMING_STRING = String.format("${%s}", PATHNAME_GROUPNAME);
-
 	/**
-	 * If the path column of a {@link File} is being extracted, get rid of the
-	 * extension and the directory path if they present
-	 * </p>
-	 * Then, we order the columns so that they respect the columns order in the
-	 * {@link Query}
-	 * 
+	 * Order the columns so that they respect the columns order in the {@link Query}
 	 */
 	private Object[] doPostValueExtractions(ResultSetMetadataImplementor metadata, ResourceTemplate template,
 			Object[] extractedValues, String[] columnsToExtract) {
-		ArrayBuilder<String> builder = ArrayHelper.from(columnsToExtract);
-
-		if (!builder.contains(template.getPathColumn())) {
-			return extractedValues;
-		}
-
-		int pathIndex = builder.getLastFoundIndex();
-		String extractedPath = (String) extractedValues[pathIndex];
-		final Matcher m = PATHNAME_PATTERN.matcher(extractedPath);
-
-		if (m.matches()) {
-			extractedPath = m.replaceAll(FILENAME_TRIMMING_STRING);
-		}
-
-		extractedValues[pathIndex] = extractedPath;
 		// @formatter:off
 		return Stream.of(metadata.getActualColumnNames())
 				.map(requestedColumn -> extractedValues[template.getColumnIndex(requestedColumn)])
@@ -253,7 +218,7 @@ public class LocalStorage implements Storage {
 	private void validateAndPutTemplate(ResourceTemplate template) {
 		templateValidator.validate(template, null);
 		templates.put(template.getTemplateName(), template);
-		logger.trace(String.format("Registered new resource template: [\n%s\n]", template.toString()));
+		logger.info(String.format("Registered new resource template: [\n%s\n]", template.toString()));
 	}
 
 	@Override

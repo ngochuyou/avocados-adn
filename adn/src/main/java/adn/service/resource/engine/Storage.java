@@ -15,11 +15,16 @@ import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
  *
  */
 public interface Storage {
-
-	void registerTemplate(String templateName, String directoryName, String[] columnNames, Class<?>[] columnTypes,
-			boolean[] columnNullabilities, PropertyAccessImplementor[] accessors, PojoInstantiator<File> instantiator)
-			throws IllegalArgumentException;
-
+	// @formatter:off
+	void registerTemplate(
+			String templateName,
+			String directoryName,
+			String[] columnNames,
+			Class<?>[] columnTypes,
+			boolean[] columnNullabilities,
+			PropertyAccessImplementor[] accessors,
+			PojoInstantiator<File> instantiator) throws IllegalArgumentException;
+	// @formatter:on
 	ResultSetImplementor query(Query query);
 
 	ResultSetImplementor execute(Query query);

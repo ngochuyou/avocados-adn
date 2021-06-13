@@ -85,6 +85,8 @@ public class ContextProvider implements ApplicationContextAware {
 			LoggerFactory.getLogger(this.getClass())
 					.info("Created an instance of " + LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE.getClass());
 			ContextProvider.LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE = LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE;
+			// register destruction of this LOCAL_RESOURCE_SESSION_FACTORY_INSTANCE to
+			// SessionFactoryImplementor's shutdown hook
 			applicationContext.getBean(SessionFactory.class).unwrap(SessionFactoryImplementor.class).addObserver(this);
 			closeAccess();
 		}

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.type;
+package adn.service.resource.model.type;
 
 import org.hibernate.type.AbstractSingleColumnStandardBasicType;
 import org.hibernate.type.descriptor.java.JavaTypeDescriptor;

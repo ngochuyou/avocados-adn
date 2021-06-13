@@ -27,12 +27,12 @@ public class ManagerFactory extends SessionFactoryImpl implements EntityManagerF
 
 	public ManagerFactory(
 	// @formatter:off
-			final Storage localStorage,
-			final MetadataImplementor metadata,
-			final ServiceRegistry serviceRegistry,
-			final SessionFactoryOptions sessionFactoryOptions,
-			final FastSessionServices fsses) throws IllegalAccessException {
-		// @formatter:on
+		final Storage localStorage,
+		final MetadataImplementor metadata,
+		final ServiceRegistry serviceRegistry,
+		final SessionFactoryOptions sessionFactoryOptions,
+		final FastSessionServices fsses) throws IllegalAccessException {
+	// @formatter:on
 		super(metadata, sessionFactoryOptions, null);
 
 		Assert.notNull(localStorage, String.format("[%s] must not be null", Storage.class));

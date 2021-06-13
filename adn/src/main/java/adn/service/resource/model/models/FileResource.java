@@ -22,8 +22,7 @@ import org.springframework.data.annotation.AccessType;
 import adn.service.resource.annotation.Extension;
 import adn.service.resource.annotation.LocalResource;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
-import adn.service.resource.type.FileCreationTimeStampType;
-import adn.service.resource.type.FileExtensionType;
+import adn.service.resource.model.type.FileCreationTimeStampType;
 
 /**
  * @author Ngoc Huy
@@ -34,7 +33,6 @@ import adn.service.resource.type.FileExtensionType;
 @MappedSuperclass
 @TypeDefs(value = {
 	@TypeDef(name = FileCreationTimeStampType.NAME, typeClass = FileCreationTimeStampType.class),
-	@TypeDef(name = FileExtensionType.NAME, typeClass = FileExtensionType.class)
 })
 // @formatter:on
 public class FileResource implements Resource {
@@ -56,7 +54,6 @@ public class FileResource implements Resource {
 	@AccessType(value = AccessType.Type.PROPERTY)
 	private Date lastModified;
 
-	@Type(type = FileExtensionType.NAME)
 	@Extension
 	@Column(nullable = false)
 	private String extension;

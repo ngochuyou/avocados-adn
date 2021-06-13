@@ -9,6 +9,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * TODO: Remove so that we narrow down instantiating process and apply a fixed
+ * business?
+ * 
  * @author Ngoc Huy
  *
  */

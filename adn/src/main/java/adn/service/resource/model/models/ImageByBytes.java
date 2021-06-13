@@ -9,7 +9,6 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 
 import org.hibernate.annotations.Persister;
-import org.hibernate.annotations.Proxy;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
@@ -19,7 +18,7 @@ import adn.service.resource.annotation.Constructor;
 import adn.service.resource.annotation.Content;
 import adn.service.resource.annotation.Directory;
 import adn.service.resource.annotation.LocalResource;
-import adn.service.resource.type.FileContentByByteArrayType;
+import adn.service.resource.model.type.FileContentByByteArrayType;
 
 /**
  * @author Ngoc Huy
@@ -31,7 +30,6 @@ import adn.service.resource.type.FileContentByByteArrayType;
 @Persister(impl = ResourcePersisterImpl.class)
 @Entity
 @TypeDef(name = FileContentByByteArrayType.NAME, typeClass = FileContentByByteArrayType.class)
-@Proxy(lazy = false)
 public class ImageByBytes extends FileResource {
 
 	@Column(nullable = false)

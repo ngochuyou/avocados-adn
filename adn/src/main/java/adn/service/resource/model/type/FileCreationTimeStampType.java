@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.type;
+package adn.service.resource.model.type;
 
 import java.io.File;
 import java.sql.SQLException;

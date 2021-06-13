@@ -17,7 +17,7 @@ import adn.service.resource.engine.tuple.ResourceTuplizer;
  * @author Ngoc Huy
  *
  */
-@Component("default_finder")
+@Component("defaultFinder")
 public class FinderImpl implements Finder {
 
 	private final Storage storage;
@@ -50,7 +50,7 @@ public class FinderImpl implements Finder {
 	public File find(String path, boolean appendRoot) {
 		String checkedPath = path;
 
-		if (!path.startsWith(rootPath)) {
+		if (!checkedPath.startsWith(rootPath)) {
 			if (!appendRoot) {
 				return null;
 			}

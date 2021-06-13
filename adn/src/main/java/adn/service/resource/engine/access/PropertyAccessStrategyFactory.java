@@ -28,8 +28,13 @@ public final class PropertyAccessStrategyFactory {
 
 		@Override
 		public NoAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
-			return NoAccess.INSTANCE;
+			return new NoAccess();
 		};
+
+		@Override
+		public String toString() {
+			return "NO_ACCESS_STRATEGY";
+		}
 
 	};
 
@@ -40,6 +45,11 @@ public final class PropertyAccessStrategyFactory {
 			return new StandardAccess(containerJavaType, propertyName);
 		};
 
+		@Override
+		public String toString() {
+			return "STANDARD_ACCESS_STRATEGY";
+		}
+
 	};
 
 	public static final PropertyAccessStrategyImplementor<DirectAccess> DIRECT_ACCESS_STRATEGY = new PropertyAccessStrategyImplementor<DirectAccess>() {
@@ -49,6 +59,11 @@ public final class PropertyAccessStrategyFactory {
 			return new DirectAccess(containerJavaType, propertyName);
 		}
 
+		@Override
+		public String toString() {
+			return "DIRECT_ACCESS_STRATEGY";
+		}
+
 	};
 
 	public static final PropertyAccessStrategyImplementor<LiterallyNamedAccess> LITERALLY_NAMED_ACCESS_STRATEGY = new PropertyAccessStrategyImplementor<LiterallyNamedAccess>() {
@@ -56,6 +71,11 @@ public final class PropertyAccessStrategyFactory {
 		@Override
 		public LiterallyNamedAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
 			return new LiterallyNamedAccess(containerJavaType, propertyName);
+		}
+
+		@Override
+		public String toString() {
+			return "LITERALLY_NAMED_ACCESS_STRATEGY";
 		}
 
 	};
@@ -68,15 +88,32 @@ public final class PropertyAccessStrategyFactory {
 			return new PropertyAccessDelegate(containerJavaType, propertyName, false, parameterTypes);
 		}
 
+		@Override
+		public String toString() {
+			return "DELEGATED_ACCESS_STRATEGY";
+		}
+
 	};
 
-	public static final SpecificAccessStrategy SPECIFIC_ACCESS_STRATEGY = new SpecificAccessStrategy() {};
+	public static final SpecificAccessStrategy SPECIFIC_ACCESS_STRATEGY = new SpecificAccessStrategy() {
+
+		@Override
+		public String toString() {
+			return "SPECIFIC_ACCESS_STRATEGY";
+		}
+
+	};
 
 	public static final LambdaPropertyAccessStrategy<Object, Object, Object, RuntimeException, Object, Object, FunctionalNoAccess> FUNCTIONAL_NO_ACCESS_STRATEGY = new LambdaPropertyAccessStrategy<>() {
 
 		@Override
 		public FunctionalNoAccess buildPropertyAccess(Object getter, Object setter) {
 			return FunctionalNoAccess.INSTANCE;
+		}
+
+		@Override
+		public String toString() {
+			return "FUNCTIONAL_NO_ACCESS_STRATEGY";
 		}
 
 	};
@@ -88,6 +125,11 @@ public final class PropertyAccessStrategyFactory {
 			public FunctionalPropertyAccess buildPropertyAccess(HandledFunction<T, R, E> getter,
 					HandledFunction<T, R, E> setter) {
 				return new FunctionalPropertyAccess<>(getter, setter, this);
+			}
+
+			@Override
+			public String toString() {
+				return "FunctionalPropertyAccess";
 			}
 
 		};
@@ -102,6 +144,11 @@ public final class PropertyAccessStrategyFactory {
 				return new BiFunctionalPropertyAccess<>(getter, setter, this);
 			}
 
+			@Override
+			public String toString() {
+				return "BiFunctionalPropertyAccess";
+			}
+
 		};
 	}
 
@@ -112,6 +159,11 @@ public final class PropertyAccessStrategyFactory {
 			public ConsumingPropertyAccess buildPropertyAccess(HandledConsumer<T, E> getter,
 					HandledConsumer<T, E> setter) {
 				return new ConsumingPropertyAccess<>(getter, setter, this);
+			}
+
+			@Override
+			public String toString() {
+				return "ConsumingPropertyAccess";
 			}
 
 		};
@@ -126,6 +178,11 @@ public final class PropertyAccessStrategyFactory {
 				return new SupplyingPropertyAccess<>(getter, setter, this);
 			}
 
+			@Override
+			public String toString() {
+				return "SupplyingPropertyAccess";
+			}
+
 		};
 	}
 
@@ -135,6 +192,11 @@ public final class PropertyAccessStrategyFactory {
 			@Override
 			public MixedLambdaPropertyAccess buildPropertyAccess(Object getter, Object setter) {
 				return new MixedLambdaPropertyAccess<>(getter, setter, this);
+			}
+
+			@Override
+			public String toString() {
+				return "MixedLambdaPropertyAccess";
 			}
 
 		};
@@ -147,6 +209,11 @@ public final class PropertyAccessStrategyFactory {
 			public HybridAccess<F, S, R, E> buildPropertyAccess(Getter getter, Setter setter, Object getterLambda,
 					Object setterLambda) {
 				return new HybridAccess<>(getter, setter, getterLambda, setterLambda, this);
+			}
+
+			@Override
+			public String toString() {
+				return "HybridPropertyAccess";
 			}
 
 		};
@@ -190,7 +257,6 @@ public final class PropertyAccessStrategyFactory {
 		default SpecificAccess buildPropertyAccess(Getter getter, Setter setter) {
 			return new SpecificAccess(getter, setter);
 		}
-
 	}
 
 	public interface PropertAccessDelegateStrategy extends PropertyAccessStrategyImplementor<PropertyAccessDelegate> {

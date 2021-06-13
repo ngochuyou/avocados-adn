@@ -207,6 +207,15 @@ public class TestController extends BaseController {
 
 	@GetMapping("/file/public/image/session-load")
 	public @ResponseBody ResponseEntity<?> testGetImageBytes() throws IOException {
+//		CriteriaBuilder builder = session.getCriteriaBuilder();
+//		CriteriaQuery<ImageByBytes> query = builder.createQuery(ImageByBytes.class);
+//		Root<ImageByBytes> root = query.from(ImageByBytes.class);
+//
+//		query.select(root.get("name")).select(root.get("extension")).select(root.get("createdDate"));
+//		query.where(builder.equal(root.get("name"),
+//				"1623406220771_12d4fc19efc1899e0731cd4d7e67f66daec3c271105cc0eb0ed6757f94822615.jpg"));
+//
+//		Query<ImageByBytes> hql = session.createQuery(query);
 		ImageByBytes image = session.find(ImageByBytes.class, filename);
 
 		return image != null ? ResponseEntity.ok(image.getLastModified())
