@@ -5,6 +5,7 @@ package adn.service.resource.factory;
 
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryOptions;
+import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.internal.FastSessionServices;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.service.ServiceRegistry;
@@ -33,7 +34,7 @@ public class ManagerFactory extends SessionFactoryImpl implements EntityManagerF
 		final SessionFactoryOptions sessionFactoryOptions,
 		final FastSessionServices fsses) throws IllegalAccessException {
 	// @formatter:on
-		super(metadata, sessionFactoryOptions, null);
+		super(metadata, sessionFactoryOptions, HQLQueryPlan::new);
 
 		Assert.notNull(localStorage, String.format("[%s] must not be null", Storage.class));
 		this.localStorage = localStorage;

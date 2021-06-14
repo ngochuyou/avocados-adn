@@ -54,14 +54,14 @@ public final class QueryCompiler {
 	public static final Pattern SELECT_COLUMNS_PATTERN;
 	public static final Pattern SELECT_COLUMN_PATTERN;
 
-	private static final Pattern INSERT_PATTERN = Pattern
-			.compile("((?<=(insert\\sinto\\s))[\\w\\d_]+(?=\\s+))|((?<=\\()([\\w\\d_,\\s+]+)+(?=\\)))|values\\s+.+");
-	private static final Pattern UPDATE_PATTERN;
+	private static final Pattern INSERT_PATTERN;
 
-	private static final String FROM_TABLENAME_GROUP_NAME = "tablename";
-	private static final String SET_STATEMENTGROUP_GROUP_NAME = "statements";
+	private static final Pattern UPDATE_PATTERN;
 	private static final Pattern SET_STATEMENT_PATTERN;
 	private static final Pattern WHERE_CONDITION_PATTERN;
+
+	private static final String TABLENAME_GROUP_NAME = "tablename";
+	private static final String SET_STATEMENTS_GROUP_NAME = "statements";
 	private static final String WHERE_CONDITIONS_GROUP_NAME = "conditions";
 	private static final String STATEMENT_COLUMNNAME_GROUP_NAME = "name";
 	private static final String STATEMENT_VALUE_GROUP_NAME = "value";
@@ -74,13 +74,21 @@ public final class QueryCompiler {
 		String letter = "\\w\\d_";
 		String ops = "(\\=|like|LIKE|is|IS|>|<)";
 		// @formatter:off
+		INSERT_PATTERN = Pattern.compile(String.format(""
+				+ "(insert|INSERT)\\s+(into|INTO)\\s+(?<%s>[%s]+)\\s+"
+				+ "\\((?<%s>[%s]+)\\)\\s+"
+				+ "(values|VALUES)\\s+\\((?<%s>[%s]+)\\)\\s?",
+				TABLENAME_GROUP_NAME, letter,
+				COLUMNGROUP_GROUP_NAME, letter + mark,
+				SET_STATEMENTS_GROUP_NAME, letter + mark));
+		
 		SELECT_PATTERN = Pattern.compile(
 			String.format(""
 				+ "(select|SELECT)\\s+(?<%s>[%s]+)\\s*+"
 				+ "(from|FROM)\\s+(?<%s>[%s]+)(\\s*+|[%s]+\\s)"
-				+ "((where|WHERE)\\s+(?<%s>[%s]+)\\s*+)?",
+				+ "((where|WHERE)\\s+(?<%s>[%s]+)\\s?)?",
 				COLUMNGROUP_GROUP_NAME, mark + letter,
-				FROM_TABLENAME_GROUP_NAME, letter, letter + mark,
+				TABLENAME_GROUP_NAME, letter, letter + mark,
 				WHERE_CONDITIONS_GROUP_NAME, letter + mark + ops));
 		
 		WHERE_CONDITION_PATTERN = Pattern.compile(
@@ -100,13 +108,13 @@ public final class QueryCompiler {
 				+ "(update|UPDATE)\\s+(?<%s>[%s]+)(\\s+|[%s]+\\s)"
 				+ "(set|SET)\\s+(?<%s>[%s]+)\\s+"
 				+ "(where|WHERE)\\s+(?<%s>[%s]+)",
-				FROM_TABLENAME_GROUP_NAME, letter, letter,
-				SET_STATEMENTGROUP_GROUP_NAME, mark + letter,
+				TABLENAME_GROUP_NAME, letter, letter,
+				SET_STATEMENTS_GROUP_NAME, mark + letter,
 				WHERE_CONDITIONS_GROUP_NAME, letter + mark + ops));
 		
 		SELECT_COLUMNS_PATTERN = Pattern.compile(
 			String.format(
-				"select\\s+(?<%s>[%s]+)\\sfrom[%s]+",
+				"(select|SELECT)\\s+(?<%s>[%s]+)\\s(from|FROM)[%s]+",
 				COLUMNGROUP_GROUP_NAME, letter + mark, letter + mark + ops)
 		);
 		
@@ -167,14 +175,14 @@ public final class QueryCompiler {
 		}
 
 		try {
-			String templateName = matcher.group(FROM_TABLENAME_GROUP_NAME) + ManagerFactory.DTYPE_SEPERATOR;
+			String templateName = matcher.group(TABLENAME_GROUP_NAME) + ManagerFactory.DTYPE_SEPERATOR;
 
-			if (matcher.group(SET_STATEMENTGROUP_GROUP_NAME) == null) {
+			if (matcher.group(SET_STATEMENTS_GROUP_NAME) == null) {
 				throw new SQLException(
 						String.format("Query [%s] doesn't include any SET portion, expect at least 1", sql));
 			}
 
-			String[] parts = StringHelper.removeSpaces(matcher.group(SET_STATEMENTGROUP_GROUP_NAME)).split(",");
+			String[] parts = matcher.group(SET_STATEMENTS_GROUP_NAME).split("\\s?,\\s?");
 			Matcher innerMatcher;
 
 			for (String statement : parts) {
@@ -196,7 +204,7 @@ public final class QueryCompiler {
 						String.format("Query [%s] doesn't include any WHERE portion, expect at least 1", sql));
 			}
 
-			parts = matcher.group(WHERE_CONDITIONS_GROUP_NAME).split("\\sand\\s");
+			parts = matcher.group(WHERE_CONDITIONS_GROUP_NAME).split("\\s+(and|AND)\\s+");
 
 			for (String condition : parts) {
 				if ((innerMatcher = WHERE_CONDITION_PATTERN.matcher(condition)).matches()) {
@@ -227,13 +235,13 @@ public final class QueryCompiler {
 		}
 
 		try {
-			String templateName = matcher.group(FROM_TABLENAME_GROUP_NAME) + ManagerFactory.DTYPE_SEPERATOR;
+			String templateName = matcher.group(TABLENAME_GROUP_NAME) + ManagerFactory.DTYPE_SEPERATOR;
 
 			if (matcher.group(WHERE_CONDITIONS_GROUP_NAME) == null) {
 				return query.setTemplateName(templateName);
 			}
 
-			String conditions[] = matcher.group(WHERE_CONDITIONS_GROUP_NAME).split("\\sand\\s");
+			String conditions[] = matcher.group(WHERE_CONDITIONS_GROUP_NAME).split("\\s+(and|AND)\\s+");
 			Matcher conditionMatcher;
 
 			for (String condition : conditions) {
@@ -259,19 +267,29 @@ public final class QueryCompiler {
 
 	private static Query compileSave(QueryImpl query, String sql) throws SQLException {
 		Matcher matcher = INSERT_PATTERN.matcher(sql);
+
+		if (!matcher.matches()) {
+			throw new SQLException(String.format("Invalid query [%s]", sql));
+		}
+
 		String templateName;
 
 		try {
-			matcher.find();
-			templateName = matcher.group() + ManagerFactory.DTYPE_SEPERATOR;
-			matcher.find();
+			templateName = matcher.group(TABLENAME_GROUP_NAME) + ManagerFactory.DTYPE_SEPERATOR;
 
-			String[] columnNames = StringHelper.removeSpaces(matcher.group()).split(",");
+			String[] columnNames = matcher.group(COLUMNGROUP_GROUP_NAME).split("\\s?,\\s?");
+			int span = columnNames.length;
+			String columnName;
 
-			for (String columnName : columnNames) {
+			for (int i = 0; i < span; i++) {
+				columnName = columnNames[i];
+
 				if (columnName.equals(ManagerFactory.DTYPE_COLUMNNAME)) {
-					matcher.find();
-					templateName += matcher.group().split("\\'")[1];
+					// @formatter:off
+					templateName += matcher.group(SET_STATEMENTS_GROUP_NAME)
+							.split("\\s?,\\s?")[i]
+									.split("'")[1];
+					// @formatter:on
 					continue;
 				}
 

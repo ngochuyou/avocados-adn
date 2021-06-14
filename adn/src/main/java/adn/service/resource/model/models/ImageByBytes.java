@@ -18,7 +18,7 @@ import adn.service.resource.annotation.Constructor;
 import adn.service.resource.annotation.Content;
 import adn.service.resource.annotation.Directory;
 import adn.service.resource.annotation.LocalResource;
-import adn.service.resource.model.type.FileContentByByteArrayType;
+import adn.service.resource.model.type.FileContentByteArrayType;
 
 /**
  * @author Ngoc Huy
@@ -29,11 +29,11 @@ import adn.service.resource.model.type.FileContentByByteArrayType;
 @Constructor(columnNames = FileResource.ID_NAME, argumentTypes = String.class)
 @Persister(impl = ResourcePersisterImpl.class)
 @Entity
-@TypeDef(name = FileContentByByteArrayType.NAME, typeClass = FileContentByByteArrayType.class)
+@TypeDef(name = FileContentByteArrayType.NAME, typeClass = FileContentByteArrayType.class)
 public class ImageByBytes extends FileResource {
 
 	@Column(nullable = false)
-	@Type(type = FileContentByByteArrayType.NAME)
+	@Type(type = FileContentByteArrayType.NAME)
 	@Content
 	private byte[] content;
 

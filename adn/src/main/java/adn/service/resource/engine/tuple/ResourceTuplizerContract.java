@@ -18,7 +18,6 @@ import adn.helpers.ArrayHelper.ArrayBuilder;
 import adn.helpers.FunctionHelper.HandledBiFunction;
 import adn.helpers.FunctionHelper.HandledFunction;
 import adn.helpers.TypeHelper;
-import adn.service.resource.annotation.Content;
 import adn.service.resource.engine.access.AbstractPropertyAccess;
 import adn.service.resource.engine.access.HybridAccess;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccess;
@@ -68,7 +67,7 @@ public abstract class ResourceTuplizerContract implements ResourceTuplizer {
 			if (!TypeHelper.TYPE_CONVERTER.containsKey(registeredType)
 					|| !TypeHelper.TYPE_CONVERTER.get(registeredType).containsKey(givenType)) {
 				throw new IllegalArgumentException(
-						String.format("Invalid value type, value type was [%s], registered [%s] in template [%s]",
+						String.format("Invalid value type, value type was [%s], registered type [%s] in template [%s]",
 								givenType, registeredType, template.getTemplateName()));
 			}
 		}
@@ -78,7 +77,7 @@ public abstract class ResourceTuplizerContract implements ResourceTuplizer {
 	 * <b>CONTRACT:</b>
 	 * </p>
 	 * A {@link File} instance must be, hence the <em>final</em> modifier, hydrated
-	 * with a specific properties hydration order
+	 * with a specific property hydrations order
 	 * </p>
 	 * The {@code values} parameters must therefore be ordered respectively to the
 	 * registered columns in the {@link ResourceTemplate} contract. This method
@@ -108,25 +107,12 @@ public abstract class ResourceTuplizerContract implements ResourceTuplizer {
 				continue;
 			}
 
-			invokeSetAccess(template.getPropertyAccess(i), file, values);
+			invokeSetAccess(template.getPropertyAccess(i), file, values[i]);
 		}
-
-		postPropertyValuesSet(file, values);
-	}
-
-	/**
-	 * If the resource was configured to be saved after all of the properties was
-	 * hydrated, then we <b>assume</b> that it has one {@link Content} column.
-	 * Therefore, we save the file using the value of that column
-	 * </p>
-	 * 
-	 * The presence of that {@link Content} column must be asserted by callers
-	 * 
-	 * @param instance
-	 * @param values
-	 */
-	private void postPropertyValuesSet(File instance, Object[] values) {
-
+		// lastly, we invoke content-set access to save the content
+		if (contentColumnIndex != -1) {
+			invokeSetAccess(template.getPropertyAccess(contentColumnIndex), file, values[contentColumnIndex]);
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -258,9 +244,9 @@ public abstract class ResourceTuplizerContract implements ResourceTuplizer {
 	}
 
 	/**
-	 * Before instantiating a resource we need to prepend/assert the configured path
-	 * of the storage and append the extension to the resource path. This method
-	 * assumes that types of the <em>argumentValues</em> match the
+	 * Before instantiating a resource, we need to prepend/assert the configured
+	 * path of the storage and append the extension to the resource path. This
+	 * method assumes that types of the <em>argumentValues</em> match the
 	 * <em>argumentTypes</em>. Therefore callers must assert argument types before
 	 * calling it
 	 * </p>
@@ -275,24 +261,21 @@ public abstract class ResourceTuplizerContract implements ResourceTuplizer {
 		// TODO: asserts extension support??
 		String templateDirectory = template.getDirectory();
 		String path;
+		int pathIndex = template.getColumnIndex(template.getPathColumn());
 		// new File(String [,String])
-		if (argumentTypes[0].equals(String.class)) {
-			path = (String) argumentValues[0];
-
-			if (path.startsWith(templateDirectory)) {
-				return;
-			}
+		if (argumentTypes[pathIndex].equals(String.class)) {
+			path = (String) argumentValues[pathIndex];
 			// @formatter:off
-			argumentValues[0] = new StringBuilder(templateDirectory)
-					.append(argumentValues[0])
-					.append(path.endsWith(extension) ? "" : extension)
+			argumentValues[pathIndex] = new StringBuilder(templateDirectory)
+					.append(argumentValues[pathIndex])
+					.append(extension)
 					.toString();
 			// @formatter:on
 			return;
 		}
 		// new File(URI)
-		if (argumentTypes[0].equals(URI.class)) {
-			path = ((URI) argumentValues[0]).getRawPath();
+		if (argumentTypes[pathIndex].equals(URI.class)) {
+			path = ((URI) argumentValues[pathIndex]).getRawPath();
 
 			if (path.startsWith(templateDirectory)) {
 				return;
@@ -300,9 +283,9 @@ public abstract class ResourceTuplizerContract implements ResourceTuplizer {
 
 			try {
 				// @formatter:off
-				argumentValues[0] = new URI(new StringBuilder(templateDirectory)
-						.append(argumentValues[0])
-						.append(path.endsWith(extension) ? "" : extension)
+				argumentValues[pathIndex] = new URI(new StringBuilder(templateDirectory)
+						.append(argumentValues[pathIndex])
+						.append(extension)
 						.toString());
 				// @formatter:on
 			} catch (URISyntaxException urise) {
@@ -315,7 +298,7 @@ public abstract class ResourceTuplizerContract implements ResourceTuplizer {
 		// new File(File, String)
 		// since we aren't able to modify the path of a File instance, we can only do an
 		// assertion on it's path
-		path = ((File) argumentValues[0]).getAbsolutePath();
+		path = ((File) argumentValues[pathIndex]).getAbsolutePath();
 
 		Assert.isTrue(path.startsWith(templateDirectory),
 				String.format("Invalid path [%s]. Template [%s] requires leading [%s]... in resource path", path,

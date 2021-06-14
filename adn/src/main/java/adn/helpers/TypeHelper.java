@@ -40,7 +40,8 @@ public class TypeHelper {
 				Long.class, (longVal) -> new Date((Long) longVal),
 				long.class, (longVal) -> new Date((long) longVal),
 				Date.class, (javaDate) -> new java.util.Date(((Date) javaDate).getTime()),
-				java.util.Date.class, (sqlDate) -> new Date(((java.util.Date) sqlDate).getTime())
+				java.util.Date.class, (sqlDate) -> new Date(((java.util.Date) sqlDate).getTime()),
+				Timestamp.class, (sqlTimestamp) -> new Date(((Timestamp) sqlTimestamp).getTime())
 		);
 		
 		TYPE_CONVERTER = Map.of(

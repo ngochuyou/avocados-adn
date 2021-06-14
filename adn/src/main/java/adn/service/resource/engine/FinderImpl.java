@@ -67,8 +67,18 @@ public class FinderImpl implements Finder {
 		return find(template.getDirectory() + path);
 	}
 
-	private boolean doesExist(File file) {
+	@Override
+	public boolean doesExist(File file) {
 		return file.exists() && file.isFile();
+	}
+
+	@Override
+	public boolean doesExist(String path) {
+		if (!path.startsWith(rootPath)) {
+			return false;
+		}
+
+		return doesExist(new File(path));
 	}
 
 	@Override
@@ -107,11 +117,6 @@ public class FinderImpl implements Finder {
 	}
 
 	private boolean isSatisfied(Object one, Object two) {
-		return false;
-	}
-
-	@Override
-	public boolean doesExist(String path) {
 		return false;
 	}
 

@@ -52,6 +52,7 @@ public class FileResource implements Resource {
 	@Version
 	@UpdateTimestamp
 	@AccessType(value = AccessType.Type.PROPERTY)
+	@Column(nullable = false)
 	private Date lastModified;
 
 	@Extension

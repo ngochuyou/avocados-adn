@@ -13,32 +13,45 @@ import java.util.regex.Pattern;
  */
 public class Solution {
 
-	/**
-	 * @param args
-	 * @throws SecurityException
-	 * @throws NoSuchMethodException
-	 * @throws NoSuchFieldException
-	 * @throws IllegalAccessException
-	 * @throws IllegalArgumentException
-	 * @throws SQLException
-	 */
+	public static final String mark;
+	public static final String letter;
+	public static final String ops;
+
+	public static Pattern SAVE_PATTERN;
+
+	static {
+		mark = "\\?,\\.''\"\\s\\t\\n><\\=\\(\\)";
+		letter = "\\w\\d_";
+		ops = "(\\=|like|LIKE|is|IS|>|<)";
+		// @formatter:off
+		String regex = String.format(""
+				+ "(insert|INSERT)\\s+(into|INTO)\\s+(?<templatename>[%s]+)\\s+"
+				+ "\\((?<columns>[%s]+)\\)\\s+"
+				+ "(values|VALUES)\\s+\\((?<values>[%s]+)\\)\\s?",
+				letter,
+				letter + mark,
+				letter + mark);
+		// @formatter:on
+		System.out.println(regex);
+		SAVE_PATTERN = Pattern.compile(regex);
+	}
+
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
 			IllegalArgumentException, IllegalAccessException, SQLException {
-		String directory = "C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\";
-		String sub = "image\\";
-		String pat;
-		Pattern p = Pattern
-				.compile(pat = String.format("^(?<dir>%s)(?<mid>([\\w\\d_-]+(\\\\)?)+)(?<extension>\\.[\\w\\d]+)$",
-						Pattern.quote(directory + sub)));
-		String filename = "C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\image\\123asd\\asdasd.jpg";
-		Matcher m = p.matcher(filename);
+		String sql = "insert into ImageByBytes (createdDate, extension, lastModified, content, name, DTYPE) values (?, ?, ?, ?, ?, 'ImageByBytes')";
+		Matcher matcher = SAVE_PATTERN.matcher(sql);
 
-		System.out.println(pat);
+		if (matcher.matches()) {
+			System.out.println(matcher.group("columns"));
 
-		if (m.matches()) {
-			System.out.println(m.replaceAll("${mid}${extension}"));
+			String[] values = matcher.group("values").split("\\s?,\\s?");
+
+			for (String value : values) {
+				System.out.println(value.startsWith("'") ? value.split("'")[1] : value);
+			}
+		} else {
+			System.out.println("mismatch");
 		}
 	}
 
-	
 }

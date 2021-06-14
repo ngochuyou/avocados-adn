@@ -3,11 +3,17 @@
  */
 package adn.service.resource.engine.template;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,8 +23,12 @@ import java.util.stream.Stream;
 
 import org.apache.commons.io.FilenameUtils;
 import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.property.access.spi.Getter;
+import org.hibernate.property.access.spi.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import adn.service.resource.engine.Storage;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory;
@@ -75,8 +85,7 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 				.buildPropertyAccess(FILENAME_GETTER, null);
 		accessors[DEFAULT_EXTENSION_INDEX] = PropertyAccessStrategyFactory.SPECIFIC_ACCESS_STRATEGY
 				.buildPropertyAccess(EXTENSION_GETTER, null);
-		accessors[DEFAULT_CONTENT_INDEX] = PropertyAccessStrategyFactory.SPECIFIC_ACCESS_STRATEGY
-				.buildPropertyAccess(BYTE_ARRAY_CONTENT_GETTER, null);
+		accessors[DEFAULT_CONTENT_INDEX] = determineContentPropertyAccess(columnTypes[DEFAULT_CONTENT_INDEX]);
 
 		this.accessors = accessors;
 		this.instantiator = instantiator;
@@ -84,6 +93,15 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 		this.directoryPath = new StringBuilder(storage.getDirectory())
 				.append(directoryPath != null ? directoryPath : "").toString();
 		this.storage = storage;
+	}
+
+	private PropertyAccessImplementor determineContentPropertyAccess(Class<?> contentType) {
+		if (contentType == byte[].class) {
+			return PropertyAccessStrategyFactory.SPECIFIC_ACCESS_STRATEGY.buildPropertyAccess(BYTE_ARRAY_CONTENT_GETTER,
+					FILE_CONTENT_BYTE_ARRAY_SETTER);
+		}
+
+		throw new IllegalArgumentException(String.format("Unsupported content type [%s]", contentType));
 	}
 
 	@Override
@@ -256,6 +274,100 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 		}
 	};
 
+	@SuppressWarnings("serial")
+	private static final Setter FILE_CONTENT_BYTE_ARRAY_SETTER = new Setter() {
+
+		private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+		@Override
+		public void set(Object target, Object value, SessionFactoryImplementor factory) {
+			File file = (File) target;
+			byte[] content = (byte[]) value;
+
+			try {
+				if (isSame(file, content)) {
+					if (logger.isTraceEnabled()) {
+						logger.trace("Skip writing file since the original content and requested content are the same");
+					}
+
+					return;
+				}
+
+				if (logger.isTraceEnabled()) {
+					logger.trace(
+							String.format("Writing file [%s], content length [%s]", file.getPath(), content.length));
+				}
+
+				Files.write(Paths.get(file.getPath()), content);
+
+				return;
+			} catch (IOException ioe) {
+				throw new RuntimeException(ioe);
+			}
+		}
+
+		private boolean isSame(File file, byte[] content) throws IOException {
+			if (!file.exists() || !file.isFile() || content == null) {
+				return false;
+			}
+
+			BufferedInputStream originalBuffer = new BufferedInputStream(new FileInputStream(file));
+			BufferedInputStream requestedBuffer;
+
+			try {
+				requestedBuffer = new BufferedInputStream(new ByteArrayInputStream(content));
+			} catch (RuntimeException ioe) {
+				originalBuffer.close();
+				throw ioe;
+			}
+
+			try {
+				int chunkSize = 8192;
+				byte[] originalChunk = new byte[chunkSize];
+				byte[] requestedChunk = new byte[chunkSize];
+				int offset = 0;
+
+				while (originalBuffer.read(originalChunk, offset, chunkSize) != -1
+						&& requestedBuffer.read(requestedChunk, offset, chunkSize) != -1) {
+					if (Arrays.compare(originalChunk, requestedChunk) != 0) {
+						return false;
+					}
+
+					if (originalBuffer.read() == -1 || requestedBuffer.read() == -1) {
+						return true;
+					}
+
+					chunkSize *= 2;
+					originalChunk = new byte[chunkSize];
+					requestedChunk = new byte[chunkSize];
+				}
+
+				return false;
+			} finally {
+				originalBuffer.close();
+				requestedBuffer.close();
+			}
+		}
+
+		@Override
+		public String getMethodName() {
+			return "<synthetic_byte_array_content_setter>(byte[])";
+		}
+
+		@Override
+		public Method getMethod() {
+			try {
+				return this.getClass().getDeclaredMethod("dummySetMethod", byte[].class);
+			} catch (NoSuchMethodException | SecurityException e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+
+		@SuppressWarnings("unused")
+		private void dummySetMethod(byte[] array) {}
+	};
+
 	private static final String FILENAME_GROUPNAME = "pathname";
 	private static final String EXTENSION_GROUPNAME = "extension";
 	private static final Pattern PATH_PATTERN;
@@ -347,7 +459,7 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 
 		@Override
 		public Object get(Object owner) {
-			return FilenameUtils.getExtension(((File) owner).getName());
+			return "." + FilenameUtils.getExtension(((File) owner).getName());
 		}
 	};
 

@@ -34,14 +34,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 import adn.security.SecurityConfiguration;
-import adn.service.resource.ResourceSession;
+import adn.service.resource.ResourceManager;
 import adn.service.resource.model.models.ImageByBytes;
 
 /**
  * @author Ngoc Huy
  *
  */
-@SuppressWarnings("unused")
 @Controller
 @RequestMapping(SecurityConfiguration.TESTUNIT_PREFIX)
 public class TestController extends BaseController {
@@ -85,7 +84,6 @@ public class TestController extends BaseController {
 			this.timer.schedule(new TimerTask() {
 				@Override
 				public void run() {
-					// TODO Auto-generated method stub
 					isTimedOut = true;
 				}
 			}, timeout);
@@ -201,24 +199,30 @@ public class TestController extends BaseController {
 	}
 
 	@Autowired
-	private ResourceSession session;
+	private ResourceManager session;
 
 	private String filename = "1623406220771_12d4fc19efc1899e0731cd4d7e67f66daec3c271105cc0eb0ed6757f94822615.jpg";
 
 	@GetMapping("/file/public/image/session-load")
-	public @ResponseBody ResponseEntity<?> testGetImageBytes() throws IOException {
+	public @ResponseBody ResponseEntity<?> testGetImageBytes() throws IOException, InterruptedException {
 //		CriteriaBuilder builder = session.getCriteriaBuilder();
 //		CriteriaQuery<ImageByBytes> query = builder.createQuery(ImageByBytes.class);
 //		Root<ImageByBytes> root = query.from(ImageByBytes.class);
 //
-//		query.select(root.get("name")).select(root.get("extension")).select(root.get("createdDate"));
+//		query.multiselect(root.get("name"), root.get("extension"), root.get("createdDate"));
 //		query.where(builder.equal(root.get("name"),
 //				"1623406220771_12d4fc19efc1899e0731cd4d7e67f66daec3c271105cc0eb0ed6757f94822615.jpg"));
 //
 //		Query<ImageByBytes> hql = session.createQuery(query);
-		ImageByBytes image = session.find(ImageByBytes.class, filename);
+		ImageByBytes image = new ImageByBytes();
 
-		return image != null ? ResponseEntity.ok(image.getLastModified())
+		image.setName("name");
+		image.setExtension(".jpg");
+		image.setContent(getDummyBytes());
+
+		session.save(image);
+
+		return image != null ? ResponseEntity.ok(image.getExtension())
 				: ResponseEntity.status(HttpStatus.NOT_FOUND).body(String.format("File [%s] not found", filename));
 	}
 

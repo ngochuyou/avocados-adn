@@ -53,6 +53,11 @@ public interface Finder {
 	/**
 	 * Check existence of a {@link File}
 	 */
+	boolean doesExist(File file);
+
+	/**
+	 * Check existence of a {@link File} with it's path
+	 */
 	boolean doesExist(String path);
 
 }

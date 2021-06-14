@@ -17,8 +17,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
-import adn.service.resource.engine.action.SaveAction;
-import adn.service.resource.engine.action.SaveActionImpl;
 import adn.service.resource.engine.persistence.PersistenceContext;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.template.ResourceTemplate;
@@ -43,8 +41,6 @@ public class LocalStorage implements Storage {
 	private final Validator templateValidator;
 	private final Map<String, ResourceTemplate> templates = new HashMap<>(8, .75f);
 	private final MetadataFactory metadataFactory = MetadataFactory.INSTANCE;
-
-	private final SaveAction saveAction = new SaveActionImpl(this);
 
 	@Autowired
 	private PersistenceContext persistenceContext;
@@ -179,17 +175,23 @@ public class LocalStorage implements Storage {
 	private ResultSetImplementor doSave(Query batch) {
 		Query current = batch;
 		long modCount = 0;
+		SQLException error = null;
+		boolean success;
 
 		while (current != null) {
-			try {
-				saveAction.execute(current);
+			success = persistenceContext.save(current, getResourceTemplate(current.getTemplateName()), error);
+
+			if (success) {
 				modCount++;
-			} catch (RuntimeException rte) {
-				rte.printStackTrace();
-				return new ExceptionResultSet(new SQLException(rte), batch.getStatement());
+				current = current.next();
+				continue;
 			}
 
-			current = current.next();
+			if (error != null) {
+				error.printStackTrace();
+			}
+
+			return new ExceptionResultSet(error, batch.getStatement());
 		}
 
 		return new ResourceUpdateCount(new Long[] { modCount }, batch.getTemplateName(), batch.getStatement());

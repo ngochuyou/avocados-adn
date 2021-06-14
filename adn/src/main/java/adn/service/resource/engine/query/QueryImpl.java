@@ -63,7 +63,8 @@ public class QueryImpl implements Query {
 
 	@Override
 	public Query setParameterValue(int i, Object value) throws SQLException {
-		int actualIndex = i - 1; // Hibernate sets query params from 1
+		// Hibernate sets query parameter from 1
+		int actualIndex = i - 1;
 
 		values.set(actualIndex, value);
 
@@ -161,9 +162,10 @@ public class QueryImpl implements Query {
 	 */
 	private int locateIndex(String key) {
 		int aliasIndex = aliasList.indexOf(key); // try alias
-		String columnName = columnNames.get(aliasIndex);
 
-		if (indexMap.containsKey(columnName)) {
+		if (aliasIndex != -1) {
+			String columnName = columnNames.get(aliasIndex);
+
 			return indexMap.get(columnName);
 		}
 		// try literal column name

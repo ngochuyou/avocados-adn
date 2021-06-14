@@ -4,6 +4,7 @@
 package adn.service.resource.engine.persistence;
 
 import java.io.File;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -23,6 +24,7 @@ import adn.service.resource.engine.Storage;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.query.QueryCompiler;
 import adn.service.resource.engine.template.ResourceTemplate;
+import adn.service.resource.engine.tuple.ResourceTuplizer;
 import javassist.NotFoundException;
 
 /**
@@ -46,16 +48,54 @@ public class PersistenceContext {
 		this.finder = finder;
 	}
 
-	private synchronized Mutex createMutex(File file, ResourceTemplate template) {
+	private Mutex createMutex(File file) {
 		Mutex newMutex = new Mutex();
 
-		mutexMap.put(getFilenameOnly(file.getPath()), newMutex);
+		mutexMap.put(file.getPath(), newMutex);
 
 		return newMutex;
 	}
 
 	private String getFilenameOnly(String fileNameWithExtension) {
 		return fileNameWithExtension.replaceAll("\\.[\\w\\d]+$", "");
+	}
+
+	private Mutex obtainMutex(File file) {
+		if (mutexMap.containsKey(file.getPath())) {
+			return mutexMap.get(file.getPath());
+		}
+
+		return createMutex(file);
+	}
+
+	public boolean save(Query query, ResourceTemplate template, SQLException error) {
+		String[] registeredColumnNames = template.getColumnNames();
+		Object[] values = Stream.of(registeredColumnNames).map(query::getParameterValue).toArray(Object[]::new);
+		ResourceTuplizer tuplizer = template.getTuplizer();
+
+		tuplizer.validate(values, registeredColumnNames);
+
+		File newFile = tuplizer.instantiate(values);
+
+		if (finder.doesExist(newFile)) {
+			error = new SQLException(String.format("Duplicate filename [%s]", newFile.getName()));
+			return false;
+		}
+
+		synchronized (obtainMutex(newFile)) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(String.format("Saving a new file with path [%s]", newFile.getPath()));
+			}
+
+			try {
+				tuplizer.setPropertyValues(newFile, values);
+			} catch (Exception any) {
+				error = new SQLException(any);
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	public boolean update(Query query, ResourceTemplate template) throws NotFoundException {
@@ -82,9 +122,7 @@ public class PersistenceContext {
 		for (File file : files) {
 			temp = new File(file.getPath());
 			mutexKey = getFilenameOnly(temp.getPath());
-			mutex = !mutexMap.containsKey(mutexKey)
-					? createMutex(temp, storage.getResourceTemplate(query.getTemplateName()))
-					: mutexMap.get(mutexKey);
+			mutex = !mutexMap.containsKey(mutexKey) ? createMutex(temp) : mutexMap.get(mutexKey);
 
 			synchronized (mutex) {
 				logger.trace(String.format("Locking file [%s] with mutex [%s]", temp.getPath(), mutexKey));
@@ -166,7 +204,7 @@ public class PersistenceContext {
 
 		@Override
 		protected boolean removeEldestEntry(java.util.Map.Entry<String, Mutex> eldest) {
-			return size() > MAX_SIZE;
+			return size() >= MAX_SIZE;
 		}
 
 	}
