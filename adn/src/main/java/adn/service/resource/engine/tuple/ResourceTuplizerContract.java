@@ -99,11 +99,11 @@ public abstract class ResourceTuplizerContract implements ResourceTuplizer {
 		}
 
 		final int span = template.getPropertySpan();
-		final ArrayBuilder<Integer> hydratedIndicies = ArrayHelper
+		final ArrayBuilder<Integer> ignoredIndicies = ArrayHelper
 				.from(new Integer[] { pathColumnIndex, extensionColumnIndex, contentColumnIndex });
 
 		for (int i = 0; i < span; i++) {
-			if (hydratedIndicies.contains(i)) {
+			if (ignoredIndicies.contains(i)) {
 				continue;
 			}
 

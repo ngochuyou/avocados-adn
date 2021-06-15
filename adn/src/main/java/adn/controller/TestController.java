@@ -214,13 +214,13 @@ public class TestController extends BaseController {
 //				"1623406220771_12d4fc19efc1899e0731cd4d7e67f66daec3c271105cc0eb0ed6757f94822615.jpg"));
 //
 //		Query<ImageByBytes> hql = session.createQuery(query);
-		ImageByBytes image = new ImageByBytes();
+		ImageByBytes image = session.get(ImageByBytes.class,
+				"1619973416467_0c46022fcfda4d9f4bb8c09e8c42e9efc12d839d35c78c73e4dab1d24fac8a1c.png");
 
-		image.setName("name");
 		image.setExtension(".jpg");
-		image.setContent(getDummyBytes());
 
-		session.save(image);
+		session.update(image);
+		session.flush();
 
 		return image != null ? ResponseEntity.ok(image.getExtension())
 				: ResponseEntity.status(HttpStatus.NOT_FOUND).body(String.format("File [%s] not found", filename));

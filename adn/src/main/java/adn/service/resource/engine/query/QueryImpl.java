@@ -25,7 +25,7 @@ public class QueryImpl implements Query {
 	private QueryCompiler.QueryType queryType;
 
 	private Map<String, Integer> indexMap = new HashMap<>();
-	private ArrayList<String> columnNames = new ArrayList<>();
+	protected ArrayList<String> columnNames = new ArrayList<>();
 	private ArrayList<String> aliasList = new ArrayList<>();
 	private ArrayList<Object> values = new ArrayList<>();
 
@@ -33,22 +33,27 @@ public class QueryImpl implements Query {
 
 	QueryImpl() {}
 
-	QueryImpl(Query parent) {
-		if (parent instanceof QueryImpl) {
-			QueryImpl sibling = (QueryImpl) parent;
+	/**
+	 * For cloning, not batching
+	 * 
+	 * @param other
+	 */
+	QueryImpl(Query other) {
+		if (other instanceof QueryImpl) {
+			QueryImpl sibling = (QueryImpl) other;
 
 			this.indexMap = sibling.indexMap;
 			this.columnNames = sibling.columnNames;
 			this.aliasList = sibling.aliasList;
 		}
 
-		this.statement = parent.getStatement();
-		this.actualSQLString = parent.getActualSQLString();
-		this.templateName = parent.getTemplateName();
-		this.queryType = parent.getType();
+		this.statement = other.getStatement();
+		this.actualSQLString = other.getActualSQLString();
+		this.templateName = other.getTemplateName();
+		this.queryType = other.getType();
 	}
 
-	private void checkLock() throws SQLException {
+	protected void checkLock() throws SQLException {
 		if (!isLocked) {
 			return;
 		}
@@ -67,13 +72,12 @@ public class QueryImpl implements Query {
 		int actualIndex = i - 1;
 
 		values.set(actualIndex, value);
-
 		return this;
 	}
 
 	@Override
 	public Query setParameterValue(String name, Object param) throws SQLException {
-		setParameterValue(indexMap.get(name), param);
+		values.set(indexMap.get(name), param);
 		return this;
 	}
 

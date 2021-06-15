@@ -17,8 +17,10 @@ import adn.service.resource.engine.tuple.ResourceTuplizer;
  * @author Ngoc Huy
  *
  */
-@Component("defaultFinder")
+@Component(FinderImpl.NAME)
 public class FinderImpl implements Finder {
+
+	public static final String NAME = "localStorageFinder";
 
 	private final Storage storage;
 	private final String rootPath;
@@ -83,7 +85,6 @@ public class FinderImpl implements Finder {
 
 	@Override
 	public File[] find(ResourceTemplate template, Object[] values) {
-
 		return find(template, values, template.getColumnNames());
 	}
 

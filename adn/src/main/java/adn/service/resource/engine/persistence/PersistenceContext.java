@@ -5,24 +5,24 @@ package adn.service.resource.engine.persistence;
 
 import java.io.File;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.regex.Pattern;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.hibernate.tuple.Tuplizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import adn.helpers.ArrayHelper;
+import adn.helpers.ArrayHelper.ArrayBuilder;
+import adn.service.resource.engine.Finder;
 import adn.service.resource.engine.FinderImpl;
 import adn.service.resource.engine.Storage;
 import adn.service.resource.engine.query.Query;
-import adn.service.resource.engine.query.QueryCompiler;
+import adn.service.resource.engine.query.UpdateQuery;
 import adn.service.resource.engine.template.ResourceTemplate;
 import adn.service.resource.engine.tuple.ResourceTuplizer;
 import javassist.NotFoundException;
@@ -37,12 +37,12 @@ public class PersistenceContext {
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private final Storage storage;
-	private final FinderImpl finder;
+	private final Finder finder;
 
 	private final Map<String, Mutex> mutexMap = new MutexMap();
 
 	@Autowired
-	public PersistenceContext(@Autowired Storage storage, @Autowired FinderImpl finder) {
+	public PersistenceContext(@Autowired Storage storage, @Autowired @Qualifier(FinderImpl.NAME) Finder finder) {
 		super();
 		this.storage = storage;
 		this.finder = finder;
@@ -56,10 +56,6 @@ public class PersistenceContext {
 		return newMutex;
 	}
 
-	private String getFilenameOnly(String fileNameWithExtension) {
-		return fileNameWithExtension.replaceAll("\\.[\\w\\d]+$", "");
-	}
-
 	private Mutex obtainMutex(File file) {
 		if (mutexMap.containsKey(file.getPath())) {
 			return mutexMap.get(file.getPath());
@@ -70,7 +66,7 @@ public class PersistenceContext {
 
 	public boolean save(Query query, ResourceTemplate template, SQLException error) {
 		String[] registeredColumnNames = template.getColumnNames();
-		Object[] values = Stream.of(registeredColumnNames).map(query::getParameterValue).toArray(Object[]::new);
+		Object[] values = Stream.of(registeredColumnNames).map(query::getParameterValue).toArray();
 		ResourceTuplizer tuplizer = template.getTuplizer();
 
 		tuplizer.validate(values, registeredColumnNames);
@@ -98,81 +94,60 @@ public class PersistenceContext {
 		return true;
 	}
 
-	public boolean update(Query query, ResourceTemplate template) throws NotFoundException {
-		String[] setPortionColumnNames = getSetPortionParameterNames(query);
-		String[] wherePortionColumnNames = getWherePortionParameterNames(query);
-		Mutex mutex;
-		ArrayList<Integer> setColumnIndicies = new ArrayList<>();
+	public boolean update(UpdateQuery query, ResourceTemplate template) throws NotFoundException {
+		ArrayBuilder<String> registeredColumns = ArrayHelper.from(template.getColumnNames());
+		String[] whereStatementColumnNames = Stream.of(query.getWhereStatementColumnNames())
+				.filter(registeredColumns::contains).toArray(String[]::new);
+		Object[] conditionValues = Stream.of(whereStatementColumnNames).map(query::getWhereConditionValue).toArray();
+		ResourceTuplizer tuplizer = template.getTuplizer();
 
-		for (String setColumnName : setPortionColumnNames) {
-			if (template.getColumnIndex(setColumnName) == null) {
-				setColumnIndicies.add(Optional.ofNullable(template.getColumnIndex(setColumnName))
-						.orElseThrow(() -> new NotFoundException(
-								String.format("Unknown column [%s] in SET portion", setColumnName))));
-			}
+		tuplizer.validate(conditionValues, whereStatementColumnNames);
+
+		File[] files = finder.find(template, conditionValues, whereStatementColumnNames);
+		String[] setStatementColumnNames = Stream.of(query.getColumnNames()).filter(registeredColumns::contains)
+				.toArray(String[]::new);
+		Object[] values = Stream.of(setStatementColumnNames).map(query::getParameterValue).toArray();
+
+		tuplizer.validate(values, setStatementColumnNames);
+
+		if (logger.isTraceEnabled()) {
+			logger.trace(String.format("Found {%d} file(s) for update", files.length));
 		}
 
-		File[] files = finder.find(template, null);
-		Tuplizer tuplizer = template.getTuplizer();
-		Object[] values;
-		String mutexKey;
-		File temp;
-		logger.trace(String.format("Found {%d} file(s) for update", files.length));
+		ArrayBuilder<String> setStatement = ArrayHelper.from(setStatementColumnNames);
+		Stream<Function<File, Object>> extractingFunctions = Stream.of(template.getColumnNames()).map(columnName -> {
+			if (setStatement.contains(columnName)) {
+				return new Function<File, Object>() {
+					@Override
+					public Object apply(File t) {
+						return values[setStatement.getLastFoundIndex()];
+					}
+				};
+			}
+
+			return new Function<File, Object>() {
+				@Override
+				public Object apply(File t) {
+					return tuplizer.getPropertyValue(t, template.getColumnIndex(columnName));
+				}
+			};
+		});
+
+		Object[] extractedValues;
 
 		for (File file : files) {
-			temp = new File(file.getPath());
-			mutexKey = getFilenameOnly(temp.getPath());
-			mutex = !mutexMap.containsKey(mutexKey) ? createMutex(temp) : mutexMap.get(mutexKey);
+			extractedValues = extractingFunctions.map(fnc -> fnc.apply(file)).toArray();
 
-			synchronized (mutex) {
-				logger.trace(String.format("Locking file [%s] with mutex [%s]", temp.getPath(), mutexKey));
+			synchronized (obtainMutex(file)) {
+				if (logger.isTraceEnabled()) {
+					logger.trace(String.format("Locking file [%s] for update", file.getPath()));
+				}
 
-				values = resolveValues(query, template, setPortionColumnNames, temp);
-				tuplizer.setPropertyValues(temp, values);
+				tuplizer.setPropertyValues(file, extractedValues);
 			}
 		}
 
 		return true;
-	}
-
-	private Object[] resolveValues(Query query, ResourceTemplate template, String[] providedColumns, File file) {
-		Set<String> providedColumnSet = Set.of(providedColumns);
-		String[] requiredColumns = template.getColumnNames();
-		int n = requiredColumns.length;
-		Object[] values = new Object[requiredColumns.length];
-		String requiredColumn;
-		Tuplizer tuplizer = template.getTuplizer();
-
-		for (int i = 0; i < n; i++) {
-			requiredColumn = requiredColumns[i];
-
-			if (providedColumnSet.contains(requiredColumn)) {
-				values[i] = query.getParameterValue(String.format("%s%s", QueryCompiler.SET_MARKER, requiredColumn));
-				continue;
-			}
-
-			values[i] = tuplizer.getPropertyValue(file, i);
-		}
-
-		return values;
-	}
-
-	private String[] getSetPortionParameterNames(Query query) {
-		// @formatter:off
-		return Stream.of(query.getColumnNames())
-				.filter(paramName -> paramName.startsWith(QueryCompiler.SET_MARKER))
-				.map(name -> name.replaceFirst(Pattern.quote(QueryCompiler.SET_MARKER), ""))
-				.toArray(String[]::new);
-		// @formatter:on
-	}
-
-	private String[] getWherePortionParameterNames(Query query) {
-		// @formatter:off
-		return Stream.of(query.getColumnNames())
-				.filter(paramName -> paramName.startsWith(Pattern.quote(QueryCompiler.WHERE_MARKER)))
-				.map(name -> name.replaceFirst(Pattern.quote(QueryCompiler.WHERE_MARKER), ""))
-				.toArray(String[]::new);
-		// @formatter:on
 	}
 
 	@SuppressWarnings("unused")

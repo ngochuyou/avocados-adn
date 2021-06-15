@@ -19,6 +19,7 @@ import org.springframework.validation.Validator;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.persistence.PersistenceContext;
 import adn.service.resource.engine.query.Query;
+import adn.service.resource.engine.query.UpdateQuery;
 import adn.service.resource.engine.template.ResourceTemplate;
 import adn.service.resource.engine.template.ResourceTemplateImpl;
 import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
@@ -35,7 +36,7 @@ public class LocalStorage implements Storage {
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Autowired
-	@Qualifier("defaultFinder")
+	@Qualifier(FinderImpl.NAME)
 	private Finder finder;
 
 	private final Validator templateValidator;
@@ -68,7 +69,7 @@ public class LocalStorage implements Storage {
 				return doFind(query);
 			}
 			case UPDATE: {
-				return doUpdate(query);
+				return doUpdate((UpdateQuery) query);
 			}
 			default: {
 				return new ExceptionResultSet(
@@ -78,9 +79,9 @@ public class LocalStorage implements Storage {
 		}
 	}
 
-	private ResultSetImplementor doUpdate(Query batch) {
+	private ResultSetImplementor doUpdate(UpdateQuery batch) {
 		ResourceTemplate template = templates.get(batch.getTemplateName());
-		Query current = batch;
+		UpdateQuery current = batch;
 		long modCount = 0;
 
 		while (current != null) {

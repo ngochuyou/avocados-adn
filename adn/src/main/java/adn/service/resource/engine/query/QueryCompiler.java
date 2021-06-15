@@ -157,17 +157,14 @@ public final class QueryCompiler {
 				return compileSave(query, sql.trim()).lockQuery();
 			}
 			case UPDATE: {
-				return compileUpdate(query, sql.trim()).lockQuery();
+				return compileUpdate(new UpdateQueryImpl(query), sql.trim()).lockQuery();
 			}
 			default:
 				throw new SQLException(String.format("Unable to compile query [%s], unknown query type", sql));
 		}
 	}
 
-	public static final String SET_MARKER = "set$";
-	public static final String WHERE_MARKER = "where$";
-
-	private static Query compileUpdate(QueryImpl query, String sql) throws SQLException {
+	private static Query compileUpdate(UpdateQueryImpl query, String sql) throws SQLException {
 		Matcher matcher = UPDATE_PATTERN.matcher(sql);
 
 		if (!matcher.matches()) {
@@ -191,8 +188,7 @@ public final class QueryCompiler {
 						continue;
 					}
 
-					query.addColumnName(
-							String.format("%s%s", SET_MARKER, innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME)));
+					query.addColumnName(innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME));
 					continue;
 				}
 
@@ -213,8 +209,7 @@ public final class QueryCompiler {
 						continue;
 					}
 
-					query.addColumnName(
-							String.format("%s%s", WHERE_MARKER, innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME)));
+					query.addWhereStatementColumnName(innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME));
 					continue;
 				}
 

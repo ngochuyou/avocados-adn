@@ -4,8 +4,11 @@
 package adn.test.application;
 
 import java.sql.SQLException;
-import java.util.regex.Matcher;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Ngoc Huy
@@ -32,25 +35,103 @@ public class Solution {
 				letter + mark,
 				letter + mark);
 		// @formatter:on
-		System.out.println(regex);
 		SAVE_PATTERN = Pattern.compile(regex);
 	}
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
 			IllegalArgumentException, IllegalAccessException, SQLException {
-		String sql = "insert into ImageByBytes (createdDate, extension, lastModified, content, name, DTYPE) values (?, ?, ?, ?, ?, 'ImageByBytes')";
-		Matcher matcher = SAVE_PATTERN.matcher(sql);
+		Int val = new Int(0);
+		
+		for (int i = 0; i < 10; i++) {
+			System.out.println(val.getThenPlusOne());
+		}
+	}
+	
+	private static class Int {
+		
+		private int val;
 
-		if (matcher.matches()) {
-			System.out.println(matcher.group("columns"));
+		Int(int val) {
+			this.val = val;
+		}
+		
+		int getThenPlusOne() {
+			return this.val++;
+		}
+		
+	}
 
-			String[] values = matcher.group("values").split("\\s?,\\s?");
+	private final Map<String, Object> mutexMap = new HashMap<>();
 
-			for (String value : values) {
-				System.out.println(value.startsWith("'") ? value.split("'")[1] : value);
+	@Test
+	public void test() {
+		Thread save0 = new Thread() {
+			@Override
+			public void run() {
+				System.out.println(Thread.currentThread().getName() + " executing save ngochuy.ou ");
+
+				saveLock("ngochuy.ou");
 			}
-		} else {
-			System.out.println("mismatch");
+		};
+
+		Thread save1 = new Thread() {
+			@Override
+			public void run() {
+				System.out.println(Thread.currentThread().getName() + " executing update ngochuy.ou ");
+
+				updateLock("duypham");
+			}
+		};
+
+		Thread update0 = new Thread() {
+			@Override
+			public void run() {
+				System.out.println(Thread.currentThread().getName() + " executing update ngochuy.ou ");
+
+				updateLock("ngochuy.ou");
+			}
+		};
+
+		Thread update1 = new Thread() {
+			@Override
+			public void run() {
+				System.out.println(Thread.currentThread().getName() + " executing save ngochuy.ou ");
+
+				saveLock("ngochuy.ou");
+			}
+		};
+
+		save0.start();
+		save1.start();
+		update0.start();
+		update1.start();
+	}
+
+	private Object obtainMutex(String name) {
+		if (mutexMap.containsKey(name)) {
+			return mutexMap.get(name);
+		}
+
+		Object mutex = new Object();
+
+		mutexMap.put(name, mutex);
+
+		return mutex;
+	}
+
+	private void saveLock(String name) {
+		synchronized (obtainMutex(name)) {
+			System.out.println("Save-locking " + name);
+
+			System.out.println("Save-releashing " + name);
+		}
+	}
+
+	private void updateLock(String name) {
+		synchronized (obtainMutex(name)) {
+			System.out.println("Update-locking " + name);
+
+			System.out.println("Update-releashing " + name);
 		}
 	}
 
