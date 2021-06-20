@@ -14,28 +14,26 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.stereotype.Component;
 
-import adn.application.Constants;
 import adn.application.context.ContextProvider;
 import adn.helpers.TypeHelper;
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.ModelsDescriptor;
 import adn.model.entities.Entity;
 import adn.model.factory.ModelProducerProvider;
 import adn.model.models.Model;
-import adn.service.services.Role;
+import adn.service.Role;
 
-@Component(Constants.DEFAULT_MODEL_PRODUCER_PROVIDER_NAME)
+@Component(AuthenticationBasedProducerProvider.NAME)
 @Order(value = 5)
 public class AuthenticationBasedProducerProvider implements ModelProducerProvider {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
-
-	private Map<Class<? extends Model>, AuthenticationBasedModelProducer<?, ?>> producerMap;
-
+	
+	public static final String NAME = "authenticationBasedProducerProvider";
 	private final String MODEL_PRODUCER_PACKAGE = "adn.model.factory.production.security";
 
+	private Map<Class<? extends Model>, AuthenticationBasedModelProducer<?, ?>> producerMap;
 	private AuthenticationBasedModelProducer<Entity, Model> defaultProducer = new AuthenticationBasedModelProducer<Entity, Model>() {};
-
 	private Map<Role, BiFunction<Entity, Class<Model>, ? extends Model>> functionMap;
 
 	@Autowired
@@ -44,18 +42,17 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 	@SuppressWarnings("unchecked")
 	@Override
 	public void buildAfterStartUp() throws Exception {
-		// TODO Auto-generated method stub
 		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass());
 		this.producerMap = new HashMap<>();
 		// @formatter:off
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
-		scanner.addIncludeFilter(new AnnotationTypeFilter(Genetized.class));
+		scanner.addIncludeFilter(new AnnotationTypeFilter(Generic.class));
 		scanner.findCandidateComponents(MODEL_PRODUCER_PACKAGE).forEach(bean -> {
 			try {
 				Class<? extends AuthenticationBasedModelProducer<?, ?>> clazz = (Class<? extends AuthenticationBasedModelProducer<?, ?>>) Class
 						.forName(bean.getBeanClassName());
-				Genetized anno = clazz.getDeclaredAnnotation(Genetized.class);
+				Generic anno = clazz.getDeclaredAnnotation(Generic.class);
 
 				this.producerMap.put(anno.modelGene(), ContextProvider.getApplicationContext().getBean(clazz));
 			} catch (Exception e) {
@@ -108,7 +105,6 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> AuthenticationBasedModelProducer<T, M> getProducer(Class<M> modelClass) {
-
 		return (AuthenticationBasedModelProducer<T, M>) this.producerMap.get(modelClass);
 	}
 
@@ -163,7 +159,6 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produce(T entity, Class<M> clazz, Role role) {
-		// TODO Auto-generated method stub
 		return (M) this.functionMap.get(role).apply(entity, (Class<Model>) clazz);
 	}
 

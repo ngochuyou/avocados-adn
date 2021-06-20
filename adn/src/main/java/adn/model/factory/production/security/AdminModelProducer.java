@@ -2,14 +2,14 @@ package adn.model.factory.production.security;
 
 import org.springframework.stereotype.Component;
 
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.entities.Admin;
 import adn.model.models.AdminModel;
 import adn.security.SecuredFor;
-import adn.service.services.Role;
+import adn.service.Role;
 
 @Component
-@Genetized(modelGene = AdminModel.class)
+@Generic(modelGene = AdminModel.class)
 public class AdminModelProducer implements AuthenticationBasedModelProducer<Admin, AdminModel> {
 
 	@Override

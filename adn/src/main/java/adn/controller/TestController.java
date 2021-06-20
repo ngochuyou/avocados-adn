@@ -53,9 +53,6 @@ public class TestController extends BaseController {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	@Autowired
-	private FileController fileController;
-
 	protected class ConsumeAndReduce<T> implements Runnable {
 
 		private final T arg;
@@ -150,13 +147,13 @@ public class TestController extends BaseController {
 							)
 						);
 						
-						ResponseEntity<?> res = fileController.getImageBytes(passedFilename);
+						ResponseEntity<?> res = null;
 						
 						logger.debug(String.format(
 							"\n\tRequest in thread %s was fulfilled"
 								+ "\n\t\t-status code: %s",
 							getCurrentThreadName(),
-							res.getStatusCode().toString()
+							"200"
 						));
 
 						return res;

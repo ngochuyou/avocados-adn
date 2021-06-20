@@ -6,7 +6,7 @@ package adn.model.models;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.entities.Personnel;
 
 /**
@@ -14,7 +14,7 @@ import adn.model.entities.Personnel;
  *
  */
 @Order(Ordered.HIGHEST_PRECEDENCE)
-@Genetized(entityGene = Personnel.class)
+@Generic(entityGene = Personnel.class)
 public class PersonnelModel extends AccountModel {
 
 	protected String createdBy;

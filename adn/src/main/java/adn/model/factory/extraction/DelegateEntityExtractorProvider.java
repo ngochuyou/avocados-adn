@@ -12,26 +12,25 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
-import adn.application.Constants;
 import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.ModelsDescriptor;
 import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractor;
 import adn.model.factory.EntityExtractorProvider;
 import adn.model.models.Model;
 
-@Component(Constants.DEFAULT_ENTITY_EXTRACTOR_PROVIDER_NAME)
+@Component(DelegateEntityExtractorProvider.NAME)
 @Order(value = 4)
 public class DelegateEntityExtractorProvider implements EntityExtractorProvider {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+	public static final String NAME = "defaultEntityExtractorProvider";
 	private final String ENTITY_EXTRACTOR_PACKAGE = "adn.model.factory.extraction";
 
 	private Map<Class<? extends Entity>, EntityExtractor<? extends Entity, ? extends Model>> extractorMap;
-
 	private EntityExtractor<?, ?> defaultExtractor = new EntityExtractor<Entity, Model>() {};
 
 	@Autowired
@@ -51,10 +50,10 @@ public class DelegateEntityExtractorProvider implements EntityExtractorProvider 
 			try {
 				Class<? extends EntityExtractor> clazz = (Class<? extends EntityExtractor>) Class
 						.forName(bean.getBeanClassName());
-				Genetized anno = clazz.getDeclaredAnnotation(Genetized.class);
+				Generic anno = clazz.getDeclaredAnnotation(Generic.class);
 
 				if (anno == null) {
-					throw new Exception(Genetized.class.getName() + " is not found on " + clazz.getName());
+					throw new Exception(Generic.class.getName() + " is not found on " + clazz.getName());
 				}
 
 				Component componentAnno = clazz.getDeclaredAnnotation(Component.class);

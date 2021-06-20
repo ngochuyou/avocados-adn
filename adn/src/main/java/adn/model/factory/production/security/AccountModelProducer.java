@@ -2,14 +2,14 @@ package adn.model.factory.production.security;
 
 import org.springframework.stereotype.Component;
 
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.entities.Account;
 import adn.model.models.AccountModel;
 import adn.security.SecuredFor;
-import adn.service.services.Role;
+import adn.service.Role;
 
 @Component
-@Genetized(modelGene = AccountModel.class)
+@Generic(modelGene = AccountModel.class)
 public class AccountModelProducer<T extends Account, M extends AccountModel>
 		implements AuthenticationBasedModelProducer<T, M> {
 

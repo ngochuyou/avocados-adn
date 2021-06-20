@@ -15,7 +15,7 @@ import javax.persistence.InheritanceType;
 import javax.persistence.Table;
 
 import adn.helpers.Gender;
-import adn.service.services.Role;
+import adn.service.Role;
 
 /**
  * @author Ngoc Huy

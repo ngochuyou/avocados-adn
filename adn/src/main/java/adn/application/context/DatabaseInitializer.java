@@ -14,12 +14,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import adn.application.Constants;
 import adn.helpers.Gender;
 import adn.model.entities.Admin;
 import adn.model.entities.Customer;
 import adn.model.entities.Personnel;
-import adn.service.services.Role;
+import adn.service.Role;
+import adn.service.services.AccountService;
 
 /**
  * @author Ngoc Huy
@@ -62,7 +62,7 @@ public class DatabaseInitializer implements ContextBuilder {
 		admin.setGender(Gender.MALE);
 		admin.setLastName("Vu Ngoc Huy");
 		admin.setPhone("0974032706");
-		admin.setPhoto(Constants.DEFAULT_USER_PHOTO_NAME);
+		admin.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
 		admin.setRole(Role.ADMIN);
 
 		return admin;
@@ -94,7 +94,7 @@ public class DatabaseInitializer implements ContextBuilder {
 			customer.setGender(Gender.FEMALE);
 			customer.setLastName("Vu Ngoc Huy");
 			customer.setPhone("0974032706");
-			customer.setPhoto(Constants.DEFAULT_USER_PHOTO_NAME);
+			customer.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
 			customer.setRole(Role.CUSTOMER);
 
 			session.save(customer);
@@ -117,7 +117,7 @@ public class DatabaseInitializer implements ContextBuilder {
 			manager.setGender(Gender.UNKNOWN);
 			manager.setLastName("Vu Ngoc Huy");
 			manager.setPhone("0974032706");
-			manager.setPhoto(Constants.DEFAULT_USER_PHOTO_NAME);
+			manager.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
 			manager.setRole(Role.PERSONNEL);
 
 			session.save(manager);
@@ -140,7 +140,7 @@ public class DatabaseInitializer implements ContextBuilder {
 			manager.setGender(Gender.UNKNOWN);
 			manager.setLastName("Vu Ngoc Huy");
 			manager.setPhone("0974032706");
-			manager.setPhoto(Constants.DEFAULT_USER_PHOTO_NAME);
+			manager.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
 			manager.setRole(Role.PERSONNEL);
 
 			session.save(manager);

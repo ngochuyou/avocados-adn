@@ -17,7 +17,7 @@ import adn.model.models.Model;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.METHOD })
-public @interface Genetized {
+public @interface Generic {
 
 	public Class<? extends Entity> entityGene() default Entity.class;
 

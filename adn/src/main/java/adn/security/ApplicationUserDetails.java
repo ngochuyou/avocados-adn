@@ -5,7 +5,7 @@ import java.util.Collection;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 
-import adn.service.services.Role;
+import adn.service.Role;
 
 public class ApplicationUserDetails extends User {
 

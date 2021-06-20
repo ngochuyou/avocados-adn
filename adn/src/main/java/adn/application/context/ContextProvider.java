@@ -17,7 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import adn.security.ApplicationUserDetails;
-import adn.service.services.Role;
+import adn.service.Role;
 
 /**
  * @author Ngoc Huy

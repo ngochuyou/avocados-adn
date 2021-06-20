@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import adn.model.DatabaseInteractionResult;
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.entities.Account;
 import adn.model.entities.Personnel;
 import adn.model.specification.TransactionalSpecification;
@@ -23,7 +23,7 @@ import adn.model.specification.TransactionalSpecification;
  *
  */
 @Component
-@Genetized(entityGene = Personnel.class)
+@Generic(entityGene = Personnel.class)
 public class PersonnelSpecification extends AccountSpecification<Personnel>
 		implements TransactionalSpecification<Personnel> {
 

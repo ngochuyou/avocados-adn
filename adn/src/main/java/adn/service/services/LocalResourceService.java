@@ -48,6 +48,10 @@ public class LocalResourceService implements ResourceService {
 	public ServiceResult<String> updateContent(MultipartFile file, String filename) {
 		ImageByBytes image = session.get(ImageByBytes.class, filename);
 
+		if (image == null) {
+			return ServiceResult.bad().body(String.format("Unable to find file [%s] for content-update", filename));
+		}
+
 		try {
 			image.setContent(file.getBytes());
 

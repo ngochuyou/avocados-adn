@@ -134,7 +134,7 @@ public class ModelsDescriptor implements ContextBuilder {
 		HashSet<Class<? extends Model>> models = new HashSet<>();
 		// @formatter:off
 		scanner.addIncludeFilter(new AssignableTypeFilter(Model.class));
-		scanner.addIncludeFilter(new AnnotationTypeFilter(Genetized.class));
+		scanner.addIncludeFilter(new AnnotationTypeFilter(Generic.class));
 		scanner.findCandidateComponents(Constants.MODEL_PACKAGE).stream().map(bean -> {
 			try {
 				Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(bean.getBeanClassName());
@@ -182,7 +182,7 @@ public class ModelsDescriptor implements ContextBuilder {
 			}
 		});
 		models.forEach(clazz -> {
-			Genetized annotaion = clazz.getDeclaredAnnotation(Genetized.class);
+			Generic annotaion = clazz.getDeclaredAnnotation(Generic.class);
 			Class<? extends adn.model.entities.Entity> relatedClass = annotaion.entityGene();
 
 			if (this.relationMap.get(relatedClass) == null) {
@@ -217,7 +217,7 @@ public class ModelsDescriptor implements ContextBuilder {
 						return;
 					}
 	
-					this.defaultModelMap.put(clazz.getDeclaredAnnotation(Genetized.class).entityGene(), clazz);
+					this.defaultModelMap.put(clazz.getDeclaredAnnotation(Generic.class).entityGene(), clazz);
 				} catch (Exception e) {
 					e.printStackTrace();
 					SpringApplication.exit(ContextProvider.getApplicationContext());

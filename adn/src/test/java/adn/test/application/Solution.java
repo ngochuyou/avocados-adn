@@ -36,7 +36,7 @@ public class Solution {
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
 			IllegalArgumentException, IllegalAccessException, SQLException {
-
+		System.out.println("    asdasdasd   ".trim() + "lkjlkjlk");
 	}
 
 }

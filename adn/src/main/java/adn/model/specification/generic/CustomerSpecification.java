@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import adn.model.DatabaseInteractionResult;
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.entities.Customer;
 
 /**
@@ -15,7 +15,7 @@ import adn.model.entities.Customer;
  *
  */
 @Component
-@Genetized(entityGene = Customer.class)
+@Generic(entityGene = Customer.class)
 public class CustomerSpecification extends AccountSpecification<Customer> {
 
 	@Override

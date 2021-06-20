@@ -2,12 +2,12 @@ package adn.model.factory.extraction;
 
 import org.springframework.stereotype.Component;
 
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.entities.Admin;
 import adn.model.models.AdminModel;
 
 @Component("adminExtractor")
-@Genetized(entityGene = Admin.class)
+@Generic(entityGene = Admin.class)
 public class AdminExtractor extends AccountExtractor<Admin, AdminModel> {
 
 	@Override
@@ -19,13 +19,13 @@ public class AdminExtractor extends AccountExtractor<Admin, AdminModel> {
 		return account;
 	}
 
-	@Override
-	public <E extends Admin> E merge(Admin model, E target) {
-		// TODO Auto-generated method stub
-		target = super.merge(model, target);
-		target.setContractDate(model.getContractDate());
-
-		return target;
-	}
+//	@Override
+//	public <E extends Admin> E merge(Admin model, E target) {
+//		// TODO Auto-generated method stub
+//		target = super.merge(model, target);
+//		target.setContractDate(model.getContractDate());
+//
+//		return target;
+//	}
 
 }

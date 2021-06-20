@@ -6,7 +6,7 @@ package adn.model.models;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.entities.Customer;
 
 /**
@@ -14,7 +14,7 @@ import adn.model.entities.Customer;
  *
  */
 @Order(Ordered.HIGHEST_PRECEDENCE)
-@Genetized(entityGene = Customer.class)
+@Generic(entityGene = Customer.class)
 public class CustomerModel extends AccountModel {
 
 	protected String address;

@@ -68,7 +68,11 @@ public class DatabaseInteractionResult<T extends AbstractModel> {
 		return new DatabaseInteractionResult<T>((short) HttpStatus.OK.value(), instance, new HashMap<>());
 	}
 
-	public static <T extends AbstractModel> DatabaseInteractionResult<T> error(short status, T instance,
+	public static <T extends AbstractModel> DatabaseInteractionResult<T> failed(Map<String, String> messageSet) {
+		return new DatabaseInteractionResult<T>(HttpStatus.INTERNAL_SERVER_ERROR.value(), null, messageSet);
+	}
+
+	public static <T extends AbstractModel> DatabaseInteractionResult<T> error(int status, T instance,
 			Map<String, String> messageSet) {
 		return new DatabaseInteractionResult<T>(status, instance, messageSet);
 	}

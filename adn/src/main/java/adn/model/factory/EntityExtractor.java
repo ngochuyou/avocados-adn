@@ -20,8 +20,8 @@ public interface EntityExtractor<T extends Entity, M extends Model> {
 		return entity;
 	};
 
-	default <E extends T> E merge(T model, E target) throws NullPointerException {
-		return target;
-	};
+//	default <E extends T> E merge(T model, E target) throws NullPointerException {
+//		return target;
+//	};
 
 }

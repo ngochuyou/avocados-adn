@@ -4,14 +4,14 @@
 package adn.model.models;
 
 import adn.model.AbstractModel;
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.entities.Entity;
 
 /**
  * @author Ngoc Huy
  *
  */
-@Genetized(entityGene = Entity.class, modelGene = Model.class)
+@Generic(entityGene = Entity.class, modelGene = Model.class)
 public abstract class Model extends AbstractModel {
 
 	protected String id;

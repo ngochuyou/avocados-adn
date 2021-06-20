@@ -44,28 +44,28 @@ public class FunctionHelper {
 	}
 
 	@FunctionalInterface
-	public static interface HandledFunction<T, R, E extends RuntimeException> {
+	public static interface HandledFunction<T, R, E extends Exception> {
 
 		R apply(T one) throws E;
 
 	}
 
 	@FunctionalInterface
-	public static interface HandledBiFunction<F, S, R, E extends RuntimeException> {
+	public static interface HandledBiFunction<F, S, R, E extends Exception> {
 
 		R apply(F one, S two) throws E;
 
 	}
 
 	@FunctionalInterface
-	public static interface HandledConsumer<T, E extends RuntimeException> {
+	public static interface HandledConsumer<T, E extends Exception> {
 
 		void accept(T one) throws E;
 
 	}
 
 	@FunctionalInterface
-	public static interface HandledSupplier<R, E extends RuntimeException> {
+	public static interface HandledSupplier<R, E extends Exception> {
 
 		R get() throws E;
 

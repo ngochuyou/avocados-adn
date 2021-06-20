@@ -3,6 +3,7 @@
  */
 package adn.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,7 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
 import adn.model.entities.Account;
-import adn.service.services.Role;
+import adn.model.factory.extraction.AccountRoleExtractor;
+import adn.service.Role;
+import adn.service.resource.ResourceManager;
+import adn.service.services.AccountService;
+import adn.service.services.ResourceService;
 
 /**
  * @author Ngoc Huy
@@ -23,6 +28,17 @@ import adn.service.services.Role;
 @RestController
 @RequestMapping("/rest/account")
 public class RestAccountController extends AccountController {
+
+	// @formatter:off
+	@Autowired
+	public RestAccountController(
+			AccountService accountService,
+			AccountRoleExtractor roleExtractor,
+			ResourceService resourceService,
+			ResourceManager resourceManager) {
+		super(accountService, roleExtractor, resourceService, resourceManager);
+	}
+	// @formatter:on
 
 	@GetMapping
 	@Transactional(readOnly = true)
@@ -38,7 +54,7 @@ public class RestAccountController extends AccountController {
 			account = dao.findById(principalName, clazz);
 
 			if (!account.isActive()) {
-				return ResponseEntity.status(HttpStatus.LOCKED).body(locked);
+				return ResponseEntity.status(HttpStatus.LOCKED).body(LOCKED);
 			}
 
 			return ResponseEntity.ok(produce(account, modelsDescriptor.getModelClass(clazz)));
@@ -47,15 +63,15 @@ public class RestAccountController extends AccountController {
 		account = dao.findById(username, Account.class);
 
 		if (account == null) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(notFound);
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(NOT_FOUND);
 		}
 
 		if (account.isActive()) {
-			return ResponseEntity.ok(
-					produce(account, modelsDescriptor.getModelClass(accountService.getClassFromRole(account.getRole()))));
+			return ResponseEntity.ok(produce(account,
+					modelsDescriptor.getModelClass(accountService.getClassFromRole(account.getRole()))));
 		}
 
-		return ResponseEntity.status(HttpStatus.LOCKED).body(locked);
+		return ResponseEntity.status(HttpStatus.LOCKED).body(LOCKED);
 	}
 
 }

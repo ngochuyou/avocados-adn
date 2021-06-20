@@ -2,13 +2,13 @@ package adn.model.factory.extraction;
 
 import org.springframework.stereotype.Component;
 
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractor;
 import adn.model.models.Model;
 
 @Component("modelEntityExtractor")
-@Genetized(entityGene = Entity.class)
+@Generic(entityGene = Entity.class)
 public class ModelEntityExtractor<T extends Entity, M extends Model> implements EntityExtractor<T, M> {
 
 	@Override
@@ -21,14 +21,14 @@ public class ModelEntityExtractor<T extends Entity, M extends Model> implements 
 		return entity;
 	}
 
-	@Override
-	public <E extends T> E merge(T model, E target) throws NullPointerException {
-		target.setActive(model.isActive());
-		target.setCreatedDate(model.getCreatedDate());
-		target.setUpdatedDate(model.getUpdatedDate());
-		target.setDeactivatedDate(model.getDeactivatedDate());
-
-		return target;
-	}
+//	@Override
+//	public <E extends T> E merge(T model, E target) throws NullPointerException {
+//		target.setActive(model.isActive());
+//		target.setCreatedDate(model.getCreatedDate());
+//		target.setUpdatedDate(model.getUpdatedDate());
+//		target.setDeactivatedDate(model.getDeactivatedDate());
+//
+//		return target;
+//	}
 
 }

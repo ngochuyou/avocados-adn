@@ -19,7 +19,7 @@ import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
 import adn.helpers.TypeHelper;
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.ModelsDescriptor;
 import adn.model.entities.Entity;
 
@@ -54,10 +54,10 @@ public class SpecificationFactory implements ContextBuilder {
 			.forEach(bean -> {
 				try {
 					Class<? extends Specification<?>> clazz = (Class<? extends Specification<?>>) Class.forName(bean.getBeanClassName());
-					Genetized anno = clazz.getDeclaredAnnotation(Genetized.class);
+					Generic anno = clazz.getDeclaredAnnotation(Generic.class);
 					
 					if (anno == null) {
-						throw new Exception(String.format("%s not found on [%s]", Genetized.class.getName(), bean.getBeanClassName()));
+						throw new Exception(String.format("%s not found on [%s]", Generic.class.getName(), bean.getBeanClassName()));
 					}
 
 					specificationMap.put(anno.entityGene(), (Specification<?>) ContextProvider.getApplicationContext().getBean(TypeHelper.getComponentName(clazz)));

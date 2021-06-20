@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import adn.model.DatabaseInteractionResult;
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.entities.Admin;
 
 /**
@@ -15,7 +15,7 @@ import adn.model.entities.Admin;
  *
  */
 @Component
-@Genetized(entityGene = Admin.class)
+@Generic(entityGene = Admin.class)
 public class AdminSpecification extends AccountSpecification<Admin> {
 
 	@Override

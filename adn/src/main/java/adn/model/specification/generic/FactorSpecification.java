@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import adn.model.DatabaseInteractionResult;
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.entities.Factor;
 import adn.model.specification.TransactionalSpecification;
 
@@ -22,7 +22,7 @@ import adn.model.specification.TransactionalSpecification;
  *
  */
 @Component
-@Genetized(entityGene = Factor.class)
+@Generic(entityGene = Factor.class)
 public class FactorSpecification<T extends Factor> extends EntitySpecification<T>
 		implements TransactionalSpecification<T> {
 

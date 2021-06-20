@@ -8,7 +8,7 @@ import java.util.Date;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.entities.Admin;
 
 /**
@@ -16,7 +16,7 @@ import adn.model.entities.Admin;
  *
  */
 @Order(Ordered.HIGHEST_PRECEDENCE)
-@Genetized(entityGene = Admin.class)
+@Generic(entityGene = Admin.class)
 public class AdminModel extends AccountModel {
 
 	protected Date contractDate;

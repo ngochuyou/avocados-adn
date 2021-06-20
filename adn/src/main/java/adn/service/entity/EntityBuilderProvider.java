@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.dao.generic;
+package adn.service.entity;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,9 +20,9 @@ import org.springframework.stereotype.Component;
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
-import adn.dao.GenericDAO;
+import adn.dao.EntityBuilder;
 import adn.helpers.StringHelper;
-import adn.model.Genetized;
+import adn.model.Generic;
 import adn.model.ModelsDescriptor;
 import adn.model.entities.Entity;
 
@@ -32,16 +32,16 @@ import adn.model.entities.Entity;
  */
 @Component
 @Order(3)
-public class GenericDAOProvider implements ContextBuilder {
+public class EntityBuilderProvider implements ContextBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private Map<Class<? extends Entity>, GenericDAO<? extends Entity>> genericDAOMap;
+	private Map<Class<? extends Entity>, EntityBuilder<? extends Entity>> builderMap;
 
-	private GenericDAO<?> defaultGenericDAO = new GenericDAO<Entity>() {};
+	private EntityBuilder<?> defaultBuilder = new EntityBuilder<Entity>() {};
 
 	@Autowired
-	private ModelsDescriptor modelManager;
+	private ModelsDescriptor modelDescriptor;
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -51,36 +51,36 @@ public class GenericDAOProvider implements ContextBuilder {
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
-		scanner.addIncludeFilter(new AssignableTypeFilter(GenericDAO.class));
-		genericDAOMap = new HashMap<>();
+		scanner.addIncludeFilter(new AssignableTypeFilter(EntityBuilder.class));
+		builderMap = new HashMap<>();
 
-		Set<BeanDefinition> beanDefs = scanner.findCandidateComponents(Constants.GENERIC_DAO_PACKAGE);
+		Set<BeanDefinition> beanDefs = scanner.findCandidateComponents(Constants.ENTITY_BUILDER_PACKAGE);
 
 		try {
 			for (BeanDefinition beanDef : beanDefs) {
-				Class<? extends GenericDAO<?>> clazz = (Class<? extends GenericDAO<?>>) Class
+				Class<? extends EntityBuilder<?>> clazz = (Class<? extends EntityBuilder<?>>) Class
 						.forName(beanDef.getBeanClassName());
-				Genetized anno = clazz.getDeclaredAnnotation(Genetized.class);
+				Generic anno = clazz.getDeclaredAnnotation(Generic.class);
 
 				if (anno == null)
 					continue;
 
 				Class<? extends Entity> modelClass = anno.entityGene();
 
-				genericDAOMap.put(modelClass, (GenericDAO<? extends Entity>) ContextProvider.getApplicationContext()
+				builderMap.put(modelClass, (EntityBuilder<? extends Entity>) ContextProvider.getApplicationContext()
 						.getBean(StringHelper.toCamel(clazz.getSimpleName(), null)));
 			}
 
-			modelManager.getEntityTree().forEach(node -> {
-				if (this.genericDAOMap.get(node.getNode()) == null) {
-					GenericDAO<?> parentGDAO = genericDAOMap.get(node.getParent().getNode());
-
-					genericDAOMap.put(node.getNode(), parentGDAO == null ? defaultGenericDAO : parentGDAO);
+			modelDescriptor.getEntityTree().forEach(node -> {
+				if (this.builderMap.get(node.getNode()) == null) {
+					if (!builderMap.containsKey(node.getNode())) {
+						builderMap.put(node.getNode(), defaultBuilder);
+					}
 				}
 			});
 
-			modelManager.getEntityTree().forEach(node -> {
-				logger.info(String.format("[%s] -> [%s]", genericDAOMap.get(node.getNode()).getClass(),
+			modelDescriptor.getEntityTree().forEach(node -> {
+				logger.info(String.format("[%s] -> [%s]", builderMap.get(node.getNode()).getClass(),
 						node.getNode().getName()));
 			});
 		} catch (Exception e) {
@@ -92,8 +92,8 @@ public class GenericDAOProvider implements ContextBuilder {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Entity> GenericDAO<T> getService(Class<T> clazz) {
-		return (GenericDAO<T>) this.genericDAOMap.get(clazz);
+	public <T extends Entity> EntityBuilder<T> getBuilder(Class<T> clazz) {
+		return (EntityBuilder<T>) this.builderMap.get(clazz);
 	}
 
 }

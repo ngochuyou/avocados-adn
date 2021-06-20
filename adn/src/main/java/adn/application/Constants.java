@@ -11,8 +11,6 @@ public class Constants {
 
 	private Constants() {}
 
-	public static final String DEFAULT_USER_PHOTO_NAME = "aad81c87bd8316705c4568e72577eb62476a.jpg";
-
 	public static final String ROOT_PACKAGE = "adn";
 
 	public static final String ENTITY_PACKAGE = "adn.model.entities";
@@ -25,12 +23,6 @@ public class Constants {
 
 	public static final String GENERIC_FACTORY_PACKAGE = "adn.model.factory.generic";
 
-	public static final String GENERIC_DAO_PACKAGE = "adn.dao.generic";
-
-	public static final String DEFAULT_ENTITY_EXTRACTOR_PROVIDER_NAME = "defaultEntityExtractorProvider";
-
-	public static final String DEFAULT_MODEL_PRODUCER_PROVIDER_NAME = "authenticationBasedProducerProvider";
-
-	public static final String DEFAULT_RESOURCE_MANAGER_NAME = "defaultResourceManager";
+	public static final String ENTITY_BUILDER_PACKAGE = "adn.service.entity";
 
 }
