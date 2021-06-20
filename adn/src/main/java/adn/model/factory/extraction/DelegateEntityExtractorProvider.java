@@ -16,7 +16,7 @@ import adn.application.Constants;
 import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
 import adn.model.Genetized;
-import adn.model.ModelManager;
+import adn.model.ModelsDescriptor;
 import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractor;
 import adn.model.factory.EntityExtractorProvider;
@@ -35,7 +35,7 @@ public class DelegateEntityExtractorProvider implements EntityExtractorProvider 
 	private EntityExtractor<?, ?> defaultExtractor = new EntityExtractor<Entity, Model>() {};
 
 	@Autowired
-	private ModelManager modelManager;
+	private ModelsDescriptor modelManager;
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
@@ -78,14 +78,12 @@ public class DelegateEntityExtractorProvider implements EntityExtractorProvider 
 			}
 		});
 		this.extractorMap
-				.forEach((k, v) -> logger.info("Assigning " + v.getName() + " for " + k.getName() + " extraction"));
+				.forEach((k, v) -> logger.info(String.format("[%s] -> [%s]", v.getClass().getName(), k.getName())));
 		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> EntityExtractor<T, M> getExtractor(Class<T> entityClass) {
-		logger.debug("Providing extractor for: " + entityClass);
-
 		return (EntityExtractor<T, M>) this.extractorMap.get(entityClass);
 	}
 

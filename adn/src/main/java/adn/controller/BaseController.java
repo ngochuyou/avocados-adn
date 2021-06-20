@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import adn.application.Constants;
 import adn.application.context.ContextProvider;
 import adn.dao.BaseDAO;
-import adn.model.ModelManager;
+import adn.model.ModelsDescriptor;
 import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractorProvider;
 import adn.model.factory.production.security.AuthenticationBasedProducerProvider;
@@ -29,7 +29,7 @@ import adn.model.models.Model;
 public class BaseController {
 
 	@Autowired
-	protected ModelManager modelManager;
+	protected ModelsDescriptor modelsDescriptor;
 
 	@Autowired
 	protected AuthenticationBasedProducerProvider producerProvider;
@@ -49,15 +49,12 @@ public class BaseController {
 
 	protected final String hasRoleAdmin = "hasRole('ADMIN')";
 
+	protected final String uploadFailure = "Unable to upload file";
 	protected final String notFound = "NOT FOUND";
-
 	protected final String locked = "RESOURCE WAS DEACTIVATED";
-
 	protected final String invalidModel = "INVALID MODEL";
-
 	protected final String accessDenied = "ACCESS DENIDED";
-
-	protected final String exsited = "RESOURCE IS ALREADY EXSITED";
+	protected final String existed = "RESOURCE IS ALREADY EXSITED";
 
 	protected void openSession(FlushMode mode) {
 		sessionFactory.getCurrentSession().setHibernateFlushMode(mode != null ? mode : FlushMode.MANUAL);
@@ -74,7 +71,7 @@ public class BaseController {
 	}
 
 	protected <T extends Entity, M extends Model> T extract(M model, Class<T> entityClass) {
-		return extractorProvider.getExtractor(entityClass).extract(model, modelManager.instantiate(entityClass));
+		return extractorProvider.getExtractor(entityClass).extract(model, modelsDescriptor.instantiate(entityClass));
 	}
 
 	protected <T extends Entity, M extends Model> M produce(T entity, Class<M> modelClass) {

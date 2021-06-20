@@ -237,7 +237,13 @@ public abstract class ResourceTuplizerContract implements ResourceTuplizer {
 
 			preInstantiate(values);
 
-			return parameterizedInstantiator.instantiate(values);
+			File file = parameterizedInstantiator.instantiate(values);
+
+			if (logger.isTraceEnabled()) {
+				logger.trace(String.format("Instantiated a new file [%s]", file.getPath()));
+			}
+
+			return file;
 		}
 
 		return instantiator.instantiate();

@@ -3,10 +3,10 @@ package adn.model.factory.extraction;
 import org.springframework.stereotype.Component;
 
 import adn.helpers.Gender;
-import adn.helpers.Role;
 import adn.model.Genetized;
 import adn.model.entities.Account;
 import adn.model.models.AccountModel;
+import adn.service.services.Role;
 
 @Component("accountExtractor")
 @Genetized(entityGene = Account.class)

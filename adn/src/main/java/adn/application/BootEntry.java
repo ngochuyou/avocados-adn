@@ -39,7 +39,7 @@ public class BootEntry {
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
 		scanner.addIncludeFilter(new AssignableTypeFilter(ContextBuilder.class));
-		scanner.findCandidateComponents(Constants.ROOT_PACKAGE)
+		Class<ContextBuilder>[] contextBuilderClasses = scanner.findCandidateComponents(Constants.ROOT_PACKAGE)
 			.stream()
 			.map(bean -> {
 				try {
@@ -71,25 +71,27 @@ public class BootEntry {
 					
 					return 0;
 				}
-			})
-			.forEach(clazz -> {
-				try {
-					ContextBuilder manager = context.getBean(clazz);
-					
-					manager.buildAfterStartUp();
-				} catch (BeansException be) {
-					try {	
-						clazz.getConstructor().newInstance().buildAfterStartUp();
-					} catch (Exception e) {
-						e.printStackTrace();
-						SpringApplication.exit(context);
-					}
+			}).toArray(Class[]::new);
+		
+		for (Class<ContextBuilder> contextBuilderClass: contextBuilderClasses) {
+			try {
+				ContextBuilder manager = context.getBean(contextBuilderClass);
+				
+				manager.buildAfterStartUp();
+			} catch (BeansException be) {
+				try {	
+					contextBuilderClass.getConstructor().newInstance().buildAfterStartUp();
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 					SpringApplication.exit(context);
+					return;
 				}
-			});
+			} catch (Exception e) {
+				e.printStackTrace();
+				SpringApplication.exit(context);
+				return;
+			}
+		}
 		// @formatter:on
 	}
 

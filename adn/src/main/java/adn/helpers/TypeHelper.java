@@ -4,6 +4,7 @@
 package adn.helpers;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.sql.Date;
@@ -141,21 +142,10 @@ public class TypeHelper {
 		return ((ParameterizedType) clazz.getGenericSuperclass()).getActualTypeArguments()[0];
 	}
 
-	@SuppressWarnings("unchecked")
-	public static <M extends Model> M newModelOrAbstract(Class<M> clazz) {
-		try {
-			return clazz.getConstructor().newInstance();
-		} catch (Exception e) {
-			e.printStackTrace();
-			return (M) new Model() {
-
-				@Override
-				public String getId() {
-					// TODO Auto-generated method stub
-					return null;
-				}
-			};
-		}
+	public static <M extends Model> M newModelOrAbstract(Class<M> clazz)
+			throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException,
+			NoSuchMethodException, SecurityException {
+		return clazz.getConstructor().newInstance();
 	}
 
 	public static void consumeFields(Object o, BiConsumer<Field, Object> consumer, boolean isSuperClassIncluded) {
@@ -176,8 +166,7 @@ public class TypeHelper {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T, M extends T> M cast(T target) {
-
+	public static <T, M extends T> M unwrap(T target) {
 		return (M) target;
 	}
 

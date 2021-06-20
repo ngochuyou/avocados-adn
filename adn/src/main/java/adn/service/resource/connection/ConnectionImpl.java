@@ -86,7 +86,9 @@ public class ConnectionImpl implements LocalStorageConnection {
 	}
 
 	@Override
-	public void commit() throws SQLException {}
+	public void commit() throws SQLException {
+		
+	}
 
 	@Override
 	public void rollback() throws SQLException {}

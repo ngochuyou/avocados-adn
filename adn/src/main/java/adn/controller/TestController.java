@@ -18,6 +18,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.hibernate.FlushMode;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +28,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,6 +37,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
+import adn.helpers.StringHelper;
+import adn.model.entities.Customer;
 import adn.security.SecurityConfiguration;
 import adn.service.resource.ResourceManager;
 import adn.service.resource.model.models.ImageByBytes;
@@ -214,12 +220,13 @@ public class TestController extends BaseController {
 //				"1623406220771_12d4fc19efc1899e0731cd4d7e67f66daec3c271105cc0eb0ed6757f94822615.jpg"));
 //
 //		Query<ImageByBytes> hql = session.createQuery(query);
-		ImageByBytes image = session.get(ImageByBytes.class,
-				"1619973416467_0c46022fcfda4d9f4bb8c09e8c42e9efc12d839d35c78c73e4dab1d24fac8a1c.png");
+		ImageByBytes image = new ImageByBytes();
 
+		image.setName("asdasd");
 		image.setExtension(".jpg");
+		image.setContent(getDummyBytes());
 
-		session.update(image);
+		session.save(image);
 		session.flush();
 
 		return image != null ? ResponseEntity.ok(image.getExtension())
@@ -229,6 +236,26 @@ public class TestController extends BaseController {
 	private byte[] getDummyBytes() throws IOException {
 		return Files.readAllBytes(
 				Paths.get("C:\\Users\\Ngoc Huy\\Pictures\\Saved Pictures\\alesia-kazantceva-XLm6-fPwK5Q-unsplash.jpg"));
+	}
+
+	@Autowired
+	private SessionFactory sessionFactory;
+
+	@GetMapping("/transaction")
+	@Transactional
+	public @ResponseBody ResponseEntity<?> testTransactional() throws IOException, InterruptedException {
+		Session ss = sessionFactory.getCurrentSession();
+
+		ss.setHibernateFlushMode(FlushMode.MANUAL);
+
+		Customer customer = ss.get(Customer.class, "adn.customer.0");
+
+		customer.setAddress(StringHelper.hash("ngochuy.ou"));
+
+		ss.update(customer);
+		ss.flush();
+
+		return ResponseEntity.ok(null);
 	}
 
 }

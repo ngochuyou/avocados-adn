@@ -44,7 +44,7 @@ import adn.model.models.Model;
  */
 @Component
 @Order(0)
-public class ModelManager implements ContextBuilder {
+public class ModelsDescriptor implements ContextBuilder {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -71,7 +71,6 @@ public class ModelManager implements ContextBuilder {
 	@SuppressWarnings("unchecked")
 	private void initializeEntityTree() {
 		this.entityTree = new ModelInheritanceTree<>(null, adn.model.entities.Entity.class, null);
-		logger.info(getLoggingPrefix(this) + "Initializing " + this.entityTree.getClass().getName());
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
@@ -93,18 +92,15 @@ public class ModelManager implements ContextBuilder {
 			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
 		this.entityTree.forEach(tree -> {
-			logger.info(tree.getNode().getName() + " added to " + this.entityTree.getClass().getName()
-					+ (tree.getParent() == null ? " as super root"
-							: " with root " + tree.getParent().getNode().getName()));
+			logger.info(String.format("[%s] added to Entity tree %s", tree.getNode().getName(), (tree.getParent() == null ? " as super root"
+							: String.format("with root [%s]", tree.getParent().getNode().getName()))));
 		});
 		// @formatter:on
-		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.entityTree.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")
 	public void initializeModelTree() {
 		this.modelTree = new ModelInheritanceTree<>(null, Model.class, null);
-		logger.info("Initializing " + this.modelTree.getClass().getName());
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
@@ -124,18 +120,15 @@ public class ModelManager implements ContextBuilder {
 			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
 		this.modelTree.forEach(tree -> {
-			logger.info(tree.getNode().getName() + " added to " + this.modelTree.getClass().getName()
-					+ (tree.getParent() == null ? " as super root"
-							: " with root " + tree.getParent().getNode().getName()));
+			logger.info(String.format("[%s] added to Model tree %s", tree.getNode().getName(), (tree.getParent() == null ? " as super root"
+							: String.format(" with root [%s]", tree.getParent().getNode().getName()))));
 		});
 		// @formatter:on
-		logger.info("Finished initializing " + this.entityTree.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")
 	private void initializeRelationMap() {
 		this.relationMap = new HashMap<>();
-		logger.info("Initializing ModelMap");
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		HashSet<Class<? extends Model>> models = new HashSet<>();
@@ -148,7 +141,7 @@ public class ModelManager implements ContextBuilder {
 
 				if (!TypeHelper.isExtendedFrom(clazz, Model.class)) {
 					throw new Exception(clazz.getName() + " is a Non-standard Model. A Model must be extended from "
-							+ Entity.class);
+							+ adn.model.entities.Entity.class);
 				}
 
 				models.add(clazz);
@@ -203,15 +196,13 @@ public class ModelManager implements ContextBuilder {
 			}
 		});
 		this.relationMap.forEach((key, val) -> val.forEach(
-				clazz -> logger.info("Putting " + key.getName() + " and " + clazz.getName() + " as a EM relation")));
+				clazz -> logger.info(String.format("[%s] related to [%s]", key.getName(), clazz.getName()))));
 		// @formatter:on
-		logger.info("Finished initializing ModelMap");
 	}
 
 	@SuppressWarnings("unchecked")
 	private void initializeDefaultModelMap() {
 		this.defaultModelMap = new HashMap<>();
-		logger.info("Initializing DefaultModelMap");
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
@@ -232,9 +223,8 @@ public class ModelManager implements ContextBuilder {
 					SpringApplication.exit(ContextProvider.getApplicationContext());
 				}
 			});
-		this.defaultModelMap.forEach((k, v) -> logger.info(v.getName() + " assigned to be default model of " + k.getName()));
+		this.defaultModelMap.forEach((k, v) -> logger.info(String.format("[%s] is default for [%s]", v.getName(), k.getName())));
 		// @formatter:on
-		logger.info("Finished initializing DefaultModelMap");
 	}
 
 	public ModelInheritanceTree<adn.model.entities.Entity> getEntityTree() {
@@ -250,29 +240,24 @@ public class ModelManager implements ContextBuilder {
 	}
 
 	public Map<Class<? extends adn.model.entities.Entity>, Set<Class<? extends Model>>> getRelationMap() {
-
 		return relationMap;
 	}
 
 	public Class<? extends Model> getModelClass(Class<? extends adn.model.entities.Entity> entityClass) {
-
 		return this.defaultModelMap.get(entityClass);
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends adn.model.entities.Entity> T instantiate(Class<T> type) {
-
 		return (T) ((AbstractEntityTuplizer) getTuplizer(type)).instantiate();
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends adn.model.entities.Entity> T instantiate(Class<T> type, Serializable id) {
-
 		return (T) ((AbstractEntityTuplizer) getTuplizer(type)).instantiate(id);
 	}
 
 	private <T extends adn.model.entities.Entity> EntityTuplizer getTuplizer(Class<T> type) {
-
 		return sessionFactory.unwrap(SessionFactoryImplementor.class).getMetamodel().locateEntityPersister(type)
 				.getEntityTuplizer();
 	}

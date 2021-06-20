@@ -32,12 +32,14 @@ public class CustomerDAO extends AccountDAO<Customer> {
 	@Override
 	public Customer updateBuild(Customer model) {
 		// TODO Auto-generated method stub
-		Customer persisted = super.updateBuild(model);
+		model = super.updateBuild(model);
+
+		Customer persisted = sessionFactory.getCurrentSession().get(Customer.class, model.getId());
 
 		persisted.setAddress(model.getAddress());
 		persisted.setPrestigePoint(model.getPrestigePoint());
 
-		return persisted;
+		return model;
 	}
 
 }

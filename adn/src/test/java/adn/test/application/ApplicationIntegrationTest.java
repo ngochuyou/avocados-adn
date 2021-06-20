@@ -43,14 +43,14 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import adn.application.Constants;
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
 import adn.application.context.DatabaseInitializer;
-import adn.model.ModelManager;
+import adn.model.ModelsDescriptor;
 import adn.model.entities.Account;
 import adn.model.entities.Admin;
 import adn.security.SecurityConfiguration;
+import adn.service.resource.model.models.ImageByBytes;
 
 /**
  * @author Ngoc Huy
@@ -86,7 +86,7 @@ public class ApplicationIntegrationTest {
 
 	@Test
 	private void testGetImageBytes() throws Exception {
-		File directory = new File(Constants.IMAGE_STORAGE_DIRECTORY);
+		File directory = new File(ImageByBytes.DIRECTORY);
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
 				.get(MULTITHREADING_ENDPOINT + "/file/public/image/bytes");
 		int amount = directory.listFiles().length;
@@ -126,7 +126,7 @@ public class ApplicationIntegrationTest {
 	}
 
 	@Autowired
-	private ModelManager modelManager;
+	private ModelsDescriptor modelManager;
 
 	@Test
 	private void testInstantiateEntity() {
@@ -217,6 +217,15 @@ public class ApplicationIntegrationTest {
 	public void sessionLoadTest() throws Exception {
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
 				.get(PREFIX + "/file/public/image/session-load");
+
+		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
+
+		assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+	}
+
+	@Test
+	private void transactionalTest() throws Exception {
+		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get(PREFIX + "/transaction");
 
 		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
 

@@ -12,7 +12,6 @@ public class CustomerExtractor extends AccountExtractor<Customer, CustomerModel>
 
 	@Override
 	public Customer extract(CustomerModel model, Customer customer) {
-		// TODO Auto-generated method stub
 		customer = super.extract(model, customer);
 		customer.setAddress(model.getAddress());
 		customer.setPrestigePoint(model.getPrestigePoint());
@@ -22,7 +21,6 @@ public class CustomerExtractor extends AccountExtractor<Customer, CustomerModel>
 
 	@Override
 	public <E extends Customer> E merge(Customer model, E target) {
-		// TODO Auto-generated method stub
 		target = super.merge(model, target);
 		target.setAddress(model.getAddress());
 		target.setPrestigePoint(model.getPrestigePoint());

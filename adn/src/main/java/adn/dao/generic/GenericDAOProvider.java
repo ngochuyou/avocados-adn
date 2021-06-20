@@ -23,7 +23,7 @@ import adn.application.context.ContextProvider;
 import adn.dao.GenericDAO;
 import adn.helpers.StringHelper;
 import adn.model.Genetized;
-import adn.model.ModelManager;
+import adn.model.ModelsDescriptor;
 import adn.model.entities.Entity;
 
 /**
@@ -41,7 +41,7 @@ public class GenericDAOProvider implements ContextBuilder {
 	private GenericDAO<?> defaultGenericDAO = new GenericDAO<Entity>() {};
 
 	@Autowired
-	private ModelManager modelManager;
+	private ModelsDescriptor modelManager;
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -80,8 +80,8 @@ public class GenericDAOProvider implements ContextBuilder {
 			});
 
 			modelManager.getEntityTree().forEach(node -> {
-				logger.info("Assigning " + genericDAOMap.get(node.getNode()).getClass().getName() + " for "
-						+ node.getNode().getName());
+				logger.info(String.format("[%s] -> [%s]", genericDAOMap.get(node.getNode()).getClass(),
+						node.getNode().getName()));
 			});
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -93,8 +93,6 @@ public class GenericDAOProvider implements ContextBuilder {
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity> GenericDAO<T> getService(Class<T> clazz) {
-		logger.debug("Providing GerericDAO for " + clazz.getName());
-
 		return (GenericDAO<T>) this.genericDAOMap.get(clazz);
 	}
 

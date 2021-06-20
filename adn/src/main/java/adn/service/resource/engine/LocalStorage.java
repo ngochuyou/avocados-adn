@@ -24,7 +24,6 @@ import adn.service.resource.engine.template.ResourceTemplate;
 import adn.service.resource.engine.template.ResourceTemplateImpl;
 import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
 import adn.service.resource.engine.tuple.ResourceTuplizer;
-import javassist.NotFoundException;
 
 /**
  * @author Ngoc Huy
@@ -57,9 +56,7 @@ public class LocalStorage implements Storage {
 	// @formatter:on
 	@Override
 	public ResultSetImplementor query(Query query) {
-		if (logger.isTraceEnabled()) {
-			logger.trace(String.format("Executing query: [%s\n] ", query.toString()));
-		}
+		logger.info(String.format("Executing query: [%s\n] ", query.toString()));
 
 		switch (query.getType()) {
 			case SAVE: {
@@ -83,16 +80,23 @@ public class LocalStorage implements Storage {
 		ResourceTemplate template = templates.get(batch.getTemplateName());
 		UpdateQuery current = batch;
 		long modCount = 0;
+		SQLException error = null;
+		boolean success = true;
 
 		while (current != null) {
-			try {
-				if (persistenceContext.update(current, template)) {
-					modCount++;
-					current = current.next();
-				}
-			} catch (NotFoundException nfe) {
-				return new ExceptionResultSet(new SQLException(nfe), batch.getStatement());
+			success = persistenceContext.update(current, template, error);
+
+			if (success) {
+				modCount++;
+				current = current.next();
+				continue;
 			}
+
+			if (error != null) {
+				error.printStackTrace();
+			}
+
+			return new ExceptionResultSet(error, current.getStatement());
 		}
 
 		return new ResourceUpdateCount(new Long[] { modCount }, template.getTemplateName(), batch.getStatement());
@@ -179,20 +183,25 @@ public class LocalStorage implements Storage {
 		SQLException error = null;
 		boolean success;
 
-		while (current != null) {
-			success = persistenceContext.save(current, getResourceTemplate(current.getTemplateName()), error);
+		try {
+			while (current != null) {
+				success = persistenceContext.save(current, getResourceTemplate(current.getTemplateName()), error);
 
-			if (success) {
-				modCount++;
-				current = current.next();
-				continue;
+				if (success) {
+					modCount++;
+					current = current.next();
+					continue;
+				}
+
+				if (error != null) {
+					error.printStackTrace();
+				}
+
+				return new ExceptionResultSet(error, batch.getStatement());
 			}
-
-			if (error != null) {
-				error.printStackTrace();
-			}
-
-			return new ExceptionResultSet(error, batch.getStatement());
+		} catch (RuntimeException rte) {
+			rte.printStackTrace();
+			return new ExceptionResultSet(rte, batch.getStatement());
 		}
 
 		return new ResourceUpdateCount(new Long[] { modCount }, batch.getTemplateName(), batch.getStatement());
@@ -231,7 +240,21 @@ public class LocalStorage implements Storage {
 
 	@Override
 	public ResultSetImplementor execute(Query query) throws RuntimeException {
-		return null;
+		logger.info(String.format("Executing query: [%s\n] ", query.toString()));
+
+		switch (query.getType()) {
+			case SAVE: {
+				return doSave(query);
+			}
+			case UPDATE: {
+				return doUpdate((UpdateQuery) query);
+			}
+			default: {
+				return new ExceptionResultSet(
+						new RuntimeException(String.format("Unknown query [%s]", query.getActualSQLString())),
+						query.getStatement());
+			}
+		}
 	}
 
 	@Override

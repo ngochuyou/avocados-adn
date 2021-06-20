@@ -2,7 +2,6 @@ package adn.service.services;
 
 import java.util.Map;
 
-import adn.helpers.Role;
 import adn.model.entities.Account;
 import adn.model.entities.Admin;
 import adn.model.entities.Customer;
@@ -12,7 +11,7 @@ import adn.service.Service;
 @org.springframework.stereotype.Service
 public class AccountService implements Service {
 
-	public static final String UNKNOWN_USER_FIRSTNAME = "ADN";
+	public static final String UNKNOWN_USER_FIRSTNAME = "ANONYMOUS";
 
 	public static final String UNKNOWN_USER_LASTNAME = "USER";
 	// @formatter:off
@@ -24,7 +23,6 @@ public class AccountService implements Service {
 	// @formatter:on
 	@SuppressWarnings("unchecked")
 	public <T extends Account> Class<T> getClassFromRole(Role role) {
-
 		return (Class<T>) this.roleClassMap.get(role);
 	}
 

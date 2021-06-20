@@ -89,7 +89,7 @@ public class FinderImpl implements Finder {
 	}
 
 	@Override
-	public File[] find(ResourceTemplate template, Object[] values, String[] propertyNames) {
+	public File[] find(ResourceTemplate template, Object[] conditions, String[] propertyNames) {
 		File directory = new File(template.getDirectory());
 		File[] allFiles = directory.listFiles();
 		ResourceTuplizer tuplizer = template.getTuplizer();
@@ -97,18 +97,22 @@ public class FinderImpl implements Finder {
 		ArrayHelper.ArrayBuilder<String> builder;
 
 		if ((builder = ArrayHelper.from(propertyNames)).contains(template.getPathColumn())) {
-			File byPath = find(template, (String) values[builder.getLastFoundIndex()]);
+			File fileByPath = find(template, (String) conditions[builder.getLastFoundIndex()]);
 
-			return byPath == null ? NO_RESULTS : new File[] { byPath };
+			return fileByPath == null ? NO_RESULTS : new File[] { fileByPath };
 		}
 
 		return Stream.of(allFiles).filter(file -> {
+			if (!file.isFile()) {
+				return false;
+			}
+
 			Object value;
 
 			for (int i = 0; i < span; i++) {
 				value = tuplizer.getPropertyValue(file, template.getColumnIndex(propertyNames[i]));
 
-				if (!isSatisfied(value, values[i])) {
+				if (!isSatisfied(value, conditions[i])) {
 					return false;
 				}
 			}
@@ -118,7 +122,7 @@ public class FinderImpl implements Finder {
 	}
 
 	private boolean isSatisfied(Object one, Object two) {
-		return false;
+		return one.equals(two);
 	}
 
 	public Storage getStorage() {

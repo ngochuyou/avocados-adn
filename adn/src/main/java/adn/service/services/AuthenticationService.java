@@ -25,7 +25,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 @org.springframework.stereotype.Service
 public class AuthenticationService implements Service {
 
-	// TODO JWT Authenticate Services below
+	// JWT Authenticate Services below
 	public static final String JWT_USERDETAILS_CLAIM_KEY = "userDetails";
 
 	public String extractUsername(String token) {

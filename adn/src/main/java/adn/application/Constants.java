@@ -11,8 +11,6 @@ public class Constants {
 
 	private Constants() {}
 
-	public static final String IMAGE_STORAGE_DIRECTORY = "images\\";
-
 	public static final String DEFAULT_USER_PHOTO_NAME = "aad81c87bd8316705c4568e72577eb62476a.jpg";
 
 	public static final String ROOT_PACKAGE = "adn";

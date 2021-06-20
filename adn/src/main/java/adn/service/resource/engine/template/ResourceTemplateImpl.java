@@ -419,7 +419,7 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 
 			matcher.matches();
 
-			return matcher.group(FILENAME_GROUPNAME);
+			return matcher.replaceAll(String.format("${%s}${%s}", FILENAME_GROUPNAME, EXTENSION_GROUPNAME));
 		}
 	};
 

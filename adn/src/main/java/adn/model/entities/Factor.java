@@ -17,7 +17,7 @@ import org.hibernate.annotations.GenericGenerator;
  *
  */
 @MappedSuperclass
-public class Factor extends Entity {
+public abstract class Factor extends Entity {
 
 	@Id
 	@GeneratedValue(generator = "uuid")
@@ -68,7 +68,6 @@ public class Factor extends Entity {
 
 	@Override
 	public void setId(Serializable id) {
-		// TODO Auto-generated method stub
 		this.id = (String) id;
 	}
 

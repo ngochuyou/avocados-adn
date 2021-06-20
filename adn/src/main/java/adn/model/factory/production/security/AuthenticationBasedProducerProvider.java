@@ -1,5 +1,6 @@
 package adn.model.factory.production.security;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -15,13 +16,13 @@ import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
 import adn.application.context.ContextProvider;
-import adn.helpers.Role;
 import adn.helpers.TypeHelper;
 import adn.model.Genetized;
-import adn.model.ModelManager;
+import adn.model.ModelsDescriptor;
 import adn.model.entities.Entity;
 import adn.model.factory.ModelProducerProvider;
 import adn.model.models.Model;
+import adn.service.services.Role;
 
 @Component(Constants.DEFAULT_MODEL_PRODUCER_PROVIDER_NAME)
 @Order(value = 5)
@@ -38,7 +39,7 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 	private Map<Role, BiFunction<Entity, Class<Model>, ? extends Model>> functionMap;
 
 	@Autowired
-	private ModelManager modelManager;
+	private ModelsDescriptor modelManager;
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -93,7 +94,7 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 			this.producerMap.put(node.getNode(), comp == null ? defaultProducer : comp);
 		});
 		this.producerMap.forEach((k, v) -> {
-			logger.info(v.getName() + " has been built for production of " + k.getName());
+			logger.info(String.format("[%s] -> [%s]", v.getClass().getName(), k.getName()));
 		});
 		this.functionMap = new HashMap<>();
 		this.functionMap.put(Role.ADMIN, this::produceForAdmin);
@@ -113,30 +114,51 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produceForAdmin(T entity, Class<M> clazz) {
-
-		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-				.produceForAdminAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
+		try {
+			return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
+					.produceForAdminAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
+		} catch (InstantiationException | IllegalAccessException | InvocationTargetException
+				| NoSuchMethodException re) {
+			re.printStackTrace();
+			return null;
+		}
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produceForCustomer(T entity, Class<M> clazz) {
 
-		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-				.produceForCustomerAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
+		try {
+			return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
+					.produceForCustomerAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
+		} catch (InstantiationException | IllegalAccessException | InvocationTargetException
+				| NoSuchMethodException re) {
+			re.printStackTrace();
+			return null;
+		}
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produceForPersonnel(T entity, Class<M> clazz) {
-
-		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-				.produceForPersonnelAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
+		try {
+			return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
+					.produceForPersonnelAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| NoSuchMethodException | SecurityException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produce(T entity, Class<M> clazz) {
-		// TODO Auto-generated method stub
-		return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz)).produce(entity,
-				TypeHelper.newModelOrAbstract(clazz));
+		try {
+			return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz)).produce(entity,
+					TypeHelper.newModelOrAbstract(clazz));
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| NoSuchMethodException | SecurityException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	@SuppressWarnings("unchecked")

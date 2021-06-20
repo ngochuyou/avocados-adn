@@ -12,7 +12,6 @@ import org.hibernate.annotations.Persister;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
-import adn.application.Constants;
 import adn.service.resource.ResourcePersisterImpl;
 import adn.service.resource.annotation.Constructor;
 import adn.service.resource.annotation.Content;
@@ -25,12 +24,14 @@ import adn.service.resource.model.type.FileContentByteArrayType;
  *
  */
 @LocalResource
-@Directory(path = Constants.IMAGE_STORAGE_DIRECTORY)
+@Directory(path = ImageByBytes.DIRECTORY)
 @Constructor(columnNames = FileResource.ID_NAME, argumentTypes = String.class)
 @Persister(impl = ResourcePersisterImpl.class)
 @Entity
 @TypeDef(name = FileContentByteArrayType.NAME, typeClass = FileContentByteArrayType.class)
 public class ImageByBytes extends FileResource {
+
+	public static final String DIRECTORY = "images\\";
 
 	@Column(nullable = false)
 	@Type(type = FileContentByteArrayType.NAME)

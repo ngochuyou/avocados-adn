@@ -12,8 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import adn.helpers.StringHelper;
+import adn.model.DatabaseInteractionResult;
 import adn.model.Genetized;
-import adn.model.Result;
 import adn.model.entities.Account;
 import adn.model.specification.TransactionalSpecification;
 
@@ -27,17 +27,17 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 		implements TransactionalSpecification<T> {
 
 	@Override
-	public Result<T> isSatisfiedBy(T instance) {
+	public DatabaseInteractionResult<T> isSatisfiedBy(T instance) {
 		// TODO Auto-generated method stub
-		Result<T> result = super.isSatisfiedBy(instance);
+		DatabaseInteractionResult<T> result = super.isSatisfiedBy(instance);
 
 		if (instance.getId() == null || instance.getId().length() < 8 || instance.getId().length() > 255) {
-			result.getMessageSet().put("id", "Id length must be between 8 and 31");
+			result.getMessages().put("id", "Id length must be between 8 and 31");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
 		if (!StringHelper.isEmail(instance.getEmail())) {
-			result.getMessageSet().put("email", "Invalid email");
+			result.getMessages().put("email", "Invalid email");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		} else {
 			Session session = sessionFactory.getCurrentSession();
@@ -49,28 +49,28 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 					builder.notEqual(root.get("id"), instance.getId())));
 
 			if (session.createQuery(query).getResultStream().findFirst().orElse(0L) != 0) {
-				result.getMessageSet().put("email", "Email is already taken");
+				result.getMessages().put("email", "Email is already taken");
 				result.setStatus(HttpStatus.BAD_REQUEST.value());
 			}
 		}
 
 		if (StringHelper.hasLength(instance.getPhone()) && !StringHelper.isDigits(instance.getPhone())) {
-			result.getMessageSet().put("phone", "Invalid phone number");
+			result.getMessages().put("phone", "Invalid phone number");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
 		if (!StringHelper.isBCrypt(instance.getPassword())) {
-			result.getMessageSet().put("password", "Invalid password");
+			result.getMessages().put("password", "Invalid password");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
 		if (instance.getRole() == null) {
-			result.getMessageSet().put("role", "Role can not be empty");
+			result.getMessages().put("role", "Role can not be empty");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
 		if (instance.getGender() == null) {
-			result.getMessageSet().put("gender", "Gender can not be empty");
+			result.getMessages().put("gender", "Gender can not be empty");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 

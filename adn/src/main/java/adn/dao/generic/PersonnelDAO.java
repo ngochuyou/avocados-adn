@@ -3,11 +3,9 @@
  */
 package adn.dao.generic;
 
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Repository;
 
+import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
 import adn.model.Genetized;
 import adn.model.entities.Personnel;
@@ -21,16 +19,11 @@ import adn.model.entities.Personnel;
 public class PersonnelDAO extends AccountDAO<Personnel> {
 
 	@Override
-	public Personnel defaultBuild(Personnel model) {
+	public Personnel insertionBuild(Personnel model) {
 		// TODO Auto-generated method stub
-		model = super.defaultBuild(model);
+		model = super.insertionBuild(model);
 
-		if (StringHelper.hasLength(model.getCreatedBy())) {
-			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-			model.setCreatedBy(
-					authentication instanceof AnonymousAuthenticationToken ? null : authentication.getName());
-		}
+		model.setCreatedBy(ContextProvider.getPrincipalName());
 
 		return model;
 	}
@@ -40,13 +33,10 @@ public class PersonnelDAO extends AccountDAO<Personnel> {
 		// TODO Auto-generated method stub
 		model = super.updateBuild(model);
 
-		Personnel persistence = sessionFactory.getCurrentSession().load(Personnel.class, model.getId());
+		Personnel persistence = sessionFactory.getCurrentSession().get(Personnel.class, model.getId());
 
 		if (!StringHelper.hasLength(persistence.getCreatedBy())) {
-			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-			persistence.setCreatedBy(
-					authentication instanceof AnonymousAuthenticationToken ? null : authentication.getName());
+			persistence.setCreatedBy(ContextProvider.getPrincipalName());
 		}
 
 		return model;

@@ -3,12 +3,12 @@
  */
 package adn.model.factory.extraction;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import adn.application.context.ContextProvider;
-import adn.helpers.Role;
+import adn.service.services.Role;
 
 /**
  * @author Ngoc Huy
@@ -19,23 +19,18 @@ public interface AccountRoleExtractor {
 	Role extractRole(String jsonString);
 
 	@Component
-	class DefaultAccountRoleExtractor implements AccountRoleExtractor {
+	public class DefaultAccountRoleExtractor implements AccountRoleExtractor {
 
 		private final ObjectMapper objectMapper;
 
 		private final String roleFieldname = "role";
 
-		/**
-		 * 
-		 */
-		private DefaultAccountRoleExtractor() {
-			// TODO Auto-generated constructor stub
-			objectMapper = ContextProvider.getApplicationContext().getBean(ObjectMapper.class);
+		private DefaultAccountRoleExtractor(@Autowired ObjectMapper objectMapper) {
+			this.objectMapper = objectMapper;
 		}
 
 		@Override
 		public Role extractRole(String jsonString) {
-			// TODO Auto-generated method stub
 			try {
 				return Role.valueOf(objectMapper.readTree(jsonString).get(roleFieldname).asText());
 			} catch (Exception e) {

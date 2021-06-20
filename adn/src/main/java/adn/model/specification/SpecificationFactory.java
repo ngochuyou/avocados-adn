@@ -20,7 +20,7 @@ import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
 import adn.helpers.TypeHelper;
 import adn.model.Genetized;
-import adn.model.ModelManager;
+import adn.model.ModelsDescriptor;
 import adn.model.entities.Entity;
 
 /**
@@ -38,7 +38,7 @@ public class SpecificationFactory implements ContextBuilder {
 	private Specification<?> defaultSpecification = new Specification<Entity>() {};
 
 	@Autowired
-	private ModelManager modelManager;
+	private ModelsDescriptor modelManager;
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -57,7 +57,7 @@ public class SpecificationFactory implements ContextBuilder {
 					Genetized anno = clazz.getDeclaredAnnotation(Genetized.class);
 					
 					if (anno == null) {
-						throw new Exception(Genetized.class.getName() + " not found on" + bean.getBeanClassName());
+						throw new Exception(String.format("%s not found on [%s]", Genetized.class.getName(), bean.getBeanClassName()));
 					}
 
 					specificationMap.put(anno.entityGene(), (Specification<?>) ContextProvider.getApplicationContext().getBean(TypeHelper.getComponentName(clazz)));
@@ -74,7 +74,7 @@ public class SpecificationFactory implements ContextBuilder {
 					this.specificationMap.put(node.getNode(), parentSpec != null ? parentSpec : defaultSpecification);
 				}
 			});
-		this.specificationMap.forEach((k, v) -> logger.info(v.getName() + " is applied on " + k.getName()));
+		this.specificationMap.forEach((k, v) -> logger.info(String.format("[%s] -> [%s]", v.toString(), k.getName())));
 		// @formatter:on
 		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}

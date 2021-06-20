@@ -8,6 +8,11 @@ public class ServiceResult<T> {
 
 	protected T body;
 	
+	public ServiceResult(Status status) {
+		super();
+		this.status = status;
+	}
+	
 	public ServiceResult(Status status, T body) {
 		super();
 		this.status = status;
@@ -36,12 +41,12 @@ public class ServiceResult<T> {
 		return this.status.equals(Status.OK);
 	}
 	
-	public static <T> ServiceResult<T> status(Status status, Class<T> clazz) {
-		return new ServiceResult<>(status, null);
+	public static <T> ServiceResult<T> status(Status status) {
+		return new ServiceResult<>(status);
 	}
 	
 	public static ServiceResult<String> bad() {
-		return new ServiceResult<>(Status.BAD, "BAD INVOKE");
+		return new ServiceResult<>(Status.BAD);
 	}
 	
 	public static <T> ServiceResult<T> ok(T body) {

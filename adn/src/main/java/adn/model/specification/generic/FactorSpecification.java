@@ -12,8 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import adn.model.DatabaseInteractionResult;
 import adn.model.Genetized;
-import adn.model.Result;
 import adn.model.entities.Factor;
 import adn.model.specification.TransactionalSpecification;
 
@@ -28,12 +28,12 @@ public class FactorSpecification<T extends Factor> extends EntitySpecification<T
 
 	@Transactional
 	@Override
-	public Result<T> isSatisfiedBy(T instance) {
+	public DatabaseInteractionResult<T> isSatisfiedBy(T instance) {
 		// TODO Auto-generated method stub
-		Result<T> result = super.isSatisfiedBy(instance);
+		DatabaseInteractionResult<T> result = super.isSatisfiedBy(instance);
 
 		if (instance.getName() == null || instance.getName().length() == 0) {
-			result.getMessageSet().put("name", "Name mustn't be empty");
+			result.getMessages().put("name", "Name mustn't be empty");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
@@ -46,7 +46,7 @@ public class FactorSpecification<T extends Factor> extends EntitySpecification<T
 				builder.notEqual(root.get("id"), instance.getId())));
 
 		if (session.createQuery(query).getResultStream().findFirst().orElse(0L) != 0) {
-			result.getMessageSet().put("name", "Name must be unique");
+			result.getMessages().put("name", "Name must be unique");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 

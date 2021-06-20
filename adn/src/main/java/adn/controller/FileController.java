@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import adn.service.resource.model.models.ImageByBytes;
-import adn.service.services.FileService;
+import adn.service.services.LocalResourceService;
 
 /**
  * @author Ngoc Huy
@@ -27,7 +27,7 @@ import adn.service.services.FileService;
 public class FileController extends BaseController {
 
 	@Autowired
-	private FileService fileService;
+	private LocalResourceService fileService;
 
 	protected ImageByBytes toFileResource(String filename, Date timestamp) {
 		String ext = FilenameUtils.getExtension(filename);

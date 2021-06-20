@@ -16,10 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import adn.application.Constants;
 import adn.helpers.Gender;
-import adn.helpers.Role;
 import adn.model.entities.Admin;
 import adn.model.entities.Customer;
 import adn.model.entities.Personnel;
+import adn.service.services.Role;
 
 /**
  * @author Ngoc Huy

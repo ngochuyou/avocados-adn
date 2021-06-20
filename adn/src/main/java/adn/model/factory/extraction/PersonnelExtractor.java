@@ -12,7 +12,6 @@ public class PersonnelExtractor extends AccountExtractor<Personnel, PersonnelMod
 
 	@Override
 	public Personnel extract(PersonnelModel model, Personnel personnel) {
-		// TODO Auto-generated method stub
 		personnel = super.extract(model, personnel);
 		personnel.setCreatedBy(model.getCreatedBy());
 
@@ -21,7 +20,6 @@ public class PersonnelExtractor extends AccountExtractor<Personnel, PersonnelMod
 
 	@Override
 	public <E extends Personnel> E merge(Personnel model, E target) {
-		// TODO Auto-generated method stub
 		target = super.merge(model, target);
 		target.setCreatedBy(model.getCreatedBy());
 

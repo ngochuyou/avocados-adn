@@ -3,7 +3,6 @@ package adn.dao.generic;
 import java.util.function.Function;
 
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.Assert;
 
 import adn.application.context.ContextProvider;
 import adn.dao.GenericDAO;
@@ -16,10 +15,8 @@ public class EntityGeneBuilder<T extends Entity> implements GeneBuilder<T> {
 	private Strategy<T> procedure;
 
 	public EntityGeneBuilder(Class<T> clazz) {
-		// TODO Auto-generated constructor stub
 		super();
 		this.dao = ContextProvider.getApplicationContext().getBean(GenericDAOProvider.class).getService(clazz);
-		Assert.notNull(dao, "Cannot get GenericDAO for: " + clazz);
 		this.procedure = new Strategy<T>(dao::defaultBuild);
 	}
 

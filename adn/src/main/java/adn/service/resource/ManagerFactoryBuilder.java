@@ -303,7 +303,11 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 				AvailableSettings.USE_SECOND_LEVEL_CACHE, (settingMap) -> {
 					traceSetting(AvailableSettings.USE_SECOND_LEVEL_CACHE, true);
 					settingMap.put(AvailableSettings.USE_SECOND_LEVEL_CACHE, Boolean.TRUE);
-				}
+				},
+				AvailableSettings.STATEMENT_BATCH_SIZE, (settingMap) -> {
+					traceSetting(AvailableSettings.STATEMENT_BATCH_SIZE, 0);
+					settingMap.put(AvailableSettings.STATEMENT_BATCH_SIZE, 0);
+				}				
 		);
 		// @formatter:on
 		cfgService.getSettings().entrySet().stream().forEach(e -> {

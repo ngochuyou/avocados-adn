@@ -29,7 +29,7 @@ public class AdminDAO extends AccountDAO<Admin> {
 		// TODO Auto-generated method stub
 		model = super.updateBuild(model);
 
-		Admin persistence = sessionFactory.getCurrentSession().load(Admin.class, model.getId());
+		Admin persistence = sessionFactory.getCurrentSession().get(Admin.class, model.getId());
 
 		if (persistence.getContractDate() == null) {
 			persistence.setContractDate(model.getContractDate() != null ? model.getContractDate() : new Date());
