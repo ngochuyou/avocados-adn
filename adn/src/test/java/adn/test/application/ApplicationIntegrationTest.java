@@ -214,7 +214,7 @@ public class ApplicationIntegrationTest {
 	}
 
 	@Test
-	public void sessionLoadTest() throws Exception {
+	private void sessionLoadTest() throws Exception {
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
 				.get(PREFIX + "/file/public/image/session-load");
 

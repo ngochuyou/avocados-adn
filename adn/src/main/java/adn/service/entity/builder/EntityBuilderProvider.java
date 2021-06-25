@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.entity;
+package adn.service.entity.builder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component;
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
-import adn.dao.EntityBuilder;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.ModelsDescriptor;
@@ -73,9 +72,12 @@ public class EntityBuilderProvider implements ContextBuilder {
 
 			modelDescriptor.getEntityTree().forEach(node -> {
 				if (this.builderMap.get(node.getNode()) == null) {
-					if (!builderMap.containsKey(node.getNode())) {
+					if (!builderMap.containsKey(node.getParent().getNode())) {
 						builderMap.put(node.getNode(), defaultBuilder);
+						return;
 					}
+
+					builderMap.put(node.getNode(), builderMap.get(node.getParent().getNode()));
 				}
 			});
 

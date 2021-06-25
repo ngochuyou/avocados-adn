@@ -1,14 +1,12 @@
 /**
  * 
  */
-package adn.service.services;
+package adn.service.internal;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.springframework.web.multipart.MultipartFile;
-
-import adn.service.Service;
-import adn.service.ServiceResult;
 
 /**
  * @author Ngoc Huy
@@ -30,7 +28,7 @@ public interface ResourceService extends Service {
 	 * Update the content of an image located by the current filename, using the
 	 * provided {@link MultipartFile} for new content
 	 * 
-	 * @param file the multipart-file
+	 * @param file     the multipart-file
 	 * @param filename filename of the updated image
 	 * @return a {@link ServiceResult} contains a filename if success, null
 	 *         otherwise
@@ -44,5 +42,9 @@ public interface ResourceService extends Service {
 	 * @return
 	 */
 	byte[] getImageBytes(String filename);
+
+	byte[] directlyGetImageBytes(String filename) throws IOException;
+
+	void closeSession(boolean doFlush);
 
 }

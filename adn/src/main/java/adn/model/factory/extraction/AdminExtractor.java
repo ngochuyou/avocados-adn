@@ -2,6 +2,7 @@ package adn.model.factory.extraction;
 
 import org.springframework.stereotype.Component;
 
+import adn.helpers.Utils;
 import adn.model.Generic;
 import adn.model.entities.Admin;
 import adn.model.models.AdminModel;
@@ -12,9 +13,8 @@ public class AdminExtractor extends AccountExtractor<Admin, AdminModel> {
 
 	@Override
 	public Admin extract(AdminModel model, Admin account) {
-		// TODO Auto-generated method stub
 		account = super.extract(model, account);
-		account.setContractDate(model.getContractDate());
+		account.setContractDate(Utils.dateToLocalDateTime(model.getContractDate()));
 
 		return account;
 	}

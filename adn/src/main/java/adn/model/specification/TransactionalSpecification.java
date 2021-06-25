@@ -3,6 +3,7 @@
  */
 package adn.model.specification;
 
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
 import adn.application.context.ContextProvider;
@@ -12,9 +13,10 @@ import adn.model.entities.Entity;
  * @author Ngoc Huy
  *
  */
-public interface TransactionalSpecification<T extends Entity> extends Specification<T> {
+public abstract class TransactionalSpecification<T extends Entity> implements Specification<T> {
 
-	final SessionFactory sessionFactory = ContextProvider.getApplicationContext()
-			.getBean(SessionFactory.class);
+	protected Session getCurrentSession() {
+		return ContextProvider.getApplicationContext().getBean(SessionFactory.class).getCurrentSession();
+	}
 
 }

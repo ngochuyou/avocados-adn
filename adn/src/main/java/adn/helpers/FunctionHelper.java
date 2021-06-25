@@ -3,6 +3,8 @@
  */
 package adn.helpers;
 
+import java.util.function.Supplier;
+
 /**
  * @author Ngoc Huy
  *
@@ -21,6 +23,10 @@ public class FunctionHelper {
 
 	public static <T, E extends Throwable> T doThrow(E ex, Class<E> type) throws E {
 		throw ex;
+	}
+	
+	public static <T> T supply(Supplier<T> supplier) {
+		return supplier.get();
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

@@ -3,14 +3,10 @@
  */
 package adn.model;
 
-import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.MappedSuperclass;
-
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -23,39 +19,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class AbstractModel {
 
-	@CreationTimestamp
-	@Column(name = "created_date", nullable = false)
-	protected Date createdDate;
-
-	@UpdateTimestamp
-	@Column(name = "updated_date", nullable = false)
-	protected Date updatedDate;
-
 	@JsonProperty
 	@Column(name = "is_active", nullable = false)
 	protected boolean isActive;
 
 	@Column(name = "deactivated_date")
-	protected Date deactivatedDate;
+	protected LocalDateTime deactivatedDate;
 
-	public abstract Serializable getId();
-
-	public Date getCreatedDate() {
-		return createdDate;
-	}
-
-	public void setCreatedDate(Date createdDate) {
-		this.createdDate = createdDate;
-	}
-
-	public Date getUpdatedDate() {
-		return updatedDate;
-	}
-
-	public void setUpdatedDate(Date updatedDate) {
-		this.updatedDate = updatedDate;
-	}
-
+	@JsonProperty(value = "isActive")
 	public boolean isActive() {
 		return isActive;
 	}
@@ -64,11 +35,11 @@ public abstract class AbstractModel {
 		this.isActive = isActive;
 	}
 
-	public Date getDeactivatedDate() {
+	public LocalDateTime getDeactivatedDate() {
 		return deactivatedDate;
 	}
 
-	public void setDeactivatedDate(Date deactivatedDate) {
+	public void setDeactivatedDate(LocalDateTime deactivatedDate) {
 		this.deactivatedDate = deactivatedDate;
 	}
 

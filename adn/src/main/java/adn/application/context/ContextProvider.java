@@ -17,7 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import adn.security.ApplicationUserDetails;
-import adn.service.Role;
+import adn.service.internal.Role;
 
 /**
  * @author Ngoc Huy
@@ -57,7 +57,9 @@ public class ContextProvider implements ApplicationContextAware {
 	}
 
 	public static String getPrincipalName() {
-		return SecurityContextHolder.getContext().getAuthentication().getName();
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+		return auth == null ? null : auth.getName();
 	}
 
 	public static SessionFactoryImpl getLocalResourceSessionFactory() {

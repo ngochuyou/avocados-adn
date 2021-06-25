@@ -14,8 +14,6 @@ public class ModelEntityExtractor<T extends Entity, M extends Model> implements 
 	@Override
 	public T extract(M model, T entity) throws NullPointerException {
 		entity.setActive(model.isActive());
-		entity.setCreatedDate(model.getCreatedDate());
-		entity.setUpdatedDate(model.getUpdatedDate());
 		entity.setDeactivatedDate(model.getDeactivatedDate());
 
 		return entity;

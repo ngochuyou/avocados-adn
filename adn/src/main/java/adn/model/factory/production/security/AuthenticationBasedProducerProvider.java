@@ -21,7 +21,7 @@ import adn.model.ModelsDescriptor;
 import adn.model.entities.Entity;
 import adn.model.factory.ModelProducerProvider;
 import adn.model.models.Model;
-import adn.service.Role;
+import adn.service.internal.Role;
 
 @Component(AuthenticationBasedProducerProvider.NAME)
 @Order(value = 5)
@@ -148,7 +148,7 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 	@SuppressWarnings("unchecked")
 	public <T extends Entity, M extends Model> M produce(T entity, Class<M> clazz) {
 		try {
-			return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz)).produce(entity,
+			return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz)).produceForAnonymous(entity,
 					TypeHelper.newModelOrAbstract(clazz));
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 				| NoSuchMethodException | SecurityException e) {

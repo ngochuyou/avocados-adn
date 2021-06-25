@@ -30,7 +30,7 @@ import org.springframework.web.servlet.view.JstlView;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import adn.service.Role;
+import adn.service.internal.Role;
 
 /**
  * @author Ngoc Huy
@@ -137,7 +137,6 @@ public class WebConfiguration implements WebMvcConfigurer {
 
 	@Bean
 	public BeanFactoryPostProcessor beanFactoryPostProcessor() {
-
 		return beanFactory -> beanFactory.registerScope("thread", new SimpleThreadScope());
 	}
 

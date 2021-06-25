@@ -3,7 +3,7 @@
  */
 package adn.model.entities;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -16,13 +16,13 @@ import javax.persistence.Entity;
 public class Admin extends Account {
 
 	@Column(name = "contract_date")
-	protected Date contractDate;
+	protected LocalDateTime contractDate;
 
-	public Date getContractDate() {
+	public LocalDateTime getContractDate() {
 		return contractDate;
 	}
 
-	public void setContractDate(Date contractDate) {
+	public void setContractDate(LocalDateTime contractDate) {
 		this.contractDate = contractDate;
 	}
 

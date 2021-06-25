@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.entity;
+package adn.service.entity.builder;
 
 import org.springframework.stereotype.Component;
 
@@ -18,12 +18,12 @@ import adn.model.entities.Personnel;
 public class PersonnelBuilder extends AccountBuilder<Personnel> {
 
 	@Override
-	public Personnel insertionBuild(final Personnel model) {
-		Personnel persistence = super.insertionBuild(model);
+	public Personnel insertionBuild(Personnel entity) {
+		super.insertionBuild(entity);
 
-		persistence.setCreatedBy(ContextProvider.getPrincipalName());
+		entity.setCreatedBy(ContextProvider.getPrincipalName());
 
-		return model;
+		return entity;
 	}
 
 }

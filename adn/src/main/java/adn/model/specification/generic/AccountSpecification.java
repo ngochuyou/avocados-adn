@@ -3,6 +3,8 @@
  */
 package adn.model.specification.generic;
 
+import java.util.regex.Pattern;
+
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
@@ -10,12 +12,12 @@ import javax.persistence.criteria.Root;
 import org.hibernate.Session;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import adn.helpers.StringHelper;
 import adn.model.DatabaseInteractionResult;
 import adn.model.Generic;
 import adn.model.entities.Account;
-import adn.model.specification.TransactionalSpecification;
 
 /**
  * @author Ngoc Huy
@@ -23,16 +25,23 @@ import adn.model.specification.TransactionalSpecification;
  */
 @Component
 @Generic(entityGene = Account.class)
-public class AccountSpecification<T extends Account> extends EntitySpecification<T>
-		implements TransactionalSpecification<T> {
+public class AccountSpecification<T extends Account> extends EntitySpecification<T> {
+
+	private static final Pattern USERNAME_PATTERN;
+
+	private static final short MINIMUM_USERNAME_LENGTH = 8;
+
+	static {
+		USERNAME_PATTERN = Pattern.compile(String.format("^[\\p{L}\\p{N}\\._]{%d,}$", MINIMUM_USERNAME_LENGTH));
+	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public DatabaseInteractionResult<T> isSatisfiedBy(T instance) {
-		// TODO Auto-generated method stub
 		DatabaseInteractionResult<T> result = super.isSatisfiedBy(instance);
 
-		if (instance.getId() == null || instance.getId().length() < 8 || instance.getId().length() > 255) {
-			result.getMessages().put("id", "Id length must be between 8 and 31");
+		if (!USERNAME_PATTERN.matcher(instance.getId()).matches()) {
+			result.getMessages().put("username", "Invalid username pattern");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}
 
@@ -40,7 +49,7 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 			result.getMessages().put("email", "Invalid email");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		} else {
-			Session session = sessionFactory.getCurrentSession();
+			Session session = getCurrentSession();
 			CriteriaBuilder builder = session.getCriteriaBuilder();
 			CriteriaQuery<Long> query = builder.createQuery(Long.class);
 			Root<Account> root = query.from(Account.class);
@@ -54,7 +63,7 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 			}
 		}
 
-		if (StringHelper.hasLength(instance.getPhone()) && !StringHelper.isDigits(instance.getPhone())) {
+		if (StringHelper.hasLength(instance.getPhone()) && !StringHelper.isAcceptablePhoneNumber(instance.getPhone())) {
 			result.getMessages().put("phone", "Invalid phone number");
 			result.setStatus(HttpStatus.BAD_REQUEST.value());
 		}

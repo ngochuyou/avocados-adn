@@ -13,7 +13,7 @@ import javax.servlet.http.Cookie;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import adn.application.context.ConfigurationContext;
-import adn.service.Service;
+import adn.service.internal.Service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -26,20 +26,15 @@ import io.jsonwebtoken.SignatureAlgorithm;
 public class AuthenticationService implements Service {
 
 	// JWT Authenticate Services below
-	public static final String JWT_USERDETAILS_CLAIM_KEY = "userDetails";
-
 	public String extractUsername(String token) {
-
 		return extractClaim(token, Claims::getSubject);
 	}
 
 	public Date extractExpiration(String token) {
-
 		return extractClaim(token, Claims::getExpiration);
 	}
- 
-	public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
 
+	public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
 		return claimsResolver.apply(extractAllClaims(token));
 	}
 
@@ -54,11 +49,7 @@ public class AuthenticationService implements Service {
 	}
 
 	public String generateToken(UserDetails userDetails) {
-		Map<String, Object> claims = new HashMap<>();
-
-		claims.put(JWT_USERDETAILS_CLAIM_KEY, userDetails);
-
-		return createToken(claims, userDetails.getUsername());
+		return createToken(new HashMap<>(), userDetails.getUsername());
 	}
 
 	private String createToken(Map<String, Object> claims, String subject) {
@@ -72,8 +63,8 @@ public class AuthenticationService implements Service {
 		return (username.equals(username) && !isTokenExpired(token));
 	}
 
-	public Cookie createSessionCookie(String name, String value, String path, boolean secured) {
-		Cookie c = new Cookie(name, value);
+	public Cookie createSessionCookie(String value, String path, boolean secured) {
+		Cookie c = new Cookie(ConfigurationContext.getJwtCookieName(), value);
 
 		c.setPath(path);
 		c.setSecure(secured);

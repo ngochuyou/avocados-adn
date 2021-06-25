@@ -2,11 +2,11 @@ package adn.model.factory.extraction;
 
 import org.springframework.stereotype.Component;
 
-import adn.helpers.Gender;
 import adn.model.Generic;
 import adn.model.entities.Account;
+import adn.model.entities.Gender;
 import adn.model.models.AccountModel;
-import adn.service.Role;
+import adn.service.internal.Role;
 
 @Component("accountExtractor")
 @Generic(entityGene = Account.class)
@@ -14,7 +14,6 @@ public class AccountExtractor<A extends Account, AM extends AccountModel> extend
 
 	@Override
 	public A extract(AM model, A account) {
-		// TODO Auto-generated method stub
 		account = super.extract(model, account);
 		account.setId(model.getUsername());
 		account.setEmail(model.getEmail());
@@ -27,13 +26,13 @@ public class AccountExtractor<A extends Account, AM extends AccountModel> extend
 		try {
 			account.setRole(Role.valueOf(model.getRole()));
 		} catch (Exception e) {
-			account.setRole(null);
+			account.setRole(Role.ANONYMOUS);
 		}
 
 		try {
 			account.setGender(Gender.valueOf(model.getGender()));
 		} catch (Exception e) {
-			account.setGender(null);
+			account.setGender(Gender.UNKNOWN);
 		}
 
 		return account;

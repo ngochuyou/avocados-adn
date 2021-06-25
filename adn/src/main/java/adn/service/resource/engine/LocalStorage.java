@@ -45,8 +45,9 @@ public class LocalStorage implements Storage {
 	@Autowired
 	private PersistenceContext persistenceContext;
 
-	private static final String DIRECTORY = "C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\";
-
+	public static final String DIRECTORY = "C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\";
+	public static final int MAX_SIZE_IN_ONE_READ = 5 * 1024 * 1024; // 5MB
+	
 	// @formatter:off
 	@Autowired
 	private LocalStorage(

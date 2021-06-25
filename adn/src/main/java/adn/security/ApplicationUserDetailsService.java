@@ -13,7 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import adn.dao.BaseDAO;
+import adn.dao.BaseRepository;
 import adn.model.entities.Account;
 
 /**
@@ -26,7 +26,7 @@ public class ApplicationUserDetailsService implements UserDetailsService {
 	public static final String NAME = "applicationUserDetailsService";
 
 	@Autowired
-	private BaseDAO dao;
+	private BaseRepository dao;
 
 	@Transactional(readOnly = true)
 	@Override

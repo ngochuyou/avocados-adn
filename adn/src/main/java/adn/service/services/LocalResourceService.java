@@ -1,14 +1,19 @@
 package adn.service.services;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
 
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import adn.service.ServiceResult;
+import adn.service.internal.ResourceService;
+import adn.service.internal.ServiceResult;
 import adn.service.resource.ResourceManager;
+import adn.service.resource.engine.LocalStorage;
 import adn.service.resource.model.models.ImageByBytes;
 
 @Service
@@ -16,6 +21,13 @@ public class LocalResourceService implements ResourceService {
 
 	@Autowired
 	private ResourceManager session;
+
+	private static final URI imageURI;
+	private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+
+	static {
+		imageURI = new File(LocalStorage.DIRECTORY + ImageByBytes.DIRECTORY).toURI();
+	}
 
 	@Override
 	public ServiceResult<String> uploadImage(MultipartFile file) {
@@ -66,6 +78,35 @@ public class LocalResourceService implements ResourceService {
 
 	private String getFilename(ImageByBytes image) {
 		return image.getName() + image.getExtension();
+	}
+
+	@Override
+	public void closeSession(boolean doFlush) {
+		if (session == null) {
+			return;
+		}
+
+		if (doFlush) {
+			session.flush();
+		}
+
+		session.clear();
+		session.close();
+	}
+
+	@Override
+	public byte[] directlyGetImageBytes(String filename) throws IOException {
+		File file = new File(imageURI.getRawPath() + filename);
+
+		if (!file.exists() || !file.isFile()) {
+			return EMPTY_BYTE_ARRAY;
+		}
+
+		if (Files.size(file.toPath()) > LocalStorage.MAX_SIZE_IN_ONE_READ) {
+			throw new IllegalArgumentException("File is too big to directly read");
+		}
+
+		return Files.readAllBytes(file.toPath());
 	}
 
 }

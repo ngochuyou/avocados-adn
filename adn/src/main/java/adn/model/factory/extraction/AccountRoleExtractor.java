@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import adn.service.Role;
+import adn.service.internal.Role;
 
 /**
  * @author Ngoc Huy

@@ -6,7 +6,7 @@ import adn.model.Generic;
 import adn.model.entities.Personnel;
 import adn.model.models.PersonnelModel;
 import adn.security.SecuredFor;
-import adn.service.Role;
+import adn.service.internal.Role;
 
 @Component
 @Generic(modelGene = PersonnelModel.class)
@@ -15,7 +15,6 @@ public class PersonnelModelProducer implements AuthenticationBasedModelProducer<
 	@Override
 	@SecuredFor(role = Role.ADMIN)
 	public PersonnelModel produceForAdminAuthentication(Personnel entity, PersonnelModel model) {
-		// TODO Auto-generated method stub
 		model.setCreatedBy(entity.getCreatedBy());
 
 		return model;
@@ -24,14 +23,6 @@ public class PersonnelModelProducer implements AuthenticationBasedModelProducer<
 	@Override
 	@SecuredFor(role = Role.PERSONNEL)
 	public PersonnelModel produceForPersonnelAuthentication(Personnel entity, PersonnelModel model) {
-		// TODO Auto-generated method stub
-		return produceForAdminAuthentication(entity, model);
-	}
-
-	@Override
-	@SecuredFor(role = Role.CUSTOMER)
-	public PersonnelModel produceForCustomerAuthentication(Personnel entity, PersonnelModel model) {
-		// TODO Auto-generated method stub
 		return produceForAdminAuthentication(entity, model);
 	}
 

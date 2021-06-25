@@ -3,8 +3,6 @@
  */
 package adn.model.entities;
 
-import java.io.Serializable;
-
 import adn.model.AbstractModel;
 
 /**
@@ -12,7 +10,5 @@ import adn.model.AbstractModel;
  *
  */
 public abstract class Entity extends AbstractModel {
-
-	public abstract void setId(Serializable id);
 
 }

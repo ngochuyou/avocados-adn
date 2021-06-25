@@ -3,7 +3,7 @@
  */
 package adn.model.entities;
 
-import java.io.Serializable;
+import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -14,8 +14,10 @@ import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.Table;
 
-import adn.helpers.Gender;
-import adn.service.Role;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import adn.service.internal.Role;
 
 /**
  * @author Ngoc Huy
@@ -42,7 +44,7 @@ public class Account extends adn.model.entities.Entity {
 
 	protected String photo;
 
-	@Column(nullable = false, length = 60) // maximum bcrypt-hash length
+	@Column(nullable = false)
 	protected String password;
 
 	@Enumerated(EnumType.STRING)
@@ -51,7 +53,14 @@ public class Account extends adn.model.entities.Entity {
 	@Enumerated(EnumType.STRING)
 	protected Gender gender;
 
-	@Override
+	@CreationTimestamp
+	@Column(name = "created_date", nullable = false, updatable = false)
+	protected LocalDateTime createdDate;
+
+	@UpdateTimestamp
+	@Column(name = "updated_date", nullable = false)
+	protected LocalDateTime updatedDate;
+
 	public String getId() {
 		return id;
 	}
@@ -124,10 +133,20 @@ public class Account extends adn.model.entities.Entity {
 		this.gender = gender;
 	}
 
-	@Override
-	public void setId(Serializable id) {
-		// TODO Auto-generated method stub
-		this.id = (String) id;
+	public LocalDateTime getCreatedDate() {
+		return createdDate;
+	}
+
+	public void setCreatedDate(LocalDateTime createdDate) {
+		this.createdDate = createdDate;
+	}
+
+	public LocalDateTime getUpdatedDate() {
+		return updatedDate;
+	}
+
+	public void setUpdatedDate(LocalDateTime updatedDate) {
+		this.updatedDate = updatedDate;
 	}
 
 }

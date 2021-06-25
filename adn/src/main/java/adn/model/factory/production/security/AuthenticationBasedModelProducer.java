@@ -16,8 +16,7 @@ public interface AuthenticationBasedModelProducer<T extends Entity, M extends Mo
 	 * {@link Entity} -> {@link Entity} for <code>ANONYMOUS</code> Authentication
 	 */
 	@Override
-	default M produce(T entity, M model) {
-		// TODO Auto-generated method stub
+	default M produceForAnonymous(T entity, M model) {
 		return model;
 	}
 
@@ -65,9 +64,9 @@ class CompositeAuthenticationBasedProducer<T extends Entity, M extends Model>
 	}
 
 	@Override
-	public M produce(T entity, M model) {
+	public M produceForAnonymous(T entity, M model) {
 		// TODO Auto-generated method stub
-		return this.right.produce(entity, this.left.produce(entity, model));
+		return this.right.produceForAnonymous(entity, this.left.produceForAnonymous(entity, model));
 	}
 
 	@Override

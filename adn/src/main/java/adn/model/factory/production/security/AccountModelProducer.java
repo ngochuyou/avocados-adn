@@ -2,24 +2,21 @@ package adn.model.factory.production.security;
 
 import org.springframework.stereotype.Component;
 
+import adn.helpers.Utils;
 import adn.model.Generic;
 import adn.model.entities.Account;
 import adn.model.models.AccountModel;
 import adn.security.SecuredFor;
-import adn.service.Role;
+import adn.service.internal.Role;
 
 @Component
 @Generic(modelGene = AccountModel.class)
 public class AccountModelProducer<T extends Account, M extends AccountModel>
 		implements AuthenticationBasedModelProducer<T, M> {
 
-	/**
-	 * {@link AccountModel} -> {@link AccountModel} for ANONYMOUS Authentication
-	 */
 	@Override
 	@SecuredFor
-	public M produce(T entity, M model) {
-		// TODO Auto-generated method stub
+	public M produceForAnonymous(T entity, M model) {
 		model.setUsername(entity.getId());
 		model.setFirstName(entity.getFirstName());
 		model.setLastName(entity.getLastName());
@@ -35,9 +32,11 @@ public class AccountModelProducer<T extends Account, M extends AccountModel>
 	@SecuredFor(role = Role.ADMIN)
 	public M produceForAdminAuthentication(T entity, M model) {
 		// TODO Auto-generated method stub
-		model = this.produce(entity, model);
+		model = this.produceForAnonymous(entity, model);
 		model.setEmail(entity.getEmail());
 		model.setPhone(entity.getPhone());
+		model.setCreatedDate(Utils.localDateTimeToDate(entity.getCreatedDate()));
+		model.setUpdatedDate(Utils.localDateTimeToDate(entity.getUpdatedDate()));
 
 		return model;
 	}
@@ -45,15 +44,18 @@ public class AccountModelProducer<T extends Account, M extends AccountModel>
 	@Override
 	@SecuredFor(role = Role.CUSTOMER)
 	public M produceForCustomerAuthentication(T entity, M model) {
-		// TODO Auto-generated method stub
-		return this.produceForAdminAuthentication(entity, model);
+		return this.produceForAnonymous(entity, model);
 	}
 
 	@Override
 	@SecuredFor(role = Role.PERSONNEL)
 	public M produceForPersonnelAuthentication(T entity, M model) {
-		// TODO Auto-generated method stub
-		return this.produceForAdminAuthentication(entity, model);
+		model = this.produceForAnonymous(entity, model);
+
+		model.setCreatedDate(Utils.localDateTimeToDate(entity.getCreatedDate()));
+		model.setUpdatedDate(Utils.localDateTimeToDate(entity.getUpdatedDate()));
+
+		return model;
 	}
 
 }

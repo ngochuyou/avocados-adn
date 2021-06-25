@@ -6,7 +6,7 @@ import adn.model.Generic;
 import adn.model.entities.Customer;
 import adn.model.models.CustomerModel;
 import adn.security.SecuredFor;
-import adn.service.Role;
+import adn.service.internal.Role;
 
 @Component
 @Generic(modelGene = CustomerModel.class)

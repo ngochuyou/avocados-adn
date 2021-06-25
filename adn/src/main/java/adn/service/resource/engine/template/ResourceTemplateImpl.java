@@ -30,6 +30,7 @@ import org.hibernate.property.access.spi.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import adn.service.resource.engine.LocalStorage;
 import adn.service.resource.engine.Storage;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory;
 import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
@@ -223,8 +224,6 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 	@SuppressWarnings("serial")
 	private static final Getter BYTE_ARRAY_CONTENT_GETTER = new Getter() {
 
-		private final int MAX_SIZE_IN_ONE_READ = 5 * 1024 * 1024; // 5MB
-
 		@Override
 		public Class<byte[]> getReturnType() {
 			return byte[].class;
@@ -261,10 +260,10 @@ public class ResourceTemplateImpl implements ResourceTemplate {
 			try {
 				Path path = ((File) owner).toPath();
 
-				if (Files.size(path) > MAX_SIZE_IN_ONE_READ) {
+				if (Files.size(path) > LocalStorage.MAX_SIZE_IN_ONE_READ) {
 					throw new HibernateException(String.format(
 							"File size is too large to read into one byte[], max size in one read is [%s] MB",
-							MAX_SIZE_IN_ONE_READ));
+							LocalStorage.MAX_SIZE_IN_ONE_READ));
 				}
 
 				return Files.readAllBytes(path);

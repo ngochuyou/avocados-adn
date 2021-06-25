@@ -84,24 +84,28 @@ public class StringHelper extends StringUtils {
 		return sb.toString();
 	}
 
-	public static boolean isEmail(String email) {
-		return email == null ? false : email.matches(StringHelper.EMAIL_REGEX);
+	public static boolean isLetters(String string) {
+		return hasLength(string) && string.matches("^[\\p{L}]+$");
 	}
 
-	public static boolean isDigits(String string) {
-		return string == null ? false : string.matches("\\d+");
+	public static boolean isEmail(String email) {
+		return email.matches(StringHelper.EMAIL_REGEX);
+	}
+
+	public static boolean isAcceptablePhoneNumber(String string) {
+		return string.matches("^[\\w\\d\\._\\(\\)\\+\\s\\-]{4,}$");
 	}
 
 	public static boolean isBCrypt(String string) {
-		return string == null ? false : string.matches(StringHelper.BCRYPT_REGEX);
+		return string.matches(StringHelper.BCRYPT_REGEX);
 	}
 
 	public static String normalizeString(String string) {
-		return string != null ? string.trim().replaceAll(ONE_OF_WHITESPACE_CHARS + "+", " ") : null;
+		return hasLength(string) ? string.trim().replaceAll(ONE_OF_WHITESPACE_CHARS + "+", " ") : null;
 	}
 
 	public static String removeSpaces(String string) {
-		return string != null ? string.trim().replaceAll(ONE_OF_WHITESPACE_CHARS + "+", "") : null;
+		return hasLength(string) ? string.trim().replaceAll(ONE_OF_WHITESPACE_CHARS + "+", "") : null;
 	}
 
 	public static String toCamel(String s, CharSequence seperator) {

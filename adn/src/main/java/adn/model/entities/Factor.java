@@ -3,7 +3,7 @@
  */
 package adn.model.entities;
 
-import java.io.Serializable;
+import java.util.UUID;
 
 import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
@@ -22,23 +22,23 @@ public abstract class Factor extends Entity {
 	@Id
 	@GeneratedValue(generator = "uuid")
 	@GenericGenerator(name = "uuid", strategy = "uuid2")
-	protected String id;
+	@Column(columnDefinition = "BINARY(16)", length = 16)
+	protected UUID id;
 
-	@Column(nullable = false)
+	@Column(nullable = false, unique = true)
 	protected String name;
 
-	@Column(name = "created_by")
+	@Column(name = "created_by", nullable = false)
 	protected String createdBy;
 
-	@Column(name = "updated_by")
+	@Column(name = "updated_by", nullable = false)
 	protected String updatedBy;
 
-	@Override
-	public String getId() {
+	public UUID getId() {
 		return id;
 	}
 
-	public void setId(String id) {
+	public void setId(UUID id) {
 		this.id = id;
 	}
 
@@ -64,11 +64,6 @@ public abstract class Factor extends Entity {
 
 	public void setUpdatedBy(String updatedBy) {
 		this.updatedBy = updatedBy;
-	}
-
-	@Override
-	public void setId(Serializable id) {
-		this.id = (String) id;
 	}
 
 }

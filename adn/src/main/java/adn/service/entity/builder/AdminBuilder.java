@@ -1,6 +1,6 @@
-package adn.service.entity;
+package adn.service.entity.builder;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Component;
 
@@ -16,12 +16,12 @@ import adn.model.entities.Admin;
 public class AdminBuilder extends AccountBuilder<Admin> {
 
 	@Override
-	public Admin insertionBuild(final Admin model) {
-		Admin persistence = super.insertionBuild(model);
+	public Admin insertionBuild(Admin entity) {
+		super.insertionBuild(entity);
 
-		persistence.setContractDate(new Date());
+		entity.setContractDate(LocalDateTime.now());
 
-		return persistence;
+		return entity;
 	}
 
 }

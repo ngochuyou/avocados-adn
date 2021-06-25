@@ -1,4 +1,4 @@
-package adn.service;
+package adn.service.internal;
 
 import adn.application.context.ContextProvider;
 import adn.helpers.TypeHelper;

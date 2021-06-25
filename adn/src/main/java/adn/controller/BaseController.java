@@ -11,19 +11,23 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.context.ContextProvider;
-import adn.dao.BaseDAO;
+import adn.dao.Repository;
 import adn.helpers.FunctionHelper.HandledConsumer;
+import adn.model.DatabaseInteractionResult;
 import adn.model.ModelsDescriptor;
 import adn.model.entities.Entity;
 import adn.model.factory.EntityExtractorProvider;
 import adn.model.factory.extraction.DelegateEntityExtractorProvider;
 import adn.model.factory.production.security.AuthenticationBasedProducerProvider;
 import adn.model.models.Model;
+import adn.service.internal.CRUDService;
 
 /**
  * @author Ngoc Huy
@@ -43,13 +47,16 @@ public class BaseController {
 	protected EntityExtractorProvider extractorProvider;
 
 	@Autowired
-	protected BaseDAO dao;
+	protected CRUDService<Entity> crudService;
+
+	@Autowired
+	protected Repository<Entity> baseRepository;
 
 	@Autowired
 	protected SessionFactory sessionFactory;
 
 	@Autowired
-	protected ObjectMapper mapper;
+	protected ObjectMapper objectMapper;
 
 	protected static final String HAS_ROLE_ADMIN = "hasRole('ADMIN')";
 
@@ -85,6 +92,18 @@ public class BaseController {
 
 	protected <T extends Entity, M extends Model> M produce(T entity, Class<M> modelClass) {
 		return authenticationBasedProducerProvider.produce(entity, modelClass, ContextProvider.getPrincipalRole());
+	}
+
+	protected <T> ResponseEntity<?> unauthorize(T body) {
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+	}
+
+	protected <T> ResponseEntity<?> sendNotFound(T body) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+	}
+
+	protected <T> ResponseEntity<?> sendFromDatabaseInteractionResult(DatabaseInteractionResult<T> result) {
+		return ResponseEntity.status(result.getStatus()).body(result.getMessages());
 	}
 
 }

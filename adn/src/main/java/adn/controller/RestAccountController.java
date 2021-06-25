@@ -16,10 +16,9 @@ import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
 import adn.model.entities.Account;
 import adn.model.factory.extraction.AccountRoleExtractor;
-import adn.service.Role;
-import adn.service.resource.ResourceManager;
+import adn.service.internal.ResourceService;
+import adn.service.internal.Role;
 import adn.service.services.AccountService;
-import adn.service.services.ResourceService;
 
 /**
  * @author Ngoc Huy
@@ -32,11 +31,10 @@ public class RestAccountController extends AccountController {
 	// @formatter:off
 	@Autowired
 	public RestAccountController(
-			AccountService accountService,
-			AccountRoleExtractor roleExtractor,
-			ResourceService resourceService,
-			ResourceManager resourceManager) {
-		super(accountService, roleExtractor, resourceService, resourceManager);
+			final AccountService accountService,
+			final AccountRoleExtractor roleExtractor,
+			final ResourceService resourceService) {
+		super(accountService, roleExtractor, resourceService);
 	}
 	// @formatter:on
 
@@ -47,31 +45,42 @@ public class RestAccountController extends AccountController {
 		String principalName = ContextProvider.getPrincipalName();
 		Role principalRole = ContextProvider.getPrincipalRole();
 		Account account;
-		Class<? extends Account> clazz;
 
 		if (!StringHelper.hasLength(username) || principalName.equals(username)) {
-			clazz = accountService.getClassFromRole(principalRole);
-			account = dao.findById(principalName, clazz);
-
-			if (!account.isActive()) {
-				return ResponseEntity.status(HttpStatus.LOCKED).body(LOCKED);
-			}
-
-			return ResponseEntity.ok(produce(account, modelsDescriptor.getModelClass(clazz)));
+			return obtainPrincipal();
 		}
 
-		account = dao.findById(username, Account.class);
+		account = baseRepository.findById(username, Account.class);
 
 		if (account == null) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(NOT_FOUND);
+			return sendNotFound(NOT_FOUND);
 		}
 
-		if (account.isActive()) {
-			return ResponseEntity.ok(produce(account,
-					modelsDescriptor.getModelClass(accountService.getClassFromRole(account.getRole()))));
+		Class<? extends Account> type = accountService.getClassFromRole(account.getRole());
+
+		if (!account.isActive() && !principalRole.equals(Role.ADMIN)) {
+			return ResponseEntity.status(HttpStatus.LOCKED).body(LOCKED);
 		}
 
-		return ResponseEntity.status(HttpStatus.LOCKED).body(LOCKED);
+		if (!principalRole.canRead(account.getRole())) {
+			return unauthorize(ACCESS_DENIED);
+		}
+
+		return ResponseEntity.ok(produce(account, modelsDescriptor.getModelClass(type)));
+	}
+
+	public ResponseEntity<?> obtainPrincipal() {
+		Account principal = baseRepository.findById(ContextProvider.getPrincipalName(), Account.class);
+
+		if (principal == null) {
+			return sendNotFound(NOT_FOUND);
+		}
+
+		if (!principal.isActive()) {
+			return ResponseEntity.status(HttpStatus.LOCKED).body(LOCKED);
+		}
+
+		return ResponseEntity.ok(produce(principal, modelsDescriptor.getModelClass(principal.getClass())));
 	}
 
 }

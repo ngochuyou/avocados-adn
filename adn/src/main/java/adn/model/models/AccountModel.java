@@ -3,8 +3,13 @@
  */
 package adn.model.models;
 
+import java.util.Date;
+
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import adn.model.Generic;
 import adn.model.entities.Account;
@@ -29,11 +34,16 @@ public class AccountModel extends Model {
 
 	protected String photo;
 
+	@JsonIgnore
 	protected String password;
 
 	protected String role;
 
 	protected String gender;
+
+	protected Date createdDate;
+
+	protected Date updatedDate;
 
 	@Override
 	public String getId() {
@@ -92,6 +102,7 @@ public class AccountModel extends Model {
 		return password;
 	}
 
+	@JsonProperty
 	public void setPassword(String password) {
 		this.password = password;
 	}
@@ -110,6 +121,22 @@ public class AccountModel extends Model {
 
 	public void setGender(String gender) {
 		this.gender = gender;
+	}
+
+	public Date getCreatedDate() {
+		return createdDate;
+	}
+
+	public void setCreatedDate(Date createdDate) {
+		this.createdDate = createdDate;
+	}
+
+	public Date getUpdatedDate() {
+		return updatedDate;
+	}
+
+	public void setUpdatedDate(Date updatedDate) {
+		this.updatedDate = updatedDate;
 	}
 
 }

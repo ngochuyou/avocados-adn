@@ -4,6 +4,7 @@
 package adn.test.application;
 
 import java.sql.SQLException;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -36,7 +37,14 @@ public class Solution {
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
 			IllegalArgumentException, IllegalAccessException, SQLException {
-		System.out.println("    asdasdasd   ".trim() + "lkjlkjlk");
+		System.out.println("2d0ec5bb-4ecb-4024-8342-7fde2f9b52e5".length());
+	}
+
+	public static void testUnicodePattern() {
+		Pattern p = Pattern.compile("^[_\\p{L}\\p{N}\\.]{8,}$", Pattern.UNICODE_CHARACTER_CLASS);
+		Matcher m = p.matcher("孔子及其弟asdads子故事集_真.实性有争议_");
+
+		System.out.println(m.matches());
 	}
 
 }

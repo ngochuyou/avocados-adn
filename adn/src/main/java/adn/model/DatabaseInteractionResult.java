@@ -12,7 +12,7 @@ import org.springframework.http.HttpStatus;
  * @author Ngoc Huy
  *
  */
-public class DatabaseInteractionResult<T extends AbstractModel> {
+public class DatabaseInteractionResult<T> {
 
 	protected short status;
 
@@ -51,6 +51,11 @@ public class DatabaseInteractionResult<T extends AbstractModel> {
 		return instance;
 	}
 
+	public DatabaseInteractionResult<T> bad() {
+		this.status = (short) HttpStatus.BAD_REQUEST.value();
+		return this;
+	}
+
 	public DatabaseInteractionResult<T> setInstance(T instance) {
 		this.instance = instance;
 		return this;
@@ -64,16 +69,15 @@ public class DatabaseInteractionResult<T extends AbstractModel> {
 		return this.status == 200;
 	}
 
-	public static <T extends AbstractModel> DatabaseInteractionResult<T> success(T instance) {
+	public static <T> DatabaseInteractionResult<T> success(T instance) {
 		return new DatabaseInteractionResult<T>((short) HttpStatus.OK.value(), instance, new HashMap<>());
 	}
 
-	public static <T extends AbstractModel> DatabaseInteractionResult<T> failed(Map<String, String> messageSet) {
+	public static <T> DatabaseInteractionResult<T> failed(Map<String, String> messageSet) {
 		return new DatabaseInteractionResult<T>(HttpStatus.INTERNAL_SERVER_ERROR.value(), null, messageSet);
 	}
 
-	public static <T extends AbstractModel> DatabaseInteractionResult<T> error(int status, T instance,
-			Map<String, String> messageSet) {
+	public static <T> DatabaseInteractionResult<T> error(int status, T instance, Map<String, String> messageSet) {
 		return new DatabaseInteractionResult<T>(status, instance, messageSet);
 	}
 
