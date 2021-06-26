@@ -3,6 +3,7 @@
  */
 package adn.model.specification.generic;
 
+import java.io.Serializable;
 import java.util.regex.Pattern;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -12,7 +13,6 @@ import javax.persistence.criteria.Root;
 import org.hibernate.Session;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import adn.helpers.StringHelper;
 import adn.model.DatabaseInteractionResult;
@@ -28,7 +28,6 @@ import adn.model.entities.Account;
 public class AccountSpecification<T extends Account> extends EntitySpecification<T> {
 
 	private static final Pattern USERNAME_PATTERN;
-
 	private static final short MINIMUM_USERNAME_LENGTH = 8;
 
 	static {
@@ -36,9 +35,8 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 	}
 
 	@Override
-	@Transactional(readOnly = true)
-	public DatabaseInteractionResult<T> isSatisfiedBy(T instance) {
-		DatabaseInteractionResult<T> result = super.isSatisfiedBy(instance);
+	public DatabaseInteractionResult<T> isSatisfiedBy(Serializable id, T instance) {
+		DatabaseInteractionResult<T> result = super.isSatisfiedBy(id, instance);
 
 		if (!USERNAME_PATTERN.matcher(instance.getId()).matches()) {
 			result.getMessages().put("username", "Invalid username pattern");

@@ -10,6 +10,8 @@ import javax.persistence.criteria.CriteriaQuery;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import adn.model.DatabaseInteractionResult;
 import adn.model.entities.Entity;
@@ -21,6 +23,8 @@ import adn.model.specification.SpecificationFactory;
  *
  */
 public abstract class AbstractRepository<T extends Entity> implements Repository<T> {
+
+	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	protected final SessionFactory sessionFactory;
 	protected final SpecificationFactory specificationFactory;
@@ -61,10 +65,14 @@ public abstract class AbstractRepository<T extends Entity> implements Repository
 		return specificationFactory.getSpecification(type);
 	}
 
-	protected <E extends T> DatabaseInteractionResult<E> validate(E instance, Class<E> type) {
+	protected <E extends T> DatabaseInteractionResult<E> validate(Serializable id, E instance, Class<E> type) {
 		Specification<E> spec = getSpecification(type);
-		
-		return spec.isSatisfiedBy(instance);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(String.format("Validating [%s#%s] using [%s]", type.getName(), id, spec.getClass().getName()));
+		}
+
+		return spec.isSatisfiedBy(id, instance);
 	}
 
 }

@@ -52,9 +52,9 @@ public class ModelsDescriptor implements ContextBuilder {
 
 	private ModelInheritanceTree<Model> modelTree;
 
-	private Map<Class<? extends adn.model.entities.Entity>, Set<Class<? extends Model>>> relationMap;
+	private Map<Class<? extends adn.model.entities.Entity>, Set<Class<? extends AbstractModel>>> relationMap;
 
-	private Map<Class<? extends adn.model.entities.Entity>, Class<? extends Model>> defaultModelMap;
+	private Map<Class<? extends adn.model.entities.Entity>, Class<? extends AbstractModel>> defaultModelMap;
 
 	@Autowired
 	private SessionFactory sessionFactory;
@@ -63,8 +63,11 @@ public class ModelsDescriptor implements ContextBuilder {
 	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
 		initializeEntityTree();
+		logger.info("---------------------------------------");
 		initializeModelTree();
+		logger.info("---------------------------------------");
 		initializeRelationMap();
+		logger.info("---------------------------------------");
 		initializeDefaultModelMap();
 	}
 
@@ -141,7 +144,7 @@ public class ModelsDescriptor implements ContextBuilder {
 
 				if (!TypeHelper.isExtendedFrom(clazz, Model.class)) {
 					throw new Exception(clazz.getName() + " is a Non-standard Model. A Model must be extended from "
-							+ adn.model.entities.Entity.class);
+							+ Model.class);
 				}
 
 				models.add(clazz);
@@ -188,16 +191,21 @@ public class ModelsDescriptor implements ContextBuilder {
 			if (this.relationMap.get(relatedClass) == null) {
 				this.relationMap.put(relatedClass, Set.of(clazz));
 			} else {
-				Set<Class<? extends Model>> set = this.relationMap.get(relatedClass).stream()
+				Set<Class<? extends AbstractModel>> set = this.relationMap.get(relatedClass).stream()
 						.collect(Collectors.toSet());
 
 				set.add(clazz);
 				this.relationMap.put(relatedClass, set);
 			}
 		});
-		this.relationMap.forEach((key, val) -> val.forEach(
-				clazz -> logger.info(String.format("[%s] related to [%s]", key.getName(), clazz.getName()))));
+		entityTree.forEach(branch -> {
+			if (relationMap.get(branch.getNode()) == null) {
+				relationMap.put(branch.getNode(), Set.of(branch.getNode()));
+			}
+		});
 		// @formatter:on
+		this.relationMap.forEach((key, val) -> val.forEach(clazz -> logger.info(
+				String.format("[%s] related to [%s]", key.getName(), key.equals(clazz) ? "itself" : clazz.getName()))));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -223,8 +231,14 @@ public class ModelsDescriptor implements ContextBuilder {
 					SpringApplication.exit(ContextProvider.getApplicationContext());
 				}
 			});
-		this.defaultModelMap.forEach((k, v) -> logger.info(String.format("[%s] is default for [%s]", v.getName(), k.getName())));
+		entityTree.forEach(branch -> {
+			if (defaultModelMap.get(branch.getNode()) == null) {
+				defaultModelMap.put(branch.getNode(), branch.getNode());
+			}
+		});
 		// @formatter:on
+		this.defaultModelMap.forEach((k, v) -> logger
+				.info(String.format("[%s] is default for [%s]", v.getName(), k.equals(v) ? "itself" : k.getName())));
 	}
 
 	public ModelInheritanceTree<adn.model.entities.Entity> getEntityTree() {
@@ -239,11 +253,11 @@ public class ModelsDescriptor implements ContextBuilder {
 		return modelTree;
 	}
 
-	public Map<Class<? extends adn.model.entities.Entity>, Set<Class<? extends Model>>> getRelationMap() {
+	public Map<Class<? extends adn.model.entities.Entity>, Set<Class<? extends AbstractModel>>> getRelationMap() {
 		return relationMap;
 	}
 
-	public Class<? extends Model> getModelClass(Class<? extends adn.model.entities.Entity> entityClass) {
+	public Class<? extends AbstractModel> getModelClass(Class<? extends adn.model.entities.Entity> entityClass) {
 		return this.defaultModelMap.get(entityClass);
 	}
 

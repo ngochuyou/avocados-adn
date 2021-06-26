@@ -5,6 +5,10 @@ package adn.service.services;
 
 import static adn.helpers.EntityUtils.getIdentifier;
 
+import java.io.Serializable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -24,6 +28,8 @@ import adn.service.internal.CRUDService;
 @Primary
 public class DefaultCRUDService<T extends Entity> implements CRUDService<T> {
 
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
 	private final Repository<Entity> repository;
 	private final EntityBuilderProvider entityBuilderProvider;
 
@@ -35,29 +41,56 @@ public class DefaultCRUDService<T extends Entity> implements CRUDService<T> {
 
 	@Override
 	public <E extends T> DatabaseInteractionResult<E> create(E entity, Class<E> type) {
-		EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
-
-		entity = entityBuilder.insertionBuild(entity);
-
-		return repository.insert(entity, type);
+		return create(getIdentifier(entity), entity, type);
 	}
 
 	@Override
 	public <E extends T> DatabaseInteractionResult<E> update(E entity, Class<E> type) {
-		EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
-
-		entityBuilder.updateBuild(entity);
-
-		return repository.update(getCurrentSession().load(type, getIdentifier(entity)), type);
+		return update(getIdentifier(entity), entity, type);
 	}
 
 	@Override
 	public <E extends T> DatabaseInteractionResult<E> remove(E entity, Class<E> type) {
+		return remove(getIdentifier(entity), entity, type);
+	}
+
+	@Override
+	public <E extends T> DatabaseInteractionResult<E> create(Serializable id, E entity, Class<E> type) {
 		EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
 
-		entityBuilder.deactivationBuild(entity);
+		if (logger.isDebugEnabled()) {
+			logger.debug(String.format("Building entity for creation [%s#%s]", type.getName(), id));
+		}
 
-		return repository.update(getCurrentSession().load(type, getIdentifier(entity)), type);
+		entityBuilder.insertionBuild(id, entity);
+
+		return repository.insert(id, entity, type);
+	}
+
+	@Override
+	public <E extends T> DatabaseInteractionResult<E> update(Serializable id, E entity, Class<E> type) {
+		EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(String.format("Building entity for update [%s#%s]", type.getName(), id));
+		}
+
+		entityBuilder.updateBuild(id, entity);
+
+		return repository.update(id, getCurrentSession().load(type, id), type);
+	}
+
+	@Override
+	public <E extends T> DatabaseInteractionResult<E> remove(Serializable id, E entity, Class<E> type) {
+		EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(String.format("Building entity for deactivation [%s#%s]", type.getName(), id));
+		}
+
+		entityBuilder.deactivationBuild(id, entity);
+
+		return repository.update(id, getCurrentSession().load(type, id), type);
 	}
 
 }

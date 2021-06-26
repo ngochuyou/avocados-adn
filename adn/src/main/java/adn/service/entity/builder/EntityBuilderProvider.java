@@ -3,6 +3,7 @@
  */
 package adn.service.entity.builder;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -37,7 +38,22 @@ public class EntityBuilderProvider implements ContextBuilder {
 
 	private Map<Class<? extends Entity>, EntityBuilder<? extends Entity>> builderMap;
 
-	private EntityBuilder<?> defaultBuilder = new EntityBuilder<Entity>() {};
+	private EntityBuilder<?> defaultBuilder = new EntityBuilder<Entity>() {
+		@Override
+		public Entity insertionBuild(Serializable id, Entity entity) {
+			return entity;
+		}
+
+		@Override
+		public Entity updateBuild(Serializable id, Entity entity) {
+			return entity;
+		}
+
+		@Override
+		public Entity deactivationBuild(Serializable id, Entity entity) {
+			return entity;
+		}
+	};
 
 	@Autowired
 	private ModelsDescriptor modelDescriptor;

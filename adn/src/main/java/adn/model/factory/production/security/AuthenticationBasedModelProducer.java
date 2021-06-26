@@ -1,5 +1,6 @@
 package adn.model.factory.production.security;
 
+import adn.model.AbstractModel;
 import adn.model.entities.Entity;
 import adn.model.factory.ModelProducer;
 import adn.model.models.Model;
@@ -10,7 +11,8 @@ import adn.model.models.Model;
  * @param <M>
  * @param <E>
  */
-public interface AuthenticationBasedModelProducer<T extends Entity, M extends Model> extends ModelProducer<T, M> {
+public interface AuthenticationBasedModelProducer<T extends Entity, M extends AbstractModel>
+		extends ModelProducer<T, M> {
 
 	/**
 	 * {@link Entity} -> {@link Entity} for <code>ANONYMOUS</code> Authentication
@@ -43,8 +45,11 @@ public interface AuthenticationBasedModelProducer<T extends Entity, M extends Mo
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	default public AuthenticationBasedModelProducer<?, ?> and(AuthenticationBasedModelProducer<?, ?> next) {
-
 		return new CompositeAuthenticationBasedProducer(this, next);
+	}
+
+	default String getName() {
+		return "defaultProducer";
 	}
 
 }

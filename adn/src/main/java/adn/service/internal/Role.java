@@ -32,14 +32,15 @@ public enum Role implements RoleDefinition {
 	static {
 		Set<Role> all = Set.of(Role.ADMIN, Role.CUSTOMER, Role.PERSONNEL, Role.MANAGER, Role.EMPLOYEE);
 		Set<Role> customerAndPersonnel = Set.of(Role.PERSONNEL, Role.MANAGER, Role.EMPLOYEE, Role.CUSTOMER);
+		Set<Role> customer = Set.of(Role.CUSTOMER);
 		Set<Role> customerEmployeeManager = Set.of(Role.PERSONNEL, Role.MANAGER, Role.EMPLOYEE, Role.CUSTOMER);
 		// @formatter:off
 		MODIFICATION_ACCESS_MAP = Map.of(
 				Role.ADMIN, all,
 				Role.PERSONNEL, customerAndPersonnel,
 				Role.MANAGER, customerAndPersonnel,
-				Role.EMPLOYEE, Set.of(Role.EMPLOYEE),
-				Role.CUSTOMER, Set.of(Role.CUSTOMER),
+				Role.EMPLOYEE, customer,
+				Role.CUSTOMER, customer,
 				Role.ANONYMOUS, EMPTY_ROLE_SET);
 		READ_ACCESS_MAP = Map.of(
 				Role.ADMIN, all,

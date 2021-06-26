@@ -27,7 +27,6 @@ import adn.service.services.AccountService;
 @RestController
 @RequestMapping("/rest/account")
 public class RestAccountController extends AccountController {
-
 	// @formatter:off
 	@Autowired
 	public RestAccountController(

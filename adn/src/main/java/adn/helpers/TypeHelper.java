@@ -22,8 +22,8 @@ import javax.persistence.Table;
 
 import org.springframework.stereotype.Component;
 
+import adn.model.AbstractModel;
 import adn.model.entities.Entity;
-import adn.model.models.Model;
 
 /**
  * @author Ngoc Huy
@@ -142,7 +142,7 @@ public class TypeHelper {
 		return ((ParameterizedType) clazz.getGenericSuperclass()).getActualTypeArguments()[0];
 	}
 
-	public static <M extends Model> M newModelOrAbstract(Class<M> clazz)
+	public static <M extends AbstractModel> M newModelOrAbstract(Class<M> clazz)
 			throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException,
 			NoSuchMethodException, SecurityException {
 		return clazz.getConstructor().newInstance();

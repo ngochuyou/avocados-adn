@@ -31,7 +31,6 @@ import adn.model.factory.extraction.AccountRoleExtractor;
 import adn.model.models.AccountModel;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Role;
-import adn.service.internal.Service.Status;
 import adn.service.internal.ServiceResult;
 import adn.service.services.AccountService;
 
@@ -107,8 +106,8 @@ public class AccountController extends BaseController {
 			account.setPhoto(uploadResult.getBody());
 		}
 
-		DatabaseInteractionResult<? extends Account> insertResult = crudService.create(TypeHelper.unwrap(account),
-				entityClass);
+		DatabaseInteractionResult<? extends Account> insertResult = crudService.create(account.getId(),
+				TypeHelper.unwrap(account), entityClass);
 
 		resourceService.closeSession(insertResult.isOk());
 
@@ -187,7 +186,7 @@ public class AccountController extends BaseController {
 		if ((persistence = baseRepository.findById(model.getUsername(), Account.class)) == null) {
 			return sendNotFound(NOT_FOUND);
 		}
-		// Extract the model entity from Model and make adjustments
+		// Extract the entity from Model and make adjustments
 		// Do not persist this entity
 		Account account = extract(model, entityClass);
 
@@ -204,7 +203,7 @@ public class AccountController extends BaseController {
 			}
 		}
 		// only account's owner can update password
-		if (!account.getId().equals(principalName) || !StringHelper.hasLength(account.getPassword())) {
+		if (!account.getId().equals(principalName)) {
 			account.setPassword(null);
 		}
 
@@ -215,11 +214,13 @@ public class AccountController extends BaseController {
 		}
 		// set photo upload result into account so that CRUDService inject it into the
 		// persistence instead of directly setting it into persistence since CRUDService
-		// will inject account#getPhoto(), which is null, into persistence
+		// will inject account#getPhoto(), which is null if we set upload result
+		// directly into persistence here
 		account.setPhoto(result.getBody());
-		// changes made within this operations take effect on the persistence reference
-		DatabaseInteractionResult<? extends Account> updateResult = crudService.update(TypeHelper.unwrap(account),
-				entityClass);
+		// changes made within following operations take effect on the persistence
+		// reference
+		DatabaseInteractionResult<? extends Account> updateResult = crudService.update(account.getId(),
+				TypeHelper.unwrap(account), entityClass);
 
 		resourceService.closeSession(updateResult.isOk());
 
@@ -236,16 +237,8 @@ public class AccountController extends BaseController {
 
 	private ServiceResult<String> updateOrUploadPhoto(Account persistence, MultipartFile multipartPhoto) {
 		if (multipartPhoto != null) {
-			ServiceResult<String> result;
-
 			if (!persistence.getPhoto().equals(DEFAULT_ACCOUNT_PHOTO_NAME)) {
-				result = resourceService.updateContent(multipartPhoto, persistence.getPhoto());
-
-				if (!result.isOk()) {
-					return ServiceResult.status(Status.FAILED);
-				}
-
-				return ServiceResult.ok(result.getBody());
+				return resourceService.updateContent(multipartPhoto, persistence.getPhoto());
 			}
 
 			return resourceService.uploadImage(multipartPhoto);

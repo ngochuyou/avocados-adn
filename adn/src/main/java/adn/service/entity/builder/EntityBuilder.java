@@ -3,6 +3,8 @@
  */
 package adn.service.entity.builder;
 
+import java.io.Serializable;
+
 import adn.model.entities.Account;
 import adn.model.entities.Entity;
 
@@ -29,7 +31,9 @@ public interface EntityBuilder<T extends Entity> {
 	 */
 	default T insertionBuild(T entity) {
 		return entity;
-	};
+	}
+
+	T insertionBuild(Serializable id, T entity);
 
 	/**
 	 * @see EntityBuilder#insertionBuild(Entity)
@@ -39,7 +43,9 @@ public interface EntityBuilder<T extends Entity> {
 	 */
 	default T updateBuild(T entity) {
 		return entity;
-	};
+	}
+
+	T updateBuild(Serializable id, T entity);
 
 	/**
 	 * <em>Example:</em> Set the deactivated time-stamp
@@ -51,6 +57,8 @@ public interface EntityBuilder<T extends Entity> {
 	 */
 	default T deactivationBuild(T entity) {
 		return entity;
-	};
+	}
+
+	T deactivationBuild(Serializable id, T entity);
 
 }

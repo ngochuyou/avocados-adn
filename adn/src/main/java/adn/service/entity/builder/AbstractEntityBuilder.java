@@ -27,13 +27,35 @@ public class AbstractEntityBuilder<T extends Entity> implements EntityBuilder<T>
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public T deactivationBuild(T entity) {
-		T persistence = (T) loadPersistence(entity.getClass(), EntityUtils.getIdentifier(entity));
+		return deactivationBuild(EntityUtils.getIdentifier(entity), entity);
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public T deactivationBuild(Serializable id, T entity) {
+		T persistence = (T) loadPersistence(entity.getClass(), id);
 
 		persistence.setDeactivatedDate(LocalDateTime.now());
 
 		return persistence;
+	}
+
+	@Override
+	public T insertionBuild(T entity) {
+		entity.setActive(true);
+
+		return entity;
+	}
+
+	@Override
+	public T insertionBuild(Serializable id, T entity) {
+		return insertionBuild(entity);
+	}
+
+	@Override
+	public T updateBuild(Serializable id, T entity) {
+		return updateBuild(entity);
 	}
 
 }

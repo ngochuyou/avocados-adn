@@ -9,10 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Optional;
 
-import org.springframework.boot.SpringApplication;
 import org.springframework.util.StringUtils;
-
-import adn.application.context.ContextProvider;
 
 /**
  * @author Ngoc Huy
@@ -55,22 +52,27 @@ public class StringHelper extends StringUtils {
 
 	public static final String ONE_OF_WHITESPACE_CHARS = "[" + WHITESPACE_CHARS + "]";
 
-	private static MessageDigest SHA_256_MD = null;
+	private static final MessageDigest SHA_256_MD;
 
-	private static SecureRandom random = new SecureRandom();
+	private static final SecureRandom RANDOM = new SecureRandom();
 
 	static {
+		MessageDigest digest;
+
 		try {
-			SHA_256_MD = MessageDigest.getInstance("SHA-256");
+			digest = MessageDigest.getInstance("SHA-256");
 
 			byte[] salt = new byte[16];
 
-			random.nextBytes(salt);
-			SHA_256_MD.update(salt);
+			RANDOM.nextBytes(salt);
+			digest.update(salt);
 		} catch (NoSuchAlgorithmException nsae) {
+			digest = null;
 			nsae.printStackTrace();
-			SpringApplication.exit(ContextProvider.getApplicationContext());
+			System.exit(-1);
 		}
+
+		SHA_256_MD = digest;
 	}
 
 	public static String hash(String input) {

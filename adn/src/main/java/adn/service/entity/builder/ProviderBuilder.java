@@ -36,9 +36,9 @@ public class ProviderBuilder extends FactorBuilder<Provider> {
 		targetRef.setPhoneNumbers(
 				modelRef.getPhoneNumbers() != null ?
 					modelRef.getPhoneNumbers()
-					.stream().map(StringHelper::normalizeString)
-					.filter(Objects::nonNull).collect(Collectors.toSet()) :
-						null);
+						.stream().map(StringHelper::normalizeString)
+						.filter(Objects::nonNull).collect(Collectors.toSet()) :
+					null);
 		// @formatter:on
 		targetRef.setRepresentatorName(normalizeString(modelRef.getRepresentatorName()));
 

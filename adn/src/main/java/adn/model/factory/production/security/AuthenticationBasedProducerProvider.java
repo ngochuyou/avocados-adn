@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import adn.application.context.ContextProvider;
 import adn.helpers.TypeHelper;
+import adn.model.AbstractModel;
 import adn.model.Generic;
 import adn.model.ModelsDescriptor;
 import adn.model.entities.Entity;
@@ -28,16 +29,38 @@ import adn.service.internal.Role;
 public class AuthenticationBasedProducerProvider implements ModelProducerProvider {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
-	
+
 	public static final String NAME = "authenticationBasedProducerProvider";
 	private final String MODEL_PRODUCER_PACKAGE = "adn.model.factory.production.security";
 
-	private Map<Class<? extends Model>, AuthenticationBasedModelProducer<?, ?>> producerMap;
-	private AuthenticationBasedModelProducer<Entity, Model> defaultProducer = new AuthenticationBasedModelProducer<Entity, Model>() {};
-	private Map<Role, BiFunction<Entity, Class<Model>, ? extends Model>> functionMap;
+	private Map<Class<? extends AbstractModel>, AuthenticationBasedModelProducer<?, ?>> producerMap;
+	private AuthenticationBasedModelProducer<Entity, AbstractModel> defaultProducer = new AuthenticationBasedModelProducer<Entity, AbstractModel>() {
+
+		@Override
+		public AbstractModel produceForAdminAuthentication(Entity entity, AbstractModel model) {
+			return entity;
+		}
+
+		@Override
+		public AbstractModel produceForPersonnelAuthentication(Entity entity, AbstractModel model) {
+			return entity;
+		};
+
+		@Override
+		public AbstractModel produceForCustomerAuthentication(Entity entity, AbstractModel model) {
+			return entity;
+		};
+
+		@Override
+		public AbstractModel produceForAnonymous(Entity entity, AbstractModel model) {
+			return entity;
+		}
+
+	};
+	private Map<Role, BiFunction<Entity, Class<Model>, ? extends AbstractModel>> functionMap;
 
 	@Autowired
-	private ModelsDescriptor modelManager;
+	private ModelsDescriptor modelsDescriptor;
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -60,12 +83,12 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 				SpringApplication.exit(ContextProvider.getApplicationContext());
 			}
 		});
-		modelManager.getRelationMap().values().forEach(set -> set.forEach(clazz -> {
+		modelsDescriptor.getRelationMap().values().forEach(set -> set.forEach(clazz -> {
 			if (this.producerMap.get(clazz) == null) {
 				this.producerMap.put(clazz, defaultProducer);
 			}
 		}));
-		modelManager.getModelTree().forEach(node -> {
+		modelsDescriptor.getModelTree().forEach(node -> {
 			if (node.getParent() == null) {
 				return;
 			}
@@ -97,22 +120,30 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 		this.functionMap.put(Role.ADMIN, this::produceForAdmin);
 		this.functionMap.put(Role.CUSTOMER, this::produceForCustomer);
 		this.functionMap.put(Role.PERSONNEL, this::produceForPersonnel);
-		this.functionMap.put(Role.ANONYMOUS, this::produce);
-		this.functionMap.put(null, this::produce);
+		this.functionMap.put(Role.ANONYMOUS, this::produceForAnonymous);
+		this.functionMap.put(null, this::produceForAnonymous);
 		// @formatter:on
-		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass());
+		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass());
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Entity, M extends Model> AuthenticationBasedModelProducer<T, M> getProducer(Class<M> modelClass) {
+	public <T extends Entity, M extends AbstractModel> AuthenticationBasedModelProducer<T, M> getProducer(
+			Class<M> modelClass) {
 		return (AuthenticationBasedModelProducer<T, M>) this.producerMap.get(modelClass);
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Entity, M extends Model> M produceForAdmin(T entity, Class<M> clazz) {
+	private <T extends Entity, M extends AbstractModel> M produceForAdmin(T entity, Class<M> clazz) {
 		try {
-			return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-					.produceForAdminAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
+			AuthenticationBasedModelProducer<T, M> producer = (AuthenticationBasedModelProducer<T, M>) this.producerMap
+					.get(clazz);
+
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format("Producing model of entity [%s] using [%s] for ADMIN",
+						entity.getClass().getName(), producer.getName()));
+			}
+
+			return produce(producer, clazz, entity, producer::produceForAdminAuthentication);
 		} catch (InstantiationException | IllegalAccessException | InvocationTargetException
 				| NoSuchMethodException re) {
 			re.printStackTrace();
@@ -121,11 +152,17 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Entity, M extends Model> M produceForCustomer(T entity, Class<M> clazz) {
-
+	private <T extends Entity, M extends AbstractModel> M produceForCustomer(T entity, Class<M> clazz) {
 		try {
-			return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-					.produceForCustomerAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
+			AuthenticationBasedModelProducer<T, M> producer = (AuthenticationBasedModelProducer<T, M>) this.producerMap
+					.get(clazz);
+
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format("Producing model of entity [%s] using [%s] for CUSTOMER",
+						entity.getClass().getName(), producer.getName()));
+			}
+
+			return produce(producer, clazz, entity, producer::produceForCustomerAuthentication);
 		} catch (InstantiationException | IllegalAccessException | InvocationTargetException
 				| NoSuchMethodException re) {
 			re.printStackTrace();
@@ -134,10 +171,17 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Entity, M extends Model> M produceForPersonnel(T entity, Class<M> clazz) {
+	private <T extends Entity, M extends AbstractModel> M produceForPersonnel(T entity, Class<M> clazz) {
 		try {
-			return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz))
-					.produceForPersonnelAuthentication(entity, TypeHelper.newModelOrAbstract(clazz));
+			AuthenticationBasedModelProducer<T, M> producer = (AuthenticationBasedModelProducer<T, M>) this.producerMap
+					.get(clazz);
+
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format("Producing model of entity [%s] using [%s] for PERSONNEL",
+						entity.getClass().getName(), producer.getName()));
+			}
+
+			return produce(producer, clazz, entity, producer::produceForPersonnelAuthentication);
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 				| NoSuchMethodException | SecurityException e) {
 			e.printStackTrace();
@@ -146,10 +190,17 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Entity, M extends Model> M produce(T entity, Class<M> clazz) {
+	private <T extends Entity, M extends AbstractModel> M produceForAnonymous(T entity, Class<M> clazz) {
 		try {
-			return ((AuthenticationBasedModelProducer<T, M>) this.producerMap.get(clazz)).produceForAnonymous(entity,
-					TypeHelper.newModelOrAbstract(clazz));
+			AuthenticationBasedModelProducer<T, M> producer = (AuthenticationBasedModelProducer<T, M>) this.producerMap
+					.get(clazz);
+
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format("Producing model of entity [%s] using [%s] for PERSONNEL",
+						entity.getClass().getName(), producer.getName()));
+			}
+
+			return produce(producer, clazz, entity, producer::produceForAnonymous);
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 				| NoSuchMethodException | SecurityException e) {
 			e.printStackTrace();
@@ -158,8 +209,16 @@ public class AuthenticationBasedProducerProvider implements ModelProducerProvide
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Entity, M extends Model> M produce(T entity, Class<M> clazz, Role role) {
+	public <T extends Entity, M extends AbstractModel> M produce(T entity, Class<M> clazz, Role role) {
 		return (M) this.functionMap.get(role).apply(entity, (Class<Model>) clazz);
+	}
+
+	private <T extends Entity, M extends AbstractModel> M produce(AuthenticationBasedModelProducer<T, M> producer,
+			Class<M> modelType, T entity, BiFunction<T, M, M> fnc)
+			throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException,
+			NoSuchMethodException, SecurityException {
+		return producer.equals(defaultProducer) ? fnc.apply(entity, null)
+				: fnc.apply(entity, TypeHelper.newModelOrAbstract(modelType));
 	}
 
 }

@@ -3,6 +3,8 @@
  */
 package adn.dao;
 
+import java.io.Serializable;
+
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,10 +28,10 @@ public class BaseRepository extends AbstractRepository<Entity> implements Reposi
 	}
 
 	@Override
-	public <E extends Entity> DatabaseInteractionResult<E> insert(E persistence, Class<E> type) {
+	public <E extends Entity> DatabaseInteractionResult<E> insert(Serializable id, E persistence, Class<E> type) {
 		Session session = sessionFactory.getCurrentSession();
 		// validate the persisted entity
-		DatabaseInteractionResult<E> result = validate(persistence, type);
+		DatabaseInteractionResult<E> result = validate(id, persistence, type);
 
 		if (result.isOk()) {
 			session.save(persistence);
@@ -43,9 +45,9 @@ public class BaseRepository extends AbstractRepository<Entity> implements Reposi
 	}
 
 	@Override
-	public <E extends Entity> DatabaseInteractionResult<E> update(E persistence, Class<E> type) {
+	public <E extends Entity> DatabaseInteractionResult<E> update(Serializable id, E persistence, Class<E> type) {
 		Session session = sessionFactory.getCurrentSession();
-		DatabaseInteractionResult<E> result = validate(persistence, type);
+		DatabaseInteractionResult<E> result = validate(id, persistence, type);
 
 		if (result.isOk()) {
 			session.update(persistence);

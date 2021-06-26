@@ -6,7 +6,6 @@ package adn.controller;
 import java.util.Optional;
 
 import org.hibernate.FlushMode;
-import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import adn.application.context.ContextProvider;
 import adn.dao.Repository;
 import adn.helpers.FunctionHelper.HandledConsumer;
+import adn.model.AbstractModel;
 import adn.model.DatabaseInteractionResult;
 import adn.model.ModelsDescriptor;
 import adn.model.entities.Entity;
@@ -64,11 +64,11 @@ public class BaseController {
 	protected static final String NOT_FOUND = "NOT FOUND";
 	protected static final String LOCKED = "RESOURCE WAS DEACTIVATED";
 	protected static final String INVALID_MODEL = "INVALID MODEL";
-	protected static final String ACCESS_DENIED = "ACCESS DENIDED";
+	public static final String ACCESS_DENIED = "ACCESS DENIDED";
 	protected static final String EXISTED = "RESOURCE IS ALREADY EXSITED";
 
 	protected void openSession() {
-		openSession(null);
+		openSession(FlushMode.MANUAL);
 	}
 
 	protected void openSession(FlushMode mode) {
@@ -76,13 +76,13 @@ public class BaseController {
 	}
 
 	@SuppressWarnings("unchecked")
-	protected <E extends Exception> void currentSession(HandledConsumer<Session, E>... fncs) throws Exception {
+	protected void currentSession(HandledConsumer<Session, Exception>... fncs) {
 		try {
-			for (HandledConsumer<Session, E> fnc : fncs) {
+			for (HandledConsumer<Session, Exception> fnc : fncs) {
 				fnc.accept(sessionFactory.getCurrentSession());
 			}
-		} catch (HibernateException he) {
-			he.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -90,8 +90,14 @@ public class BaseController {
 		return extractorProvider.getExtractor(entityClass).extract(model, modelsDescriptor.instantiate(entityClass));
 	}
 
-	protected <T extends Entity, M extends Model> M produce(T entity, Class<M> modelClass) {
+	protected <T extends Entity, M extends AbstractModel> M produce(T entity, Class<M> modelClass) {
 		return authenticationBasedProducerProvider.produce(entity, modelClass, ContextProvider.getPrincipalRole());
+	}
+
+	@SuppressWarnings("unchecked")
+	protected <T extends Entity, M extends AbstractModel> M produce(T entity) {
+		return (M) authenticationBasedProducerProvider.produce(entity,
+				modelsDescriptor.getModelClass(entity.getClass()), ContextProvider.getPrincipalRole());
 	}
 
 	protected <T> ResponseEntity<?> unauthorize(T body) {
@@ -102,8 +108,27 @@ public class BaseController {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
 	}
 
-	protected <T> ResponseEntity<?> sendFromDatabaseInteractionResult(DatabaseInteractionResult<T> result) {
-		return ResponseEntity.status(result.getStatus()).body(result.getMessages());
+	protected <T> ResponseEntity<?> send(T instance, String messageIfNotFound) {
+		return instance == null ? sendNotFound(messageIfNotFound) : ResponseEntity.ok(instance);
+	}
+
+	protected <T extends Entity> ResponseEntity<?> send(T instance, String messageIfNotFound) {
+		return instance == null ? sendNotFound(messageIfNotFound) : ResponseEntity.ok(produce(instance));
+	}
+
+	@SuppressWarnings("unchecked")
+	protected <T extends Entity> ResponseEntity<?> send(DatabaseInteractionResult<T> result) {
+		currentSession(ss -> {
+			if (result.isOk()) {
+				ss.flush();
+				return;
+			}
+
+			ss.clear();
+		});
+
+		return result.isOk() ? ResponseEntity.ok(produce(result.getInstance()))
+				: ResponseEntity.status(result.getStatus()).body(result.getMessages());
 	}
 
 }

@@ -9,13 +9,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import javax.transaction.Transactional;
 
 import org.hibernate.FlushMode;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.Status;
@@ -49,6 +54,7 @@ import adn.application.context.DatabaseInitializer;
 import adn.model.ModelsDescriptor;
 import adn.model.entities.Account;
 import adn.model.entities.Admin;
+import adn.model.entities.Provider;
 import adn.security.SecurityConfiguration;
 import adn.service.resource.model.models.ImageByBytes;
 
@@ -230,6 +236,23 @@ public class ApplicationIntegrationTest {
 		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
 
 		assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+	}
+
+	@Test
+	@Transactional
+	public void testSpec() {
+		Session session = factory.getCurrentSession();
+		CriteriaBuilder builder = session.getCriteriaBuilder();
+		CriteriaQuery<Long> query = builder.createQuery(Long.class);
+		Root<Provider> root = query.from(Provider.class);
+		String idPropertyName = "id";
+		Serializable id = null;
+		String name = "VinGroup$$$$$$$nbvvnv$$$0998798798797989";
+		query.select(builder.count(root))
+				.where(builder.and(builder.equal(root.get("name"), name),
+						id == null ? builder.isNotNull(root.get(idPropertyName))
+								: builder.notEqual(root.get(idPropertyName), id)));
+		System.out.println(session.createQuery(query).getResultStream().findFirst().orElseThrow());
 	}
 
 }

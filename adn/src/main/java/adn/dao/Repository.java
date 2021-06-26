@@ -22,8 +22,8 @@ public interface Repository<T> {
 
 	<E extends T> List<E> find(CriteriaQuery<E> query, Class<E> clazz);
 
-	<E extends T> DatabaseInteractionResult<E> insert(E model, Class<E> type);
+	<E extends T> DatabaseInteractionResult<E> insert(Serializable id, E model, Class<E> type);
 
-	<E extends T> DatabaseInteractionResult<E> update(E model, Class<E> type);
+	<E extends T> DatabaseInteractionResult<E> update(Serializable id, E model, Class<E> type);
 
 }

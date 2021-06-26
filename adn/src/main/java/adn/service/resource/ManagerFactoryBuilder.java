@@ -198,6 +198,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 		((MetadataBuildingOptionsImpl) metadataBuildingOptions).makeReflectionManager(bootstrapContext);
 
 		assertSessionFactoryAndInject(build(sfi, sfi.getFastSessionServices()));
+		logger.info(getLoggingPrefix(this) + "Finished building " + this.getClass());
 	}
 
 	private void assertSessionFactoryAndInject(SessionFactory sf) throws IllegalAccessException {
