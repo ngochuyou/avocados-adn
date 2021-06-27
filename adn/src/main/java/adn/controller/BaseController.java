@@ -3,7 +3,9 @@
  */
 package adn.controller;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
@@ -47,10 +49,10 @@ public class BaseController {
 	protected EntityExtractorProvider extractorProvider;
 
 	@Autowired
-	protected CRUDService<Entity> crudService;
+	protected CRUDService crudService;
 
 	@Autowired
-	protected Repository<Entity> baseRepository;
+	protected Repository baseRepository;
 
 	@Autowired
 	protected SessionFactory sessionFactory;
@@ -81,8 +83,8 @@ public class BaseController {
 			for (HandledConsumer<Session, Exception> fnc : fncs) {
 				fnc.accept(sessionFactory.getCurrentSession());
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
+		} catch (Exception any) {
+			any.printStackTrace();
 		}
 	}
 
@@ -110,6 +112,10 @@ public class BaseController {
 
 	protected <T> ResponseEntity<?> send(T instance, String messageIfNotFound) {
 		return instance == null ? sendNotFound(messageIfNotFound) : ResponseEntity.ok(instance);
+	}
+
+	protected <T extends Entity> ResponseEntity<?> send(List<T> instances) {
+		return ResponseEntity.ok(instances.stream().map(this::produce).collect(Collectors.toList()));
 	}
 
 	protected <T extends Entity> ResponseEntity<?> send(T instance, String messageIfNotFound) {

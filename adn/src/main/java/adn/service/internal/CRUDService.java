@@ -16,19 +16,19 @@ import adn.model.entities.Entity;
  * @author Ngoc Huy
  *
  */
-public interface CRUDService<T extends Entity> extends Service {
+public interface CRUDService extends Service {
 
-	<E extends T> DatabaseInteractionResult<E> create(Serializable id, E model, Class<E> type);
+	<T extends Entity, E extends T> DatabaseInteractionResult<E> create(Serializable id, E model, Class<E> type);
 
-	<E extends T> DatabaseInteractionResult<E> create(E model, Class<E> type);
+	<T extends Entity, E extends T> DatabaseInteractionResult<E> create(E model, Class<E> type);
 
-	<E extends T> DatabaseInteractionResult<E> update(Serializable id, E model, Class<E> type);
+	<T extends Entity, E extends T> DatabaseInteractionResult<E> update(Serializable id, E model, Class<E> type);
 
-	<E extends T> DatabaseInteractionResult<E> update(E model, Class<E> type);
+	<T extends Entity, E extends T> DatabaseInteractionResult<E> update(E model, Class<E> type);
 
-	<E extends T> DatabaseInteractionResult<E> remove(Serializable id, E model, Class<E> type);
+	<T extends Entity, E extends T> DatabaseInteractionResult<E> remove(Serializable id, E model, Class<E> type);
 
-	<E extends T> DatabaseInteractionResult<E> remove(E model, Class<E> type);
+	<T extends Entity, E extends T> DatabaseInteractionResult<E> remove(E model, Class<E> type);
 
 	default Session getCurrentSession() {
 		return ContextProvider.getApplicationContext().getBean(SessionFactory.class).getCurrentSession();

@@ -6,13 +6,13 @@ package adn.model.entities;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -36,17 +36,13 @@ public class Product extends Factor {
 	@UpdateTimestamp
 	@Column(name = "updated_timestamp", nullable = false)
 	private LocalDateTime updatedTimestamp;
-	// @formatter:off
-	@Column(nullable = false)
-	@ManyToMany(fetch = FetchType.LAZY)
-	@JoinTable(name = "products_providers",
-		joinColumns = @JoinColumn(name = "product_id"),
-		inverseJoinColumns = @JoinColumn(name = "provider_id"))
-	private List<Provider> providers;
-	// @formatter:on
+
 	@ManyToOne(optional = false, fetch = FetchType.LAZY)
 	@JoinColumn(name = "category_id", referencedColumnName = "id")
 	private Category category;
+
+	@OneToMany(mappedBy = "product", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+	private List<ProductProviderDetail> providerDetails;
 
 	public Double getPrice() {
 		return price;
@@ -72,20 +68,20 @@ public class Product extends Factor {
 		this.updatedTimestamp = updatedTimestamp;
 	}
 
-	public List<Provider> getProviders() {
-		return providers;
-	}
-
-	public void setProviders(List<Provider> providers) {
-		this.providers = providers;
-	}
-
 	public Category getCategory() {
 		return category;
 	}
 
 	public void setCategory(Category category) {
 		this.category = category;
+	}
+
+	public List<ProductProviderDetail> getProviderDetails() {
+		return providerDetails;
+	}
+
+	public void setProviderDetails(List<ProductProviderDetail> providerDetails) {
+		this.providerDetails = providerDetails;
 	}
 
 }

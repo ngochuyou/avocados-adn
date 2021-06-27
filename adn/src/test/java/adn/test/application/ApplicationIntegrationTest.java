@@ -17,7 +17,6 @@ import java.util.stream.Stream;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
-import javax.transaction.Transactional;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
@@ -34,6 +33,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -45,12 +47,15 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
 import adn.application.context.DatabaseInitializer;
+import adn.dao.BaseRepository;
+import adn.dao.paging.Unpaged;
 import adn.model.ModelsDescriptor;
 import adn.model.entities.Account;
 import adn.model.entities.Admin;
@@ -240,7 +245,7 @@ public class ApplicationIntegrationTest {
 
 	@Test
 	@Transactional
-	public void testSpec() {
+	private void testSpec() {
 		Session session = factory.getCurrentSession();
 		CriteriaBuilder builder = session.getCriteriaBuilder();
 		CriteriaQuery<Long> query = builder.createQuery(Long.class);
@@ -253,6 +258,57 @@ public class ApplicationIntegrationTest {
 						id == null ? builder.isNotNull(root.get(idPropertyName))
 								: builder.notEqual(root.get(idPropertyName), id)));
 		System.out.println(session.createQuery(query).getResultStream().findFirst().orElseThrow());
+	}
+
+	@Autowired
+	private BaseRepository repo;
+
+	@Test
+	@Transactional
+	private void testPaging() {
+		repo.fetch(Account.class, Unpaged.INSTANCE).forEach(account -> {
+			System.out.println(account.getId());
+			System.out.println(account.getFirstName());
+			System.out.println(account.getLastName());
+		});
+	}
+
+	@Test
+	@Transactional
+	private void testPagingWithSort() {
+		repo.fetch(Account.class, PageRequest.of(0, 1000, Sort.by(Order.asc("createdDate")))).forEach(account -> {
+			System.out.println(account.getId());
+			System.out.println(account.getCreatedDate());
+		});
+	}
+
+	@Test
+	@Transactional
+	private void testPagingWithColumns() {
+		repo.fetch(Account.class, new String[] { "id", "firstName", "lastName" }, Unpaged.INSTANCE).forEach(columns -> {
+			System.out.println(columns[0]);
+			System.out.println(columns[1]);
+			System.out.println(columns[2]);
+		});
+	}
+
+	@Test
+	@Transactional
+	private void testPagingWithColumnsAndSort() {
+		repo.fetch(Account.class, new String[] { "id", "updatedDate" },
+				PageRequest.of(0, 1000, Sort.by(Order.asc("updatedDate")))).forEach(columns -> {
+					System.out.println(columns[0]);
+					System.out.println(columns[1]);
+				});
+	}
+
+	@Test
+	public void testPageableDefault() throws Exception {
+		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
+				.get(PREFIX + "/provider/list?size=2&random=asdasd&sort=createdDate,DESC&sort=updatedDate,ASC");
+		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
+
+		assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
 	}
 
 }

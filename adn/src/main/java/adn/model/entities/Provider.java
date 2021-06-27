@@ -3,11 +3,17 @@
  */
 package adn.model.entities;
 
+import java.util.List;
 import java.util.Set;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
+import javax.persistence.FetchType;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import adn.model.entities.converters.StringSetConverter;
 
@@ -31,6 +37,10 @@ public class Provider extends Factor {
 
 	@Column(name = "representator_name")
 	private String representatorName;
+
+	@JsonIgnore
+	@OneToMany(mappedBy = "product", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+	private List<ProductProviderDetail> productDetails;
 
 	public String getEmail() {
 		return email;
@@ -62,6 +72,14 @@ public class Provider extends Factor {
 
 	public void setRepresentatorName(String representatorName) {
 		this.representatorName = representatorName;
+	}
+
+	public List<ProductProviderDetail> getProductDetails() {
+		return productDetails;
+	}
+
+	public void setProductDetails(List<ProductProviderDetail> productDetails) {
+		this.productDetails = productDetails;
 	}
 
 }

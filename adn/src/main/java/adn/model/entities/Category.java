@@ -19,7 +19,7 @@ import javax.persistence.Table;
 @Table(name = "categories")
 public class Category extends Factor {
 
-	@Column(length = 255)
+	@Column
 	private String description;
 
 	@OneToMany(mappedBy = "category", fetch = FetchType.LAZY)

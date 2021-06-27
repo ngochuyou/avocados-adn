@@ -39,10 +39,9 @@ public class LocalResourceService implements ResourceService {
 
 		try {
 			image.setContent(file.getBytes());
-
 			session.save(image);
 
-			return ServiceResult.ok(getFilename(image));
+			return ServiceResult.ok(image.getName() + image.getExtension());
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			return ServiceResult.status(Status.FAILED);
@@ -69,15 +68,11 @@ public class LocalResourceService implements ResourceService {
 
 			session.update(image);
 
-			return ServiceResult.ok(getFilename(image));
+			return ServiceResult.ok(image.getName());
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			return ServiceResult.status(Status.FAILED);
 		}
-	}
-
-	private String getFilename(ImageByBytes image) {
-		return image.getName() + image.getExtension();
 	}
 
 	@Override
@@ -88,10 +83,10 @@ public class LocalResourceService implements ResourceService {
 
 		if (doFlush) {
 			session.flush();
+			return;
 		}
 
 		session.clear();
-		session.close();
 	}
 
 	@Override

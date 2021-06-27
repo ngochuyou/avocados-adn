@@ -22,7 +22,7 @@ public abstract class Factor extends Entity {
 	@Id
 	@GeneratedValue(generator = "uuid")
 	@GenericGenerator(name = "uuid", strategy = "uuid2")
-	@Column(columnDefinition = "BINARY(16)", length = 16)
+	@Column(columnDefinition = "BINARY(16)")
 	protected UUID id;
 
 	@Column(nullable = false, unique = true)

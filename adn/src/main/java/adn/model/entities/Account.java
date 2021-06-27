@@ -42,6 +42,7 @@ public class Account extends adn.model.entities.Entity {
 	@Column(name = "last_name")
 	protected String lastName;
 
+	@Column(updatable = false)
 	protected String photo;
 
 	@Column(nullable = false)

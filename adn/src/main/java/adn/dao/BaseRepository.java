@@ -20,7 +20,7 @@ import adn.model.specification.SpecificationFactory;
  */
 @org.springframework.stereotype.Repository
 @Primary
-public class BaseRepository extends AbstractRepository<Entity> implements Repository<Entity> {
+public class BaseRepository extends AbstractRepository implements Repository {
 
 	@Autowired
 	public BaseRepository(SessionFactory sessionFactory, SpecificationFactory specificationFactory) {
@@ -28,7 +28,7 @@ public class BaseRepository extends AbstractRepository<Entity> implements Reposi
 	}
 
 	@Override
-	public <E extends Entity> DatabaseInteractionResult<E> insert(Serializable id, E persistence, Class<E> type) {
+	public <T extends Entity, E extends T> DatabaseInteractionResult<E> insert(Serializable id, E persistence, Class<E> type) {
 		Session session = sessionFactory.getCurrentSession();
 		// validate the persisted entity
 		DatabaseInteractionResult<E> result = validate(id, persistence, type);
@@ -45,7 +45,7 @@ public class BaseRepository extends AbstractRepository<Entity> implements Reposi
 	}
 
 	@Override
-	public <E extends Entity> DatabaseInteractionResult<E> update(Serializable id, E persistence, Class<E> type) {
+	public <T extends Entity, E extends T> DatabaseInteractionResult<E> update(Serializable id, E persistence, Class<E> type) {
 		Session session = sessionFactory.getCurrentSession();
 		DatabaseInteractionResult<E> result = validate(id, persistence, type);
 

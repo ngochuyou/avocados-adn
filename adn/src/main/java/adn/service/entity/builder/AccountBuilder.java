@@ -35,7 +35,6 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 		target.setPhone(model.getPhone().trim());
 		target.setFirstName(get(normalizeString(model.getFirstName())).orElse(AccountService.UNKNOWN_USER_FIRSTNAME));
 		target.setLastName(get(normalizeString(model.getLastName())).orElse(AccountService.UNKNOWN_USER_LASTNAME));
-		target.setPhoto(get(model.getPhoto()).orElse(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME));
 		target.setGender(Optional.ofNullable(model.getGender()).orElse(Gender.UNKNOWN));
 		target.setRole(target.getRole());
 
@@ -48,6 +47,7 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 
 		mandatoryBuild(entity, entity);
 		entity.setPassword(entity.getPassword() == null ? "" : passwordEncoder.encode(entity.getPassword()));
+		entity.setPhoto(get(entity.getPhoto()).orElse(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME));
 
 		return entity;
 	}

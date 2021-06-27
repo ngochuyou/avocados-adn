@@ -5,21 +5,24 @@ package adn.controller;
 
 import java.util.UUID;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import adn.application.context.ContextProvider;
+import adn.application.Constants;
+import adn.model.entities.Entity;
 import adn.model.entities.Factor;
 import adn.model.entities.Provider;
-import adn.service.internal.Role;
 
 /**
  * Basic controller for factors whose business is fairly simple and general
@@ -46,15 +49,31 @@ public class FactorController extends BaseController {
 
 	@Transactional(readOnly = true)
 	@GetMapping("/provider")
+	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
 	public @ResponseBody ResponseEntity<?> obtainProvider(@RequestParam(name = "id") UUID id) {
-		Role role = ContextProvider.getPrincipalRole();
-
-		if (!role.equals(Role.ADMIN) && !role.equals(Role.PERSONNEL)) {
-			return unauthorize(ACCESS_DENIED);
-		}
-
 		return super.<Provider>send(baseRepository.findById(id, Provider.class),
 				String.format("Provider with id %s not found", id));
+	}
+
+	@SuppressWarnings("unchecked")
+	@Transactional(readOnly = true)
+	@GetMapping("/{entityname}/list")
+	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
+	public @ResponseBody ResponseEntity<?> obtainFactor(@PathVariable(name = "entityname") String entityName,
+			@PageableDefault(size = 20) Pageable paging) {
+		try {
+			String className = Character.toUpperCase(entityName.charAt(0)) + entityName.substring(1);
+			Class<?> type = Class.forName(Constants.ENTITY_PACKAGE + "." + className);
+
+			if (!Factor.class.isAssignableFrom(type)) {
+				return sendNotFound("");
+			}
+
+			return super.send(baseRepository.fetch((Class<Entity>) type, paging));
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+			return sendNotFound("");
+		}
 	}
 
 	/**

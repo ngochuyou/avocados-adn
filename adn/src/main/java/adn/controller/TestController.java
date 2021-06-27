@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
@@ -17,6 +18,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
@@ -24,6 +26,8 @@ import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -253,6 +257,19 @@ public class TestController extends BaseController {
 		ss.flush();
 
 		return ResponseEntity.ok(null);
+	}
+
+	@Transactional(readOnly = true)
+	@GetMapping("/provider/list")
+	public @ResponseBody ResponseEntity<?> fetchProvider(
+			@RequestParam(name = "groupby", defaultValue = "") List<String> groupByColumns,
+			@PageableDefault(size = 20) Pageable paging) {
+		System.out.println(groupByColumns.stream().collect(Collectors.joining(", ")));
+		System.out.println(paging.getPageNumber());
+		System.out.println(paging.getPageSize());
+		paging.getSort().forEach(
+				order -> System.out.println(String.format("%s %s", order.getProperty(), order.getDirection())));
+		return ResponseEntity.ok(new Object[0]);
 	}
 
 }

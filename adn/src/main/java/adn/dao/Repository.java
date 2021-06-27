@@ -8,22 +8,31 @@ import java.util.List;
 
 import javax.persistence.criteria.CriteriaQuery;
 
+import org.springframework.data.domain.Pageable;
+
 import adn.model.DatabaseInteractionResult;
+import adn.model.entities.Entity;
 
 /**
  * @author Ngoc Huy
  *
  */
-public interface Repository<T> {
+public interface Repository {
 
-	<E extends T> E findById(Serializable id, Class<E> clazz);
+	<T extends Entity> List<T> fetch(Class<T> type);
 
-	<E extends T> E findOne(CriteriaQuery<E> query, Class<E> clazz);
+	<T extends Entity> List<T> fetch(Class<T> type, Pageable paging);
 
-	<E extends T> List<E> find(CriteriaQuery<E> query, Class<E> clazz);
+	<T extends Entity> List<Object[]> fetch(Class<T> type, String[] columns, Pageable paging);
 
-	<E extends T> DatabaseInteractionResult<E> insert(Serializable id, E model, Class<E> type);
+	<T extends Entity> T findById(Serializable id, Class<T> clazz);
 
-	<E extends T> DatabaseInteractionResult<E> update(Serializable id, E model, Class<E> type);
+	<T extends Entity> T findOne(CriteriaQuery<T> query, Class<T> clazz);
+
+	<T extends Entity> List<T> find(CriteriaQuery<T> query, Class<T> clazz);
+
+	<T extends Entity, E extends T> DatabaseInteractionResult<E> insert(Serializable id, E model, Class<E> type);
+
+	<T extends Entity, E extends T> DatabaseInteractionResult<E> update(Serializable id, E model, Class<E> type);
 
 }

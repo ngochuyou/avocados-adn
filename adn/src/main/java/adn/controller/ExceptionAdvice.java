@@ -20,7 +20,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 
 	@ExceptionHandler(value = { AccessDeniedException.class })
-	public ResponseEntity<?> handleIllegalArgumentException(RuntimeException ex, WebRequest request) {
+	public ResponseEntity<?> handleUnauthorized(RuntimeException ex, WebRequest request) {
 		return handleExceptionInternal(ex, BaseController.ACCESS_DENIED, new HttpHeaders(), HttpStatus.UNAUTHORIZED,
 				request);
 	}

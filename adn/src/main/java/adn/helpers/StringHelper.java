@@ -111,8 +111,10 @@ public class StringHelper extends StringUtils {
 	}
 
 	public static String toCamel(String s, CharSequence seperator) {
+		String input = s.trim();
+		
 		if (seperator != null) {
-			String[] parts = s.split(seperator.toString());
+			String[] parts = input.split(seperator.toString());
 
 			if (parts.length > 1) {
 				StringBuilder builder = new StringBuilder(
@@ -126,7 +128,7 @@ public class StringHelper extends StringUtils {
 			}
 		}
 
-		return ("" + s.charAt(0)).toLowerCase() + s.substring(1);
+		return ("" + input.charAt(0)).toLowerCase() + input.substring(1);
 	}
 
 	public static String getFirstWord(String str) {

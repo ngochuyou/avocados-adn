@@ -2,8 +2,6 @@ package adn.controller;
 
 import static adn.service.services.AccountService.DEFAULT_ACCOUNT_PHOTO_NAME;
 
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -62,8 +60,7 @@ public class AccountController extends BaseController {
 	@Transactional
 	@PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
 	public @ResponseBody ResponseEntity<?> createAccount(@RequestPart(name = "model", required = true) String jsonPart,
-			@RequestPart(name = "photo", required = false) MultipartFile photo, HttpServletResponse response)
-			throws Exception {
+			@RequestPart(name = "photo", required = false) MultipartFile photo) throws Exception {
 		Role modelRole = roleExtractor.extractRole(jsonPart);
 
 		if (modelRole == null) {
@@ -168,6 +165,7 @@ public class AccountController extends BaseController {
 		try {
 			model = objectMapper.readValue(jsonPart, modelClass);
 		} catch (JsonProcessingException e) {
+			e.printStackTrace();
 			return ResponseEntity.badRequest().body(INVALID_MODEL);
 		}
 

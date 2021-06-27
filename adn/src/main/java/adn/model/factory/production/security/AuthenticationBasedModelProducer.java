@@ -48,10 +48,6 @@ public interface AuthenticationBasedModelProducer<T extends Entity, M extends Ab
 		return new CompositeAuthenticationBasedProducer(this, next);
 	}
 
-	default String getName() {
-		return "defaultProducer";
-	}
-
 }
 
 class CompositeAuthenticationBasedProducer<T extends Entity, M extends Model>

@@ -19,6 +19,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.SimpleThreadScope;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
@@ -27,8 +28,6 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.service.internal.Role;
 
@@ -40,7 +39,23 @@ import adn.service.internal.Role;
 @Configuration
 @EnableWebMvc
 @EnableTransactionManagement
+@EnableSpringDataWebSupport
 public class WebConfiguration implements WebMvcConfigurer {
+
+//	@Override
+//	public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
+//		converters.add(new MappingJackson2HttpMessageConverter(new HibernateMapper()));
+//		WebMvcConfigurer.super.configureMessageConverters(converters);
+//	}
+//
+//	@SuppressWarnings("serial")
+//	public static class HibernateMapper extends ObjectMapper {
+//
+//		public HibernateMapper() {
+//			registerModule(new Hibernate5Module());
+//		}
+//
+//	}
 
 	@Bean
 	public InternalResourceViewResolver viewResolver() {
@@ -66,6 +81,7 @@ public class WebConfiguration implements WebMvcConfigurer {
 		properties.put("hibernate.show_sql", true);
 		properties.put("hibernate.format_sql", true);
 		properties.put("hibernate.id.new_generator_mappings", "false");
+//		properties.put("hibernate.hbm2ddl.auto", "create-drop");
 		properties.put("hibernate.hbm2ddl.auto", "update");
 		properties.put("hibernate.flush_mode", "MANUAL");
 		properties.put("hibernate.jdbc.batch_size", 500);
@@ -97,12 +113,6 @@ public class WebConfiguration implements WebMvcConfigurer {
 	}
 
 	@Bean
-	ObjectMapper objectMapper() {
-
-		return new ObjectMapper();
-	}
-
-	@Bean
 	WebServerFactoryCustomizer<TomcatServletWebServerFactory> cookieProcessorCustomizer() {
 		return new WebServerFactoryCustomizer<TomcatServletWebServerFactory>() {
 
@@ -124,7 +134,6 @@ public class WebConfiguration implements WebMvcConfigurer {
 
 			@Override
 			public Role convert(String source) {
-				// TODO Auto-generated method stub
 				try {
 					return Role.valueOf(source);
 				} catch (Exception e) {
