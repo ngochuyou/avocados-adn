@@ -6,6 +6,7 @@ package adn.service.entity.builder;
 import static adn.helpers.StringHelper.get;
 import static adn.helpers.StringHelper.normalizeString;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,8 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 		target.setFirstName(get(normalizeString(model.getFirstName())).orElse(AccountService.UNKNOWN_USER_FIRSTNAME));
 		target.setLastName(get(normalizeString(model.getLastName())).orElse(AccountService.UNKNOWN_USER_LASTNAME));
 		target.setGender(Optional.ofNullable(model.getGender()).orElse(Gender.UNKNOWN));
-		target.setRole(target.getRole());
+		target.setRole(model.getRole());
+		target.setActive(model.isActive());
 
 		return target;
 	}
@@ -66,6 +68,13 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 		}
 
 		return persistence;
+	}
+
+	@Override
+	public T deactivationBuild(T entity) {
+		entity.setDeactivatedDate(LocalDateTime.now());
+
+		return entity;
 	}
 
 }

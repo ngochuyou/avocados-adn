@@ -25,6 +25,12 @@ import org.hibernate.type.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import adn.engine.access.DirectAccess;
+import adn.engine.access.LiterallyNamedAccess;
+import adn.engine.access.PropertyAccessDelegate;
+import adn.engine.access.PropertyAccessStrategyFactory;
+import adn.engine.access.StandardAccess;
+import adn.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.helpers.FunctionHelper;
 import adn.helpers.FunctionHelper.HandledBiFunction;
 import adn.helpers.FunctionHelper.HandledConsumer;
@@ -37,12 +43,6 @@ import adn.service.resource.annotation.Content;
 import adn.service.resource.annotation.Directory;
 import adn.service.resource.annotation.Extension;
 import adn.service.resource.connection.LocalStorageConnection;
-import adn.service.resource.engine.access.DirectAccess;
-import adn.service.resource.engine.access.LiterallyNamedAccess;
-import adn.service.resource.engine.access.PropertyAccessDelegate;
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory;
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
-import adn.service.resource.engine.access.StandardAccess;
 import adn.service.resource.engine.template.ResourceTemplate;
 import adn.service.resource.engine.template.ResourceTemplateImpl;
 import adn.service.resource.engine.tuple.InstantiatorFactory;
@@ -319,8 +319,8 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 		Consumer<Object> consumer = (o) -> entry.key = o;
 
 		for (Method method : methods) {
-			adn.service.resource.engine.access.PropertyAccess pa = method
-					.getDeclaredAnnotation(adn.service.resource.engine.access.PropertyAccess.class);
+			adn.engine.access.PropertyAccess pa = method
+					.getDeclaredAnnotation(adn.engine.access.PropertyAccess.class);
 
 			if (pa == null) {
 				continue;
@@ -328,9 +328,9 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 
 			consumer = (o) -> entry.key = o;
 
-			adn.service.resource.engine.access.PropertyAccess.Type accessType = pa.type();
+			adn.engine.access.PropertyAccess.Type accessType = pa.type();
 
-			if (accessType == adn.service.resource.engine.access.PropertyAccess.Type.SETTER) {
+			if (accessType == adn.engine.access.PropertyAccess.Type.SETTER) {
 				consumer = (o) -> entry.value = o;
 			}
 

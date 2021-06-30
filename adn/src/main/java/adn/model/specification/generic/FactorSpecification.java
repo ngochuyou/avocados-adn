@@ -55,6 +55,10 @@ public class FactorSpecification<T extends Factor> extends EntitySpecification<T
 			result.bad().getMessages().put("name", "Name was taken");
 		}
 
+		if (instance.isActive() == null) {
+			result.bad().getMessages().put("isActive", "Active state must not be empty");
+		}
+
 		return result;
 	}
 

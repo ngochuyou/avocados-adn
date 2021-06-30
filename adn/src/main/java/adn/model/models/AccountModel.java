@@ -45,6 +45,32 @@ public class AccountModel extends Model {
 
 	protected Date updatedDate;
 
+	@JsonProperty
+	protected Boolean isActive;
+
+	protected Date deactivatedDate;
+
+	@JsonProperty(value = "isActive")
+	public Boolean isActive() {
+		return isActive;
+	}
+
+	public void setActive(Boolean isActive) {
+		this.isActive = isActive;
+	}
+
+	public Date getDeactivatedDate() {
+		return deactivatedDate;
+	}
+
+	public void setDeactivatedDate(Date deactivatedDate) {
+		this.deactivatedDate = deactivatedDate;
+	}
+
+	public void setIsActive(Boolean isActive) {
+		this.isActive = isActive;
+	}
+
 	@Override
 	public String getId() {
 		return username;

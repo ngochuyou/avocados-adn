@@ -8,9 +8,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -19,6 +19,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
@@ -26,8 +27,6 @@ import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -42,6 +41,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 import adn.helpers.StringHelper;
+import adn.model.entities.Category;
 import adn.model.entities.Customer;
 import adn.security.SecurityConfiguration;
 import adn.service.resource.ResourceManager;
@@ -259,17 +259,39 @@ public class TestController extends BaseController {
 		return ResponseEntity.ok(null);
 	}
 
-	@Transactional(readOnly = true)
-	@GetMapping("/provider/list")
-	public @ResponseBody ResponseEntity<?> fetchProvider(
-			@RequestParam(name = "groupby", defaultValue = "") List<String> groupByColumns,
-			@PageableDefault(size = 20) Pageable paging) {
-		System.out.println(groupByColumns.stream().collect(Collectors.joining(", ")));
-		System.out.println(paging.getPageNumber());
-		System.out.println(paging.getPageSize());
-		paging.getSort().forEach(
-				order -> System.out.println(String.format("%s %s", order.getProperty(), order.getDirection())));
-		return ResponseEntity.ok(new Object[0]);
+	@GetMapping("/list")
+	public @ResponseBody ResponseEntity<?> fetchProvider() {
+//		Map<String, Object> obj = new HashMap<>();
+//
+//		obj.put("username", "ngochuy.ou");
+//		obj.put("gender", Gender.MALE);
+//		obj.put("ids", new String[] { "ngochuy", "ngochuyou" });
+//		obj.put("names", Arrays.asList("Tran Vu Ngoc Huy"));
+//		obj.put("phones", Set.of("0974032706", "0974032705"));
+//
+//		Product p = new Product();
+//
+//		p.setId(UUID.randomUUID());
+//		p.setName("SK-Prod-01");
+//
+//		obj.put("product", p);
+//		obj.put("cates", IntStream.range(0, 5).mapToObj(i -> {
+//			Category c = new Category();
+//
+//			c.setId(UUID.randomUUID());
+//			c.setName(StringHelper.hash("ngochuy.ou"));
+//
+//			return c;
+//		}).collect(Collectors.toSet()));
+
+		return ResponseEntity.ok(IntStream.range(0, 5).mapToObj(i -> {
+			Category c = new Category();
+
+			c.setId(UUID.randomUUID());
+			c.setName(StringHelper.hash("ngochuy.ou"));
+
+			return c;
+		}).collect(Collectors.toSet()));
 	}
 
 }

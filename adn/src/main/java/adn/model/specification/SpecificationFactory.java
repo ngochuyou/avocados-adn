@@ -9,6 +9,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.annotation.Order;
@@ -20,7 +21,7 @@ import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
 import adn.helpers.TypeHelper;
 import adn.model.Generic;
-import adn.model.ModelsDescriptor;
+import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
 
 /**
@@ -35,10 +36,10 @@ public class SpecificationFactory implements ContextBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(SpecificationFactory.class);
 
-	private Specification<?> defaultSpecification = new Specification<Entity>() {};
+	private Specification<?> defaultSpecification = new Specification<>() {};
 
 	@Autowired
-	private ModelsDescriptor modelManager;
+	private ModelContextProvider modelManager;
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -50,31 +51,39 @@ public class SpecificationFactory implements ContextBuilder {
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
 		scanner.addIncludeFilter(new AssignableTypeFilter(Specification.class));
-		scanner.findCandidateComponents(Constants.GENERIC_SPECIFICATION_PACKAGE)
-			.forEach(bean -> {
-				try {
-					Class<? extends Specification<?>> clazz = (Class<? extends Specification<?>>) Class.forName(bean.getBeanClassName());
-					Generic anno = clazz.getDeclaredAnnotation(Generic.class);
-					
-					if (anno == null) {
-						throw new Exception(String.format("%s not found on [%s]", Generic.class.getName(), bean.getBeanClassName()));
-					}
 
-					specificationMap.put(anno.entityGene(), (Specification<?>) ContextProvider.getApplicationContext().getBean(TypeHelper.getComponentName(clazz)));
-				} catch (Exception e) {
-					e.printStackTrace();
-					SpringApplication.exit(ContextProvider.getApplicationContext());
+		try {
+			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.GENERIC_SPECIFICATION_PACKAGE)) {
+				Class<? extends Specification<?>> clazz = (Class<? extends Specification<?>>) Class.forName(beanDef.getBeanClassName());
+				Generic anno = clazz.getDeclaredAnnotation(Generic.class);
+				
+				if (!Entity.class.isAssignableFrom(anno.entityGene())) {
+					continue;
 				}
-			});
-		this.modelManager.getEntityTree()
-			.forEach(node -> {
-				if (this.specificationMap.get(node.getNode()) == null) {
-					Specification<?> parentSpec = this.specificationMap.get(node.getParent().getNode());
+				
+				specificationMap.put((Class<? extends Entity>) anno.entityGene(),
+						(Specification<?>) ContextProvider.getApplicationContext()
+							.getBean(TypeHelper.getComponentName(clazz)));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			SpringApplication.exit(ContextProvider.getApplicationContext());
+		}
+
+		modelManager.getEntityTree()
+			.forEach(branch -> {
+				if (specificationMap.get(branch.getNode()) == null) {
+					if (branch.getParent() == null) {
+						specificationMap.put((Class<? extends Entity>) branch.getNode(), defaultSpecification);
+						return;
+					}
 					
-					this.specificationMap.put(node.getNode(), parentSpec != null ? parentSpec : defaultSpecification);
+					Specification<?> parentSpec = this.specificationMap.get(branch.getParent().getNode());
+					
+					specificationMap.put((Class<? extends Entity>) branch.getNode(), parentSpec != null ? parentSpec : defaultSpecification);
 				}
 			});
-		this.specificationMap.forEach((k, v) -> logger.info(String.format("[%s] -> [%s]", v.toString(), k.getName())));
+		specificationMap.forEach((k, v) -> logger.info(String.format("Registered one %s of type [%s] for [%s] ", Specification.class.getSimpleName(), v.getClass().getName(), k.getName())));
 		// @formatter:on
 		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}

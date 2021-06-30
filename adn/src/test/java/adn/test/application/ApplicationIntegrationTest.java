@@ -22,9 +22,11 @@ import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.EntityState;
 import org.hibernate.internal.SessionImpl;
+import org.hibernate.tuple.entity.EntityMetamodel;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -56,9 +58,7 @@ import adn.application.context.ContextProvider;
 import adn.application.context.DatabaseInitializer;
 import adn.dao.BaseRepository;
 import adn.dao.paging.Unpaged;
-import adn.model.ModelsDescriptor;
 import adn.model.entities.Account;
-import adn.model.entities.Admin;
 import adn.model.entities.Provider;
 import adn.security.SecurityConfiguration;
 import adn.service.resource.model.models.ImageByBytes;
@@ -137,19 +137,7 @@ public class ApplicationIntegrationTest {
 	}
 
 	@Autowired
-	private ModelsDescriptor modelManager;
-
-	@Test
-	private void testInstantiateEntity() {
-		String id = "ngochuy.ou";
-		Admin instance = modelManager.instantiate(Admin.class, id);
-
-		assertThat(instance != null).isTrue();
-		assertThat(instance.getId()).isEqualTo(id);
-	}
-
-	@Autowired
-	private SessionFactory factory;
+	private SessionFactory sessionFactory;
 
 	@Autowired
 	private DatabaseInitializer dbInit;
@@ -157,7 +145,7 @@ public class ApplicationIntegrationTest {
 	@Test
 	@Transactional
 	private void entityEntryTest() {
-		SessionImpl session = (SessionImpl) factory.getCurrentSession();
+		SessionImpl session = (SessionImpl) sessionFactory.getCurrentSession();
 
 		session.setHibernateFlushMode(FlushMode.MANUAL);
 
@@ -246,7 +234,7 @@ public class ApplicationIntegrationTest {
 	@Test
 	@Transactional
 	private void testSpec() {
-		Session session = factory.getCurrentSession();
+		Session session = sessionFactory.getCurrentSession();
 		CriteriaBuilder builder = session.getCriteriaBuilder();
 		CriteriaQuery<Long> query = builder.createQuery(Long.class);
 		Root<Provider> root = query.from(Provider.class);
@@ -304,11 +292,22 @@ public class ApplicationIntegrationTest {
 
 	@Test
 	public void testPageableDefault() throws Exception {
-		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
-				.get(PREFIX + "/provider/list?size=2&random=asdasd&sort=createdDate,DESC&sort=updatedDate,ASC");
+		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get(PREFIX + "/list");
 		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
 
 		assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+	}
+
+	@Test
+	private void testEntityMetamodel() {
+		EntityMetamodel emm = sessionFactory.unwrap(SessionFactoryImplementor.class).getMetamodel()
+				.entityPersister(Account.class).getEntityMetamodel();
+
+		System.out.println(join(emm.getPropertyNames()));
+	}
+
+	private String join(String[] elements) {
+		return Stream.of(elements).collect(Collectors.joining(", "));
 	}
 
 }

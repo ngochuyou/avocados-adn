@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
+import adn.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.persistence.PersistenceContext;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.query.UpdateQuery;

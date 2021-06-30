@@ -25,8 +25,8 @@ import adn.helpers.StringHelper;
 import adn.helpers.TypeHelper;
 import adn.model.DatabaseInteractionResult;
 import adn.model.entities.Account;
-import adn.model.factory.extraction.AccountRoleExtractor;
 import adn.model.models.AccountModel;
+import adn.service.internal.AccountRoleExtractor;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Role;
 import adn.service.internal.ServiceResult;
@@ -85,7 +85,7 @@ public class AccountController extends BaseController {
 			return ResponseEntity.badRequest().body(INVALID_MODEL);
 		}
 
-		openSession();
+		setMode();
 
 		if (baseRepository.<Account>findById(model.getId(), Account.class) != null) {
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(EXISTED);
@@ -110,8 +110,9 @@ public class AccountController extends BaseController {
 
 		if (insertResult.isOk()) {
 			currentSession(ss -> ss.flush());
+			account = insertResult.getInstance();
 
-			return ResponseEntity.ok(produce(insertResult.getInstance(), modelClass));
+			return ResponseEntity.ok(produce(account, (Class<Account>) account.getClass()));
 		}
 
 		currentSession(ss -> ss.clear());
@@ -176,7 +177,7 @@ public class AccountController extends BaseController {
 			return unauthorize(ACCESS_DENIED);
 		}
 		// get current session with FlushMode.MANUAL
-		openSession();
+		setMode();
 
 		Account persistence;
 		// This entity will take effects as the handler progresses
@@ -225,7 +226,7 @@ public class AccountController extends BaseController {
 		if (updateResult.isOk()) {
 			currentSession(ss -> ss.flush());
 
-			return ResponseEntity.ok(produce(persistence, modelClass));
+			return ResponseEntity.ok(produce(persistence, (Class<Account>) persistence.getClass()));
 		}
 
 		currentSession(ss -> ss.clear());

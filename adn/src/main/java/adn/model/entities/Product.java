@@ -41,7 +41,7 @@ public class Product extends Factor {
 	@JoinColumn(name = "category_id", referencedColumnName = "id")
 	private Category category;
 
-	@OneToMany(mappedBy = "product", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+	@OneToMany(cascade = CascadeType.PERSIST, mappedBy = "product", fetch = FetchType.LAZY)
 	private List<ProductProviderDetail> providerDetails;
 
 	public Double getPrice() {

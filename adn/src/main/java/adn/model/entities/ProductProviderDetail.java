@@ -21,8 +21,8 @@ import javax.persistence.Table;
  *
  */
 @Entity
-@Table(name = "product_prodiver_details")
-public class ProductProviderDetail {
+@Table(name = "product_provider_details")
+public class ProductProviderDetail extends adn.model.entities.Entity {
 
 	@EmbeddedId
 	private ProductProviderDetailId id;

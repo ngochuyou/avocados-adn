@@ -5,8 +5,8 @@ package adn.service.resource.engine.template;
 
 import org.hibernate.internal.util.MarkerObject;
 
+import adn.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.Storage;
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.tuple.ResourceTuplizer;
 
 /**

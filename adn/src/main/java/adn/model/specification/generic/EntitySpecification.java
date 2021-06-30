@@ -33,4 +33,9 @@ public class EntitySpecification<T extends Entity> extends TransactionalSpecific
 		return result;
 	}
 
+	@Override
+	public DatabaseInteractionResult<T> isSatisfiedBy(T instance) {
+		return isSatisfiedBy(EntityUtils.getIdentifier(instance), instance);
+	}
+
 }

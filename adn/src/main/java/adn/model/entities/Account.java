@@ -54,6 +54,12 @@ public class Account extends adn.model.entities.Entity {
 	@Enumerated(EnumType.STRING)
 	protected Gender gender;
 
+	@Column(name = "active", nullable = false)
+	protected Boolean active;
+
+	@Column(name = "deactivated_date")
+	protected LocalDateTime deactivatedDate;
+
 	@CreationTimestamp
 	@Column(name = "created_date", nullable = false, updatable = false)
 	protected LocalDateTime createdDate;
@@ -148,6 +154,22 @@ public class Account extends adn.model.entities.Entity {
 
 	public void setUpdatedDate(LocalDateTime updatedDate) {
 		this.updatedDate = updatedDate;
+	}
+
+	public Boolean isActive() {
+		return active;
+	}
+
+	public void setActive(Boolean active) {
+		this.active = active;
+	}
+
+	public LocalDateTime getDeactivatedDate() {
+		return deactivatedDate;
+	}
+
+	public void setDeactivatedDate(LocalDateTime deactivatedDate) {
+		this.deactivatedDate = deactivatedDate;
 	}
 
 }

@@ -1,14 +1,13 @@
 package adn.model.factory;
 
+import java.util.Map;
+
 import adn.model.AbstractModel;
-import adn.model.entities.Entity;
 
-public interface ModelProducer<T extends Entity, M extends AbstractModel> {
+public interface ModelProducer<T extends AbstractModel> {
 
-	M produceForAnonymous(T entity, M model);
+	Map<String, Object> produce(T entity);
 
-	default String getName() {
-		return this.getClass().getName();
-	}
-
+	Map<String, Object> produceImmutable(T entity);
+	
 }

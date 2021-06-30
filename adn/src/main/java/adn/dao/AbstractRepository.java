@@ -37,7 +37,7 @@ public abstract class AbstractRepository implements Repository {
 	protected final SessionFactory sessionFactory;
 	protected final SpecificationFactory specificationFactory;
 
-	protected static final String[] ALL_COLUMNS = new String[0];
+	protected static final String[] EMPTY_COLUMN_ARRAY = new String[0];
 
 	public AbstractRepository(final SessionFactory sessionFactory, final SpecificationFactory specificationFactory) {
 		this.sessionFactory = sessionFactory;
@@ -74,8 +74,13 @@ public abstract class AbstractRepository implements Repository {
 
 	@Override
 	public <T extends Entity> List<T> fetch(Class<T> type, Pageable paging) {
+		return fetch(type, paging, EMPTY_COLUMN_ARRAY);
+	}
+
+	@Override
+	public <T extends Entity> List<T> fetch(Class<T> type, Pageable paging, String[] groupByColumns) {
 		Session session = getCurrentSession();
-		String hql = resolveSelect(type, ALL_COLUMNS, paging);
+		String hql = resolveFetchQuery(type, EMPTY_COLUMN_ARRAY, paging, groupByColumns);
 		Query<T> query = session.createQuery(hql, type);
 
 		resolveLimit(query, paging);
@@ -85,8 +90,14 @@ public abstract class AbstractRepository implements Repository {
 
 	@Override
 	public <T extends Entity> List<Object[]> fetch(Class<T> type, String[] columns, Pageable paging) {
+		return fetch(type, columns, paging, EMPTY_COLUMN_ARRAY);
+	}
+
+	@Override
+	public <T extends Entity> List<Object[]> fetch(Class<T> type, String[] columns, Pageable paging,
+			String[] groupByColumns) {
 		Session session = getCurrentSession();
-		String hql = resolveSelect(type, columns, paging);
+		String hql = resolveFetchQuery(type, columns, paging, groupByColumns);
 		Query<Object[]> query = session.createQuery(hql, Object[].class);
 
 		resolveLimit(query, paging);
@@ -94,26 +105,42 @@ public abstract class AbstractRepository implements Repository {
 		return query.getResultList();
 	}
 
-	private <T extends Entity> String resolveSelect(Class<T> type, String[] columns, Pageable paging) {
-		if (columns.length == 0) {
-			// @formatter:off
-			return String.format("FROM %s %s",
-					EntityUtils.getEntityName(type),
-					resolveOrderBy(paging.getSort()));
-			// @formatter:on
-		}
+	private <T extends Entity> String resolveFetchQuery(Class<T> type, String[] columns, Pageable paging,
+			String[] groupByColumns) {
 		// @formatter:off
-		return String.format("%s FROM %s %s",
-				"SELECT " + Stream.of(columns).collect(Collectors.joining(", ")),
-				EntityUtils.getEntityName(type),
-				resolveOrderBy(paging.getSort()));
+		return appendOrderBy(
+					appendGroupBy(
+						resolveSelect(type, columns),
+						groupByColumns),
+					paging.getSort());
 		// @formatter:on
 	}
 
-	private String resolveOrderBy(Sort sort) {
+	private <T> String appendGroupBy(String queryString, String[] groupByColumns) {
+		if (groupByColumns.length == 0) {
+			return queryString;
+		}
+
+		return queryString + " GROUP BY " + Stream.of(groupByColumns).collect(Collectors.joining(", "));
+	}
+
+	private <T extends Entity> String resolveSelect(Class<T> type, String[] columns) {
 		// @formatter:off
-		return sort.equals(Sort.unsorted()) ? ""
-				: "ORDER BY " +
+		if (columns.length == 0) {
+			return String.format("FROM %s",
+					EntityUtils.getEntityName(type));
+		}
+		
+		return String.format("%s FROM %s",
+				"SELECT " + Stream.of(columns).collect(Collectors.joining(", ")),
+				EntityUtils.getEntityName(type));
+		// @formatter:on
+	}
+
+	private String appendOrderBy(String queryString, Sort sort) {
+		// @formatter:off
+		return sort.equals(Sort.unsorted()) ? queryString
+				: queryString + " ORDER BY " +
 					sort.map(this::fromOrder).stream()
 						.collect(Collectors.joining(", "));
 		// @formatter:on

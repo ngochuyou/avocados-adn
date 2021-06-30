@@ -3,6 +3,9 @@
  */
 package adn.service.entity.builder;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
+
 import org.springframework.stereotype.Component;
 
 import adn.application.context.ContextProvider;
@@ -20,6 +23,7 @@ public class FactorBuilder<T extends Factor> extends AbstractEntityBuilder<T> {
 
 	protected <E extends Factor> E mandatoryBuild(E target, E model) {
 		target.setName(StringHelper.normalizeString(model.getName()));
+		target.setActive(Optional.ofNullable(model.isActive()).orElse(true));
 
 		return target;
 	}
@@ -29,6 +33,7 @@ public class FactorBuilder<T extends Factor> extends AbstractEntityBuilder<T> {
 		super.insertionBuild(model);
 		mandatoryBuild(model, model);
 
+		model.setActive(true);
 		model.setCreatedBy(ContextProvider.getPrincipalName());
 		model.setUpdatedBy(model.getCreatedBy());
 
@@ -45,6 +50,13 @@ public class FactorBuilder<T extends Factor> extends AbstractEntityBuilder<T> {
 		persistence.setUpdatedBy(ContextProvider.getPrincipalName());
 
 		return persistence;
+	}
+
+	@Override
+	public T deactivationBuild(T entity) {
+		entity.setDeactivatedDate(LocalDateTime.now());
+
+		return entity;
 	}
 
 }

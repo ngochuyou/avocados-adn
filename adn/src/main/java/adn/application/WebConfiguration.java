@@ -3,6 +3,7 @@
  */
 package adn.application;
 
+import java.util.List;
 import java.util.Properties;
 
 import javax.sql.DataSource;
@@ -20,6 +21,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.SimpleThreadScope;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.AbstractJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
@@ -28,6 +33,8 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
+
+import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
 
 import adn.service.internal.Role;
 
@@ -42,20 +49,18 @@ import adn.service.internal.Role;
 @EnableSpringDataWebSupport
 public class WebConfiguration implements WebMvcConfigurer {
 
-//	@Override
-//	public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-//		converters.add(new MappingJackson2HttpMessageConverter(new HibernateMapper()));
-//		WebMvcConfigurer.super.configureMessageConverters(converters);
-//	}
-//
-//	@SuppressWarnings("serial")
-//	public static class HibernateMapper extends ObjectMapper {
-//
-//		public HibernateMapper() {
-//			registerModule(new Hibernate5Module());
-//		}
-//
-//	}
+	@Override
+	public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+		Hibernate5Module h5module = new Hibernate5Module();
+		h5module.disable(Hibernate5Module.Feature.USE_TRANSIENT_ANNOTATION);
+
+		for (HttpMessageConverter<?> mc : converters) {
+			if (mc instanceof MappingJackson2HttpMessageConverter
+					|| mc instanceof MappingJackson2XmlHttpMessageConverter) {
+				((AbstractJackson2HttpMessageConverter) mc).getObjectMapper().registerModule(h5module);
+			}
+		}
+	}
 
 	@Bean
 	public InternalResourceViewResolver viewResolver() {

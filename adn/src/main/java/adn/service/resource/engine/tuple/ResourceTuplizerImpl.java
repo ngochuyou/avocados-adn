@@ -10,13 +10,13 @@ import org.hibernate.tuple.Tuplizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import adn.engine.access.AbstractPropertyAccess;
+import adn.engine.access.HybridAccess;
+import adn.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccess;
+import adn.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
+import adn.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccess.LambdaType;
 import adn.helpers.FunctionHelper.HandledFunction;
 import adn.helpers.FunctionHelper.HandledSupplier;
-import adn.service.resource.engine.access.AbstractPropertyAccess;
-import adn.service.resource.engine.access.HybridAccess;
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccess;
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccess.LambdaType;
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.template.ResourceTemplate;
 import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
 

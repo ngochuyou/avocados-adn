@@ -7,29 +7,29 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import adn.model.entities.Entity;
-
 /**
  * @author Ngoc Huy
  *
  */
 public class ModelInheritanceTree<T extends AbstractModel> {
 
-	private ModelInheritanceTree<T> parent;
+	private ModelInheritanceTree<? super T> parent;
 
 	private Class<T> node;
 
-	private Set<ModelInheritanceTree<T>> childrens;
+	private Set<ModelInheritanceTree<? extends T>> childrens;
 
-	public ModelInheritanceTree(ModelInheritanceTree<T> parent, Class<T> node, Set<ModelInheritanceTree<T>> childrens) {
+	public ModelInheritanceTree(ModelInheritanceTree<? super T> parent, Class<T> node,
+			Set<ModelInheritanceTree<? extends T>> childrens) {
 		super();
 		this.parent = parent;
 		this.node = node;
 		this.childrens = childrens == null ? new HashSet<>() : childrens;
 	}
 
-	public void add(Class<T> clazz) {
-		if (clazz == null || clazz == Entity.class) {
+	@SuppressWarnings("unchecked")
+	public void add(Class<? extends AbstractModel> clazz) {
+		if (clazz == null || clazz == AbstractModel.class) {
 			return;
 		}
 
@@ -38,7 +38,7 @@ public class ModelInheritanceTree<T extends AbstractModel> {
 		}
 
 		if (this.node.equals(clazz.getSuperclass())) {
-			this.childrens.add(new ModelInheritanceTree<>(this, clazz, null));
+			this.childrens.add(new ModelInheritanceTree<>(this, (Class<? extends T>) clazz, null));
 
 			return;
 		}
@@ -55,7 +55,7 @@ public class ModelInheritanceTree<T extends AbstractModel> {
 			return true;
 		}
 
-		for (ModelInheritanceTree<T> tree : this.childrens) {
+		for (ModelInheritanceTree<? extends T> tree : this.childrens) {
 			if (tree.contains(clazz)) {
 				return true;
 			}
@@ -64,18 +64,14 @@ public class ModelInheritanceTree<T extends AbstractModel> {
 		return false;
 	}
 
-	public void forEach(Consumer<ModelInheritanceTree<T>> consumer) {
+	public void forEach(Consumer<ModelInheritanceTree<?>> consumer) {
 		consumer.accept(this);
 
 		this.childrens.forEach(tree -> tree.forEach(consumer));
 	}
 
-	public ModelInheritanceTree<T> getParent() {
+	public ModelInheritanceTree<? super T> getParent() {
 		return parent;
-	}
-
-	public void setParent(ModelInheritanceTree<T> parent) {
-		this.parent = parent;
 	}
 
 	public Class<T> getNode() {
@@ -86,12 +82,8 @@ public class ModelInheritanceTree<T extends AbstractModel> {
 		this.node = node;
 	}
 
-	public Set<ModelInheritanceTree<T>> getChildrens() {
+	public Set<ModelInheritanceTree<? extends T>> getChildrens() {
 		return childrens;
-	}
-
-	public void setChildrens(Set<ModelInheritanceTree<T>> childrens) {
-		this.childrens = childrens;
 	}
 
 }

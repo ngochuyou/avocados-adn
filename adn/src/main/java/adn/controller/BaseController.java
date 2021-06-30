@@ -4,6 +4,7 @@
 package adn.controller;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -23,13 +24,15 @@ import adn.dao.Repository;
 import adn.helpers.FunctionHelper.HandledConsumer;
 import adn.model.AbstractModel;
 import adn.model.DatabaseInteractionResult;
-import adn.model.ModelsDescriptor;
+import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
+import adn.model.factory.AuthenticationBasedModelFactory;
+import adn.model.factory.DefaultAuthenticationBasedModelFactory;
+import adn.model.factory.DelegateEntityExtractorProvider;
 import adn.model.factory.EntityExtractorProvider;
-import adn.model.factory.extraction.DelegateEntityExtractorProvider;
-import adn.model.factory.production.security.AuthenticationBasedProducerProvider;
 import adn.model.models.Model;
 import adn.service.internal.CRUDService;
+import adn.service.internal.Role;
 
 /**
  * @author Ngoc Huy
@@ -39,10 +42,11 @@ import adn.service.internal.CRUDService;
 public class BaseController {
 
 	@Autowired
-	protected ModelsDescriptor modelsDescriptor;
+	protected ModelContextProvider modelsDescriptor;
 
 	@Autowired
-	protected AuthenticationBasedProducerProvider authenticationBasedProducerProvider;
+	@Qualifier(DefaultAuthenticationBasedModelFactory.NAME)
+	protected AuthenticationBasedModelFactory authenticationBasedModelFactory;
 
 	@Autowired
 	@Qualifier(DelegateEntityExtractorProvider.NAME)
@@ -69,11 +73,11 @@ public class BaseController {
 	public static final String ACCESS_DENIED = "ACCESS DENIDED";
 	protected static final String EXISTED = "RESOURCE IS ALREADY EXSITED";
 
-	protected void openSession() {
-		openSession(FlushMode.MANUAL);
+	protected void setMode() {
+		setMode(FlushMode.MANUAL);
 	}
 
-	protected void openSession(FlushMode mode) {
+	protected void setMode(FlushMode mode) {
 		sessionFactory.getCurrentSession().setHibernateFlushMode(Optional.ofNullable(mode).orElse(FlushMode.MANUAL));
 	}
 
@@ -92,14 +96,19 @@ public class BaseController {
 		return extractorProvider.getExtractor(entityClass).extract(model, modelsDescriptor.instantiate(entityClass));
 	}
 
-	protected <T extends Entity, M extends AbstractModel> M produce(T entity, Class<M> modelClass) {
-		return authenticationBasedProducerProvider.produce(entity, modelClass, ContextProvider.getPrincipalRole());
+	protected <T extends AbstractModel, E extends T> Map<String, Object> produce(E entity, Class<E> entityClass) {
+		return authenticationBasedModelFactory.produce(entityClass, entity, ContextProvider.getPrincipalRole());
 	}
 
 	@SuppressWarnings("unchecked")
-	protected <T extends Entity, M extends AbstractModel> M produce(T entity) {
-		return (M) authenticationBasedProducerProvider.produce(entity,
-				modelsDescriptor.getModelClass(entity.getClass()), ContextProvider.getPrincipalRole());
+	protected <T extends AbstractModel, E extends T> Map<String, Object> produce(E entity) {
+		return authenticationBasedModelFactory.produce((Class<E>) entity.getClass(), entity,
+				ContextProvider.getPrincipalRole());
+	}
+
+	protected <T extends AbstractModel, E extends T> Map<String, Object> produce(E entity, Class<E> entityClass,
+			Role role) {
+		return authenticationBasedModelFactory.produce(entityClass, entity, role);
 	}
 
 	protected <T> ResponseEntity<?> unauthorize(T body) {
@@ -110,16 +119,16 @@ public class BaseController {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
 	}
 
-	protected <T> ResponseEntity<?> send(T instance, String messageIfNotFound) {
-		return instance == null ? sendNotFound(messageIfNotFound) : ResponseEntity.ok(instance);
+	protected <T> ResponseEntity<?> send(T instance, String messageIfNull) {
+		return instance == null ? sendNotFound(messageIfNull) : ResponseEntity.ok(instance);
 	}
 
-	protected <T extends Entity> ResponseEntity<?> send(List<T> instances) {
+	protected <T extends AbstractModel> ResponseEntity<?> send(List<T> instances) {
 		return ResponseEntity.ok(instances.stream().map(this::produce).collect(Collectors.toList()));
 	}
 
-	protected <T extends Entity> ResponseEntity<?> send(T instance, String messageIfNotFound) {
-		return instance == null ? sendNotFound(messageIfNotFound) : ResponseEntity.ok(produce(instance));
+	protected <T extends AbstractModel> ResponseEntity<?> send(T instance, String messageIfNull) {
+		return instance == null ? sendNotFound(messageIfNull) : ResponseEntity.ok(produce(instance));
 	}
 
 	@SuppressWarnings("unchecked")

@@ -18,6 +18,7 @@ import org.springframework.core.type.filter.AssignableTypeFilter;
 
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
+import adn.service.resource.ManagerFactoryBuilder;
 
 /**
  * @author Ngoc Huy
@@ -39,6 +40,7 @@ public class BootEntry {
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
 		scanner.addIncludeFilter(new AssignableTypeFilter(ContextBuilder.class));
+		scanner.addExcludeFilter(new AssignableTypeFilter(ManagerFactoryBuilder.class));
 		Class<ContextBuilder>[] contextBuilderClasses = scanner.findCandidateComponents(Constants.ROOT_PACKAGE)
 			.stream()
 			.map(bean -> {
@@ -47,7 +49,7 @@ public class BootEntry {
 				} catch (Exception ex) {
 					ex.printStackTrace();
 					SpringApplication.exit(context);
-					
+					exit();
 					return null;
 				}
 			})
@@ -68,7 +70,7 @@ public class BootEntry {
 				} catch (Exception e) {
 					e.printStackTrace();
 					SpringApplication.exit(context);
-					
+					exit();
 					return 0;
 				}
 			}).toArray(Class[]::new);
@@ -84,15 +86,21 @@ public class BootEntry {
 				} catch (Exception e) {
 					e.printStackTrace();
 					SpringApplication.exit(context);
+					exit();
 					return;
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
 				SpringApplication.exit(context);
+				exit();
 				return;
 			}
 		}
 		// @formatter:on
+	}
+
+	private void exit() {
+		System.exit(-1);
 	}
 
 }

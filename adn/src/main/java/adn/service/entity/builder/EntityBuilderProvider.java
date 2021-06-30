@@ -23,7 +23,7 @@ import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
-import adn.model.ModelsDescriptor;
+import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
 
 /**
@@ -56,7 +56,7 @@ public class EntityBuilderProvider implements ContextBuilder {
 	};
 
 	@Autowired
-	private ModelsDescriptor modelDescriptor;
+	private ModelContextProvider modelDescriptor;
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -77,23 +77,29 @@ public class EntityBuilderProvider implements ContextBuilder {
 						.forName(beanDef.getBeanClassName());
 				Generic anno = clazz.getDeclaredAnnotation(Generic.class);
 
-				if (anno == null)
+				if (!Entity.class.isAssignableFrom(anno.entityGene()))
 					continue;
 
-				Class<? extends Entity> modelClass = anno.entityGene();
+				Class<? extends Entity> entityClass = (Class<? extends Entity>) anno.entityGene();
 
-				builderMap.put(modelClass, (EntityBuilder<? extends Entity>) ContextProvider.getApplicationContext()
+				builderMap.put(entityClass, (EntityBuilder<? extends Entity>) ContextProvider.getApplicationContext()
 						.getBean(StringHelper.toCamel(clazz.getSimpleName(), null)));
 			}
 
-			modelDescriptor.getEntityTree().forEach(node -> {
-				if (this.builderMap.get(node.getNode()) == null) {
-					if (!builderMap.containsKey(node.getParent().getNode())) {
-						builderMap.put(node.getNode(), defaultBuilder);
+			modelDescriptor.getEntityTree().forEach(branch -> {
+				if (builderMap.get(branch.getNode()) == null) {
+					if (branch.getParent() == null) {
+						builderMap.put((Class<? extends Entity>) branch.getNode(), defaultBuilder);
 						return;
 					}
 
-					builderMap.put(node.getNode(), builderMap.get(node.getParent().getNode()));
+					if (!builderMap.containsKey(branch.getParent().getNode())) {
+						builderMap.put((Class<? extends Entity>) branch.getNode(), defaultBuilder);
+						return;
+					}
+
+					builderMap.put((Class<? extends Entity>) branch.getNode(),
+							builderMap.get(branch.getParent().getNode()));
 				}
 			});
 

@@ -1,29 +1,36 @@
 package adn.model.factory.production.security;
 
+import java.util.Map;
+
 import org.springframework.stereotype.Component;
 
 import adn.model.Generic;
 import adn.model.entities.Personnel;
-import adn.model.models.PersonnelModel;
-import adn.security.SecuredFor;
-import adn.service.internal.Role;
 
 @Component
-@Generic(modelGene = PersonnelModel.class)
-public class PersonnelModelProducer implements AuthenticationBasedModelProducer<Personnel, PersonnelModel> {
+@Generic(entityGene = Personnel.class)
+public class PersonnelModelProducer extends AbstractCompositeAuthenticationBasedModelProducerImplementor<Personnel> {
 
 	@Override
-	@SecuredFor(role = Role.ADMIN)
-	public PersonnelModel produceForAdminAuthentication(Personnel entity, PersonnelModel model) {
-		model.setCreatedBy(entity.getCreatedBy());
+	protected Map<String, Object> produceForEmployee(Personnel account, Map<String, Object> model) {
+		model.put("createdBy", account.getCreatedBy());
 
 		return model;
 	}
 
 	@Override
-	@SecuredFor(role = Role.PERSONNEL)
-	public PersonnelModel produceForPersonnelAuthentication(Personnel entity, PersonnelModel model) {
-		return produceForAdminAuthentication(entity, model);
+	protected Map<String, Object> produceForManager(Personnel entity, Map<String, Object> model) {
+		return produceForEmployee(entity, model);
+	}
+
+	@Override
+	protected Map<String, Object> produceForPersonnel(Personnel entity, Map<String, Object> model) {
+		return produceForEmployee(entity, model);
+	}
+
+	@Override
+	protected Map<String, Object> produceForAdmin(Personnel entity, Map<String, Object> model) {
+		return produceForEmployee(entity, model);
 	}
 
 }

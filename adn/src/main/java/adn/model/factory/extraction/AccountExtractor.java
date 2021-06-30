@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import adn.model.Generic;
 import adn.model.entities.Account;
 import adn.model.entities.Gender;
+import adn.model.factory.ModelEntityExtractor;
 import adn.model.models.AccountModel;
 import adn.service.internal.Role;
 
@@ -34,6 +35,8 @@ public class AccountExtractor<A extends Account, AM extends AccountModel> extend
 		} catch (Exception e) {
 			account.setGender(Gender.UNKNOWN);
 		}
+
+		account.setActive(model.isActive());
 
 		return account;
 	}

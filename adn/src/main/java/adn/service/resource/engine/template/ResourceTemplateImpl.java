@@ -30,10 +30,10 @@ import org.hibernate.property.access.spi.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import adn.engine.access.PropertyAccessStrategyFactory;
+import adn.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.LocalStorage;
 import adn.service.resource.engine.Storage;
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory;
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
 import adn.service.resource.engine.tuple.ResourceTuplizer;
 import adn.service.resource.engine.tuple.ResourceTuplizerImpl;

@@ -23,7 +23,11 @@ public interface Repository {
 
 	<T extends Entity> List<T> fetch(Class<T> type, Pageable paging);
 
+	<T extends Entity> List<T> fetch(Class<T> type, Pageable paging, String[] groupByColumns);
+
 	<T extends Entity> List<Object[]> fetch(Class<T> type, String[] columns, Pageable paging);
+
+	<T extends Entity> List<Object[]> fetch(Class<T> type, String[] columns, Pageable paging, String[] groupByColumns);
 
 	<T extends Entity> T findById(Serializable id, Class<T> clazz);
 

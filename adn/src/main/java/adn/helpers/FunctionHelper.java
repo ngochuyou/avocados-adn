@@ -24,7 +24,7 @@ public class FunctionHelper {
 	public static <T, E extends Throwable> T doThrow(E ex, Class<E> type) throws E {
 		throw ex;
 	}
-	
+
 	public static <T> T supply(Supplier<T> supplier) {
 		return supplier.get();
 	}
@@ -67,6 +67,13 @@ public class FunctionHelper {
 	public static interface HandledConsumer<T, E extends Exception> {
 
 		void accept(T one) throws E;
+
+	}
+
+	@FunctionalInterface
+	public static interface HandledBiConsumer<F, S, E extends Exception> {
+
+		void accept(F one, S two) throws E;
 
 	}
 

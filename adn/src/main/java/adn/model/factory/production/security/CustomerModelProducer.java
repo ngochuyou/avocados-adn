@@ -1,39 +1,42 @@
 package adn.model.factory.production.security;
 
+import java.util.Map;
+
 import org.springframework.stereotype.Component;
 
 import adn.model.Generic;
 import adn.model.entities.Customer;
-import adn.model.models.CustomerModel;
-import adn.security.SecuredFor;
-import adn.service.internal.Role;
 
 @Component
-@Generic(modelGene = CustomerModel.class)
-public class CustomerModelProducer implements AuthenticationBasedModelProducer<Customer, CustomerModel> {
+@Generic(entityGene = Customer.class)
+public class CustomerModelProducer extends AbstractCompositeAuthenticationBasedModelProducerImplementor<Customer> {
 
 	@Override
-	@SecuredFor(role = Role.ADMIN)
-	public CustomerModel produceForAdminAuthentication(Customer entity, CustomerModel model) {
-		// TODO Auto-generated method stub
-		model.setAddress(entity.getAddress());
-		model.setPrestigePoint(entity.getPrestigePoint());
+	protected Map<String, Object> produceForCustomer(Customer account, Map<String, Object> model) {
+		model.put("address", account.getAddress());
+		model.put("prestigePoint", account.getPrestigePoint());
 
 		return model;
 	}
 
 	@Override
-	@SecuredFor(role = Role.CUSTOMER)
-	public CustomerModel produceForCustomerAuthentication(Customer entity, CustomerModel model) {
-		// TODO Auto-generated method stub
-		return produceForAdminAuthentication(entity, model);
+	protected Map<String, Object> produceForAdmin(Customer entity, Map<String, Object> model) {
+		return produceForCustomer(entity, model);
 	}
 
 	@Override
-	@SecuredFor(role = Role.PERSONNEL)
-	public CustomerModel produceForPersonnelAuthentication(Customer entity, CustomerModel model) {
-		// TODO Auto-generated method stub
-		return produceForAdminAuthentication(entity, model);
+	protected Map<String, Object> produceForPersonnel(Customer entity, Map<String, Object> model) {
+		return produceForCustomer(entity, model);
+	}
+
+	@Override
+	protected Map<String, Object> produceForEmployee(Customer entity, Map<String, Object> model) {
+		return produceForCustomer(entity, model);
+	}
+
+	@Override
+	protected Map<String, Object> produceForManager(Customer entity, Map<String, Object> model) {
+		return produceForCustomer(entity, model);
 	}
 
 }

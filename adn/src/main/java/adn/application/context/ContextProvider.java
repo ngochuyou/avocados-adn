@@ -41,7 +41,7 @@ public class ContextProvider implements ApplicationContextAware {
 	public static <T extends SessionFactory> T getSessionFactory(Class<T> wrapperType) {
 		return getApplicationContext().getBean(SessionFactory.class).unwrap(wrapperType);
 	}
-	
+
 	public static <T> T getBean(Class<T> beanType) {
 		return getApplicationContext().getBean(beanType);
 	}
@@ -56,7 +56,7 @@ public class ContextProvider implements ApplicationContextAware {
 		if (auth instanceof AnonymousAuthenticationToken) {
 			return Role.ANONYMOUS;
 		}
-		// handle with care when working with unit testing
+		// handle with care while working with unit testing
 		// e.g: using @WithMockUser may make the test unit inject
 		// an instance of type org.springframework.security.core.userdetails.User
 		// rather than ApplicationUserDetails, which causes the following type-casting

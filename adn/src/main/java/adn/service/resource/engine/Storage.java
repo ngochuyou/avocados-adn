@@ -5,7 +5,7 @@ package adn.service.resource.engine;
 
 import java.io.File;
 
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
+import adn.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.template.ResourceTemplate;
 import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;

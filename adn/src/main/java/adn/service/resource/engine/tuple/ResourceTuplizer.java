@@ -7,7 +7,7 @@ import java.io.File;
 
 import org.hibernate.tuple.Tuplizer;
 
-import adn.service.resource.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
+import adn.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 
 /**
  * @author Ngoc Huy

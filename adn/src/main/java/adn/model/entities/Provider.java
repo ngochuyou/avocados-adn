@@ -13,8 +13,6 @@ import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import adn.model.entities.converters.StringSetConverter;
 
 /**
@@ -38,9 +36,11 @@ public class Provider extends Factor {
 	@Column(name = "representator_name")
 	private String representatorName;
 
-	@JsonIgnore
-	@OneToMany(mappedBy = "product", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+	@OneToMany(cascade = CascadeType.PERSIST, mappedBy = "provider", fetch = FetchType.LAZY)
 	private List<ProductProviderDetail> productDetails;
+
+	@OneToMany(cascade = CascadeType.PERSIST, mappedBy = "provider", fetch = FetchType.LAZY)
+	private List<MaterialProviderDetail> materialDetails;
 
 	public String getEmail() {
 		return email;
@@ -80,6 +80,14 @@ public class Provider extends Factor {
 
 	public void setProductDetails(List<ProductProviderDetail> productDetails) {
 		this.productDetails = productDetails;
+	}
+
+	public List<MaterialProviderDetail> getMaterialDetails() {
+		return materialDetails;
+	}
+
+	public void setMaterialDetails(List<MaterialProviderDetail> materialDetails) {
+		this.materialDetails = materialDetails;
 	}
 
 }

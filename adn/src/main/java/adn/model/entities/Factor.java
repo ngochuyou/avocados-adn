@@ -3,6 +3,7 @@
  */
 package adn.model.entities;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import javax.persistence.Column;
@@ -11,6 +12,8 @@ import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 
 import org.hibernate.annotations.GenericGenerator;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author Ngoc Huy
@@ -33,6 +36,30 @@ public abstract class Factor extends Entity {
 
 	@Column(name = "updated_by", nullable = false)
 	protected String updatedBy;
+
+	@JsonProperty
+	@Column(name = "active", nullable = false)
+	protected Boolean active;
+
+	@Column(name = "deactivated_date")
+	protected LocalDateTime deactivatedDate;
+
+	@JsonProperty(value = "isActive")
+	public Boolean isActive() {
+		return active;
+	}
+
+	public void setActive(Boolean isActive) {
+		this.active = isActive;
+	}
+
+	public LocalDateTime getDeactivatedDate() {
+		return deactivatedDate;
+	}
+
+	public void setDeactivatedDate(LocalDateTime deactivatedDate) {
+		this.deactivatedDate = deactivatedDate;
+	}
 
 	public UUID getId() {
 		return id;

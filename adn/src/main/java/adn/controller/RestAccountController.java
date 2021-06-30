@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
 import adn.model.entities.Account;
-import adn.model.factory.extraction.AccountRoleExtractor;
+import adn.service.internal.AccountRoleExtractor;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Role;
 import adn.service.services.AccountService;
@@ -37,6 +37,7 @@ public class RestAccountController extends AccountController {
 	}
 	// @formatter:on
 
+	@SuppressWarnings("unchecked")
 	@GetMapping
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> obtainAccount(
@@ -65,10 +66,11 @@ public class RestAccountController extends AccountController {
 			return unauthorize(ACCESS_DENIED);
 		}
 
-		return ResponseEntity.ok(produce(account, modelsDescriptor.getModelClass(type)));
+		return ResponseEntity.ok(produce(account, (Class<Account>) type));
 	}
 
-	public ResponseEntity<?> obtainPrincipal() {
+	@SuppressWarnings("unchecked")
+	protected ResponseEntity<?> obtainPrincipal() {
 		Account principal = baseRepository.findById(ContextProvider.getPrincipalName(), Account.class);
 
 		if (principal == null) {
@@ -79,7 +81,7 @@ public class RestAccountController extends AccountController {
 			return ResponseEntity.status(HttpStatus.LOCKED).body(LOCKED);
 		}
 
-		return ResponseEntity.ok(produce(principal, modelsDescriptor.getModelClass(principal.getClass())));
+		return ResponseEntity.ok(produce(principal, (Class<Account>) principal.getClass()));
 	}
 
 }

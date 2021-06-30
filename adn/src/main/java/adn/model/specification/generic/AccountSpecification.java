@@ -11,7 +11,6 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
 import org.hibernate.Session;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import adn.helpers.StringHelper;
@@ -39,13 +38,11 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 		DatabaseInteractionResult<T> result = super.isSatisfiedBy(id, instance);
 
 		if (!USERNAME_PATTERN.matcher(instance.getId()).matches()) {
-			result.getMessages().put("username", "Invalid username pattern");
-			result.setStatus(HttpStatus.BAD_REQUEST.value());
+			result.bad().getMessages().put("username", "Invalid username pattern");
 		}
 
 		if (!StringHelper.isEmail(instance.getEmail())) {
-			result.getMessages().put("email", "Invalid email");
-			result.setStatus(HttpStatus.BAD_REQUEST.value());
+			result.bad().getMessages().put("email", "Invalid email");
 		} else {
 			Session session = getCurrentSession();
 			CriteriaBuilder builder = session.getCriteriaBuilder();
@@ -56,29 +53,28 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 					builder.notEqual(root.get("id"), instance.getId())));
 
 			if (session.createQuery(query).getResultStream().findFirst().orElse(0L) != 0) {
-				result.getMessages().put("email", "Email is already taken");
-				result.setStatus(HttpStatus.BAD_REQUEST.value());
+				result.bad().getMessages().put("email", "Email is already taken");
 			}
 		}
 
 		if (StringHelper.hasLength(instance.getPhone()) && !StringHelper.isAcceptablePhoneNumber(instance.getPhone())) {
-			result.getMessages().put("phone", "Invalid phone number");
-			result.setStatus(HttpStatus.BAD_REQUEST.value());
+			result.bad().getMessages().put("phone", "Invalid phone number");
 		}
 
 		if (!StringHelper.isBCrypt(instance.getPassword())) {
-			result.getMessages().put("password", "Invalid password");
-			result.setStatus(HttpStatus.BAD_REQUEST.value());
+			result.bad().getMessages().put("password", "Invalid password");
 		}
 
 		if (instance.getRole() == null) {
-			result.getMessages().put("role", "Role can not be empty");
-			result.setStatus(HttpStatus.BAD_REQUEST.value());
+			result.bad().getMessages().put("role", "Role can not be empty");
 		}
 
 		if (instance.getGender() == null) {
-			result.getMessages().put("gender", "Gender can not be empty");
-			result.setStatus(HttpStatus.BAD_REQUEST.value());
+			result.bad().getMessages().put("gender", "Gender can not be empty");
+		}
+
+		if (instance.isActive() == null) {
+			result.bad().getMessages().put("isActive", "Active state must not be empty");
 		}
 
 		return result;

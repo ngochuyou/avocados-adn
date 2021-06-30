@@ -10,9 +10,9 @@ import java.util.Date;
 import org.hibernate.HibernateException;
 import org.hibernate.type.DateType;
 
+import adn.engine.access.PropertyAccess;
+import adn.engine.access.PropertyAccess.Type;
 import adn.helpers.FunctionHelper.HandledFunction;
-import adn.service.resource.engine.access.PropertyAccess;
-import adn.service.resource.engine.access.PropertyAccess.Type;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator.ResourceIdentifierPart;
 
 /**
