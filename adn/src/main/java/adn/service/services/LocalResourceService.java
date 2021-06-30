@@ -77,16 +77,12 @@ public class LocalResourceService implements ResourceService {
 
 	@Override
 	public void closeSession(boolean doFlush) {
-		if (session == null) {
+		if (!doFlush) {
 			return;
 		}
 
-		if (doFlush) {
-			session.flush();
-			return;
-		}
-
-		session.clear();
+		session.flush();
+		session.close();
 	}
 
 	@Override

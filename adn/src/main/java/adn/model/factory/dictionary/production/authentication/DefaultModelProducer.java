@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.model.factory.production.security;
+package adn.model.factory.dictionary.production.authentication;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;

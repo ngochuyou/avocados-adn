@@ -1,4 +1,4 @@
-package adn.model.factory;
+package adn.model.factory.dictionary.production.authentication;
 
 import java.util.Map;
 

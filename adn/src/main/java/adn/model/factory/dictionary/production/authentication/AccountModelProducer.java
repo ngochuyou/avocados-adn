@@ -1,9 +1,10 @@
-package adn.model.factory.production.security;
+package adn.model.factory.dictionary.production.authentication;
 
 import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
+import adn.helpers.Utils;
 import adn.model.Generic;
 import adn.model.entities.Account;
 
@@ -18,7 +19,7 @@ public class AccountModelProducer<T extends Account>
 		model.put("firstName", account.getFirstName());
 		model.put("lastName", account.getLastName());
 		model.put("photo", account.getPhoto());
-		model.put("role", account.getPhoto());
+		model.put("role", account.getRole());
 		model.put("gender", account.getGender());
 		model.put("active", account.isActive());
 
@@ -34,8 +35,8 @@ public class AccountModelProducer<T extends Account>
 	protected Map<String, Object> produceForPersonnel(T account, Map<String, Object> model) {
 		model = produceForAnonymous(account, model);
 
-		model.put("createdDate", account.getCreatedDate());
-		model.put("updatedDate", account.getUpdatedDate());
+		model.put("createdDate", Utils.localDateToDate(account.getCreatedDate()));
+		model.put("updatedDate", Utils.localDateToDate(account.getUpdatedDate()));
 
 		return model;
 	}

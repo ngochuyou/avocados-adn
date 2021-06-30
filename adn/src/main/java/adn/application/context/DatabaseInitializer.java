@@ -3,7 +3,7 @@
  */
 package adn.application.context;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
@@ -66,7 +66,7 @@ public class DatabaseInitializer implements ContextBuilder {
 		admin.setPhone("0974032706");
 		admin.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
 		admin.setRole(Role.ADMIN);
-		admin.setContractDate(LocalDateTime.now());
+		admin.setContractDate(LocalDate.now());
 
 		return admin;
 	}

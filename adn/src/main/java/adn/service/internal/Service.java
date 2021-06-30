@@ -9,6 +9,8 @@ public interface Service {
 
 	public enum Status {
 
+		UNMODIFIED(3, "NOTHING CHANGED"),
+
 		BAD(0, "INVALID INPUT"),
 
 		OK(1, "SUCCESS"),

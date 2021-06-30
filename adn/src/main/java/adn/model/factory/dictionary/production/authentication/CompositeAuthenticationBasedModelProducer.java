@@ -1,11 +1,12 @@
 /**
  * 
  */
-package adn.model.factory;
+package adn.model.factory.dictionary.production.authentication;
 
 import java.util.Map;
 
 import adn.model.AbstractModel;
+import adn.model.factory.dictionary.production.CompositeModelProducer;
 import adn.service.internal.Role;
 
 /**

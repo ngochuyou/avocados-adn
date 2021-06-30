@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
-import adn.helpers.StringHelper;
+import adn.helpers.TypeHelper;
 import adn.model.Generic;
 import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
@@ -83,7 +83,7 @@ public class EntityBuilderProvider implements ContextBuilder {
 				Class<? extends Entity> entityClass = (Class<? extends Entity>) anno.entityGene();
 
 				builderMap.put(entityClass, (EntityBuilder<? extends Entity>) ContextProvider.getApplicationContext()
-						.getBean(StringHelper.toCamel(clazz.getSimpleName(), null)));
+						.getBean(TypeHelper.getComponentName(clazz)));
 			}
 
 			modelDescriptor.getEntityTree().forEach(branch -> {

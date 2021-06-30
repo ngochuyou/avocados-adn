@@ -4,6 +4,7 @@
 package adn.model;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,13 +14,8 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
-import org.hibernate.SessionFactory;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.tuple.entity.AbstractEntityTuplizer;
-import org.hibernate.tuple.entity.EntityTuplizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
@@ -49,9 +45,6 @@ public class ModelContextProvider implements ContextBuilder {
 
 	private Map<Class<? extends AbstractModel>, Set<Class<? extends AbstractModel>>> relationMap;
 	private Map<Class<? extends AbstractModel>, Class<? extends AbstractModel>> defaultModelMap;
-
-	@Autowired
-	private SessionFactory sessionFactory;
 
 	@Override
 	public void buildAfterStartUp() {
@@ -262,13 +255,14 @@ public class ModelContextProvider implements ContextBuilder {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends adn.model.entities.Entity> T instantiate(Class<T> type) {
-		return (T) ((AbstractEntityTuplizer) getTuplizer(type)).instantiate();
-	}
-
-	private <T extends adn.model.entities.Entity> EntityTuplizer getTuplizer(Class<T> type) {
-		return sessionFactory.unwrap(SessionFactoryImplementor.class).getMetamodel().locateEntityPersister(type)
-				.getEntityTuplizer();
+	public <T extends AbstractModel> T instantiate(Class<T> type) {
+		try {
+			return type.getConstructor().newInstance();
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| NoSuchMethodException | SecurityException e) {
+			e.printStackTrace();
+			return (T) new AbstractModel() {};
+		}
 	}
 
 }

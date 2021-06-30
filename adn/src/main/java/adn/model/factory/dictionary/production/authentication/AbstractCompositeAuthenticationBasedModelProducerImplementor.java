@@ -1,4 +1,4 @@
-package adn.model.factory.production.security;
+package adn.model.factory.dictionary.production.authentication;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -8,8 +8,6 @@ import java.util.function.Function;
 
 import adn.model.AbstractModel;
 import adn.model.entities.Entity;
-import adn.model.factory.AbstractCompositeAuthenticationBasedModelProducer;
-import adn.model.factory.CompositeAuthenticationBasedModelProducer;
 import adn.service.internal.Role;
 
 public abstract class AbstractCompositeAuthenticationBasedModelProducerImplementor<T extends AbstractModel> extends

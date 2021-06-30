@@ -87,7 +87,7 @@ public class GeneralController extends BaseController {
 		// ignore it since it could cause the Specification check on the name uniqueness
 		// to success. This results in Session being flushed upon a duplicated name,
 		// which cause violation exception
-		setMode();
+		setSessionMode();
 
 		return send(crudService.create(null, instance, type));
 	}
@@ -98,7 +98,7 @@ public class GeneralController extends BaseController {
 	 */
 	protected <T extends Factor> ResponseEntity<?> updateFactor(T instance, Class<T> type) {
 		// load the actual factor into Session, hit the DB
-		setMode();
+		setSessionMode();
 
 		if (baseRepository.findById(instance.getId(), type) == null) {
 			return sendNotFound(String.format("%s not found", instance.getId()));

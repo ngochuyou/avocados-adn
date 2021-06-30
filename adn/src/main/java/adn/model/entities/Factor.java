@@ -13,6 +13,7 @@ import javax.persistence.MappedSuperclass;
 
 import org.hibernate.annotations.GenericGenerator;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -53,6 +54,7 @@ public abstract class Factor extends Entity {
 		this.active = isActive;
 	}
 
+	@JsonIgnore
 	public LocalDateTime getDeactivatedDate() {
 		return deactivatedDate;
 	}

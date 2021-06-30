@@ -18,6 +18,8 @@ import javax.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * @author Ngoc Huy
  *
@@ -52,6 +54,7 @@ public class Product extends Factor {
 		this.price = price;
 	}
 
+	@JsonIgnore
 	public LocalDateTime getCreatedTimestamp() {
 		return createdTimestamp;
 	}
@@ -60,6 +63,7 @@ public class Product extends Factor {
 		this.createdTimestamp = createdTimestamp;
 	}
 
+	@JsonIgnore
 	public LocalDateTime getUpdatedTimestamp() {
 		return updatedTimestamp;
 	}

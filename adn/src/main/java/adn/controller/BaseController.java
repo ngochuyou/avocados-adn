@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import javax.servlet.annotation.MultipartConfig;
+
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -26,11 +28,10 @@ import adn.model.AbstractModel;
 import adn.model.DatabaseInteractionResult;
 import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
-import adn.model.factory.AuthenticationBasedModelFactory;
-import adn.model.factory.DefaultAuthenticationBasedModelFactory;
-import adn.model.factory.DelegateEntityExtractorProvider;
-import adn.model.factory.EntityExtractorProvider;
-import adn.model.models.Model;
+import adn.model.factory.dictionary.production.authentication.AuthenticationBasedModelFactory;
+import adn.model.factory.dictionary.production.authentication.DefaultAuthenticationBasedModelFactory;
+import adn.model.factory.pojo.extraction.DefaultEntityExtractorProvider;
+import adn.model.factory.pojo.extraction.EntityExtractorProvider;
 import adn.service.internal.CRUDService;
 import adn.service.internal.Role;
 
@@ -39,6 +40,7 @@ import adn.service.internal.Role;
  *
  */
 @Component
+@MultipartConfig(maxFileSize = BaseController.MAXIMUM_FILE_SIZE)
 public class BaseController {
 
 	@Autowired
@@ -49,7 +51,7 @@ public class BaseController {
 	protected AuthenticationBasedModelFactory authenticationBasedModelFactory;
 
 	@Autowired
-	@Qualifier(DelegateEntityExtractorProvider.NAME)
+	@Qualifier(DefaultEntityExtractorProvider.NAME)
 	protected EntityExtractorProvider extractorProvider;
 
 	@Autowired
@@ -64,6 +66,8 @@ public class BaseController {
 	@Autowired
 	protected ObjectMapper objectMapper;
 
+	public static final long MAXIMUM_FILE_SIZE = 1 * 1024 * 1024;
+
 	protected static final String HAS_ROLE_ADMIN = "hasRole('ADMIN')";
 
 	protected static final String UPLOAD_FAILURE = "Unable to upload file";
@@ -73,11 +77,11 @@ public class BaseController {
 	public static final String ACCESS_DENIED = "ACCESS DENIDED";
 	protected static final String EXISTED = "RESOURCE IS ALREADY EXSITED";
 
-	protected void setMode() {
-		setMode(FlushMode.MANUAL);
+	protected void setSessionMode() {
+		setSessionMode(FlushMode.MANUAL);
 	}
 
-	protected void setMode(FlushMode mode) {
+	protected void setSessionMode(FlushMode mode) {
 		sessionFactory.getCurrentSession().setHibernateFlushMode(Optional.ofNullable(mode).orElse(FlushMode.MANUAL));
 	}
 
@@ -92,18 +96,17 @@ public class BaseController {
 		}
 	}
 
-	protected <T extends Entity, M extends Model> T extract(M model, Class<T> entityClass) {
+	protected <T extends AbstractModel, M extends AbstractModel> T extract(M model, Class<T> entityClass) {
 		return extractorProvider.getExtractor(entityClass).extract(model, modelsDescriptor.instantiate(entityClass));
 	}
 
 	protected <T extends AbstractModel, E extends T> Map<String, Object> produce(E entity, Class<E> entityClass) {
-		return authenticationBasedModelFactory.produce(entityClass, entity, ContextProvider.getPrincipalRole());
+		return produce(entity, entityClass, ContextProvider.getPrincipalRole());
 	}
 
 	@SuppressWarnings("unchecked")
 	protected <T extends AbstractModel, E extends T> Map<String, Object> produce(E entity) {
-		return authenticationBasedModelFactory.produce((Class<E>) entity.getClass(), entity,
-				ContextProvider.getPrincipalRole());
+		return produce(entity, (Class<E>) entity.getClass(), ContextProvider.getPrincipalRole());
 	}
 
 	protected <T extends AbstractModel, E extends T> Map<String, Object> produce(E entity, Class<E> entityClass,

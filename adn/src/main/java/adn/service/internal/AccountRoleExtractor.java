@@ -32,7 +32,6 @@ public interface AccountRoleExtractor {
 			try {
 				return Role.valueOf(objectMapper.readTree(jsonString).get(roleFieldname).asText());
 			} catch (Exception any) {
-				any.printStackTrace();
 				return Role.ANONYMOUS;
 			}
 		}

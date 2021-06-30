@@ -18,6 +18,7 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.support.SimpleThreadScope;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
@@ -28,12 +29,14 @@ import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConve
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
+import org.springframework.transaction.TransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
 
 import adn.service.internal.Role;
@@ -96,12 +99,14 @@ public class WebConfiguration implements WebMvcConfigurer {
 	}
 
 	@Bean
-	public HibernateTransactionManager transactionManager(SessionFactory s) {
-		HibernateTransactionManager txManager = new HibernateTransactionManager();
+	@Primary
+	public ObjectMapper objectMapper() {
+		return new ObjectMapper();
+	}
 
-		txManager.setSessionFactory(s);
-
-		return txManager;
+	@Bean
+	public TransactionManager transactionManager(SessionFactory sessionFactory) {
+		return new HibernateTransactionManager(sessionFactory);
 	}
 
 	@Bean(name = "dataSource")

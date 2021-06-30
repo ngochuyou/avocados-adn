@@ -3,6 +3,7 @@
  */
 package adn.controller;
 
+import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,14 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 	public ResponseEntity<?> handleUnauthorized(RuntimeException ex, WebRequest request) {
 		return handleExceptionInternal(ex, BaseController.ACCESS_DENIED, new HttpHeaders(), HttpStatus.UNAUTHORIZED,
 				request);
+	}
+
+	@ExceptionHandler(value = { FileSizeLimitExceededException.class })
+	public ResponseEntity<?> handleFileSizeLimitExceeded(RuntimeException ex, WebRequest request) {
+		return handleExceptionInternal(ex,
+				String.format("File size is too large, expect size to be less than %d MB",
+						BaseController.MAXIMUM_FILE_SIZE / (1024 * 1024)),
+				new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
 	}
 
 }

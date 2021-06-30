@@ -1,4 +1,4 @@
-package adn.model.factory;
+package adn.model.factory.pojo.extraction;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,28 +10,37 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
 import adn.application.context.ContextProvider;
-import adn.helpers.StringHelper;
+import adn.helpers.TypeHelper;
+import adn.model.AbstractModel;
 import adn.model.Generic;
 import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
-import adn.model.models.Model;
 
-@Component(DelegateEntityExtractorProvider.NAME)
+@Component(DefaultEntityExtractorProvider.NAME)
 @Order(value = 4)
-public class DelegateEntityExtractorProvider implements EntityExtractorProvider {
+public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	public static final String NAME = "defaultEntityExtractorProvider";
-	private static final String ENTITY_EXTRACTOR_PACKAGE = "adn.model.factory.extraction";
+	private static final String ENTITY_EXTRACTOR_PACKAGE = "adn.model.factory.pojo.extraction";
 
-	private Map<Class<? extends Entity>, EntityExtractor<? extends Entity, ? extends Model>> extractorMap;
-	private static final EntityExtractor<?, ?> DEFAULT_EXTRACTOR = new EntityExtractor<Entity, Model>() {};
+	private Map<Class<? extends AbstractModel>, PojoEntityExtractor<? extends AbstractModel, ? extends AbstractModel>> extractorMap;
+	private static final PojoEntityExtractor<?, ?> DEFAULT_EXTRACTOR = new PojoEntityExtractor<AbstractModel, AbstractModel>() {
+		@Override
+		public AbstractModel extract(AbstractModel model) {
+			return new AbstractModel() {};
+		}
+
+		@Override
+		public AbstractModel extract(AbstractModel source, AbstractModel target) {
+			return target;
+		}
+	};
 
 	@Autowired
 	private ModelContextProvider modelManager;
@@ -45,13 +54,11 @@ public class DelegateEntityExtractorProvider implements EntityExtractorProvider 
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
-		scanner.addIncludeFilter(new AssignableTypeFilter(EntityExtractor.class));
-		scanner.addIncludeFilter(new AnnotationTypeFilter(Generic.class));
-		scanner.addIncludeFilter(new AnnotationTypeFilter(Component.class));
+		scanner.addIncludeFilter(new AssignableTypeFilter(PojoEntityExtractor.class));
 
 		try {
 			for (BeanDefinition beanDef : scanner.findCandidateComponents(ENTITY_EXTRACTOR_PACKAGE)) {
-				Class<? extends EntityExtractor> clazz = (Class<? extends EntityExtractor>) Class
+				Class<? extends PojoEntityExtractor> clazz = (Class<? extends PojoEntityExtractor>) Class
 						.forName(beanDef.getBeanClassName());
 				Generic anno = clazz.getDeclaredAnnotation(Generic.class);
 
@@ -59,9 +66,8 @@ public class DelegateEntityExtractorProvider implements EntityExtractorProvider 
 					continue;
 				}
 
-				this.extractorMap.put((Class<? extends Entity>) anno.entityGene(),
-						(EntityExtractor<?, ?>) ContextProvider.getApplicationContext()
-								.getBean(StringHelper.toCamel(clazz.getSimpleName(), null)));
+				this.extractorMap.put(anno.entityGene(), (PojoEntityExtractor<?, ?>) ContextProvider
+						.getApplicationContext().getBean(TypeHelper.getComponentName(clazz)));
 			}
 		} catch (Exception any) {
 			any.printStackTrace();
@@ -75,20 +81,21 @@ public class DelegateEntityExtractorProvider implements EntityExtractorProvider 
 					return;
 				}
 
-				EntityExtractor<?, ?> parentExtractor = extractorMap.get(node.getParent().getNode());
+				PojoEntityExtractor<?, ?> parentExtractor = extractorMap.get(node.getParent().getNode());
 
 				extractorMap.put((Class<? extends Entity>) node.getNode(),
 						parentExtractor != null ? parentExtractor : DEFAULT_EXTRACTOR);
 			}
 		});
 		extractorMap.forEach((k, v) -> logger.info(String.format("Register one %s of type [%s] for [%s]",
-				EntityExtractor.class.getName(), v.getClass().getName(), k.getName())));
+				PojoEntityExtractor.class.getName(), v.getClass().getName(), k.getName())));
 		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Entity, M extends Model> EntityExtractor<T, M> getExtractor(Class<T> entityClass) {
-		return (EntityExtractor<T, M>) this.extractorMap.get(entityClass);
+	public <T extends AbstractModel, M extends AbstractModel> PojoEntityExtractor<T, M> getExtractor(
+			Class<T> entityClass) {
+		return (PojoEntityExtractor<T, M>) this.extractorMap.get(entityClass);
 	}
 
 }

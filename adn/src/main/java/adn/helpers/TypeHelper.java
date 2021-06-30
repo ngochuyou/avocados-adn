@@ -65,10 +65,15 @@ public class TypeHelper {
 		);
 	}
 
-	public static final Map<Class<?>, Set<Class<?>>> NON_PRIMITIVE_RELATION_MAP = Map.of(
-		Integer.class, Set.of(int.class),
-		Long.class, Set.of(int.class, long.class),
-		Float.class, Set.of(float.class)
+	public static final Map<Class<?>, Set<Class<?>>> RELATION_MAP = Map.of(
+			Boolean.class, Set.of(boolean.class),
+			Character.class, Set.of(char.class),
+			Byte.class, Set.of(byte.class),
+			Short.class, Set.of(short.class, byte.class),
+			Integer.class, Set.of(int.class, short.class, byte.class),
+			Double.class, Set.of(double.class, float.class, int.class, short.class, byte.class),
+			Long.class, Set.of(long.class, double.class, float.class, int.class, short.class, byte.class),
+			Float.class, Set.of(float.class, long.class, int.class, short.class, byte.class)
 	);
 	// @formatter:on
 	public static <T extends Entity> String getEntityName(Class<T> clazz) {

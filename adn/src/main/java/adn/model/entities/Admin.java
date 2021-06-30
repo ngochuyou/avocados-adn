@@ -3,10 +3,12 @@
  */
 package adn.model.entities;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * @author Ngoc Huy
@@ -16,13 +18,14 @@ import javax.persistence.Entity;
 public class Admin extends Account {
 
 	@Column(name = "contract_date")
-	protected LocalDateTime contractDate;
+	protected LocalDate contractDate;
 
-	public LocalDateTime getContractDate() {
+	@JsonIgnore
+	public LocalDate getContractDate() {
 		return contractDate;
 	}
 
-	public void setContractDate(LocalDateTime contractDate) {
+	public void setContractDate(LocalDate contractDate) {
 		this.contractDate = contractDate;
 	}
 

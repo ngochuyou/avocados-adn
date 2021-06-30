@@ -1,4 +1,4 @@
-package adn.model.factory.production.security;
+package adn.model.factory.dictionary.production.authentication;
 
 import java.util.Map;
 
@@ -14,7 +14,7 @@ public class AdminModelProducer extends AbstractCompositeAuthenticationBasedMode
 
 	@Override
 	protected Map<String, Object> produceForAdmin(Admin admin, Map<String, Object> model) {
-		model.put("contractDate", Utils.localDateTimeToDate(admin.getContractDate()));
+		model.put("contractDate", Utils.localDateToDate(admin.getContractDate()));
 
 		return model;
 	}

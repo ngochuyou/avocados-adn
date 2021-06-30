@@ -3,7 +3,7 @@
  */
 package adn.model.entities;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -17,6 +17,9 @@ import javax.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import adn.service.internal.Role;
 
 /**
@@ -29,6 +32,7 @@ import adn.service.internal.Role;
 public class Account extends adn.model.entities.Entity {
 
 	@Id
+	@JsonProperty("username")
 	protected String id;
 
 	@Column(nullable = false)
@@ -58,15 +62,15 @@ public class Account extends adn.model.entities.Entity {
 	protected Boolean active;
 
 	@Column(name = "deactivated_date")
-	protected LocalDateTime deactivatedDate;
+	protected LocalDate deactivatedDate;
 
 	@CreationTimestamp
 	@Column(name = "created_date", nullable = false, updatable = false)
-	protected LocalDateTime createdDate;
+	protected LocalDate createdDate;
 
 	@UpdateTimestamp
 	@Column(name = "updated_date", nullable = false)
-	protected LocalDateTime updatedDate;
+	protected LocalDate updatedDate;
 
 	public String getId() {
 		return id;
@@ -108,6 +112,7 @@ public class Account extends adn.model.entities.Entity {
 		this.lastName = lastName;
 	}
 
+	@JsonIgnore
 	public String getPhoto() {
 		return photo;
 	}
@@ -140,19 +145,21 @@ public class Account extends adn.model.entities.Entity {
 		this.gender = gender;
 	}
 
-	public LocalDateTime getCreatedDate() {
+	@JsonIgnore
+	public LocalDate getCreatedDate() {
 		return createdDate;
 	}
 
-	public void setCreatedDate(LocalDateTime createdDate) {
+	public void setCreatedDate(LocalDate createdDate) {
 		this.createdDate = createdDate;
 	}
 
-	public LocalDateTime getUpdatedDate() {
+	@JsonIgnore
+	public LocalDate getUpdatedDate() {
 		return updatedDate;
 	}
 
-	public void setUpdatedDate(LocalDateTime updatedDate) {
+	public void setUpdatedDate(LocalDate updatedDate) {
 		this.updatedDate = updatedDate;
 	}
 
@@ -164,11 +171,12 @@ public class Account extends adn.model.entities.Entity {
 		this.active = active;
 	}
 
-	public LocalDateTime getDeactivatedDate() {
+	@JsonIgnore
+	public LocalDate getDeactivatedDate() {
 		return deactivatedDate;
 	}
 
-	public void setDeactivatedDate(LocalDateTime deactivatedDate) {
+	public void setDeactivatedDate(LocalDate deactivatedDate) {
 		this.deactivatedDate = deactivatedDate;
 	}
 

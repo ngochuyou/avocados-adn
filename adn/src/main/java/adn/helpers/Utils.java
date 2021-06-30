@@ -3,6 +3,7 @@
  */
 package adn.helpers;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
@@ -12,6 +13,14 @@ import java.util.Date;
  *
  */
 public class Utils {
+
+	public static Date localDateToDate(LocalDate ldt) {
+		return ldt == null ? null : Date.from(ldt.atStartOfDay(ZoneId.systemDefault()).toInstant());
+	}
+
+	public static LocalDate dateToLocalDate(Date date) {
+		return date == null ? null : LocalDate.ofInstant(date.toInstant(), ZoneId.systemDefault());
+	}
 
 	public static Date localDateTimeToDate(LocalDateTime ldt) {
 		return ldt == null ? null : Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());

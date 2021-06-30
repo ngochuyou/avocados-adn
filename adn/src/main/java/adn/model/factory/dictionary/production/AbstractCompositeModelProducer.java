@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.model.factory;
+package adn.model.factory.dictionary.production;
 
 import java.util.Collections;
 import java.util.HashMap;

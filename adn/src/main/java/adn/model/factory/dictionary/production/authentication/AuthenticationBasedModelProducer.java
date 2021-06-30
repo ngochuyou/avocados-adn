@@ -1,9 +1,10 @@
-package adn.model.factory;
+package adn.model.factory.dictionary.production.authentication;
 
 import java.util.Collections;
 import java.util.Map;
 
 import adn.model.AbstractModel;
+import adn.model.factory.dictionary.production.DictionaryModelProducer;
 import adn.service.internal.Role;
 
 /**
@@ -12,7 +13,7 @@ import adn.service.internal.Role;
  * @param <M>
  * @param <E>
  */
-public interface AuthenticationBasedModelProducer<T extends AbstractModel> extends ModelProducer<T> {
+public interface AuthenticationBasedModelProducer<T extends AbstractModel> extends DictionaryModelProducer<T> {
 
 	@Override
 	default Map<String, Object> produce(T entity) {

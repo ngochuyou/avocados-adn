@@ -1,13 +1,18 @@
+/**
+ * 
+ */
 package adn.model.factory;
-
-import java.util.Map;
 
 import adn.model.AbstractModel;
 
-public interface ModelProducer<T extends AbstractModel> {
+/**
+ * @author Ngoc Huy
+ *
+ */
+public interface ModelProducer<T extends AbstractModel, P> {
 
-	Map<String, Object> produce(T entity);
+	P produce(T entity);
 
-	Map<String, Object> produceImmutable(T entity);
-	
+	P produceImmutable(T entity);
+
 }

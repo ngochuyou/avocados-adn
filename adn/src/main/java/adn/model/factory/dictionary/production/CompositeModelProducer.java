@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.model.factory;
+package adn.model.factory.dictionary.production;
 
 import java.util.Map;
 
@@ -11,7 +11,7 @@ import adn.model.AbstractModel;
  * @author Ngoc Huy
  *
  */
-public interface CompositeModelProducer<T extends AbstractModel> extends ModelProducer<T> {
+public interface CompositeModelProducer<T extends AbstractModel> extends DictionaryModelProducer<T> {
 
 	Map<String, Object> produce(T entity, Map<String, Object> modelMap);
 

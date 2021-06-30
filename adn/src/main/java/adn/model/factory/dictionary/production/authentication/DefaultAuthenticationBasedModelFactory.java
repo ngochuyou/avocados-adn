@@ -1,4 +1,4 @@
-package adn.model.factory;
+package adn.model.factory.dictionary.production.authentication;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,7 +17,6 @@ import adn.model.AbstractModel;
 import adn.model.Generic;
 import adn.model.ModelContextProvider;
 import adn.model.ModelInheritanceTree;
-import adn.model.factory.production.security.DefaultModelProducer;
 import adn.service.internal.Role;
 
 @Component(DefaultAuthenticationBasedModelFactory.NAME)
@@ -27,7 +26,7 @@ public class DefaultAuthenticationBasedModelFactory implements AuthenticationBas
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	public static final String NAME = "authenticationBasedProducerProvider";
-	private static final String MODEL_PRODUCER_PACKAGE = "adn.model.factory.production.security";
+	private static final String MODEL_PRODUCER_PACKAGE = "adn.model.factory.dictionary.production.authentication";
 
 	private Map<Class<? extends AbstractModel>, CompositeAuthenticationBasedModelProducer<? extends AbstractModel>> producerMap;
 
@@ -118,12 +117,12 @@ public class DefaultAuthenticationBasedModelFactory implements AuthenticationBas
 
 	@Override
 	public <T extends AbstractModel> Map<String, Object> produce(Class<T> type, T entity) {
-		return produce(type, entity, ContextProvider.getPrincipalRole());
+		return getProducer(type).produce(entity, new HashMap<>(16, 1.075f), ContextProvider.getPrincipalRole());
 	}
 
 	@Override
 	public <T extends AbstractModel> Map<String, Object> produce(Class<T> type, T entity, Role role) {
-		return getProducer(type).produceImmutable(entity, role);
+		return getProducer(type).produce(entity, new HashMap<>(16, 1.075f), role);
 	}
 
 }

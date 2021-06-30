@@ -14,36 +14,36 @@ import org.springframework.http.HttpStatus;
  */
 public class DatabaseInteractionResult<T> {
 
-	protected short status;
+	protected int status;
 
 	protected T instance;
 
 	protected Map<String, String> messages;
 
 	public DatabaseInteractionResult(T instance) {
-		status = (short) HttpStatus.OK.value();
+		status = HttpStatus.OK.value();
 		this.instance = instance;
 		messages = new HashMap<>();
 	}
 
 	public DatabaseInteractionResult(int status, T instance, Map<String, String> messageSet) {
 		super();
-		this.status = (short) status;
+		this.status = status;
 		this.instance = instance;
 		this.messages = messageSet;
 	}
 
 	public DatabaseInteractionResult<T> success() {
-		this.status = (short) HttpStatus.OK.value();
+		this.status = HttpStatus.OK.value();
 		return this;
 	}
 
-	public short getStatus() {
+	public int getStatus() {
 		return status;
 	}
 
 	public DatabaseInteractionResult<T> setStatus(int status) {
-		this.status = (short) status;
+		this.status = status;
 		return this;
 	}
 
@@ -52,7 +52,7 @@ public class DatabaseInteractionResult<T> {
 	}
 
 	public DatabaseInteractionResult<T> bad() {
-		this.status = (short) HttpStatus.BAD_REQUEST.value();
+		this.status = HttpStatus.BAD_REQUEST.value();
 		return this;
 	}
 
@@ -70,7 +70,7 @@ public class DatabaseInteractionResult<T> {
 	}
 
 	public static <T> DatabaseInteractionResult<T> success(T instance) {
-		return new DatabaseInteractionResult<T>((short) HttpStatus.OK.value(), instance, new HashMap<>());
+		return new DatabaseInteractionResult<T>(HttpStatus.OK.value(), instance, new HashMap<>());
 	}
 
 	public static <T> DatabaseInteractionResult<T> failed(Map<String, String> messageSet) {

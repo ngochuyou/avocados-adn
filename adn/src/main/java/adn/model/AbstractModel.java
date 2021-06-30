@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * @author Ngoc Huy
  *
  */
-@MappedSuperclass
+@MappedSuperclass // unused annotation
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class AbstractModel {
 

@@ -25,10 +25,10 @@ import adn.helpers.StringHelper;
 import adn.helpers.TypeHelper;
 import adn.model.DatabaseInteractionResult;
 import adn.model.entities.Account;
-import adn.model.models.AccountModel;
 import adn.service.internal.AccountRoleExtractor;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Role;
+import adn.service.internal.Service.Status;
 import adn.service.internal.ServiceResult;
 import adn.service.services.AccountService;
 
@@ -74,24 +74,22 @@ public class AccountController extends BaseController {
 		}
 
 		Class<? extends Account> entityClass = accountService.getClassFromRole(modelRole);
-		Class<? extends AccountModel> modelClass = (Class<? extends AccountModel>) modelsDescriptor
-				.getModelClass(entityClass);
-		AccountModel model;
+		Account newAccount;
 
 		try {
-			model = objectMapper.readValue(jsonPart, modelClass);
+			newAccount = objectMapper.readValue(jsonPart, entityClass);
 		} catch (JsonProcessingException any) {
 			any.printStackTrace();
 			return ResponseEntity.badRequest().body(INVALID_MODEL);
 		}
 
-		setMode();
+		setSessionMode();
 
-		if (baseRepository.<Account>findById(model.getId(), Account.class) != null) {
+		if (baseRepository.<Account>findById(newAccount.getId(), Account.class) != null) {
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(EXISTED);
 		}
 
-		Account account = extract(model, entityClass);
+		boolean isResourceSessionFlushed = false;
 
 		if (photo != null) {
 			ServiceResult<String> uploadResult = resourceService.uploadImage(photo);
@@ -100,19 +98,20 @@ public class AccountController extends BaseController {
 				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(UPLOAD_FAILURE);
 			}
 
-			account.setPhoto(uploadResult.getBody());
+			isResourceSessionFlushed = true;
+			newAccount.setPhoto(uploadResult.getBody());
 		}
 
-		DatabaseInteractionResult<? extends Account> insertResult = crudService.create(account.getId(),
-				TypeHelper.unwrap(account), entityClass);
+		DatabaseInteractionResult<? extends Account> insertResult = crudService.create(newAccount.getId(),
+				TypeHelper.unwrap(newAccount), entityClass);
 
-		resourceService.closeSession(insertResult.isOk());
+		resourceService.closeSession(isResourceSessionFlushed && insertResult.isOk());
 
 		if (insertResult.isOk()) {
 			currentSession(ss -> ss.flush());
-			account = insertResult.getInstance();
+			newAccount = insertResult.getInstance();
 
-			return ResponseEntity.ok(produce(account, (Class<Account>) account.getClass()));
+			return ResponseEntity.ok(produce(newAccount, (Class<Account>) newAccount.getClass()));
 		}
 
 		currentSession(ss -> ss.clear());
@@ -159,12 +158,10 @@ public class AccountController extends BaseController {
 		}
 
 		Class<? extends Account> entityClass = accountService.getClassFromRole(modelRole);
-		Class<? extends AccountModel> modelClass = (Class<? extends AccountModel>) modelsDescriptor
-				.getModelClass(entityClass);
-		AccountModel model;
+		Account model;
 
 		try {
-			model = objectMapper.readValue(jsonPart, modelClass);
+			model = objectMapper.readValue(jsonPart, entityClass);
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
 			return ResponseEntity.badRequest().body(INVALID_MODEL);
@@ -177,51 +174,50 @@ public class AccountController extends BaseController {
 			return unauthorize(ACCESS_DENIED);
 		}
 		// get current session with FlushMode.MANUAL
-		setMode();
+		setSessionMode();
 
 		Account persistence;
 		// This entity will take effects as the handler progresses
 		// Only changes on this persisted entity will be committed
-		if ((persistence = baseRepository.findById(model.getUsername(), Account.class)) == null) {
+		if ((persistence = baseRepository.findById(model.getId(), Account.class)) == null) {
 			return sendNotFound(NOT_FOUND);
 		}
-		// Extract the entity from Model and make adjustments
-		// Do not persist this entity
-		Account account = extract(model, entityClass);
 
-		if (!persistence.getRole().equals(account.getRole())) {
+		if (!persistence.getRole().equals(model.getRole())) {
 			// determine role update, current only administrators could update an account's
 			// role
 			if (!principalRole.equals(Role.ADMIN)) {
 				return unauthorize(ACCESS_DENIED);
 			}
 
-			if (!persistence.getRole().canBeUpdatedTo(account.getRole())) {
+			if (!persistence.getRole().canBeUpdatedTo(model.getRole())) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-						String.format("Unable to update role from %s to %s", persistence.getRole(), account.getRole()));
+						String.format("Unable to update role from %s to %s", persistence.getRole(), model.getRole()));
 			}
 		}
 		// only account's owner can update password
-		if (!account.getId().equals(principalName)) {
-			account.setPassword(null);
+		if (!persistence.getId().equals(principalName)) {
+			model.setPassword(null);
 		}
 
-		ServiceResult<String> result = updateOrUploadPhoto(persistence, multipartPhoto);
+		ServiceResult<String> localResourceResult = updateOrUploadPhoto(persistence, multipartPhoto);
 
-		if (!result.isOk()) {
+		if (localResourceResult.getStatus().equals(Status.FAILED)) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(UPLOAD_FAILURE);
 		}
+
+		boolean isResourceSessionFlushed = localResourceResult.isOk();
 		// set photo upload result into account so that CRUDService inject it into the
 		// persistence instead of directly setting it into persistence since CRUDService
 		// will inject account#getPhoto(), which is null if we set upload result
 		// directly into persistence here
-		account.setPhoto(result.getBody());
+		model.setPhoto(localResourceResult.getBody());
 		// changes made within following operations take effect on the persistence
 		// reference
-		DatabaseInteractionResult<? extends Account> updateResult = crudService.update(account.getId(),
-				TypeHelper.unwrap(account), entityClass);
+		DatabaseInteractionResult<? extends Account> updateResult = crudService.update(persistence.getId(),
+				TypeHelper.unwrap(model), entityClass);
 
-		resourceService.closeSession(updateResult.isOk());
+		resourceService.closeSession(isResourceSessionFlushed && updateResult.isOk());
 
 		if (updateResult.isOk()) {
 			currentSession(ss -> ss.flush());
@@ -243,7 +239,7 @@ public class AccountController extends BaseController {
 			return resourceService.uploadImage(multipartPhoto);
 		}
 
-		return ServiceResult.ok(persistence.getPhoto());
+		return ServiceResult.<String>status(Status.UNMODIFIED).body(persistence.getPhoto());
 	}
 
 }

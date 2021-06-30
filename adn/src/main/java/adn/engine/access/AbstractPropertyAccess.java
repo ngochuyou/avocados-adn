@@ -102,7 +102,7 @@ public abstract class AbstractPropertyAccess implements PropertyAccessImplemento
 		try {
 			return ownerType.getDeclaredMethod(setterName, parameterType);
 		} catch (NoSuchMethodException e) {
-			Set<Class<?>> alternativeTypes = TypeHelper.NON_PRIMITIVE_RELATION_MAP.get(parameterType);
+			Set<Class<?>> alternativeTypes = TypeHelper.RELATION_MAP.get(parameterType);
 
 			if (alternativeTypes != null && !alternativeTypes.isEmpty()) {
 				for (Class<?> alternative : alternativeTypes) {
