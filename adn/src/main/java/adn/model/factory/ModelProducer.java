@@ -3,16 +3,20 @@
  */
 package adn.model.factory;
 
-import adn.model.AbstractModel;
+import java.util.List;
 
 /**
  * @author Ngoc Huy
  *
  */
-public interface ModelProducer<T extends AbstractModel, P> {
+public interface ModelProducer<S, P> {
 
-	P produce(T entity);
+	P produce(S source);
 
-	P produceImmutable(T entity);
+	P produceImmutable(S source);
+
+	List<P> produce(List<S> sources);
+
+	List<P> produceImmutable(List<S> sources);
 
 }

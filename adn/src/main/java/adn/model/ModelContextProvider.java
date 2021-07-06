@@ -28,6 +28,8 @@ import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
 import adn.helpers.TypeHelper;
+import adn.model.entities.metadata.EntityMetadata;
+import adn.model.entities.metadata.EntityMetadataImpl;
 import adn.model.models.Model;
 
 /**
@@ -46,6 +48,8 @@ public class ModelContextProvider implements ContextBuilder {
 	private Map<Class<? extends AbstractModel>, Set<Class<? extends AbstractModel>>> relationMap;
 	private Map<Class<? extends AbstractModel>, Class<? extends AbstractModel>> defaultModelMap;
 
+	private Map<Class<? extends AbstractModel>, EntityMetadata> metadataMap;
+
 	@Override
 	public void buildAfterStartUp() {
 		initializeEntityTree();
@@ -55,6 +59,15 @@ public class ModelContextProvider implements ContextBuilder {
 		initializeRelationMap();
 		logger.info("---------------------------------------");
 		initializeDefaultModelMap();
+		logger.info("---------------------------------------");
+		initializeMetadataMap();
+	}
+
+	private void initializeMetadataMap() {
+		metadataMap = new HashMap<>();
+		entityTree.forEach(branch -> metadataMap.put(branch.getNode(), new EntityMetadataImpl(this, branch.getNode())));
+		entityTree.forEach(branch -> logger.info(
+				String.format("%s -> %s", branch.getNode().getName(), metadataMap.get(branch.getNode()).toString())));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -66,10 +79,10 @@ public class ModelContextProvider implements ContextBuilder {
 		scanner.addIncludeFilter(new AssignableTypeFilter(AbstractModel.class));
 
 		try {
-			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.ENTITY_PACKAGE)) {
+			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.ROOT_PACKAGE)) {
 				Class<? extends AbstractModel> clazz = (Class<? extends AbstractModel>) Class
 						.forName(beanDef.getBeanClassName());
-				Stack<Class<?>> stack = TypeHelper.getClassStack(clazz);
+				Stack<?> stack = TypeHelper.getClassStack(clazz);
 
 				while (!stack.isEmpty()) {
 					this.entityTree.add((Class<AbstractModel>) stack.pop());
@@ -97,7 +110,7 @@ public class ModelContextProvider implements ContextBuilder {
 		try {
 			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.MODEL_PACKAGE)) {
 				Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(beanDef.getBeanClassName());
-				Stack<Class<?>> stack = TypeHelper.getClassStack(clazz);
+				Stack<?> stack = TypeHelper.getClassStack(clazz);
 
 				while (!stack.isEmpty()) {
 					this.modelTree.add((Class<Model>) stack.pop());
@@ -263,6 +276,10 @@ public class ModelContextProvider implements ContextBuilder {
 			e.printStackTrace();
 			return (T) new AbstractModel() {};
 		}
+	}
+
+	public <T extends AbstractModel> EntityMetadata getMetadata(Class<T> entityType) {
+		return metadataMap.get(entityType);
 	}
 
 }

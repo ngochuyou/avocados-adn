@@ -3,7 +3,10 @@
  */
 package adn.model.entities.metadata;
 
-import adn.service.internal.Role;
+import java.util.Map;
+import java.util.Set;
+
+import org.hibernate.property.access.spi.Getter;
 
 /**
  * @author Ngoc Huy
@@ -13,10 +16,8 @@ public interface EntityMetadata {
 
 	boolean hasAttribute(String attributeName);
 
-	<T> String validate(String attributeName, T value);
+	Set<String> getPropertyNames();
 
-	<T> String buildAttribute(String attributeName, T value);
-
-	<T> T produce(String attributeName, T value, Role role);
+	Set<Map.Entry<String, Getter>> getGetters();
 
 }

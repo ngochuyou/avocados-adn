@@ -9,8 +9,10 @@ import javax.transaction.Transactional;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -32,10 +34,12 @@ public class TestRunner implements ContextBuilder {
 
 	private final int loopT = 10000;
 
+	@Autowired
+	private SessionFactoryImplementor sfi;
+
 	@Override
 	@Transactional
 	public void buildAfterStartUp() throws Exception {
-		// TODO Auto-generated method stub
 		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
 		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}

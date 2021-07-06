@@ -3,6 +3,8 @@
  */
 package adn.dao;
 
+import static adn.helpers.ArrayHelper.EMPTY_STRING_ARRAY;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,8 +38,6 @@ public abstract class AbstractRepository implements Repository {
 
 	protected final SessionFactory sessionFactory;
 	protected final SpecificationFactory specificationFactory;
-
-	protected static final String[] EMPTY_COLUMN_ARRAY = new String[0];
 
 	public AbstractRepository(final SessionFactory sessionFactory, final SpecificationFactory specificationFactory) {
 		this.sessionFactory = sessionFactory;
@@ -74,13 +74,13 @@ public abstract class AbstractRepository implements Repository {
 
 	@Override
 	public <T extends Entity> List<T> fetch(Class<T> type, Pageable paging) {
-		return fetch(type, paging, EMPTY_COLUMN_ARRAY);
+		return fetch(type, paging, EMPTY_STRING_ARRAY);
 	}
 
 	@Override
 	public <T extends Entity> List<T> fetch(Class<T> type, Pageable paging, String[] groupByColumns) {
 		Session session = getCurrentSession();
-		String hql = resolveFetchQuery(type, EMPTY_COLUMN_ARRAY, paging, groupByColumns);
+		String hql = resolveFetchQuery(type, EMPTY_STRING_ARRAY, paging, groupByColumns);
 		Query<T> query = session.createQuery(hql, type);
 
 		resolveLimit(query, paging);
@@ -90,7 +90,7 @@ public abstract class AbstractRepository implements Repository {
 
 	@Override
 	public <T extends Entity> List<Object[]> fetch(Class<T> type, String[] columns, Pageable paging) {
-		return fetch(type, columns, paging, EMPTY_COLUMN_ARRAY);
+		return fetch(type, columns, paging, EMPTY_STRING_ARRAY);
 	}
 
 	@Override

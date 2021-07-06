@@ -1,7 +1,10 @@
-package adn.model.factory.dictionary.production.authentication;
+package adn.application.context;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,23 +15,25 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
-import adn.application.context.ContextProvider;
 import adn.model.AbstractModel;
 import adn.model.Generic;
 import adn.model.ModelContextProvider;
 import adn.model.ModelInheritanceTree;
+import adn.model.factory.AuthenticationBasedModelFactory;
+import adn.model.factory.dictionary.production.CompositeDictionaryAuthenticationBasedModelProducer;
+import adn.model.factory.dictionary.production.authentication.DefaultModelProducer;
 import adn.service.internal.Role;
 
-@Component(DefaultAuthenticationBasedModelFactory.NAME)
+@Component(DefaultAuthenticationBasedModelProducerFactory.NAME)
 @Order(value = 5)
-public class DefaultAuthenticationBasedModelFactory implements AuthenticationBasedModelFactory {
+public class DefaultAuthenticationBasedModelProducerFactory implements AuthenticationBasedModelFactory, ContextBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	public static final String NAME = "authenticationBasedProducerProvider";
 	private static final String MODEL_PRODUCER_PACKAGE = "adn.model.factory.dictionary.production.authentication";
 
-	private Map<Class<? extends AbstractModel>, CompositeAuthenticationBasedModelProducer<? extends AbstractModel>> producerMap;
+	private Map<Class<? extends AbstractModel>, CompositeDictionaryAuthenticationBasedModelProducer<? extends AbstractModel>> producerMap;
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -38,13 +43,13 @@ public class DefaultAuthenticationBasedModelFactory implements AuthenticationBas
 		// @formatter:off
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
-		scanner.addIncludeFilter(new AssignableTypeFilter(CompositeAuthenticationBasedModelProducer.class));
+		scanner.addIncludeFilter(new AssignableTypeFilter(CompositeDictionaryAuthenticationBasedModelProducer.class));
 
-		ModelContextProvider modelsDescriptor = ContextProvider.getApplicationContext().getBean(ModelContextProvider.class);
+		ModelContextProvider modelContextProvider = ContextProvider.getApplicationContext().getBean(ModelContextProvider.class);
 		
 		try {
 			for (BeanDefinition beanDef: scanner.findCandidateComponents(MODEL_PRODUCER_PACKAGE)) {
-				Class<? extends CompositeAuthenticationBasedModelProducer<?>> clazz = (Class<? extends CompositeAuthenticationBasedModelProducer<?>>) Class
+				Class<? extends CompositeDictionaryAuthenticationBasedModelProducer<?>> clazz = (Class<? extends CompositeDictionaryAuthenticationBasedModelProducer<?>>) Class
 						.forName(beanDef.getBeanClassName());
 				
 				if (clazz.equals(DefaultModelProducer.class)) {
@@ -56,12 +61,12 @@ public class DefaultAuthenticationBasedModelFactory implements AuthenticationBas
 				this.producerMap.put(anno.entityGene(), ContextProvider.getApplicationContext().getBean(clazz));
 			}
 			
-			modelsDescriptor.getEntityTree().forEach(branch -> {
+			modelContextProvider.getEntityTree().forEach(branch -> {
 				if (DefaultModelProducer.shouldUse(branch.getNode())) {
-					producerMap.computeIfAbsent(branch.getNode(), DefaultModelProducer::new);
+					producerMap.putIfAbsent(branch.getNode(), new DefaultModelProducer<>(branch.getNode(), modelContextProvider.getMetadata(branch.getNode())));
 				}
 			});
-			modelsDescriptor.getEntityTree().forEach(branch -> {
+			modelContextProvider.getEntityTree().forEach(branch -> {
 				if (branch.getParent() == null) {
 					return;
 				}
@@ -84,7 +89,7 @@ public class DefaultAuthenticationBasedModelFactory implements AuthenticationBas
 				producerMap.put(branch.getNode(), combine(this.<AbstractModel>from(producerMap.get(parent.getNode())), producerMap.get(branch.getNode())));
 			});
 			producerMap.forEach((k, v) -> {
-				logger.info(String.format("Registered one %s for type [%s]: %s", CompositeAuthenticationBasedModelProducer.class.getSimpleName(), k.getName(), v.getName()));
+				logger.info(String.format("Registered one %s for type [%s]: %s", CompositeDictionaryAuthenticationBasedModelProducer.class.getSimpleName(), k.getName(), v.getName()));
 			});
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -95,24 +100,26 @@ public class DefaultAuthenticationBasedModelFactory implements AuthenticationBas
 	}
 
 	@SuppressWarnings("unchecked")
-	private <C extends AbstractModel> CompositeAuthenticationBasedModelProducer<C> from(
-			CompositeAuthenticationBasedModelProducer<?> target) {
-		return (CompositeAuthenticationBasedModelProducer<C>) target;
+	private <C extends AbstractModel> CompositeDictionaryAuthenticationBasedModelProducer<C> from(
+			CompositeDictionaryAuthenticationBasedModelProducer<?> target) {
+		return (CompositeDictionaryAuthenticationBasedModelProducer<C>) target;
 	}
 
-	private <T extends AbstractModel, E extends T> CompositeAuthenticationBasedModelProducer<E> combine(
-			CompositeAuthenticationBasedModelProducer<T> parent, CompositeAuthenticationBasedModelProducer<E> child) {
+	private <T extends AbstractModel, E extends T> CompositeDictionaryAuthenticationBasedModelProducer<E> combine(
+			CompositeDictionaryAuthenticationBasedModelProducer<T> parent,
+			CompositeDictionaryAuthenticationBasedModelProducer<E> child) {
 		if (parent == null || child == null) {
 			throw new IllegalStateException(String.format("Internal error: one node in the %s was null",
-					CompositeAuthenticationBasedModelProducer.class.getName()));
+					CompositeDictionaryAuthenticationBasedModelProducer.class.getName()));
 		}
 
 		return parent.and(child);
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T extends AbstractModel> CompositeAuthenticationBasedModelProducer<T> getProducer(Class<T> type) {
-		return (CompositeAuthenticationBasedModelProducer<T>) producerMap.get(type);
+	private <T extends AbstractModel> CompositeDictionaryAuthenticationBasedModelProducer<T> getProducer(
+			Class<T> type) {
+		return (CompositeDictionaryAuthenticationBasedModelProducer<T>) producerMap.get(type);
 	}
 
 	@Override
@@ -123,6 +130,19 @@ public class DefaultAuthenticationBasedModelFactory implements AuthenticationBas
 	@Override
 	public <T extends AbstractModel> Map<String, Object> produce(Class<T> type, T entity, Role role) {
 		return getProducer(type).produce(entity, new HashMap<>(16, 1.075f), role);
+	}
+
+	@Override
+	public <T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type, List<T> entities) {
+		return getProducer(type).produce(entities, IntStream.range(0, entities.size())
+				.mapToObj(index -> new HashMap<String, Object>(16, 1.075f)).collect(Collectors.toList()),
+				ContextProvider.getPrincipalRole());
+	}
+
+	@Override
+	public <T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type, List<T> entities, Role role) {
+		return getProducer(type).produce(entities, IntStream.range(0, entities.size())
+				.mapToObj(index -> new HashMap<String, Object>(16, 1.075f)).collect(Collectors.toList()), role);
 	}
 
 }

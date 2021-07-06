@@ -22,14 +22,14 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.context.ContextProvider;
+import adn.application.context.DefaultAuthenticationBasedModelProducerFactory;
 import adn.dao.Repository;
 import adn.helpers.FunctionHelper.HandledConsumer;
 import adn.model.AbstractModel;
 import adn.model.DatabaseInteractionResult;
 import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
-import adn.model.factory.dictionary.production.authentication.AuthenticationBasedModelFactory;
-import adn.model.factory.dictionary.production.authentication.DefaultAuthenticationBasedModelFactory;
+import adn.model.factory.AuthenticationBasedModelFactory;
 import adn.model.factory.pojo.extraction.DefaultEntityExtractorProvider;
 import adn.model.factory.pojo.extraction.EntityExtractorProvider;
 import adn.service.internal.CRUDService;
@@ -47,7 +47,7 @@ public class BaseController {
 	protected ModelContextProvider modelsDescriptor;
 
 	@Autowired
-	@Qualifier(DefaultAuthenticationBasedModelFactory.NAME)
+	@Qualifier(DefaultAuthenticationBasedModelProducerFactory.NAME)
 	protected AuthenticationBasedModelFactory authenticationBasedModelFactory;
 
 	@Autowired

@@ -25,16 +25,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -259,10 +256,11 @@ public class TestController extends BaseController {
 		return ResponseEntity.ok(null);
 	}
 
-	@PostMapping(path = "/extract", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
-	public @ResponseBody ResponseEntity<?> testExtraction(@RequestPart("json") Admin json)
-			throws JsonMappingException, JsonProcessingException {
-		return ResponseEntity.ok(json);
+	@GetMapping("/produce")
+	@Transactional
+	public @ResponseBody ResponseEntity<?> testExtraction() {
+		return ResponseEntity
+				.ok(authenticationBasedModelFactory.produce(Admin.class, baseRepository.fetch(Admin.class)));
 	}
 
 }

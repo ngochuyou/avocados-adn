@@ -35,7 +35,7 @@ import adn.service.resource.model.type.FileCreationTimeStampType;
 	@TypeDef(name = FileCreationTimeStampType.NAME, typeClass = FileCreationTimeStampType.class),
 })
 // @formatter:on
-public class FileResource implements Resource {
+public abstract class FileResource implements Resource {
 
 	public static final String ID_NAME = "name";
 

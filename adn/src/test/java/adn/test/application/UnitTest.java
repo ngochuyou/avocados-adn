@@ -3,10 +3,16 @@
  */
 package adn.test.application;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
-import adn.helpers.StringHelper;
+import adn.helpers.TypeHelper;
+import adn.model.AbstractModel;
+import adn.model.entities.Account;
+import adn.model.entities.Entity;
+import adn.model.entities.Personnel;
 
 /**
  * @author Ngoc Huy
@@ -38,7 +44,17 @@ public class UnitTest {
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
 			IllegalArgumentException, IllegalAccessException {
-		System.out.println(StringHelper.toCamel(" provider     ", " "));
+
+		Stream.of(Entity.class, AbstractModel.class, Entity.class, AbstractModel.class, Personnel.class, Account.class,
+				Account.class).sorted((o, t) -> {
+					return o.equals(t) ? 0 : (TypeHelper.isExtendedFrom(o, t) ? 1 : -1);
+				}).forEach(type -> {
+					System.out.println(type.getName());
+				});
+	}
+
+	public static <T extends Account> List<T> test(List<T> arr) {
+		return arr;
 	}
 
 	public static void testUnicodePattern() {

@@ -13,6 +13,8 @@ public class ArrayHelper {
 
 	private ArrayHelper() {}
 
+	public static final String[] EMPTY_STRING_ARRAY = new String[0];
+
 	public static <T> ArrayBuilder<T> from(T[] elements) {
 		return elements == null ? FunctionHelper.doThrow("Cannot build Array from null") : new ArrayBuilder<>(elements);
 	}

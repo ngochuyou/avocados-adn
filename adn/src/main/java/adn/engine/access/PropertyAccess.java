@@ -22,7 +22,7 @@ public @interface PropertyAccess {
 
 	public enum Type {
 
-		GETTER, SETTER
+		GETTER, SETTER;
 
 	}
 

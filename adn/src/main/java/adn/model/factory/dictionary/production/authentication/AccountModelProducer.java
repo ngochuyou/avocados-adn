@@ -22,6 +22,7 @@ public class AccountModelProducer<T extends Account>
 		model.put("role", account.getRole());
 		model.put("gender", account.getGender());
 		model.put("active", account.isActive());
+		model.put("password", null);
 
 		return model;
 	}

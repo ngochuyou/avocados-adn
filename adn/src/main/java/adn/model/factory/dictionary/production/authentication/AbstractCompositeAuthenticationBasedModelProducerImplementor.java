@@ -2,20 +2,26 @@ package adn.model.factory.dictionary.production.authentication;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import adn.model.AbstractModel;
 import adn.model.entities.Entity;
+import adn.model.factory.dictionary.production.AbstractCompositeDictionaryAuthenticationBasedModelProducer;
+import adn.model.factory.dictionary.production.CompositeDictionaryAuthenticationBasedModelProducer;
 import adn.service.internal.Role;
 
-public abstract class AbstractCompositeAuthenticationBasedModelProducerImplementor<T extends AbstractModel> extends
-		AbstractCompositeAuthenticationBasedModelProducer<T> implements CompositeAuthenticationBasedModelProducer<T> {
+public abstract class AbstractCompositeAuthenticationBasedModelProducerImplementor<T extends AbstractModel>
+		extends AbstractCompositeDictionaryAuthenticationBasedModelProducer<T>
+		implements CompositeDictionaryAuthenticationBasedModelProducer<T> {
 
 	protected final int propertySpan;
 
-	private final Map<Role, Function<T, Map<String, Object>>> mapProducers;
+	private final Map<Role, Function<T, Map<String, Object>>> mappingProducers;
 	private final Map<Role, BiFunction<T, Map<String, Object>, Map<String, Object>>> injectiveProducers;
 
 	private static final Function<Entity, Map<String, Object>> DEFAULT_MAP_PRODUCER = new Function<>() {
@@ -47,7 +53,7 @@ public abstract class AbstractCompositeAuthenticationBasedModelProducerImplement
 		mapProducers.put(Role.MANAGER, this::produceForManager);
 		mapProducers.put(Role.CUSTOMER, this::produceForCustomer);
 
-		registerDefaultMapProducers(mapProducers);
+		registerDefaultMappingProducers(mapProducers);
 		
 		Map<Role, BiFunction<T, Map<String, Object>, Map<String, Object>>> injectiveProducers = new HashMap<>();
 		
@@ -59,12 +65,12 @@ public abstract class AbstractCompositeAuthenticationBasedModelProducerImplement
 
 		registerDefaultInjectiveProducers(injectiveProducers);
 		// @formatter:on
-		this.mapProducers = Collections.unmodifiableMap(mapProducers);
+		this.mappingProducers = Collections.unmodifiableMap(mapProducers);
 		this.injectiveProducers = Collections.unmodifiableMap(injectiveProducers);
 	}
 
 	@SuppressWarnings("unchecked")
-	private void registerDefaultMapProducers(Map<Role, Function<T, Map<String, Object>>> mapProducers) {
+	private void registerDefaultMappingProducers(Map<Role, Function<T, Map<String, Object>>> mapProducers) {
 		for (Role role : Role.values()) {
 			if (!mapProducers.containsKey(role)) {
 				mapProducers.put(role, (Function<T, Map<String, Object>>) DEFAULT_MAP_PRODUCER);
@@ -90,7 +96,7 @@ public abstract class AbstractCompositeAuthenticationBasedModelProducerImplement
 
 	@Override
 	public final Map<String, Object> produce(T entity, Role role) {
-		return mapProducers.get(role).apply(entity);
+		return mappingProducers.get(role).apply(entity);
 	}
 
 	@Override
@@ -106,6 +112,75 @@ public abstract class AbstractCompositeAuthenticationBasedModelProducerImplement
 	@Override
 	public final Map<String, Object> produceImmutable(T entity, Map<String, Object> modelMap, Role role) {
 		return Collections.unmodifiableMap(produce(entity, modelMap, role));
+	}
+
+	@Override
+	public final Map<String, Object> produce(T source) {
+		return mappingProducers.get(null).apply(source);
+	}
+
+	@Override
+	public final Map<String, Object> produceImmutable(T source) {
+		return Collections.unmodifiableMap(produce(source));
+	}
+
+	@Override
+	public final Map<String, Object> produce(T source, Map<String, Object> model) {
+		return injectiveProducers.get(null).apply(source, model);
+	}
+
+	@Override
+	public final Map<String, Object> produceImmutable(T source, Map<String, Object> model) {
+		return Collections.unmodifiableMap(produce(source, model));
+	}
+
+	@Override
+	public List<Map<String, Object>> produce(List<T> sources) {
+		Function<T, Map<String, Object>> producer = mappingProducers.get(null);
+
+		return IntStream.range(0, sources.size()).mapToObj(index -> producer.apply(sources.get(index)))
+				.collect(Collectors.toList());
+	}
+
+	@Override
+	public List<Map<String, Object>> produceImmutable(List<T> sources) {
+		return Collections.unmodifiableList(produce(sources));
+	}
+
+	@Override
+	public List<Map<String, Object>> produce(List<T> source, Role role) {
+		Function<T, Map<String, Object>> producer = mappingProducers.get(role);
+
+		return IntStream.range(0, source.size()).mapToObj(index -> producer.apply(source.get(index)))
+				.collect(Collectors.toList());
+	}
+
+	@Override
+	public List<Map<String, Object>> produceImmutable(List<T> source, Role role) {
+		return Collections.unmodifiableList(produce(source, role));
+	}
+
+	@Override
+	public List<Map<String, Object>> produce(List<T> source, List<Map<String, Object>> models) {
+		return produce(source, models, null);
+	}
+
+	@Override
+	public List<Map<String, Object>> produceImmutable(List<T> source, List<Map<String, Object>> models) {
+		return Collections.unmodifiableList(produce(source, models));
+	}
+
+	@Override
+	public List<Map<String, Object>> produce(List<T> source, List<Map<String, Object>> models, Role role) {
+		BiFunction<T, Map<String, Object>, Map<String, Object>> producer = injectiveProducers.get(role);
+
+		return IntStream.range(0, source.size()).mapToObj(index -> producer.apply(source.get(index), models.get(index)))
+				.collect(Collectors.toList());
+	}
+
+	@Override
+	public List<Map<String, Object>> produceImmutable(List<T> source, List<Map<String, Object>> models, Role role) {
+		return Collections.unmodifiableList(produce(source, models, role));
 	}
 
 	protected Map<String, Object> createModel() {

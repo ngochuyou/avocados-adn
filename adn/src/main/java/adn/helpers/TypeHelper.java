@@ -106,13 +106,25 @@ public class TypeHelper {
 		return anno.value();
 	}
 
-	public static Stack<Class<?>> getClassStack(Class<?> clazz) {
-		Stack<Class<?>> stack = new Stack<>();
-		Class<?> superClass = clazz;
+	public static <T> Stack<Class<? super T>> getClassStack(Class<T> clazz) {
+		Stack<Class<? super T>> stack = new Stack<>();
+		Class<? super T> superClass = clazz;
 
 		while (superClass != null && !superClass.equals(Object.class)) {
 			stack.add(superClass);
-			superClass = (Class<?>) superClass.getSuperclass();
+			superClass = (Class<? super T>) superClass.getSuperclass();
+		}
+
+		return stack;
+	}
+	
+	public static <T> Stack<Class<? super T>> getClassStack(Class<T> clazz, Class<? super T> expectedParent) {
+		Stack<Class<? super T>> stack = new Stack<>();
+		Class<? super T> superClass = clazz;
+
+		while (superClass != null && !superClass.equals(expectedParent)) {
+			stack.add(superClass);
+			superClass = (Class<? super T>) superClass.getSuperclass();
 		}
 
 		return stack;
@@ -123,8 +135,10 @@ public class TypeHelper {
 			return true;
 		}
 
-		while ((clazz = clazz.getSuperclass()) != null) {
-			if (clazz.equals(superClass)) {
+		Class<?> root = clazz;
+
+		while ((root = root.getSuperclass()) != null) {
+			if (root.equals(superClass)) {
 				return true;
 			}
 		}
@@ -175,9 +189,9 @@ public class TypeHelper {
 		return (M) target;
 	}
 
-	public static Field[] getAllFields(Class<?> type) {
+	public static <T> Field[] getAllFields(Class<T> type) {
 		List<Field> fields = new ArrayList<>();
-		Stack<Class<?>> classStack = getClassStack(type);
+		Stack<Class<? super T>> classStack = getClassStack(type);
 
 		while (!classStack.isEmpty()) {
 			fields.addAll(Arrays.asList(classStack.pop().getDeclaredFields()));
@@ -187,7 +201,7 @@ public class TypeHelper {
 	}
 
 	public static boolean isParentOf(Class<?> possibleParent, Class<?> child) {
-		Stack<Class<?>> classStack = getClassStack(child);
+		Stack<?> classStack = getClassStack(child);
 
 		while (!classStack.isEmpty()) {
 			if (classStack.pop().equals(possibleParent)) {
