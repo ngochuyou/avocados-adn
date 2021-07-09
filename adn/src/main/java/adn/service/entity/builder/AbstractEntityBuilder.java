@@ -6,9 +6,9 @@ package adn.service.entity.builder;
 import java.io.Serializable;
 
 import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import adn.application.context.ContextProvider;
 import adn.helpers.EntityUtils;
 import adn.model.Generic;
 import adn.model.entities.Entity;
@@ -21,8 +21,16 @@ import adn.model.entities.Entity;
 @Generic(entityGene = Entity.class)
 public class AbstractEntityBuilder<T extends Entity> implements EntityBuilder<T> {
 
+	@Autowired
+	protected SessionFactory sessionFactory;
+
 	protected <E> E loadPersistence(Class<E> type, Serializable id) {
-		return ContextProvider.getApplicationContext().getBean(SessionFactory.class).getCurrentSession().load(type, id);
+		return sessionFactory.getCurrentSession().load(type, id);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected <P extends Entity, C extends P> C cast(P entity) {
+		return (C) entity;
 	}
 
 	@Override

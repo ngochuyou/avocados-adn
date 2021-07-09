@@ -18,9 +18,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import adn.application.Constants;
 import adn.helpers.TypeHelper;
@@ -38,10 +40,13 @@ import adn.service.internal.Role;
  * @author Ngoc Huy
  *
  */
-@Component
+@Component(DefaultAuthenticationBasedModelPropertiesProducerFactory.NAME)
+@Primary
 @Order(7)
 public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 		implements AuthenticationBasedModelPropertiesFactory, ContextBuilder {
+
+	public static final String NAME = "DefaultAuthenticationBasedModelPropertiesProducerFactory";
 
 	private Map<Class<? extends AbstractModel>, AuthenticationBasedModelPropertiesProducer> producers;
 
@@ -50,7 +55,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 	public void buildAfterStartUp() throws Exception {
 		final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-		logger.trace(String.format("%s %s", ContextBuilder.super.getLoggingPrefix(this),
+		logger.info(String.format("%s %s", ContextBuilder.super.getLoggingPrefix(this),
 				String.format("Building %s", this.getClass().getSimpleName())));
 
 		ModelContextProvider modelContext;
@@ -68,7 +73,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 				Class<? extends AuthenticationBasedModelPropertiesProducersContributor> contributorClass = (Class<? extends AuthenticationBasedModelPropertiesProducersContributor>) Class
 						.forName(beanDef.getBeanClassName());
 
-				logger.trace(String.format("Found one %s of type [%s]",
+				logger.info(String.format("Found one %s of type [%s]",
 						AuthenticationBasedModelPropertiesProducersContributor.class.getSimpleName(),
 						beanDef.getBeanClassName()));
 
@@ -96,7 +101,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 									.map(prop -> (SecuredProperty<AbstractModel>) prop).collect(Collectors.toSet())));
 		});
 
-		logger.trace(String.format("%s %s", ContextBuilder.super.getLoggingPrefix(this),
+		logger.info(String.format("%s %s", ContextBuilder.super.getLoggingPrefix(this),
 				String.format("Finished building %s", this.getClass().getSimpleName())));
 	}
 
@@ -105,62 +110,36 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 	}
 
 	@Override
-	public <T extends AbstractModel> Map<String, Object> produce(Class<T> type, Map<String, Object> properties) {
-		return produce(type, properties, ContextProvider.getPrincipalRole());
+	public <T extends AbstractModel> Map<String, Object> produce(Class<T> type, Object[] properties, String[] columns) {
+		return produce(type, properties, columns, ContextProvider.getPrincipalRole());
 	}
 
 	@Override
-	public <T extends AbstractModel> Map<String, Object> produce(Class<T> type, Map<String, Object> properties,
+	public <T extends AbstractModel> Map<String, Object> produce(Class<T> type, Object[] properties, String[] columns,
 			Role role) {
 		AuthenticationBasedModelPropertiesProducer producer = getProducer(type);
 
-		return producer.produce(properties, role);
+		return producer.produce(properties, role, columns);
 	}
 
 	@Override
-	public <T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type,
-			List<Map<String, Object>> properties) {
-		return produce(type, properties, ContextProvider.getPrincipalRole());
+	public <T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type, List<Object[]> properties,
+			String[] columns) {
+		return produce(type, properties, columns, ContextProvider.getPrincipalRole());
 	}
 
 	@Override
-	public <T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type,
-			List<Map<String, Object>> properties, Role role) {
+	public <T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type, List<Object[]> properties,
+			String[] columns, Role role) {
 		AuthenticationBasedModelPropertiesProducer producer = getProducer(type);
 
-		return producer.produce(properties, role);
-	}
-
-	@Override
-	public <T extends AbstractModel> Map<String, Object> produceImmutable(Class<T> type,
-			Map<String, Object> properties) {
-		return produceImmutable(type, properties, ContextProvider.getPrincipalRole());
-	}
-
-	@Override
-	public <T extends AbstractModel> Map<String, Object> produceImmutable(Class<T> type, Map<String, Object> properties,
-			Role role) {
-		AuthenticationBasedModelPropertiesProducer producer = getProducer(type);
-
-		return producer.produceImmutable(properties, role);
-	}
-
-	@Override
-	public <T extends AbstractModel> List<Map<String, Object>> produceImmutable(Class<T> type,
-			List<Map<String, Object>> properties) {
-		return produceImmutable(type, properties, ContextProvider.getPrincipalRole());
-	}
-
-	@Override
-	public <T extends AbstractModel> List<Map<String, Object>> produceImmutable(Class<T> type,
-			List<Map<String, Object>> properties, Role role) {
-		AuthenticationBasedModelPropertiesProducer producer = getProducer(type);
-
-		return producer.produceImmutable(properties, role);
+		return producer.produce(properties, role, columns);
 	}
 
 	public class AuthenticationBasedModelPropertiesProducersBuilderImpl
 			implements AuthenticationBasedModelPropertiesProducersBuilder {
+
+		private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 		private final ModelContextProvider modelContext;
 		private final Map<Key<? extends AbstractModel>, SecuredProperty<? extends AbstractModel>> propertiesMap = Collections
@@ -171,50 +150,40 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 		}
 
 		@Override
-		public <T extends AbstractModel> WithType<T> type(Class<T> type) {
+		public <T extends AbstractModel, E extends T> WithType<E> type(Class<E> type) {
 			return new WithTypes<>(this, type);
 		}
 
 		@Override
-		public <T extends AbstractModel, E extends T> WithType<E> types(
-				@SuppressWarnings("unchecked") Class<E>... types) {
+		public <T extends AbstractModel, E extends T> WithType<E> type(Class<E>[] types) {
 			return new WithTypes<>(this, types);
+		}
+
+		private AuthenticationBasedModelPropertiesProducersBuilder apply(Function<Object, Object> func) {
+			Role[] roles = Role.values();
+
+			modelContext.getEntityTree().forEach(branch -> {
+				Stream.of(roles).forEach(role -> {
+					EntityMetadata metadata = modelContext.getMetadata(branch.getNode());
+
+					metadata.getPropertyNames().stream().forEach(prop -> {
+						propertiesMap.put(new Key<>(branch.getNode(), role, prop),
+								new SecuredPropertyImpl<>(branch.getNode(), role, prop, func));
+					});
+				});
+			});
+
+			return this;
 		}
 
 		@Override
 		public AuthenticationBasedModelPropertiesProducersBuilder mask() {
-			Role[] roles = Role.values();
-
-			modelContext.getEntityTree().forEach(branch -> {
-				Stream.of(roles).forEach(role -> {
-					EntityMetadata metadata = modelContext.getMetadata(branch.getNode());
-
-					metadata.getPropertyNames().stream().forEach(prop -> {
-						propertiesMap.put(new Key<>(branch.getNode(), role, prop),
-								new SecuredPropertyImpl<>(branch.getNode(), role, prop, getMasker()));
-					});
-				});
-			});
-
-			return this;
+			return apply(getMasker());
 		}
 
 		@Override
 		public AuthenticationBasedModelPropertiesProducersBuilder publish() {
-			Role[] roles = Role.values();
-
-			modelContext.getEntityTree().forEach(branch -> {
-				Stream.of(roles).forEach(role -> {
-					EntityMetadata metadata = modelContext.getMetadata(branch.getNode());
-
-					metadata.getPropertyNames().stream().forEach(prop -> {
-						propertiesMap.put(new Key<>(branch.getNode(), role, prop),
-								new SecuredPropertyImpl<>(branch.getNode(), role, prop, getPublisher()));
-					});
-				});
-			});
-
-			return this;
+			return apply(getPublisher());
 		}
 
 		private Set<Class<? extends AbstractModel>> getUngivenTypes() {
@@ -233,40 +202,10 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 			return ungiven;
 		}
 
+		@SuppressWarnings("unchecked")
 		@Override
-		public AuthenticationBasedModelPropertiesProducersBuilder maskUngivenTypes() {
-			Role[] roles = Role.values();
-
-			getUngivenTypes().forEach(type -> {
-				Stream.of(roles).forEach(role -> {
-					EntityMetadata metadata = modelContext.getMetadata(type);
-
-					metadata.getPropertyNames().stream().forEach(prop -> {
-						propertiesMap.put(new Key<>(type, role, prop),
-								new SecuredPropertyImpl<>(type, role, prop, getMasker()));
-					});
-				});
-			});
-
-			return this;
-		}
-
-		@Override
-		public AuthenticationBasedModelPropertiesProducersBuilder publishUngivenTypes() {
-			Role[] roles = Role.values();
-
-			getUngivenTypes().forEach(type -> {
-				Stream.of(roles).forEach(role -> {
-					EntityMetadata metadata = modelContext.getMetadata(type);
-
-					metadata.getPropertyNames().stream().forEach(prop -> {
-						propertiesMap.put(new Key<>(type, role, prop),
-								new SecuredPropertyImpl<>(type, role, prop, getPublisher()));
-					});
-				});
-			});
-
-			return this;
+		public <T extends AbstractModel> WithType<T> ungivenTypes() {
+			return new WithTypes<T>(this, (Class<T>[]) getUngivenTypes().toArray(Class<?>[]::new));
 		}
 
 		private Function<Object, Object> getMasker() {
@@ -306,16 +245,21 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 					Class<E>... types) {
 				super(owner);
 				this.types = types;
+				logger.trace(String.format("With types %s",
+						Stream.of(types).map(type -> type.getSimpleName()).collect(Collectors.joining(", "))));
 			}
 
 			@Override
-			public WithRole<T> role(Role role) {
-				return new WithRoles(owner, this, role);
-			}
-
-			@Override
-			public WithRole<T> roles(Role... roles) {
+			public WithRole<T> role(Role... roles) {
 				return new WithRoles(owner, this, roles);
+			}
+
+			protected WithField<T> anyRoles(Role[] roles, String... fields) {
+				return new WithRoles(owner, this, roles).field(fields);
+			}
+
+			protected WithField<T> anyRoles(String... fields) {
+				return new WithRoles(owner, this, getUngivenRoles().toArray(Role[]::new)).field(fields);
 			}
 
 			protected WithType<T> apply(Role[] roles, Function<Object, Object> function) {
@@ -339,11 +283,13 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 			@Override
 			public WithType<T> mask() {
+				logger.trace("Mask all");
 				return apply(getMasker());
 			}
 
 			@Override
 			public WithType<T> publish() {
+				logger.trace("Publish all");
 				return apply(getPublisher());
 			}
 
@@ -367,35 +313,36 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 			}
 
 			@Override
-			public WithType<T> maskUngivenRoles() {
-				return apply(getUngivenRoles().toArray(Role[]::new), getMasker());
+			public WithRole<T> anyRoles() {
+				return new WithRoles(owner, this, getUngivenRoles().toArray(Role[]::new));
 			}
 
-			@Override
-			public WithType<T> publishUngivenRoles() {
-				return apply(getUngivenRoles().toArray(Role[]::new), getPublisher());
+			protected WithField<T> ungivenRoles(String... fields) {
+				return new WithRoles(owner, this, getUngivenRoles().toArray(Role[]::new)).field(fields);
 			}
 
 			public class WithRoles extends AbstractOwned implements WithRole<T> {
 
 				private final Role[] roles;
-				private final WithType<T> owningType;
+				private final WithTypes<T> owningType;
 
-				public WithRoles(AuthenticationBasedModelPropertiesProducersBuilder owner, WithType<T> owningType,
+				public WithRoles(AuthenticationBasedModelPropertiesProducersBuilder owner, WithTypes<T> owningType,
 						Role... roles) {
 					super(owner);
 					this.roles = roles;
 					this.owningType = owningType;
+					logger.trace(String.format("With roles %s",
+							Stream.of(roles).map(role -> role.toString()).collect(Collectors.joining(", "))));
 				}
 
 				@Override
-				public WithField<T> field(String fieldName) {
-					return new WithFields(owner, this, fieldName);
-				}
-
-				@Override
-				public WithField<T> fields(String... fieldNames) {
+				public WithField<T> field(String... fieldNames) {
 					return new WithFields(owner, this, fieldNames);
+				}
+
+				@Override
+				public WithType<T> type() {
+					return owningType;
 				}
 
 				protected WithRole<T> apply(String[] fields, Function<Object, Object> function) {
@@ -421,17 +368,14 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 				@Override
 				public WithRole<T> mask() {
+					logger.trace("Mask all");
 					return apply(getMasker());
 				}
 
 				@Override
 				public WithRole<T> publish() {
+					logger.trace("Publish all");
 					return apply(getPublisher());
-				}
-
-				@Override
-				public WithType<T> more() {
-					return owningType;
 				}
 
 				protected Set<String> getUngivenFields() {
@@ -462,25 +406,27 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 				}
 
 				@Override
-				public WithRole<T> maskUngivenFields() {
-					return apply(getUngivenFields().toArray(String[]::new), getMasker());
+				public WithRole<T> anyRoles() {
+					return owningType.anyRoles();
 				}
 
 				@Override
-				public WithRole<T> publishUngivenFields() {
-					return apply(getUngivenFields().toArray(String[]::new), getPublisher());
+				public WithField<T> anyFields() {
+					return new WithFields(owner, this, getUngivenFields().toArray(String[]::new));
 				}
 
 				private class WithFields extends AbstractOwned implements WithField<T> {
 
 					private final String[] names;
-					private final WithRole<T> owningRole;
+					private final WithRoles owningRole;
 
-					public WithFields(AuthenticationBasedModelPropertiesProducersBuilder owner, WithRole<T> owningRole,
+					public WithFields(AuthenticationBasedModelPropertiesProducersBuilder owner, WithRoles owningRole,
 							String... names) {
 						super(owner);
 						this.names = names;
 						this.owningRole = owningRole;
+						logger.trace(
+								String.format("With fields %s", Stream.of(names).collect(Collectors.joining(", "))));
 					}
 
 					protected <F, R> WithField<T> apply(Function<F, R> function) {
@@ -505,6 +451,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 					@Override
 					public WithField<T> use(String alternativeName) {
+						logger.trace(String.format("Use alt name [%s]", alternativeName));
 						Stream.of(types).forEach(type -> {
 							Stream.of(roles).forEach(role -> {
 								Stream.of(names).forEach(name -> {
@@ -528,22 +475,69 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 					@Override
 					public WithField<T> mask() {
+						logger.trace("Mask all");
 						return apply(getMasker());
 					}
 
 					@Override
 					public WithField<T> publish() {
+						logger.trace("Publish all");
 						return apply(getPublisher());
 					}
 
 					@Override
 					public <F, R> WithField<T> use(Function<F, R> function) {
+						logger.trace(String.format("Use function [%s]", function));
 						return apply(function);
 					}
 
 					@Override
-					public WithRole<T> more() {
+					public WithField<T> role(Role role) {
+						return owningType.anyRoles(new Role[] { role }, names);
+					}
+
+					@Override
+					public WithField<T> roles(Role... roles) {
+						return owningType.anyRoles(roles, names);
+					}
+
+					@Override
+					public WithField<T> anyRoles() {
+						return owningType.anyRoles(names);
+					}
+
+					@Override
+					public WithField<T> field(String fieldName) {
+						return owningRole.field(fieldName);
+					}
+
+					@Override
+					public WithField<T> fields(String... fieldNames) {
+						return owningRole.field(fieldNames);
+					}
+
+					@Override
+					public WithField<T> anyFields() {
+						return owningRole.anyFields();
+					}
+
+					@Override
+					public WithField<T> but(String... excludedFields) {
+						Set<String> excludedFieldSet = Set.of(excludedFields);
+						logger.trace(String.format("Excluding %s",
+								Stream.of(excludedFields).collect(Collectors.joining(", "))));
+						return owningRole.field(Stream.of(names).filter(name -> !excludedFieldSet.contains(name))
+								.toArray(String[]::new));
+					}
+
+					@Override
+					public WithRole<T> role() {
 						return owningRole;
+					}
+
+					@Override
+					public WithType<T> type() {
+						return owningType;
 					}
 
 				}
@@ -626,6 +620,8 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 		private final int hashCode;
 
 		private Key(Class<T> type, Role role, String originalName) {
+			Assert.notNull(type, "Null type");
+			Assert.notNull(originalName, "Null name");
 			this.type = type;
 			this.role = role;
 			this.originalName = originalName;

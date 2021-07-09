@@ -29,8 +29,8 @@ import adn.engine.access.DirectAccess;
 import adn.engine.access.LiterallyNamedAccess;
 import adn.engine.access.PropertyAccessDelegate;
 import adn.engine.access.PropertyAccessStrategyFactory;
-import adn.engine.access.StandardAccess;
 import adn.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
+import adn.engine.access.StandardAccess;
 import adn.helpers.FunctionHelper;
 import adn.helpers.FunctionHelper.HandledBiFunction;
 import adn.helpers.FunctionHelper.HandledConsumer;
@@ -270,8 +270,8 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 
 		Utils.Entry<Object, Object> lamdaEntry = locatePropertyAccessLambda(
 				(AbstractExplicitlyBindedType<?>) propertyType);
-		Object getterLambda = lamdaEntry.key;
-		Object setterLambda = lamdaEntry.value;
+		Object getterLambda = lamdaEntry.getKey();
+		Object setterLambda = lamdaEntry.getValue();
 
 		if (setter == null && getter == null) {
 			if (getterLambda == null && setterLambda == null) {
@@ -316,22 +316,21 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 	private Utils.Entry<Object, Object> locatePropertyAccessLambda(AbstractExplicitlyBindedType<?> type) {
 		Method[] methods = type.getClass().getDeclaredMethods();
 		Utils.Entry<Object, Object> entry = new Utils.Entry<>(null, null);
-		Consumer<Object> consumer = (o) -> entry.key = o;
+		Consumer<Object> consumer = (o) -> entry.setKey(o);
 
 		for (Method method : methods) {
-			adn.engine.access.PropertyAccess pa = method
-					.getDeclaredAnnotation(adn.engine.access.PropertyAccess.class);
+			adn.engine.access.PropertyAccess pa = method.getDeclaredAnnotation(adn.engine.access.PropertyAccess.class);
 
 			if (pa == null) {
 				continue;
 			}
 
-			consumer = (o) -> entry.key = o;
+			consumer = (o) -> entry.setKey(o);
 
 			adn.engine.access.PropertyAccess.Type accessType = pa.type();
 
 			if (accessType == adn.engine.access.PropertyAccess.Type.SETTER) {
-				consumer = (o) -> entry.value = o;
+				consumer = (o) -> entry.setValue(o);
 			}
 
 			Class<?> accessClazz = pa.clazz();

@@ -18,6 +18,10 @@ public interface EntityMetadata {
 
 	Set<String> getPropertyNames();
 
+	Set<String> getNonLazyPropertyNames();
+
+	int getNonLazyPropertiesSpan();
+	
 	Set<Map.Entry<String, Getter>> getGetters();
 
 }

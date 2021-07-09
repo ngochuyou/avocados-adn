@@ -3,6 +3,9 @@
  */
 package adn.helpers;
 
+import java.lang.reflect.Array;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -14,6 +17,15 @@ public class ArrayHelper {
 	private ArrayHelper() {}
 
 	public static final String[] EMPTY_STRING_ARRAY = new String[0];
+
+	public static final String[] from(List<String> elements) {
+		return elements.toArray(new String[elements.size()]);
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <E, C extends Collection<E>> E[] from(C collection, Class<E> type) {
+		return collection.toArray((E[]) Array.newInstance(type, collection.size()));
+	}
 
 	public static <T> ArrayBuilder<T> from(T[] elements) {
 		return elements == null ? FunctionHelper.doThrow("Cannot build Array from null") : new ArrayBuilder<>(elements);

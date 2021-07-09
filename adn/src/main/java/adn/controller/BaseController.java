@@ -14,7 +14,6 @@ import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -22,7 +21,6 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.context.ContextProvider;
-import adn.application.context.DefaultAuthenticationBasedModelProducerFactory;
 import adn.dao.Repository;
 import adn.helpers.FunctionHelper.HandledConsumer;
 import adn.model.AbstractModel;
@@ -30,7 +28,7 @@ import adn.model.DatabaseInteractionResult;
 import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
 import adn.model.factory.AuthenticationBasedModelFactory;
-import adn.model.factory.pojo.extraction.DefaultEntityExtractorProvider;
+import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
 import adn.model.factory.pojo.extraction.EntityExtractorProvider;
 import adn.service.internal.CRUDService;
 import adn.service.internal.Role;
@@ -47,11 +45,12 @@ public class BaseController {
 	protected ModelContextProvider modelsDescriptor;
 
 	@Autowired
-	@Qualifier(DefaultAuthenticationBasedModelProducerFactory.NAME)
 	protected AuthenticationBasedModelFactory authenticationBasedModelFactory;
 
 	@Autowired
-	@Qualifier(DefaultEntityExtractorProvider.NAME)
+	protected AuthenticationBasedModelPropertiesFactory authenticationBasedModelPropertiesFactory;
+
+	@Autowired
 	protected EntityExtractorProvider extractorProvider;
 
 	@Autowired
@@ -120,6 +119,10 @@ public class BaseController {
 
 	protected <T> ResponseEntity<?> sendNotFound(T body) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+	}
+
+	protected <T> ResponseEntity<?> sendBadRequest(T body) {
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
 	}
 
 	protected <T> ResponseEntity<?> send(T instance, String messageIfNull) {

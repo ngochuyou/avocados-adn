@@ -3,12 +3,16 @@
  */
 package adn.model.factory.dictionary.production.authentication;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.hibernate.property.access.spi.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import adn.helpers.Utils;
 import adn.model.AbstractModel;
 import adn.model.entities.metadata.EntityMetadata;
 
@@ -21,9 +25,11 @@ import adn.model.entities.metadata.EntityMetadata;
 public class DefaultModelProducer<T extends AbstractModel>
 		extends AbstractCompositeAuthenticationBasedModelProducerImplementor<T> {
 
-	private final Set<Map.Entry<String, Getter>> getters;
-
+	@SuppressWarnings("unused")
+	private static final Logger logger = LoggerFactory.getLogger(DefaultModelProducer.class);
 	private final String name;
+
+	private final Set<Map.Entry<String, Getter>> getters;
 
 	public static <T extends AbstractModel> boolean shouldUse(Class<T> type) {
 		return type.getDeclaredFields().length > 0;
@@ -35,8 +41,9 @@ public class DefaultModelProducer<T extends AbstractModel>
 	}
 
 	private Map<String, Object> getAll(T entity) {
-		return getters.stream().map(entry -> Map.entry(entry.getKey(), entry.getValue().get(entity)))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		return getters.stream().map(entry -> Utils.Entry.entry(entry.getKey(), entry.getValue().get(entity))).collect(
+				HashMap<String, Object>::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()),
+				HashMap::putAll);
 	}
 
 	private Map<String, Object> injectAll(T entity, Map<String, Object> model) {

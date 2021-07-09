@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,7 @@ import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
 
 @Component(DefaultEntityExtractorProvider.NAME)
+@Primary
 @Order(value = 4)
 public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 

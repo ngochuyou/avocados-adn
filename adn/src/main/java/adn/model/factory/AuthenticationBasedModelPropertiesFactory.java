@@ -15,24 +15,15 @@ import adn.service.internal.Role;
  */
 public interface AuthenticationBasedModelPropertiesFactory {
 
-	<T extends AbstractModel> Map<String, Object> produce(Class<T> type, Map<String, Object> properties);
+	<T extends AbstractModel> Map<String, Object> produce(Class<T> type, Object[] properties, String[] columns);
 
-	<T extends AbstractModel> Map<String, Object> produce(Class<T> type, Map<String, Object> properties, Role role);
-
-	<T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type, List<Map<String, Object>> properties);
-
-	<T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type, List<Map<String, Object>> properties,
+	<T extends AbstractModel> Map<String, Object> produce(Class<T> type, Object[] properties, String[] columns,
 			Role role);
 
-	<T extends AbstractModel> Map<String, Object> produceImmutable(Class<T> type, Map<String, Object> properties);
+	<T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type, List<Object[]> properties,
+			String[] columns);
 
-	<T extends AbstractModel> Map<String, Object> produceImmutable(Class<T> type, Map<String, Object> properties,
-			Role role);
-
-	<T extends AbstractModel> List<Map<String, Object>> produceImmutable(Class<T> type,
-			List<Map<String, Object>> properties);
-
-	<T extends AbstractModel> List<Map<String, Object>> produceImmutable(Class<T> type,
-			List<Map<String, Object>> properties, Role role);
+	<T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type, List<Object[]> properties,
+			String[] columns, Role role);
 
 }

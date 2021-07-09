@@ -14,69 +14,171 @@ import adn.service.internal.Role;
  */
 public interface AuthenticationBasedModelPropertiesProducersBuilder {
 
-	<T extends AbstractModel> WithType<T> type(Class<T> type);
+	/**
+	 * With these types
+	 */
+	<T extends AbstractModel, E extends T> WithType<E> type(Class<E> type);
 
-	<T extends AbstractModel, E extends T> WithType<E> types(@SuppressWarnings("unchecked") Class<E>... types);
+	/**
+	 * With these types
+	 */
+	<T extends AbstractModel, E extends T> WithType<E> type(Class<E>[] types);
 
+	/**
+	 * Mask every {@link AbstractModel}
+	 */
 	AuthenticationBasedModelPropertiesProducersBuilder mask();
 
+	/**
+	 * Publish every {@link AbstractModel}
+	 */
 	AuthenticationBasedModelPropertiesProducersBuilder publish();
 
-	AuthenticationBasedModelPropertiesProducersBuilder maskUngivenTypes();
-
-	AuthenticationBasedModelPropertiesProducersBuilder publishUngivenTypes();
+	/**
+	 * With every other types
+	 */
+	<T extends AbstractModel> WithType<T> ungivenTypes();
 
 	public interface Owned {
 
+		/**
+		 * Get back to {@link AuthenticationBasedModelPropertiesProducersBuilder} level
+		 */
 		AuthenticationBasedModelPropertiesProducersBuilder and();
 
+		
+		
 	}
+	
+	
 
 	public interface WithType<T extends AbstractModel> extends Owned {
 
-		WithRole<T> role(Role role);
+		/**
+		 * With these {@link Role}
+		 */
+		WithRole<T> role(Role... role);
 
-		WithRole<T> roles(Role... roles);
-
+		/**
+		 * Mask everything against very roles in these types
+		 */
 		WithType<T> mask();
 
+		/**
+		 * Publish everything for very roles in these types
+		 */
 		WithType<T> publish();
 
-		WithType<T> maskUngivenRoles();
-
-		WithType<T> publishUngivenRoles();
+		/**
+		 * With every other roles in these types
+		 */
+		WithRole<T> anyRoles();
 
 	}
 
 	public interface WithRole<T extends AbstractModel> extends Owned {
 
-		WithField<T> field(String fieldName);
+		/**
+		 * With these fields
+		 */
+		WithField<T> field(String... field);
 
-		WithField<T> fields(String... fieldNames);
-
+		/**
+		 * Mask everything against every given roles of this instance,
+		 */
 		WithRole<T> mask();
 
+		/**
+		 * Publish everything for every given roles of this instance,
+		 */
 		WithRole<T> publish();
 
-		WithType<T> more();
+		/**
+		 * With every other roles of these types
+		 */
+		WithRole<T> anyRoles();
 
-		WithRole<T> maskUngivenFields();
+		/**
+		 * With every other fields for the given roles in this instance
+		 */
+		WithField<T> anyFields();
 
-		WithRole<T> publishUngivenFields();
+		/**
+		 * Get back to these types level
+		 */
+		WithType<T> type();
 
 	}
 
 	public interface WithField<T extends AbstractModel> extends Owned {
 
+		/**
+		 * Get back to role level, with this field
+		 */
+		WithField<T> field(String field);
+
+		/**
+		 * Get back to role level, with these fields
+		 */
+		WithField<T> fields(String... field);
+
+		/**
+		 * use this alternative name
+		 */
 		WithField<T> use(String alternativeName);
 
-		WithField<T> mask();
-
-		WithField<T> publish();
-
+		/**
+		 * use this function
+		 */
 		<F, R> WithField<T> use(Function<F, R> function);
 
-		WithRole<T> more();
+		/**
+		 * Mask these fields
+		 */
+		WithField<T> mask();
+
+		/**
+		 * Publish these fields
+		 */
+		WithField<T> publish();
+
+		/**
+		 * With the given fields of this instance, against this other role, in these
+		 * types
+		 */
+		WithField<T> role(Role role);
+
+		/**
+		 * With the given fields of this instance, against these other roles, in these
+		 * types
+		 */
+		WithField<T> roles(Role... roles);
+
+		/**
+		 * With the given fields of this instance, against every other roles, in these
+		 * types
+		 */
+		WithField<T> anyRoles();
+
+		/**
+		 * With every other fields, against these roles, in these types
+		 */
+		WithField<T> anyFields();
+
+		/**
+		 * Exclude these fields
+		 */
+		WithField<T> but(String... excludedField);
+
+		/**
+		 * Get back to these roles level
+		 */
+		WithRole<T> role();
+
+		/**
+		 * Get back to these types level
+		 */
+		WithType<T> type();
 
 	}
 

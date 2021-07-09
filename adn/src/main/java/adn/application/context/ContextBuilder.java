@@ -14,6 +14,10 @@ public interface ContextBuilder {
 
 	void buildAfterStartUp() throws Exception;
 
+	default void afterBuild() {
+
+	}
+
 	default String getLoggingPrefix(ContextBuilder builder) {
 		Order anno = builder.getClass().getDeclaredAnnotation(Order.class);
 

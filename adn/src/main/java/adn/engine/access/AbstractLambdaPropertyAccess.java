@@ -28,10 +28,10 @@ public abstract class AbstractLambdaPropertyAccess<F, S, R, E extends RuntimeExc
 		Utils.Entry<GETTER, LambdaType> getterEntry = validateGetter(getter);
 		Utils.Entry<SETTER, LambdaType> setterEntry = validateSetter(setter);
 
-		this.getter = getterEntry.key == null ? (GETTER) FunctionalNoAccess.NO_OP : getterEntry.key;
-		this.setter = setterEntry.key == null ? (SETTER) FunctionalNoAccess.NO_OP : setterEntry.key;
-		this.getterType = getterEntry.value;
-		this.setterType = setterEntry.value;
+		this.getter = getterEntry.getKey() == null ? (GETTER) FunctionalNoAccess.NO_OP : getterEntry.getKey();
+		this.setter = setterEntry.getKey() == null ? (SETTER) FunctionalNoAccess.NO_OP : setterEntry.getKey();
+		this.getterType = getterEntry.getValue();
+		this.setterType = setterEntry.getValue();
 	}
 
 	static <GETTER> Utils.Entry<GETTER, LambdaType> validateGetter(GETTER getter) {

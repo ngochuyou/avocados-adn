@@ -4,7 +4,6 @@
 package adn.model.factory.property.production.authentication;
 
 import static adn.helpers.LoggerHelper.with;
-import static adn.helpers.StringHelper.get;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,13 +13,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adn.application.context.ContextProvider;
+import adn.helpers.StringHelper;
 import adn.helpers.TypeHelper;
+import adn.helpers.Utils.Entry;
 import adn.model.AbstractModel;
 import adn.model.ModelContextProvider;
 import adn.model.entities.metadata.EntityMetadata;
@@ -34,8 +36,12 @@ import adn.service.internal.Role;
  */
 public class AuthenticationBasedModelPropertiesProducerImpl implements AuthenticationBasedModelPropertiesProducer {
 
+	private static final float LOAD_FACTOR = 1.175f;
+
 	private final Map<Role, Map<String, Function<Object, Object>>> functionsMap;
 	private final Map<Role, Map<String, String>> alternativeNamesMap;
+
+	private final String[] properties;
 
 	public <T extends AbstractModel> AuthenticationBasedModelPropertiesProducerImpl(Class<T> entityClass,
 			Set<SecuredProperty<T>> securedProperties) {
@@ -45,12 +51,15 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 		Map<Role, Map<String, String>> alternativeNamesMap = new HashMap<>(0, 1f);
 		// @formatter:off
 		securedProperties.stream().filter(prop -> {
-			if (!TypeHelper.isParentOf(prop.getEntityType(), entityClass)
-					|| !metadata.hasAttribute(prop.getPropertyName()) || prop.getFunction() == null) {
+			boolean isParent = TypeHelper.isParentOf(prop.getEntityType(), entityClass);
+			boolean unknownProperty = !metadata.hasAttribute(prop.getPropertyName());
+			boolean nullFunction = prop.getFunction() == null;
+			
+			if (!isParent || unknownProperty || nullFunction) {
 				logger.info(String.format("[%s]: Ignoring %s [%s] %s", entityClass.getName(),
 						SecuredProperty.class.getSimpleName(), prop.getPropertyName(),
-						!TypeHelper.isParentOf(prop.getEntityType(), entityClass) ? "invalid type"
-								: !metadata.hasAttribute(prop.getPropertyName()) ? "unknown property"
+						!isParent ? "invalid type"
+								: unknownProperty ? "unknown property"
 										: " null function"));
 				return false;
 			}
@@ -59,32 +68,45 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 		}).sorted((o, t) -> o.getEntityType().equals(t.getEntityType()) ? 0
 				: (TypeHelper.isExtendedFrom(o.getEntityType(), t.getEntityType()) ? 1 : -1)
 		).forEach(prop -> {
+			String name = prop.getPropertyName();
+			String altName = prop.getPropertyAlternativeName();
+			Function<Object, Object> fnc = prop.getFunction();
+			
 			if (!functionsMap.containsKey(prop.getRole())) {
 				functionsMap.put(prop.getRole(),
-						Stream.of(Map.entry(prop.getPropertyName(), prop.getFunction()))
-								.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+						Stream.of(Map.entry(name, fnc))
+							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 				alternativeNamesMap.put(prop.getRole(),
-						Stream.of(Map.entry(prop.getPropertyName(),
-								get(prop.getPropertyAlternativeName()).orElse(prop.getPropertyName())))
-								.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+						Stream.of(Map.entry(name, StringHelper.hasLength(altName) ? with(logger).trace(String.format("Using alternative name [%s] on property [%s]", altName, name), altName) : name))
+							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 				return;
 			}
 
 			Map<String, Function<Object, Object>> functions = functionsMap.get(prop.getRole());
 			Map<String, String> alternativeNames = alternativeNamesMap.get(prop.getRole());
 
-			if (functions.containsKey(prop.getPropertyName())) {
-				logger.info(String.format("Overriding function of property [%s]", prop.getPropertyName()));
-				functions.put(prop.getPropertyName(), prop.getFunction());
-				logger.info(String.format("Overriding alternative name [%s] for property [%s]",
-						prop.getPropertyAlternativeName(), prop.getPropertyName()));
-				alternativeNames.put(prop.getPropertyName(), prop.getPropertyAlternativeName());
+			if (functions.containsKey(name)) {
+				if (functions.get(name) != fnc) {
+					Function<Object, Object> oldFnc = functions.put(name, fnc);
+					
+					logger.debug(String.format("[%s#%s] Overriding function of property [%s] using [%s], overridden function was [%s]",
+							entityClass, prop.getRole(), name, fnc, oldFnc));
+				}
+
+				if (altName != null && !alternativeNames.get(name).equals(altName)) {
+					String oldAltName = alternativeNames.put(name, altName);
+					
+					logger.debug(String.format("Overriding alternative name using [%s], overridden name was [%s]",
+							altName, oldAltName));
+				}
 				return;
 			}
 
-			functions.put(prop.getPropertyName(), prop.getFunction());
-			alternativeNames.put(prop.getPropertyName(),
-					get(prop.getPropertyAlternativeName()).orElse(prop.getPropertyName()));
+			functions.put(name, fnc);
+			alternativeNames.put(name,
+					StringHelper.hasLength(altName) ?
+							with(logger).trace(String.format("Using alternative name [%s] on property [%s]", altName, name), altName) :
+							name);
 		});
 		functionsMap.entrySet().forEach(entry -> {
 			metadata.getPropertyNames().stream().forEach(propName -> {
@@ -125,8 +147,9 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 
 		this.functionsMap = Collections.unmodifiableMap(functionsMap);
 		this.alternativeNamesMap = Collections.unmodifiableMap(alternativeNamesMap);
+		properties = metadata.getPropertyNames().toArray(String[]::new);
 
-		LoggerFactory.getLogger(this.getClass()).trace(String.format("\n" + "%s:\n" + "\t%s", entityClass.getName(),
+		LoggerFactory.getLogger(this.getClass()).debug(String.format("\n" + "%s:\n" + "\t%s", entityClass.getName(),
 				functionsMap.entrySet().stream().map(entry -> entry.getValue().entrySet().stream()
 						.map(fEntry -> String.format("%s:\t[%s] -> [%s]", entry.getKey(),
 								this.alternativeNamesMap.get(entry.getKey()).get(fEntry.getKey()),
@@ -135,42 +158,53 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 						.collect(Collectors.joining("\n\t"))).collect(Collectors.joining("\n\t"))));
 	}
 
-	@Override
-	public Map<String, Object> produce(Map<String, Object> source, Role role) {
+	private Map<String, Object> produceRow(String[] originalPropNames, Object[] values, Role role) {
 		Map<String, Function<Object, Object>> functionsByRole = functionsMap.get(role);
 		Map<String, String> alternativeNamesByRole = alternativeNamesMap.get(role);
 
-		return source.entrySet().stream()
-				.map(entry -> produceRow(entry.getKey(), entry.getValue(), functionsByRole, alternativeNamesByRole))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-	}
-
-	@Override
-	public List<Map<String, Object>> produce(List<Map<String, Object>> sources, Role role) {
-		Map<String, Function<Object, Object>> functionsByRole = functionsMap.get(role);
-		Map<String, String> alternativeNamesByRole = alternativeNamesMap.get(role);
-
-		return sources.stream()
-				.map(source -> source.entrySet().stream().map(
-						entry -> produceRow(entry.getKey(), entry.getValue(), functionsByRole, alternativeNamesByRole))
-						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
-				.collect(Collectors.toList());
-	}
-
-	private Map.Entry<String, Object> produceRow(String originalPropName, Object value,
-			Map<String, Function<Object, Object>> functionsByRole, Map<String, String> alternativeNamesByRole) {
 		try {
-			return Map.entry(alternativeNamesByRole.get(originalPropName),
-					functionsByRole.get(originalPropName).apply(value));
+			int span = values.length;
+
+			return IntStream.range(0, span).mapToObj(index -> {
+				String originalPropName = originalPropNames[index];
+
+				return Entry.entry(alternativeNamesByRole.get(originalPropName),
+						functionsByRole.get(originalPropName).apply(values[index]));
+			}).collect(HashMap<String, Object>::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()),
+					HashMap::putAll);
 		} catch (NullPointerException npe) {
 			npe.printStackTrace();
 			// This could be caused when passing properties in which are not contained in
 			// this producer. Seriously though, this should be avoided by devs
-			return Map.<String, Object>entry(alternativeNamesByRole.get(originalPropName), value);
+			return new HashMap<>(0, LOAD_FACTOR);
 		} catch (Exception any) {
 			any.printStackTrace(); // should be avoided
-			return Map.<String, Object>entry(alternativeNamesByRole.get(originalPropName), value);
+			return new HashMap<>(0, LOAD_FACTOR);
 		}
+	}
+
+	@Override
+	public Map<String, Object> produce(Object[] source, Role role) {
+		return produce(source, role, properties);
+	}
+
+	@Override
+	public Map<String, Object> produce(Object[] source, Role role, String[] columnNames) {
+		return produceRow(columnNames, columnNames, role);
+	}
+
+	@Override
+	public List<Map<String, Object>> produce(List<Object[]> source, Role role) {
+		return produce(source, role, properties);
+	}
+
+	@Override
+	public List<Map<String, Object>> produce(List<Object[]> source, Role role, String[] columnNames) {
+		// @formatter:off
+		return IntStream.range(0, source.size())
+				.mapToObj(index -> produceRow(columnNames, source.get(index), role))
+				.collect(Collectors.toList());
+		// @formatter:on
 	}
 
 }

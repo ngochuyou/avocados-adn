@@ -9,9 +9,10 @@ import java.util.Set;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
-import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import adn.model.entities.converters.StringSetConverter;
 
@@ -36,10 +37,12 @@ public class Provider extends Factor {
 	@Column(name = "representator_name")
 	private String representatorName;
 
-	@OneToMany(cascade = CascadeType.PERSIST, mappedBy = "provider", fetch = FetchType.LAZY)
+	@JsonIgnore
+	@OneToMany(cascade = CascadeType.PERSIST, mappedBy = "provider")
 	private List<ProductProviderDetail> productDetails;
 
-	@OneToMany(cascade = CascadeType.PERSIST, mappedBy = "provider", fetch = FetchType.LAZY)
+	@JsonIgnore
+	@OneToMany(cascade = CascadeType.PERSIST, mappedBy = "provider")
 	private List<MaterialProviderDetail> materialDetails;
 
 	public String getEmail() {

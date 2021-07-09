@@ -4,6 +4,8 @@
 package adn.application.context;
 
 import java.time.LocalDate;
+import java.util.Set;
+import java.util.UUID;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
@@ -16,10 +18,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import adn.dao.Repository;
+import adn.helpers.StringHelper;
 import adn.model.entities.Admin;
 import adn.model.entities.Customer;
 import adn.model.entities.Gender;
 import adn.model.entities.Personnel;
+import adn.model.entities.Provider;
 import adn.service.internal.Role;
 import adn.service.services.AccountService;
 
@@ -37,6 +42,9 @@ public class DatabaseInitializer implements ContextBuilder {
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Autowired
+	private Repository repo;
+
+	@Autowired
 	private PasswordEncoder passwordEncoder;
 
 	@Transactional
@@ -45,12 +53,38 @@ public class DatabaseInitializer implements ContextBuilder {
 		// TODO Auto-generated method stub
 		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
 		sessionFactory.getCurrentSession().setHibernateFlushMode(FlushMode.MANUAL);
-		this.insertAdmin();
-		this.insertCustomer();
-		this.insertManager();
-		this.insertEmployee();
+		insertAdmin();
+		insertCustomer();
+		insertManager();
+		insertEmployee();
+		insertMockProviders();
 		sessionFactory.getCurrentSession().flush();
 		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
+	}
+
+	private void insertMockProviders() {
+		if (!repo.fetch(Provider.class).isEmpty()) {
+			return;
+		}
+
+		int amount = 20;
+		Provider provider;
+		Session session = sessionFactory.getCurrentSession();
+
+		for (int i = 0; i < amount; i++) {
+			provider = new Provider();
+
+			provider.setName(StringHelper.hash(UUID.randomUUID().toString()));
+			provider.setCreatedBy("ngochuy.ou");
+			provider.setEmail("ngochuy.ou@hotmail.com");
+			provider.setAddress("34 St.Saint-Étienne, Sao Paulo, Brazil");
+			provider.setPhoneNumbers(Set.of("+554139087774", "+5541149505877"));
+			provider.setRepresentatorName("Vu Ngoc Huy Tran");
+			provider.setUpdatedBy("ngochuy.ou");
+			provider.setActive(Boolean.TRUE);
+
+			session.save(provider);
+		}
 	}
 
 	public Admin getAdmin() {

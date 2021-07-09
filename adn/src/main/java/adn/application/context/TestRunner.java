@@ -4,6 +4,7 @@
 package adn.application.context;
 
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 import javax.transaction.Transactional;
 
@@ -21,6 +22,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import adn.dao.Repository;
+
 /**
  * @author Ngoc Huy
  *
@@ -37,11 +40,25 @@ public class TestRunner implements ContextBuilder {
 	@Autowired
 	private SessionFactoryImplementor sfi;
 
+	@Autowired
+	private Repository repo;
+
 	@Override
 	@Transactional
 	public void buildAfterStartUp() throws Exception {
 		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
 		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
+	}
+
+	@Override
+	public void afterBuild() {
+		Stream.of(this.getClass().getDeclaredFields()).forEach(f -> {
+			try {
+				f.set(this, null);
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				e.printStackTrace();
+			}
+		});
 	}
 
 	protected void injectPrincipal() {

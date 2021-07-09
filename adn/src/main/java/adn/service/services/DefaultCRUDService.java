@@ -3,22 +3,36 @@
  */
 package adn.service.services;
 
+import static adn.helpers.ArrayHelper.EMPTY_STRING_ARRAY;
 import static adn.helpers.EntityUtils.getIdentifier;
 
 import java.io.Serializable;
+import java.sql.SQLSyntaxErrorException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import adn.application.context.ContextProvider;
 import adn.dao.Repository;
+import adn.model.AbstractModel;
 import adn.model.DatabaseInteractionResult;
+import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
+import adn.model.entities.metadata.EntityMetadata;
+import adn.model.factory.AuthenticationBasedModelFactory;
+import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
 import adn.service.entity.builder.EntityBuilder;
 import adn.service.entity.builder.EntityBuilderProvider;
 import adn.service.internal.CRUDService;
+import adn.service.internal.Role;
 
 /**
  * @author Ngoc Huy
@@ -30,13 +44,101 @@ public class DefaultCRUDService implements CRUDService {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
+	private final ModelContextProvider modelContext;
 	private final Repository repository;
 	private final EntityBuilderProvider entityBuilderProvider;
 
+	private final AuthenticationBasedModelPropertiesFactory authenticationBasedModelPropertiesFactory;
+	private final AuthenticationBasedModelFactory authenticationBasedModelFactory;
+
+	// @formatter:off
 	@Autowired
-	public DefaultCRUDService(Repository baseRepository, EntityBuilderProvider entityBuilderProvider) {
+	public DefaultCRUDService(
+			Repository baseRepository,
+			EntityBuilderProvider entityBuilderProvider,
+			AuthenticationBasedModelPropertiesFactory authenticationBasedModelPropertiesFactory,
+			AuthenticationBasedModelFactory authenticationBasedModelFactory,
+			ModelContextProvider modelContext) {
 		this.repository = baseRepository;
 		this.entityBuilderProvider = entityBuilderProvider;
+		this.authenticationBasedModelPropertiesFactory = authenticationBasedModelPropertiesFactory;
+		this.authenticationBasedModelFactory = authenticationBasedModelFactory;
+		this.modelContext = modelContext;
+	}
+	// @formatter:on
+	@Override
+	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, String[] columns,
+			Pageable pageable) throws SQLSyntaxErrorException {
+		return read(type, columns, pageable, EMPTY_STRING_ARRAY);
+	}
+
+	@Override
+	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, String[] columns,
+			Pageable pageable, String[] groupByColumns) throws SQLSyntaxErrorException {
+		return read(type, columns, pageable, groupByColumns, ContextProvider.getPrincipalRole());
+	}
+
+	@Override
+	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, String[] columns,
+			Pageable pageable, String[] groupByColumns, Role role) throws SQLSyntaxErrorException {
+		if (columns.length == 0) {
+			EntityMetadata metadata = modelContext.getMetadata(type);
+
+			columns = metadata.getNonLazyPropertyNames().toArray(new String[metadata.getNonLazyPropertiesSpan()]);
+		}
+
+		validateAttributes(type, columns, groupByColumns);
+
+		List<Object[]> rows = repository.fetch(type, columns, pageable, groupByColumns);
+
+		if (rows.isEmpty()) {
+			return new ArrayList<Map<String, Object>>();
+		}
+
+		if (rows.get(0).length == 0) {
+			return new ArrayList<Map<String, Object>>();
+		}
+
+		return authenticationBasedModelPropertiesFactory.produce(type, rows, columns, role);
+	}
+
+	@Override
+	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, Pageable pageable)
+			throws SQLSyntaxErrorException {
+		return read(type, pageable, EMPTY_STRING_ARRAY);
+	}
+
+	@Override
+	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, Pageable pageable,
+			String[] groupByColumns) throws SQLSyntaxErrorException {
+		return read(type, pageable, groupByColumns, ContextProvider.getPrincipalRole());
+	}
+
+	@Override
+	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, Pageable pageable,
+			String[] groupByColumns, Role role) throws SQLSyntaxErrorException {
+		validateAttributes(type, groupByColumns);
+
+		List<E> rows = repository.fetch(type, pageable, groupByColumns);
+
+		if (rows.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		return authenticationBasedModelFactory.produce(type, rows, role);
+	}
+
+	private <T extends AbstractModel> void validateAttributes(Class<T> type, String[]... requestedAttributes)
+			throws SQLSyntaxErrorException {
+		Set<String> registeredAttributes = modelContext.getMetadata(type).getPropertyNames();
+
+		for (String[] attributes : requestedAttributes) {
+			for (String attribute : attributes) {
+				if (!registeredAttributes.contains(attribute)) {
+					throw new SQLSyntaxErrorException(String.format("Unknown property [%s]", attribute));
+				}
+			}
+		}
 	}
 
 	@Override

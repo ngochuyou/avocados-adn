@@ -8,12 +8,12 @@ import java.util.Objects;
 import java.util.UUID;
 
 import javax.persistence.Column;
-import javax.persistence.Embeddable;
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
+import javax.persistence.Id;
+import javax.persistence.IdClass;
+import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.MapsId;
 import javax.persistence.Table;
 
 /**
@@ -22,17 +22,17 @@ import javax.persistence.Table;
  */
 @Entity
 @Table(name = "product_provider_details")
+@IdClass(ProductProviderDetailId.class)
 public class ProductProviderDetail extends adn.model.entities.Entity {
 
-	@EmbeddedId
-	private ProductProviderDetailId id;
-
+	@Id
 	@ManyToOne(fetch = FetchType.LAZY)
-	@MapsId("product_id")
+	@JoinColumn(name = "product_id", referencedColumnName = "id")
 	private Product product;
 
+	@Id
 	@ManyToOne(fetch = FetchType.LAZY)
-	@MapsId("provider_id")
+	@JoinColumn(name = "provider_id", referencedColumnName = "id")
 	private Provider provider;
 
 	@Column(nullable = false, scale = 3)
@@ -64,38 +64,89 @@ public class ProductProviderDetail extends adn.model.entities.Entity {
 
 }
 
+//@SuppressWarnings("serial")
+//@Embeddable
+//class ProductProviderDetailId implements Serializable {
+//
+//	@Column(name = "product_id")
+//	private UUID productId;
+//
+//	@Column(name = "provider_id")
+//	private UUID providerId;
+//
+//	public ProductProviderDetailId() {}
+//
+//	public ProductProviderDetailId(UUID productId, UUID providerId) {
+//		super();
+//		this.productId = productId;
+//		this.providerId = providerId;
+//	}
+//
+//	public UUID getProductId() {
+//		return productId;
+//	}
+//
+//	public void setProductId(UUID productId) {
+//		this.productId = productId;
+//	}
+//
+//	public UUID getProviderId() {
+//		return providerId;
+//	}
+//
+//	public void setProviderId(UUID providerId) {
+//		this.providerId = providerId;
+//	}
+//
+//	@Override
+//	public boolean equals(Object obj) {
+//		if (this == obj)
+//			return true;
+//
+//		if (!(obj instanceof ProductProviderDetailId))
+//			return false;
+//
+//		ProductProviderDetailId that = (ProductProviderDetailId) obj;
+//
+//		return Objects.equals(this.productId, that.productId) && Objects.equals(this.providerId, that.providerId);
+//	}
+//
+//	@Override
+//	public int hashCode() {
+//		return Objects.hash(this.productId, this.providerId);
+//	}
+//
+//}
+
 @SuppressWarnings("serial")
-@Embeddable
 class ProductProviderDetailId implements Serializable {
 
-	@Column(name = "product_id")
-	private UUID productId;
+	private UUID product;
 
-	@Column(name = "provider_id")
-	private UUID providerId;
+	private UUID provider;
 
 	public ProductProviderDetailId() {}
 
 	public ProductProviderDetailId(UUID productId, UUID providerId) {
 		super();
-		this.productId = productId;
-		this.providerId = providerId;
+		this.product = productId;
+		this.provider = providerId;
 	}
 
-	public UUID getProductId() {
-		return productId;
+	public UUID getProduct() {
+		return product;
 	}
 
-	public void setProductId(UUID productId) {
-		this.productId = productId;
+	public void setProduct(UUID product) {
+		this.product = product;
 	}
 
-	public UUID getProviderId() {
-		return providerId;
+	public UUID getProvider() {
+		return provider;
 	}
 
-	public void setProviderId(UUID providerId) {
-		this.providerId = providerId;
+	public void setProvider(UUID provider) {
+		this.provider = provider;
 	}
 
 	@Override
@@ -108,12 +159,12 @@ class ProductProviderDetailId implements Serializable {
 
 		ProductProviderDetailId that = (ProductProviderDetailId) obj;
 
-		return Objects.equals(this.productId, that.productId) && Objects.equals(this.providerId, that.providerId);
+		return Objects.equals(this.product, that.product) && Objects.equals(this.provider, that.provider);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.productId, this.providerId);
+		return Objects.hash(this.product, this.provider);
 	}
 
 }

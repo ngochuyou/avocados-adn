@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,7 @@ import adn.model.factory.dictionary.production.authentication.DefaultModelProduc
 import adn.service.internal.Role;
 
 @Component(DefaultAuthenticationBasedModelProducerFactory.NAME)
+@Primary
 @Order(value = 5)
 public class DefaultAuthenticationBasedModelProducerFactory implements AuthenticationBasedModelFactory, ContextBuilder {
 

@@ -3,6 +3,9 @@
  */
 package adn.controller;
 
+import static adn.helpers.ArrayHelper.from;
+
+import java.sql.SQLSyntaxErrorException;
 import java.util.List;
 import java.util.UUID;
 
@@ -71,10 +74,11 @@ public class GeneralController extends BaseController {
 			Class<? extends Factor> type = (Class<? extends Factor>) Class
 					.forName(Constants.ENTITY_PACKAGE + "." + className);
 
-			return ResponseEntity.ok(baseRepository.fetch(type, columns.toArray(String[]::new), paging,
-					groupByColumns.toArray(String[]::new)));
+			return ResponseEntity.ok(crudService.read(type, from(columns), paging, from(groupByColumns)));
 		} catch (ClassNotFoundException e) {
 			return sendNotFound(String.format("Resource %s not found", entityName));
+		} catch (SQLSyntaxErrorException e) {
+			return sendBadRequest(e.getMessage());
 		}
 	}
 
@@ -86,7 +90,7 @@ public class GeneralController extends BaseController {
 		// there is a chance where id field in the model is provided. In such case, we
 		// ignore it since it could cause the Specification check on the name uniqueness
 		// to success. This results in Session being flushed upon a duplicated name,
-		// which cause violation exception
+		// which causes violation exception
 		setSessionMode();
 
 		return send(crudService.create(null, instance, type));
@@ -97,9 +101,8 @@ public class GeneralController extends BaseController {
 	 * @param type     always non-null
 	 */
 	protected <T extends Factor> ResponseEntity<?> updateFactor(T instance, Class<T> type) {
-		// load the actual factor into Session, hit the DB
 		setSessionMode();
-
+		// load the actual factor into Session, hit the DB
 		if (baseRepository.findById(instance.getId(), type) == null) {
 			return sendNotFound(String.format("%s not found", instance.getId()));
 		}

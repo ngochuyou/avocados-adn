@@ -31,10 +31,10 @@ public class HybridAccess<F, S, R, E extends RuntimeException> extends AbstractP
 		Utils.Entry<Object, LambdaPropertyAccess.LambdaType> setterEntry = AbstractLambdaPropertyAccess
 				.validateSetter(setterLambda);
 
-		this.getterLambda = getterEntry.key == null ? FunctionalNoAccess.NO_OP : getterEntry.key;
-		this.setterLambda = setterEntry.key == null ? FunctionalNoAccess.NO_OP : setterEntry.key;
-		this.getterType = getterEntry.value;
-		this.setterType = setterEntry.value;
+		this.getterLambda = getterEntry.getKey() == null ? FunctionalNoAccess.NO_OP : getterEntry.getKey();
+		this.setterLambda = setterEntry.getKey() == null ? FunctionalNoAccess.NO_OP : setterEntry.getKey();
+		this.getterType = getterEntry.getValue();
+		this.setterType = setterEntry.getValue();
 		this.strategy = strategy;
 	}
 
