@@ -1,5 +1,0 @@
-|
-driverClassName|com.mysql.cj.jdbc.Driver
-url|jdbc:mysql://localhost:3306/adn?serverTimezone=UTC&useUnicode=yes&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&jdbcCompliantTruncation=false
-username|root
-password|root
