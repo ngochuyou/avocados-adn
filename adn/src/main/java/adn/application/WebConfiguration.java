@@ -3,7 +3,12 @@
  */
 package adn.application;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.List;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 import javax.sql.DataSource;
 
@@ -26,6 +31,7 @@ import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
 import org.springframework.transaction.TransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.util.ResourceUtils;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
@@ -33,6 +39,7 @@ import org.springframework.web.servlet.view.JstlView;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import adn.application.context.ContextBuilder;
 import adn.service.internal.Role;
 
 /**
@@ -104,16 +111,69 @@ public class WebConfiguration implements WebMvcConfigurer {
 	}
 
 	@Bean(name = "dataSource")
-	public DataSource getDataSource() {
+	public DataSource getDataSource() throws IOException, NoSuchFieldException {
 		DriverManagerDataSource dataSource = new DriverManagerDataSource();
+		File file = ResourceUtils.getFile(
+				ContextBuilder.CONFIG_PATH + "13450a773a68d2a21a88ca081962a2f71a59730fee3a6cab5647c5674626e5fe.txt");
+		List<String> $ = Files.readAllLines(file.toPath());
 
-		dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
-		dataSource.setUrl(
-				"jdbc:mysql://localhost:3306/adn?serverTimezone=UTC&useUnicode=yes&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&jdbcCompliantTruncation=false");
-		dataSource.setUsername("root");
-		dataSource.setPassword("root");
+		if ($.size() < 1) {
+			throw new IllegalStateException();
+		}
+
+		String $$ = $.get(0);
+		DataSourceProperties $$$ = new DataSourceProperties();
+
+		for (int i = 1; i < $.size(); i++) {
+			String[] __ = $.get(i).split(Pattern.quote($$));
+
+			if (__.length != 2) {
+				continue;
+			}
+
+			String ___ = __[0];
+			String ____ = __[1];
+
+			try {
+				$$$.getClass().getDeclaredField(___).set($$$, ____);
+			} catch (IllegalArgumentException | IllegalAccessException | SecurityException e) {
+				e.printStackTrace();
+				continue;
+			}
+
+		}
+
+		dataSource.setDriverClassName($$$.getDriverClassName());
+		dataSource.setUrl($$$.getUrl());
+		dataSource.setUsername($$$.getUsername());
+		dataSource.setPassword($$$.getPassword());
 
 		return dataSource;
+	}
+
+	private class DataSourceProperties {
+
+		private String driverClassName;
+		private String url;
+		private String username;
+		private String password;
+
+		public String getDriverClassName() {
+			return driverClassName;
+		}
+
+		public String getUrl() {
+			return url;
+		}
+
+		public String getUsername() {
+			return username;
+		}
+
+		public String getPassword() {
+			return password;
+		}
+
 	}
 
 	@Bean

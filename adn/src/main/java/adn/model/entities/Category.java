@@ -22,6 +22,9 @@ public class Category extends Factor {
 	@Column
 	private String description;
 
+	@Column(nullable = false, updatable = false, length = 5, columnDefinition = "NVARCHAR(5)")
+	private String code;
+
 	@OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
 	private List<Product> products;
 
@@ -39,6 +42,14 @@ public class Category extends Factor {
 
 	public void setProducts(List<Product> products) {
 		this.products = products;
+	}
+
+	public String getCode() {
+		return code;
+	}
+
+	public void setCode(String code) {
+		this.code = code;
 	}
 
 }

@@ -31,6 +31,8 @@ public interface Repository {
 
 	<T extends Entity> T findById(Serializable id, Class<T> clazz);
 
+	<T extends Entity> Object[] findById(Serializable id, Class<T> clazz, String[] columns);
+
 	<T extends Entity> T findOne(CriteriaQuery<T> query, Class<T> clazz);
 
 	<T extends Entity> List<T> find(CriteriaQuery<T> query, Class<T> clazz);

@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,8 +16,6 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.util.ResourceUtils;
 
-import adn.security.SecurityConfiguration;
-
 /**
  * @author Ngoc Huy
  *
@@ -24,7 +23,7 @@ import adn.security.SecurityConfiguration;
 @Order(value = Ordered.HIGHEST_PRECEDENCE)
 public class ConfigurationContext implements ContextBuilder {
 
-	private static SecurityResource securityConfiguration;
+	private static transient $$$$$$$$$$$$$$$$$$$$$$$$$$$$ $$$;
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -37,65 +36,57 @@ public class ConfigurationContext implements ContextBuilder {
 	}
 
 	private void readSecurityProperties() {
-		securityConfiguration = new SecurityResource();
+		$$$ = new $$$$$$$$$$$$$$$$$$$$$$$$$$$$();
 
 		try {
-			File file = ResourceUtils.getFile(SecurityConfiguration.CONFIG_PATH + "SpevIDMKW.txt");
-			List<String> lines = Files.readAllLines(file.toPath());
+			File file = ResourceUtils.getFile(ContextBuilder.CONFIG_PATH + "SpevIDMKW.txt");
+			List<String> $ = Files.readAllLines(file.toPath());
 
-			if (lines.size() < 1) {
-				throw new NoSuchFieldException("Could not build configuration. Invalid file format");
+			if ($.size() < 1) {
+				throw new IllegalStateException();
 			}
 
-			String nameValSeperator = lines.get(0);
+			String _______ = $.get(0);
 
-			for (int i = 1; i < lines.size(); i++) {
-				String[] pair = lines.get(i).split(nameValSeperator);
+			for (int i = 1; i < $.size(); i++) {
+				String[] __ = $.get(i).split(Pattern.quote(_______));
 
-				if (pair.length != 2) {
-					logger.trace("Skipping configuration line: " + lines.get(i)
-							+ " since it does not match configuration format");
+				if (__.length != 2) {
 					continue;
 				}
 
-				String name = pair[0];
-				String val = pair[1];
+				String $$$$$$$ = __[0];
+				String $_$_$_$_$ = __[1];
 
 				try {
-					securityConfiguration.getClass().getDeclaredField(name).set(securityConfiguration, val);
+					$$$.getClass().getDeclaredField($$$$$$$).set($$$, $_$_$_$_$);
 				} catch (IllegalArgumentException | IllegalAccessException | SecurityException e) {
-					logger.trace("Skipping property " + name + " since it was not included in configuration context");
 					continue;
 				}
 			}
 		} catch (IOException | NoSuchFieldException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
 	}
 
 	public static String getJwtAuthEndpoint() {
-
-		return ConfigurationContext.securityConfiguration.jwtAuthEndpoint;
+		return ConfigurationContext.$$$.jwtAuthEndpoint;
 	}
 
 	public static String getJwtSecretKey() {
-
-		return ConfigurationContext.securityConfiguration.jwtSecretKey;
+		return ConfigurationContext.$$$.jwtSecretKey;
 	}
 
 	public static String getJwtAuthHeaderValue() {
-
-		return ConfigurationContext.securityConfiguration.jwtAuthHeaderValue;
+		return ConfigurationContext.$$$.jwtAuthHeaderValue;
 	}
 
 	public static String getJwtCookieName() {
-
-		return ConfigurationContext.securityConfiguration.jwtCookieName;
+		return ConfigurationContext.$$$.jwtCookieName;
 	}
 
-	private class SecurityResource {
+	private class $$$$$$$$$$$$$$$$$$$$$$$$$$$$ {
 
 		String jwtAuthEndpoint;
 

@@ -46,6 +46,17 @@ public class Product extends Factor {
 	@OneToMany(cascade = CascadeType.PERSIST, mappedBy = "product", fetch = FetchType.LAZY)
 	private List<ProductProviderDetail> providerDetails;
 
+	@Column(nullable = false, updatable = false, length = 10, columnDefinition = "NVARCHAR(10)")
+	private String code;
+
+	public String getCode() {
+		return code;
+	}
+
+	public void setCode(String code) {
+		this.code = code;
+	}
+
 	public Double getPrice() {
 		return price;
 	}

@@ -12,6 +12,7 @@ import adn.model.entities.Factor;
 import adn.model.entities.Personnel;
 import adn.model.factory.property.production.authentication.AuthenticationBasedModelPropertiesProducersBuilder;
 import adn.service.internal.Role;
+import adn.service.services.AccountService;
 
 /**
  * @author Ngoc Huy
@@ -29,7 +30,7 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 			.type(Account.class)
 				.role(allRoles)
 					.field("password").mask()
-					.field("id").use("username").publish()
+					.field("id").use(AccountService.MODEL_ID_FIELD_NAME).publish()
 					.fields("firstName", "lastName", "photo", "role", "gender", "active").publish()
 					.anyFields().mask()
 					.type()

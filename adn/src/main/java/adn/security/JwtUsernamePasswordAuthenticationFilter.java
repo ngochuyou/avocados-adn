@@ -34,18 +34,17 @@ public class JwtUsernamePasswordAuthenticationFilter extends AbstractAuthenticat
 	@Autowired
 	private AuthenticationService authService;
 
-	public final String authenticationPath;
+	private static final String TOKEN_ENDPOINT = "/auth/token";
 
 	/**
 	 * @param requiresAuthenticationRequestMatcher
 	 */
 	public JwtUsernamePasswordAuthenticationFilter(AuthenticationService authService) {
 		// TODO Auto-generated constructor stub
-		super(new AntPathRequestMatcher("/auth/token", HttpMethod.POST.name()));
+		super(new AntPathRequestMatcher(TOKEN_ENDPOINT, HttpMethod.POST.name()));
 
 		Assert.notNull(authService);
 		this.authService = authService;
-		authenticationPath = "/auth/token";
 	}
 
 	@Override
@@ -76,7 +75,7 @@ public class JwtUsernamePasswordAuthenticationFilter extends AbstractAuthenticat
 		response.getWriter().print("LOGGED_IN");
 		response.getWriter().flush();
 		response.setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE);
-		response.setStatus(HttpStatus.OK.ordinal());
+		response.setStatus(HttpStatus.OK.value());
 	}
 
 }

@@ -3,6 +3,8 @@
  */
 package adn.controller;
 
+import java.sql.SQLSyntaxErrorException;
+
 import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -32,6 +34,11 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 				String.format("File size is too large, expect size to be less than %d MB",
 						BaseController.MAXIMUM_FILE_SIZE / (1024 * 1024)),
 				new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+	}
+	
+	@ExceptionHandler(value = { SQLSyntaxErrorException.class })
+	public ResponseEntity<?> handleUnknownColumnInFetch(RuntimeException ex, WebRequest request) {
+		return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
 	}
 
 }

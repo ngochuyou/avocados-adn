@@ -42,7 +42,7 @@ import adn.service.internal.Role;
 public class BaseController {
 
 	@Autowired
-	protected ModelContextProvider modelsDescriptor;
+	protected ModelContextProvider modelContext;
 
 	@Autowired
 	protected AuthenticationBasedModelFactory authenticationBasedModelFactory;
@@ -96,7 +96,7 @@ public class BaseController {
 	}
 
 	protected <T extends AbstractModel, M extends AbstractModel> T extract(M model, Class<T> entityClass) {
-		return extractorProvider.getExtractor(entityClass).extract(model, modelsDescriptor.instantiate(entityClass));
+		return extractorProvider.getExtractor(entityClass).extract(model, modelContext.instantiate(entityClass));
 	}
 
 	protected <T extends AbstractModel, E extends T> Map<String, Object> produce(E entity, Class<E> entityClass) {
@@ -135,6 +135,10 @@ public class BaseController {
 
 	protected <T extends AbstractModel> ResponseEntity<?> send(T instance, String messageIfNull) {
 		return instance == null ? sendNotFound(messageIfNull) : ResponseEntity.ok(produce(instance));
+	}
+	
+	protected <T extends AbstractModel, E extends T> ResponseEntity<?> send(E instance, Class<E> type, String messageIfNull) {
+		return instance == null ? sendNotFound(messageIfNull) : ResponseEntity.ok(produce(instance, type));
 	}
 
 	@SuppressWarnings("unchecked")

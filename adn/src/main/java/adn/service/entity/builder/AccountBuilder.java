@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Account;
-import adn.model.entities.Gender;
+import adn.model.entities.constants.Gender;
 import adn.service.services.AccountService;
 
 /**
@@ -49,7 +49,12 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 		super.insertionBuild(entity);
 
 		mandatoryBuild(entity, entity);
-		entity.setPassword(entity.getPassword() == null ? "" : passwordEncoder.encode(entity.getPassword()));
+
+		if (entity.getPassword() == null || entity.getPassword().length() < 8) {
+			entity.setPassword("");
+		}
+
+		entity.setPassword(passwordEncoder.encode(entity.getPassword()));
 
 		return entity;
 	}

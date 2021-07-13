@@ -5,6 +5,7 @@ package adn.model.factory.property.production.authentication;
 
 import static adn.helpers.LoggerHelper.with;
 
+import java.sql.SQLSyntaxErrorException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -39,7 +40,8 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 	private static final float LOAD_FACTOR = 1.175f;
 
 	private final Map<Role, Map<String, Function<Object, Object>>> functionsMap;
-	private final Map<Role, Map<String, String>> alternativeNamesMap;
+	private final Map<Role, Map<String, String>> alternativeNamesByOriginalNames;
+	private final Map<Role, Map<String, String>> originalNamesByAlternativeNames;
 
 	private final String[] properties;
 
@@ -137,6 +139,11 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 			});
 		});
+		originalNamesByAlternativeNames = alternativeNamesMap.entrySet().stream()
+				.map(entry -> Map.entry(entry.getKey(),
+						entry.getValue().entrySet().stream()
+								.collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey))))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		// @formatter:on
 		if (!metadata.getPropertyNames().isEmpty()) {
 			functionsMap.put(null, metadata.getPropertyNames().stream().map(prop -> Map.entry(prop, MASKER))
@@ -146,13 +153,13 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 		}
 
 		this.functionsMap = Collections.unmodifiableMap(functionsMap);
-		this.alternativeNamesMap = Collections.unmodifiableMap(alternativeNamesMap);
+		this.alternativeNamesByOriginalNames = Collections.unmodifiableMap(alternativeNamesMap);
 		properties = metadata.getPropertyNames().toArray(String[]::new);
 
 		LoggerFactory.getLogger(this.getClass()).debug(String.format("\n" + "%s:\n" + "\t%s", entityClass.getName(),
 				functionsMap.entrySet().stream().map(entry -> entry.getValue().entrySet().stream()
 						.map(fEntry -> String.format("%s:\t[%s] -> [%s]", entry.getKey(),
-								this.alternativeNamesMap.get(entry.getKey()).get(fEntry.getKey()),
+								this.alternativeNamesByOriginalNames.get(entry.getKey()).get(fEntry.getKey()),
 								fEntry.getValue().equals(MASKER) ? "masked"
 										: fEntry.getValue().equals(PUBLISHER) ? "published" : fEntry.getValue()))
 						.collect(Collectors.joining("\n\t"))).collect(Collectors.joining("\n\t"))));
@@ -160,7 +167,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 
 	private Map<String, Object> produceRow(String[] originalPropNames, Object[] values, Role role) {
 		Map<String, Function<Object, Object>> functionsByRole = functionsMap.get(role);
-		Map<String, String> alternativeNamesByRole = alternativeNamesMap.get(role);
+		Map<String, String> alternativeNamesByRole = alternativeNamesByOriginalNames.get(role);
 
 		try {
 			int span = values.length;
@@ -170,8 +177,12 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 
 				return Entry.entry(alternativeNamesByRole.get(originalPropName),
 						functionsByRole.get(originalPropName).apply(values[index]));
-			}).collect(HashMap<String, Object>::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()),
+			}).collect(
+			// @formatter:off
+					HashMap<String, Object>::new,
+					(map, entry) -> map.put(entry.getKey(), entry.getValue()),
 					HashMap::putAll);
+					// @formatter:on
 		} catch (NullPointerException npe) {
 			npe.printStackTrace();
 			// This could be caused when passing properties in which are not contained in
@@ -190,7 +201,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 
 	@Override
 	public Map<String, Object> produce(Object[] source, Role role, String[] columnNames) {
-		return produceRow(columnNames, columnNames, role);
+		return produceRow(columnNames, source, role);
 	}
 
 	@Override
@@ -205,6 +216,25 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 				.mapToObj(index -> produceRow(columnNames, source.get(index), role))
 				.collect(Collectors.toList());
 		// @formatter:on
+	}
+
+	@Override
+	public String[] validateAndTranslateColumnNames(Role role, String[] requestedColumns)
+			throws SQLSyntaxErrorException {
+		Map<String, String> alternativeName = originalNamesByAlternativeNames.get(role);
+		String[] translatedColumnNames = new String[requestedColumns.length];
+		int i = 0;
+		String translatedColumn;
+
+		for (String requestedColumn : requestedColumns) {
+			if ((translatedColumn = alternativeName.get(requestedColumn)) == null) {
+				throw new SQLSyntaxErrorException(String.format("Unknown property [%s]", requestedColumn));
+			}
+
+			translatedColumnNames[i++] = translatedColumn;
+		}
+
+		return translatedColumnNames;
 	}
 
 }

@@ -43,7 +43,6 @@ public class AccountController extends BaseController {
 
 	protected final static String MISSING_ROLE = "USER ROLE IS MISSING";
 	protected final static String NOT_FOUND = "USER NOT FOUND";
-
 	// @formatter:off
 	@Autowired
 	public AccountController(

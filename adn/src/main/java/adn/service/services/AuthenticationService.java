@@ -69,7 +69,7 @@ public class AuthenticationService implements Service {
 		c.setPath(path);
 		c.setSecure(secured);
 		c.setHttpOnly(true);
-
+		
 		return c;
 	}
 

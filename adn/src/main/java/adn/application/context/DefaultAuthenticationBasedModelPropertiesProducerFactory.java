@@ -3,6 +3,7 @@
  */
 package adn.application.context;
 
+import java.sql.SQLSyntaxErrorException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -134,6 +135,12 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 		AuthenticationBasedModelPropertiesProducer producer = getProducer(type);
 
 		return producer.produce(properties, role, columns);
+	}
+
+	@Override
+	public <T extends AbstractModel> String[] validateAndTranslateColumnNames(Class<T> type, Role role,
+			String[] requestedColumnNames) throws SQLSyntaxErrorException {
+		return getProducer(type).validateAndTranslateColumnNames(role, requestedColumnNames);
 	}
 
 	public class AuthenticationBasedModelPropertiesProducersBuilderImpl

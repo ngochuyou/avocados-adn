@@ -1,0 +1,5 @@
+=
+jwtAuthEndpoint=/auth/token
+jwtSecretKey=jueom$qancpl#
+jwtAuthHeaderValue=JWTBearer
+jwtCookieName=setio

@@ -22,6 +22,12 @@ import adn.model.entities.Entity;
  */
 public interface CRUDService extends Service {
 
+	<T extends Entity, E extends T> Map<String, Object> find(Serializable id, Class<E> type, String[] columns)
+			throws SQLSyntaxErrorException;
+
+	<T extends Entity, E extends T> Map<String, Object> find(Serializable id, Class<E> type, String[] columns, Role role)
+			throws SQLSyntaxErrorException;
+
 	<T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, String[] columns, Pageable pageable)
 			throws SQLSyntaxErrorException;
 

@@ -23,6 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import adn.dao.Repository;
+import adn.service.internal.CRUDService;
 
 /**
  * @author Ngoc Huy
@@ -42,6 +43,9 @@ public class TestRunner implements ContextBuilder {
 
 	@Autowired
 	private Repository repo;
+
+	@Autowired
+	private CRUDService service;
 
 	@Override
 	@Transactional

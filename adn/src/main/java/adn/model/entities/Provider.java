@@ -41,10 +41,6 @@ public class Provider extends Factor {
 	@OneToMany(cascade = CascadeType.PERSIST, mappedBy = "provider")
 	private List<ProductProviderDetail> productDetails;
 
-	@JsonIgnore
-	@OneToMany(cascade = CascadeType.PERSIST, mappedBy = "provider")
-	private List<MaterialProviderDetail> materialDetails;
-
 	public String getEmail() {
 		return email;
 	}
@@ -83,14 +79,6 @@ public class Provider extends Factor {
 
 	public void setProductDetails(List<ProductProviderDetail> productDetails) {
 		this.productDetails = productDetails;
-	}
-
-	public List<MaterialProviderDetail> getMaterialDetails() {
-		return materialDetails;
-	}
-
-	public void setMaterialDetails(List<MaterialProviderDetail> materialDetails) {
-		this.materialDetails = materialDetails;
 	}
 
 }

@@ -3,6 +3,14 @@
  */
 package adn.controller;
 
+import static adn.helpers.ArrayHelper.from;
+
+import java.sql.SQLSyntaxErrorException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
+import adn.helpers.Utils;
 import adn.model.entities.Account;
 import adn.service.internal.AccountRoleExtractor;
 import adn.service.internal.ResourceService;
@@ -36,52 +45,97 @@ public class RestAccountController extends AccountController {
 		super(accountService, roleExtractor, resourceService);
 	}
 	// @formatter:on
-
-	@SuppressWarnings("unchecked")
 	@GetMapping
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> obtainAccount(
-			@RequestParam(name = "username", required = false, defaultValue = "") String username) {
-		String principalName = ContextProvider.getPrincipalName();
-		Role principalRole = ContextProvider.getPrincipalRole();
-		Account account;
+			@RequestParam(name = "username", required = false, defaultValue = "") String username,
+			@RequestParam(name = "columns", defaultValue = "") List<String> columns) {
+		try {
+			String principalName = ContextProvider.getPrincipalName();
 
-		if (!StringHelper.hasLength(username) || principalName.equals(username)) {
-			return obtainPrincipal();
+			if (!StringHelper.hasLength(username) || principalName.equals(username)) {
+				return obtainPrincipal(from(columns));
+			}
+
+			return doObtainAccount(username, columns);
+		} catch (SQLSyntaxErrorException ssee) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ssee.getMessage());
 		}
-
-		account = baseRepository.findById(username, Account.class);
-
-		if (account == null) {
-			return sendNotFound(NOT_FOUND);
-		}
-
-		Class<? extends Account> type = accountService.getClassFromRole(account.getRole());
-
-		if (!account.isActive() && !principalRole.equals(Role.ADMIN)) {
-			return ResponseEntity.status(HttpStatus.LOCKED).body(LOCKED);
-		}
-
-		if (!principalRole.canRead(account.getRole())) {
-			return unauthorize(ACCESS_DENIED);
-		}
-
-		return ResponseEntity.ok(produce(account, (Class<Account>) type));
 	}
 
-	@SuppressWarnings("unchecked")
-	protected ResponseEntity<?> obtainPrincipal() {
-		Account principal = baseRepository.findById(ContextProvider.getPrincipalName(), Account.class);
+	protected ResponseEntity<?> obtainPrincipal(String[] requestedColumns) throws SQLSyntaxErrorException {
+		String username = ContextProvider.getPrincipalName();
 
-		if (principal == null) {
+		if (requestedColumns.length == 0) {
+			Account model = baseRepository.findById(username, Account.class);
+
+			if (model == null) {
+				return sendNotFound(NOT_FOUND);
+			}
+
+			if (!model.isActive()) {
+				return ResponseEntity.status(HttpStatus.LOCKED).body(LOCKED);
+			}
+
+			return send(model, accountService.getClassFromRole(model.getRole()), null);
+		}
+
+		return super.<Map<String, Object>>send(crudService.find(username, Account.class, requestedColumns), NOT_FOUND);
+	}
+
+	protected ResponseEntity<?> doObtainAccount(String username, List<String> requestedColumns)
+			throws SQLSyntaxErrorException {
+		Role principalRole = ContextProvider.getPrincipalRole();
+
+		if (requestedColumns.size() == 0) {
+			Account model = baseRepository.findById(username, Account.class);
+
+			if (model == null) {
+				return sendNotFound(NOT_FOUND);
+			}
+
+			if (!model.isActive() && !principalRole.equals(Role.ADMIN)) {
+				return ResponseEntity.status(HttpStatus.LOCKED).body(LOCKED);
+			}
+
+			if (!principalRole.canRead(model.getRole())) {
+				return unauthorize(ACCESS_DENIED);
+			}
+
+			return send(model, accountService.getClassFromRole(model.getRole()), null);
+		}
+
+		List<String> columns = new ArrayList<>(requestedColumns);
+
+		if (!columns.contains(Account.ACTIVE_FIELD_NAME)) {
+			columns.add(Account.ACTIVE_FIELD_NAME);
+		}
+
+		if (!columns.contains(Account.ROLE_FIELD_NAME)) {
+			columns.add(Account.ROLE_FIELD_NAME);
+		}
+
+		Map<String, Object> fetchedRow = crudService.find(username, Account.class, from(columns));
+
+		if (fetchedRow == null) {
 			return sendNotFound(NOT_FOUND);
 		}
 
-		if (!principal.isActive()) {
+		Boolean isActive = (Boolean) (fetchedRow.get(Account.ACTIVE_FIELD_NAME));
+
+		if (!isActive && !principalRole.equals(Role.ADMIN)) {
 			return ResponseEntity.status(HttpStatus.LOCKED).body(LOCKED);
 		}
 
-		return ResponseEntity.ok(produce(principal, (Class<Account>) principal.getClass()));
+		if (!principalRole.canRead((Role) (fetchedRow.get(Account.ROLE_FIELD_NAME)))) {
+			return unauthorize(ACCESS_DENIED);
+		}
+		// @formatter:off
+		return ResponseEntity
+				.ok(requestedColumns.stream().map(col -> Utils.Entry.<String, Object>entry(col, fetchedRow.get(col)))
+						.collect(HashMap<String, Object>::new,
+								(map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll));
+		// @formatter:on
 	}
 
 }

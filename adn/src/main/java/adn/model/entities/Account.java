@@ -13,6 +13,7 @@ import javax.persistence.Id;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -20,6 +21,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import adn.model.entities.constants.Gender;
 import adn.service.internal.Role;
 
 /**
@@ -31,6 +33,12 @@ import adn.service.internal.Role;
 @Table(name = "accounts")
 public class Account extends adn.model.entities.Entity {
 
+	@Transient
+	public static final String ACTIVE_FIELD_NAME = "active";
+
+	@Transient
+	public static final String ROLE_FIELD_NAME = "role";
+	
 	@Id
 	@JsonProperty("username")
 	protected String id;

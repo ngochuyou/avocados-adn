@@ -11,7 +11,6 @@ import java.sql.SQLSyntaxErrorException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +21,6 @@ import org.springframework.stereotype.Service;
 
 import adn.application.context.ContextProvider;
 import adn.dao.Repository;
-import adn.model.AbstractModel;
 import adn.model.DatabaseInteractionResult;
 import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
@@ -81,15 +79,8 @@ public class DefaultCRUDService implements CRUDService {
 	@Override
 	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, String[] columns,
 			Pageable pageable, String[] groupByColumns, Role role) throws SQLSyntaxErrorException {
-		if (columns.length == 0) {
-			EntityMetadata metadata = modelContext.getMetadata(type);
-
-			columns = metadata.getNonLazyPropertyNames().toArray(new String[metadata.getNonLazyPropertiesSpan()]);
-		}
-
-		validateAttributes(type, columns, groupByColumns);
-
-		List<Object[]> rows = repository.fetch(type, columns, pageable, groupByColumns);
+		String[] validatedColumns = getDefaultColumnsOrTranslate(type, role, columns);
+		List<Object[]> rows = repository.fetch(type, validatedColumns, pageable, groupByColumns);
 
 		if (rows.isEmpty()) {
 			return new ArrayList<Map<String, Object>>();
@@ -100,6 +91,36 @@ public class DefaultCRUDService implements CRUDService {
 		}
 
 		return authenticationBasedModelPropertiesFactory.produce(type, rows, columns, role);
+	}
+
+	private <T extends Entity, E extends T> String[] getDefaultColumnsOrTranslate(Class<E> type, Role role,
+			String[] columns) throws SQLSyntaxErrorException {
+		if (columns.length == 0) {
+			EntityMetadata metadata = modelContext.getMetadata(type);
+
+			return metadata.getNonLazyPropertyNames().toArray(new String[metadata.getNonLazyPropertiesSpan()]);
+		}
+
+		return authenticationBasedModelPropertiesFactory.validateAndTranslateColumnNames(type, role, columns);
+	}
+
+	@Override
+	public <T extends Entity, E extends T> Map<String, Object> find(Serializable id, Class<E> type, String[] columns)
+			throws SQLSyntaxErrorException {
+		return find(id, type, columns, ContextProvider.getPrincipalRole());
+	}
+
+	@Override
+	public <T extends Entity, E extends T> Map<String, Object> find(Serializable id, Class<E> type, String[] columns,
+			Role role) throws SQLSyntaxErrorException {
+		String[] validatedColumns = getDefaultColumnsOrTranslate(type, role, columns);
+		Object[] row = repository.findById(id, type, validatedColumns);
+
+		if (row == null) {
+			return null;
+		}
+
+		return authenticationBasedModelPropertiesFactory.produce(type, row, validatedColumns, role);
 	}
 
 	@Override
@@ -117,8 +138,6 @@ public class DefaultCRUDService implements CRUDService {
 	@Override
 	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, Pageable pageable,
 			String[] groupByColumns, Role role) throws SQLSyntaxErrorException {
-		validateAttributes(type, groupByColumns);
-
 		List<E> rows = repository.fetch(type, pageable, groupByColumns);
 
 		if (rows.isEmpty()) {
@@ -126,19 +145,6 @@ public class DefaultCRUDService implements CRUDService {
 		}
 
 		return authenticationBasedModelFactory.produce(type, rows, role);
-	}
-
-	private <T extends AbstractModel> void validateAttributes(Class<T> type, String[]... requestedAttributes)
-			throws SQLSyntaxErrorException {
-		Set<String> registeredAttributes = modelContext.getMetadata(type).getPropertyNames();
-
-		for (String[] attributes : requestedAttributes) {
-			for (String attribute : attributes) {
-				if (!registeredAttributes.contains(attribute)) {
-					throw new SQLSyntaxErrorException(String.format("Unknown property [%s]", attribute));
-				}
-			}
-		}
 	}
 
 	@Override

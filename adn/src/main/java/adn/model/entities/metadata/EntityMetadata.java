@@ -22,6 +22,8 @@ public interface EntityMetadata {
 
 	int getNonLazyPropertiesSpan();
 	
+	String getDiscriminatorColumnName();
+	
 	Set<Map.Entry<String, Getter>> getGetters();
 
 }

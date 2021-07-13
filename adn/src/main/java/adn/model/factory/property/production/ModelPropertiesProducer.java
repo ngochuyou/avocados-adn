@@ -3,6 +3,7 @@
  */
 package adn.model.factory.property.production;
 
+import java.sql.SQLSyntaxErrorException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -34,5 +35,7 @@ public interface ModelPropertiesProducer extends ModelProducer<Object[], Map<Str
 	default List<Map<String, Object>> produceImmutable(List<Object[]> source) {
 		return Collections.unmodifiableList(produce(source));
 	}
+
+	String[] validateAndTranslateColumnNames(String[] requestedColumns) throws SQLSyntaxErrorException;
 
 }

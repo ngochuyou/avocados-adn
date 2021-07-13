@@ -11,6 +11,8 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,11 +27,13 @@ import adn.service.services.AuthenticationService;
 import io.jsonwebtoken.ExpiredJwtException;
 
 /**
- * @author Ngoc Huy ConfigurationsBuilder
+ * @author Ngoc Huy
  */
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
-
+	
+	private static final Logger logger = LoggerFactory.getLogger(JwtRequestFilter.class);
+	
 	@Autowired
 	private AuthenticationService authService;
 
@@ -68,6 +72,10 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
 						SecurityContextHolder.getContext().setAuthentication(token);
 					}
+				}
+			} else {
+				if (logger.isTraceEnabled()) {
+					logger.trace("Unable to locate JWT cookie");
 				}
 			}
 		}

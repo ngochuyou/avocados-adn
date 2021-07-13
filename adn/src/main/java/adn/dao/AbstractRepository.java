@@ -50,6 +50,22 @@ public abstract class AbstractRepository implements Repository {
 	}
 
 	@Override
+	public <T extends Entity> Object[] findById(Serializable id, Class<T> clazz, String[] columns) {
+		// @formatter:off
+		String query = String.format("SELECT %s FROM %s WHERE %s=:id",
+				Stream.of(columns).collect(Collectors.joining(", ")),
+				EntityUtils.getEntityName(clazz),
+				EntityUtils.getIdentifierPropertyName(clazz));
+		// @formatter:on
+		Session session = sessionFactory.getCurrentSession();
+		Query<Object[]> hql = session.createQuery(query, Object[].class);
+
+		hql.setParameter("id", id);
+
+		return hql.getResultStream().findFirst().orElse(null);
+	}
+
+	@Override
 	public <T extends Entity> T findOne(CriteriaQuery<T> query, Class<T> clazz) {
 		// @formatter:off
 		return sessionFactory.getCurrentSession()

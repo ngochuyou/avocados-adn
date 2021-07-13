@@ -13,8 +13,9 @@ import adn.service.internal.Service;
 public class AccountService implements Service {
 
 	public static final String UNKNOWN_USER_FIRSTNAME = "ANONYMOUS";
-
 	public static final String UNKNOWN_USER_LASTNAME = "USER";
+	public static final String MODEL_ID_FIELD_NAME = "username";
+	
 	// @formatter:off
 	private final Map<Role, Class<? extends Account>> roleClassMap = Map.of(
 			Role.ADMIN, Admin.class,

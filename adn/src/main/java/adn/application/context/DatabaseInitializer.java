@@ -3,7 +3,6 @@
  */
 package adn.application.context;
 
-import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 
@@ -14,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,9 +22,9 @@ import adn.dao.Repository;
 import adn.helpers.StringHelper;
 import adn.model.entities.Admin;
 import adn.model.entities.Customer;
-import adn.model.entities.Gender;
 import adn.model.entities.Personnel;
 import adn.model.entities.Provider;
+import adn.model.entities.constants.Gender;
 import adn.service.internal.Role;
 import adn.service.services.AccountService;
 
@@ -47,18 +47,23 @@ public class DatabaseInitializer implements ContextBuilder {
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
+	@Autowired
+	private Environment env;
+
 	@Transactional
 	@Override
 	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
 		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
-		sessionFactory.getCurrentSession().setHibernateFlushMode(FlushMode.MANUAL);
-		insertAdmin();
-		insertCustomer();
-		insertManager();
-		insertEmployee();
-		insertMockProviders();
-		sessionFactory.getCurrentSession().flush();
+		if (!env.getProperty("spring.profiles.active").equals("PROD")) {
+			sessionFactory.getCurrentSession().setHibernateFlushMode(FlushMode.MANUAL);
+			insertAdmin();
+			insertCustomer();
+			insertManager();
+			insertEmployee();
+			insertMockProviders();
+			sessionFactory.getCurrentSession().flush();
+		}
 		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}
 
@@ -100,7 +105,6 @@ public class DatabaseInitializer implements ContextBuilder {
 		admin.setPhone("0974032706");
 		admin.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
 		admin.setRole(Role.ADMIN);
-		admin.setContractDate(LocalDate.now());
 
 		return admin;
 	}

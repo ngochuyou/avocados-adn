@@ -3,6 +3,7 @@
  */
 package adn.model.factory;
 
+import java.sql.SQLSyntaxErrorException;
 import java.util.List;
 import java.util.Map;
 
@@ -25,5 +26,7 @@ public interface AuthenticationBasedModelPropertiesFactory {
 
 	<T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type, List<Object[]> properties,
 			String[] columns, Role role);
+
+	<T extends AbstractModel> String[] validateAndTranslateColumnNames(Class<T> type, Role role, String[] requestedColumnNames) throws SQLSyntaxErrorException;
 
 }

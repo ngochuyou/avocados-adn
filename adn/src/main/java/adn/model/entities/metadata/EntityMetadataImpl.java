@@ -19,6 +19,7 @@ import javax.persistence.metamodel.Attribute;
 import org.hibernate.MappingException;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.hibernate.property.access.spi.Getter;
 import org.hibernate.tuple.IdentifierProperty;
 import org.hibernate.tuple.entity.EntityMetamodel;
@@ -42,6 +43,7 @@ public class EntityMetadataImpl implements EntityMetadata {
 	private final Set<String> nonLazyProperties;
 	private final int nonLazyPropertiesSpan;
 	private final Set<Map.Entry<String, Getter>> getters;
+	private final String discriminatorColumnName;
 
 	@SuppressWarnings("unchecked")
 	public <T extends AbstractModel> EntityMetadataImpl(final ModelContextProvider modelContext, Class<T> entityClass) {
@@ -49,6 +51,7 @@ public class EntityMetadataImpl implements EntityMetadata {
 		Set<Map.Entry<String, Getter>> getters;
 		Set<String> properties;
 		Set<String> nonLazyProperties;
+		String discriminatorColumnName = null;
 
 		try {
 			if (!Entity.class.isAssignableFrom(entityClass)) {
@@ -112,6 +115,17 @@ public class EntityMetadataImpl implements EntityMetadata {
 				properties.add(metamodel.getIdentifierProperty().getName());
 				nonLazyProperties.add(metamodel.getIdentifierProperty().getName());
 			}
+
+			if (persister instanceof SingleTableEntityPersister) {
+				SingleTableEntityPersister singleTableEntityPersister = (SingleTableEntityPersister) persister;
+
+				discriminatorColumnName = singleTableEntityPersister.getDiscriminatorColumnName();
+
+				if (discriminatorColumnName != null) {
+					properties.add(discriminatorColumnName);
+					nonLazyProperties.add(discriminatorColumnName);
+				}
+			}
 		} catch (MappingException me) {
 			if (logger.isTraceEnabled()) {
 				me.printStackTrace();
@@ -157,6 +171,7 @@ public class EntityMetadataImpl implements EntityMetadata {
 		this.properties = properties;
 		this.nonLazyProperties = nonLazyProperties;
 		nonLazyPropertiesSpan = this.nonLazyProperties.size();
+		this.discriminatorColumnName = discriminatorColumnName;
 	}
 
 	@Override
@@ -199,6 +214,11 @@ public class EntityMetadataImpl implements EntityMetadata {
 	@Override
 	public int getNonLazyPropertiesSpan() {
 		return nonLazyPropertiesSpan;
+	}
+
+	@Override
+	public String getDiscriminatorColumnName() {
+		return discriminatorColumnName;
 	}
 
 }
