@@ -32,6 +32,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import adn.application.Constants;
 import adn.helpers.StringHelper;
+import adn.security.jwt.JwtRequestFilter;
+import adn.security.jwt.JwtUsernamePasswordAuthenticationFilter;
 import adn.service.services.AuthenticationService;
 
 /**

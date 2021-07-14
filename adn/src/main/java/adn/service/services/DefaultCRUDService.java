@@ -15,6 +15,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -40,15 +41,14 @@ import adn.service.internal.Role;
 @Primary
 public class DefaultCRUDService implements CRUDService {
 
-	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+	private static final Logger logger = LoggerFactory.getLogger(DefaultCRUDService.class);
 
-	private final ModelContextProvider modelContext;
-	private final Repository repository;
-	private final EntityBuilderProvider entityBuilderProvider;
+	protected final ModelContextProvider modelContext;
+	protected final Repository repository;
+	protected final EntityBuilderProvider entityBuilderProvider;
 
-	private final AuthenticationBasedModelPropertiesFactory authenticationBasedModelPropertiesFactory;
-	private final AuthenticationBasedModelFactory authenticationBasedModelFactory;
-
+	protected final AuthenticationBasedModelPropertiesFactory authenticationBasedModelPropertiesFactory;
+	protected final AuthenticationBasedModelFactory authenticationBasedModelFactory;
 	// @formatter:off
 	@Autowired
 	public DefaultCRUDService(
@@ -62,6 +62,16 @@ public class DefaultCRUDService implements CRUDService {
 		this.authenticationBasedModelPropertiesFactory = authenticationBasedModelPropertiesFactory;
 		this.authenticationBasedModelFactory = authenticationBasedModelFactory;
 		this.modelContext = modelContext;
+	}
+	
+	public DefaultCRUDService() {
+		ApplicationContext context = ContextProvider.getApplicationContext();
+		
+		this.repository = context.getBean(Repository.class);
+		this.entityBuilderProvider = context.getBean(EntityBuilderProvider.class);
+		this.authenticationBasedModelPropertiesFactory = context.getBean(AuthenticationBasedModelPropertiesFactory.class);
+		this.authenticationBasedModelFactory = context.getBean(AuthenticationBasedModelFactory.class);
+		this.modelContext = context.getBean(ModelContextProvider.class);
 	}
 	// @formatter:on
 	@Override
@@ -90,10 +100,10 @@ public class DefaultCRUDService implements CRUDService {
 			return new ArrayList<Map<String, Object>>();
 		}
 
-		return authenticationBasedModelPropertiesFactory.produce(type, rows, columns, role);
+		return authenticationBasedModelPropertiesFactory.produce(type, rows, validatedColumns, role);
 	}
 
-	private <T extends Entity, E extends T> String[] getDefaultColumnsOrTranslate(Class<E> type, Role role,
+	protected <T extends Entity, E extends T> String[] getDefaultColumnsOrTranslate(Class<E> type, Role role,
 			String[] columns) throws SQLSyntaxErrorException {
 		if (columns.length == 0) {
 			EntityMetadata metadata = modelContext.getMetadata(type);

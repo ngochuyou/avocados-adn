@@ -4,14 +4,17 @@ import UnauthenticatedComponent from './components/security/UnauthenticatedCompo
 import './App.css';
 import { withRouter, Route, Switch } from 'react-router-dom';
 import LoginPage from './pages/LoginPage.jsx';
+import AccessDenied from './pages/AccessDenied.jsx';
+import Dashboard from './pages/Dashboard.jsx';
 
 function App() {
 	const { principal } = useAuth();
 
 	return (
-		<div className="uk-container">
+		<div>
+			<Route path='/access_denied' render={props => <AccessDenied { ...props } /> } exact />
 			<AuthenticatedComponent principal={principal}>
-				<h1>Authenticated</h1>
+				<Route path='/dashboard' render={props => <Dashboard { ...props } /> }/>
 			</AuthenticatedComponent>
 			<UnauthenticatedComponent principal={principal}>
 				<Switch>

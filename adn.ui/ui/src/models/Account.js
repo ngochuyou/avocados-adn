@@ -43,4 +43,11 @@ export default class Account {
 			placeholder: "Email"
 		}
 	}
+
+	static Role = {
+		ADMIN: 'ADMIN',
+		PERSONNEL: 'PERSONNEL',
+		MANAGER: 'MANAGER',
+		EMPLOYEE: 'EMPLOYEE',
+	}
 }

@@ -41,14 +41,14 @@ export default function LoginPage() {
 		setPassword("");
 
 		if (res.ok) {
-			history.push("/dashboard");
+			history.push('/');
 		}
 
 		setLoading(false);
 	};
 
 	return (
-		<div className="uk-grid-collapse uk-grid-match k-text-center" uk-grid="">
+		<div className="uk-grid-collapse uk-grid-match uk-text-center" uk-grid="">
 			<div className="uk-width-2-3">
 				
 			</div>
@@ -75,7 +75,7 @@ export default function LoginPage() {
 							className="uk-button uk-button-primary"
 							type="submit"
 							disabled={ isLoading ? "disabled" : ""}
-						>Primary</button>
+						>Login</button>
 					</form>
 				</div>
 			</div>

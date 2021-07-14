@@ -5,11 +5,13 @@ package adn.dao;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 import javax.persistence.criteria.CriteriaQuery;
 
 import org.springframework.data.domain.Pageable;
 
+import adn.dao.parameter.ParamContext;
 import adn.model.DatabaseInteractionResult;
 import adn.model.entities.Entity;
 
@@ -35,7 +37,15 @@ public interface Repository {
 
 	<T extends Entity> T findOne(CriteriaQuery<T> query, Class<T> clazz);
 
+	<T extends Entity> T findOne(String query, Class<T> clazz, Map<String, Object> parameters);
+
+	Object[] findOne(String query, Map<String, Object> parameters);
+
 	<T extends Entity> List<T> find(CriteriaQuery<T> query, Class<T> clazz);
+
+	List<Object[]> find(String query, Map<String, Object> parameters);
+
+	List<Object[]> findWithContext(String query, Map<String, ParamContext> parameters);
 
 	<T extends Entity, E extends T> DatabaseInteractionResult<E> insert(Serializable id, E model, Class<E> type);
 

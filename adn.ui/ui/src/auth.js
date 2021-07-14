@@ -1,15 +1,13 @@
 import { $fetch } from './fetch.js';
 import { server } from './config/default.json';
 
-export async function fetchPrincipal() {
-	const [res, err] = await $fetch('/rest/account', {
+export async function fetchPrincipal(...columns) {
+	const [res, err] = await $fetch(`/rest/account?columns=${columns.join(',')}`, {
 		method: 'GET',
 		headers: {
-			'Authorization': 'JWTBearer',
 			'Accept' : 'application/json',
 			'Content-Type': 'application/json'
-		},
-		credentials: 'include'
+		}
 	});
 
 	if (err) {
@@ -31,8 +29,7 @@ export async function fetchToken({ username, password}) {
 
 	const [res, err] = await $fetch(server.auth.token_url, {
 		method: "POST",
-		body: formData,
-		credentials: 'include'
+		body: formData
 	});
 
 	if (err) {

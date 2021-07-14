@@ -3,8 +3,9 @@
  */
 package adn.application.context;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
@@ -14,17 +15,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import adn.dao.Repository;
-import adn.helpers.StringHelper;
 import adn.model.entities.Admin;
 import adn.model.entities.Customer;
+import adn.model.entities.Department;
+import adn.model.entities.DepartmentChief;
 import adn.model.entities.Personnel;
 import adn.model.entities.Provider;
 import adn.model.entities.constants.Gender;
+import adn.model.entities.id.DepartmentChiefId;
 import adn.service.internal.Role;
 import adn.service.services.AccountService;
 
@@ -55,16 +59,152 @@ public class DatabaseInitializer implements ContextBuilder {
 	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
 		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
+
+		insertAdmin();
+
 		if (!env.getProperty("spring.profiles.active").equals("PROD")) {
 			sessionFactory.getCurrentSession().setHibernateFlushMode(FlushMode.MANUAL);
-			insertAdmin();
+
 			insertCustomer();
-			insertManager();
-			insertEmployee();
 			insertMockProviders();
+			insertMockDepartment();
+			insertMockPersonnel();
+			insertMockDepartmentChief();
+
 			sessionFactory.getCurrentSession().flush();
 		}
 		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
+	}
+
+	private void insertMockDepartmentChief() {
+		if (!repo.fetch(DepartmentChief.class).isEmpty()) {
+			return;
+		}
+
+		Session ss = sessionFactory.getCurrentSession();
+		List<Department> departments = repo.fetch(Department.class);
+		List<Personnel> personnels = repo.fetch(Personnel.class, PageRequest.of(0, departments.size()));
+		DepartmentChief chief;
+		DepartmentChiefId id;
+		Department dep;
+		Personnel per;
+
+		for (int i = 0; i < personnels.size() && i < departments.size(); i++) {
+			dep = departments.get(i);
+			per = personnels.get(i);
+
+			chief = new DepartmentChief();
+			chief.setDepartment(dep);
+			chief.setPersonnel(per);
+
+			id = new DepartmentChiefId();
+			id.setStartDate(LocalDate.now());
+
+			chief.setId(id);
+			ss.save(chief);
+		}
+	}
+
+	private void insertMockDepartment() {
+		if (!repo.fetch(Department.class).isEmpty()) {
+			return;
+		}
+
+		Department dep;
+		Session session = sessionFactory.getCurrentSession();
+
+		dep = new Department();
+
+		dep.setName("Stock");
+		dep.setActive(true);
+
+		session.save(dep);
+
+		dep = new Department();
+
+		dep.setName("Sale");
+		dep.setActive(true);
+
+		session.save(dep);
+
+		dep = new Department();
+
+		dep.setName("Personnel");
+		dep.setActive(true);
+
+		session.save(dep);
+
+		dep = new Department();
+
+		dep.setName("Finance");
+		dep.setActive(true);
+
+		session.save(dep);
+	}
+
+	private void insertMockPersonnel() {
+		if (repo.fetch(Personnel.class).size() == 0) {
+			Session session = sessionFactory.getCurrentSession();
+			Personnel personnel = new Personnel();
+
+			personnel.setId("lawrence.p.penney");
+			personnel.setPassword(passwordEncoder.encode("password"));
+			personnel.setActive(true);
+			personnel.setEmail("justina_wilkins@gmail.com");
+			personnel.setFirstName("Lawrence");
+			personnel.setLastName("P Penney");
+			personnel.setGender(Gender.MALE);
+			personnel.setPhone("978-224-3032");
+			personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
+			personnel.setRole(Role.PERSONNEL);
+
+			session.save(personnel);
+
+			personnel = new Personnel();
+
+			personnel.setId("timothy_smith");
+			personnel.setPassword(passwordEncoder.encode("password"));
+			personnel.setActive(true);
+			personnel.setEmail("t.smith04@adn.com");
+			personnel.setFirstName("Timothy");
+			personnel.setLastName("Smith");
+			personnel.setGender(Gender.MALE);
+			personnel.setPhone("+1 270 419-3852");
+			personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
+			personnel.setRole(Role.PERSONNEL);
+
+			session.save(personnel);
+
+			personnel = new Personnel();
+
+			personnel.setId("angelo_jeffson");
+			personnel.setPassword(passwordEncoder.encode("password"));
+			personnel.setActive(true);
+			personnel.setEmail("krystina1978@hotmail.com");
+			personnel.setFirstName("Angelo");
+			personnel.setLastName("B Jefferson");
+			personnel.setGender(Gender.MALE);
+			personnel.setPhone("469-467-9379");
+			personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
+			personnel.setRole(Role.PERSONNEL);
+
+			session.save(personnel);
+
+			personnel = new Personnel();
+
+			personnel.setId("biglion949");
+			personnel.setPassword(passwordEncoder.encode("password"));
+			personnel.setActive(true);
+			personnel.setEmail("seyhan.prakken@ex.com");
+			personnel.setFirstName("Seyhan");
+			personnel.setLastName("Parkken");
+			personnel.setGender(Gender.MALE);
+			personnel.setPhone("(843)-440-2148");
+			personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
+			personnel.setRole(Role.PERSONNEL);
+
+			session.save(personnel);
+		}
 	}
 
 	private void insertMockProviders() {
@@ -72,24 +212,47 @@ public class DatabaseInitializer implements ContextBuilder {
 			return;
 		}
 
-		int amount = 20;
 		Provider provider;
 		Session session = sessionFactory.getCurrentSession();
 
-		for (int i = 0; i < amount; i++) {
-			provider = new Provider();
+		provider = new Provider();
 
-			provider.setName(StringHelper.hash(UUID.randomUUID().toString()));
-			provider.setCreatedBy("ngochuy.ou");
-			provider.setEmail("ngochuy.ou@hotmail.com");
-			provider.setAddress("34 St.Saint-Étienne, Sao Paulo, Brazil");
-			provider.setPhoneNumbers(Set.of("+554139087774", "+5541149505877"));
-			provider.setRepresentatorName("Vu Ngoc Huy Tran");
-			provider.setUpdatedBy("ngochuy.ou");
-			provider.setActive(Boolean.TRUE);
+		provider.setName("MUK Ltd. Vietnam");
+		provider.setCreatedBy("ngochuy.ou");
+		provider.setEmail("muk.ltd@hotmail.com");
+		provider.setAddress("34 St.Saint-Étienne, Sao Paulo, Brazil");
+		provider.setPhoneNumbers(Set.of("+554139087774", "+5541149505877"));
+		provider.setRepresentatorName("Maul U. Kerian");
+		provider.setUpdatedBy("ngochuy.ou");
+		provider.setActive(Boolean.TRUE);
 
-			session.save(provider);
-		}
+		session.save(provider);
+
+		provider = new Provider();
+
+		provider.setName("Thai Son S.P Sewing Factory");
+		provider.setCreatedBy("ngochuy.ou");
+		provider.setEmail("contact-support@thaison.com");
+		provider.setAddress("SA8000 BSCI");
+		provider.setPhoneNumbers(Set.of("+84976538642", "+84976538643"));
+		provider.setRepresentatorName("Huynh Ngoc Tram");
+		provider.setUpdatedBy("ngochuy.ou");
+		provider.setActive(Boolean.TRUE);
+
+		session.save(provider);
+
+		provider = new Provider();
+
+		provider.setName("Dong Nai Industrial Garment Company");
+		provider.setCreatedBy("ngochuy.ou");
+		provider.setEmail("dongnaigarment@dnco.vn.com");
+		provider.setAddress("Bien Hoa City");
+		provider.setPhoneNumbers(Set.of("+8418232764", "+84909765182"));
+		provider.setRepresentatorName("Textile Hanibal");
+		provider.setUpdatedBy("ngochuy.ou");
+		provider.setActive(Boolean.TRUE);
+
+		session.save(provider);
 	}
 
 	public Admin getAdmin() {
@@ -141,52 +304,6 @@ public class DatabaseInitializer implements ContextBuilder {
 			session.save(customer);
 
 			logger.info("Inserting CUSTOMER: " + customer.getId());
-		}
-	}
-
-	private void insertManager() {
-		Session session = sessionFactory.getCurrentSession();
-
-		if (session.get(Personnel.class, "adn.personnel.manager.0") == null) {
-			Personnel manager = new Personnel();
-
-			manager.setId("adn.personnel.manager.0");
-			manager.setPassword(passwordEncoder.encode("password"));
-			manager.setActive(true);
-			manager.setEmail("adn.personnel.manager.0@gmail.com");
-			manager.setFirstName("Tran");
-			manager.setGender(Gender.UNKNOWN);
-			manager.setLastName("Vu Ngoc Huy");
-			manager.setPhone("0974032706");
-			manager.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
-			manager.setRole(Role.PERSONNEL);
-
-			session.save(manager);
-
-			logger.info("Inserting PERSONNEL: " + manager.getId());
-		}
-	}
-
-	private void insertEmployee() {
-		Session session = sessionFactory.getCurrentSession();
-
-		if (session.get(Personnel.class, "adn.personnel.employee.0") == null) {
-			Personnel manager = new Personnel();
-
-			manager.setId("adn.personnel.employee.0");
-			manager.setPassword(passwordEncoder.encode("password"));
-			manager.setActive(true);
-			manager.setEmail("adn.personnel.employee.0@gmail.com");
-			manager.setFirstName("Tran");
-			manager.setGender(Gender.UNKNOWN);
-			manager.setLastName("Vu Ngoc Huy");
-			manager.setPhone("0974032706");
-			manager.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
-			manager.setRole(Role.PERSONNEL);
-
-			session.save(manager);
-
-			logger.info("Inserting PERSONNEL: " + manager.getId());
 		}
 	}
 

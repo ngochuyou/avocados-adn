@@ -32,6 +32,7 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 					.field("password").mask()
 					.field("id").use(AccountService.MODEL_ID_FIELD_NAME).publish()
 					.fields("firstName", "lastName", "photo", "role", "gender", "active").publish()
+					.field("birthDay").use(Utils::localDateToDate)
 					.anyFields().mask()
 					.type()
 				.role(personnels)
@@ -54,13 +55,15 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 				.type(Personnel.class)
 					.role(personnels)
 						.field("createdBy").publish()
-						.anyFields().mask()
+					.anyRoles().mask()
 				.type()
 					.anyRoles().anyFields().mask()
 		 	.and()
 				.type(Factor.class)
 					.role(Role.ADMIN, Role.PERSONNEL).publish()
-					.anyRoles().mask();
+					.anyRoles().mask()
+			.and()
+				.anyType().role(Role.ADMIN).publish();
 		// @formatter:on
 	}
 

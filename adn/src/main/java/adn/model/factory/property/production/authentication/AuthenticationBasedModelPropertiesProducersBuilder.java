@@ -37,7 +37,7 @@ public interface AuthenticationBasedModelPropertiesProducersBuilder {
 	/**
 	 * With every other types
 	 */
-	<T extends AbstractModel> WithType<T> ungivenTypes();
+	<T extends AbstractModel> WithType<T> anyType();
 
 	public interface Owned {
 
@@ -46,8 +46,6 @@ public interface AuthenticationBasedModelPropertiesProducersBuilder {
 		 */
 		AuthenticationBasedModelPropertiesProducersBuilder and();
 
-		
-		
 	}
 	
 	

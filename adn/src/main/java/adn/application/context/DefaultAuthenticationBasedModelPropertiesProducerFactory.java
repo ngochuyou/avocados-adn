@@ -211,7 +211,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 		@SuppressWarnings("unchecked")
 		@Override
-		public <T extends AbstractModel> WithType<T> ungivenTypes() {
+		public <T extends AbstractModel> WithType<T> anyType() {
 			return new WithTypes<T>(this, (Class<T>[]) getUngivenTypes().toArray(Class<?>[]::new));
 		}
 

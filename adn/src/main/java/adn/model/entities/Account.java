@@ -38,7 +38,7 @@ public class Account extends adn.model.entities.Entity {
 
 	@Transient
 	public static final String ROLE_FIELD_NAME = "role";
-	
+
 	@Id
 	@JsonProperty("username")
 	protected String id;
@@ -65,6 +65,9 @@ public class Account extends adn.model.entities.Entity {
 
 	@Enumerated(EnumType.STRING)
 	protected Gender gender;
+
+	@Column(name = "birth_day")
+	protected LocalDate birthDay;
 
 	@Column(name = "active", nullable = false)
 	protected Boolean active;
@@ -186,6 +189,14 @@ public class Account extends adn.model.entities.Entity {
 
 	public void setDeactivatedDate(LocalDate deactivatedDate) {
 		this.deactivatedDate = deactivatedDate;
+	}
+
+	public LocalDate getBirthDay() {
+		return birthDay;
+	}
+
+	public void setBirthDay(LocalDate birthDay) {
+		this.birthDay = birthDay;
 	}
 
 }

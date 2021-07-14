@@ -58,7 +58,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 			boolean nullFunction = prop.getFunction() == null;
 			
 			if (!isParent || unknownProperty || nullFunction) {
-				logger.info(String.format("[%s]: Ignoring %s [%s] %s", entityClass.getName(),
+				logger.debug(String.format("[%s]: Ignoring %s [%s] %s", entityClass.getName(),
 						SecuredProperty.class.getSimpleName(), prop.getPropertyName(),
 						!isParent ? "invalid type"
 								: unknownProperty ? "unknown property"
@@ -189,7 +189,8 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 			// this producer. Seriously though, this should be avoided by devs
 			return new HashMap<>(0, LOAD_FACTOR);
 		} catch (Exception any) {
-			any.printStackTrace(); // should be avoided
+			// should be avoided
+			any.printStackTrace();
 			return new HashMap<>(0, LOAD_FACTOR);
 		}
 	}

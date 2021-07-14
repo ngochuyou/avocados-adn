@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.security;
+package adn.security.jwt;
 
 import java.io.IOException;
 
@@ -23,6 +23,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.WebUtils;
 
 import adn.application.context.ConfigurationContext;
+import adn.security.ApplicationUserDetailsService;
 import adn.service.services.AuthenticationService;
 import io.jsonwebtoken.ExpiredJwtException;
 

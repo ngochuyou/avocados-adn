@@ -13,7 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import adn.dao.BaseRepository;
+import adn.dao.Repository;
 import adn.model.entities.Account;
 
 /**
@@ -26,13 +26,16 @@ public class ApplicationUserDetailsService implements UserDetailsService {
 	public static final String NAME = "applicationUserDetailsService";
 
 	@Autowired
-	private BaseRepository dao;
+	private Repository repo;
 
 	@Transactional(readOnly = true)
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		// TODO Auto-generated method stub
-		Account account = dao.findById(username, Account.class);
+		Account account = repo.findById(username, Account.class);
+
+		if (account == null) {
+			throw new UsernameNotFoundException(String.format("%s not found", username));
+		}
 
 		return new ApplicationUserDetails(username, account.getPassword(),
 				Set.of(new SimpleGrantedAuthority("ROLE_" + account.getRole())), account.getRole());

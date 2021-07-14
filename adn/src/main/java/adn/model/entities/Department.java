@@ -30,6 +30,9 @@ public class Department extends adn.model.entities.Entity {
 	@Column(nullable = false, unique = true)
 	protected String name;
 
+	@Column(nullable = false)
+	protected Boolean active;
+
 	public UUID getId() {
 		return id;
 	}
@@ -44,6 +47,14 @@ public class Department extends adn.model.entities.Entity {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public Boolean getActive() {
+		return active;
+	}
+
+	public void setActive(Boolean active) {
+		this.active = active;
 	}
 
 }

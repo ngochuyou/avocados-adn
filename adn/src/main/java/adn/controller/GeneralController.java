@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import adn.application.Constants;
+import adn.model.entities.Entity;
 import adn.model.entities.Factor;
 import adn.model.entities.Provider;
 
@@ -71,7 +72,7 @@ public class GeneralController extends BaseController {
 	// @formatter:on
 		try {
 			String className = Character.toUpperCase(entityName.charAt(0)) + entityName.substring(1);
-			Class<? extends Factor> type = (Class<? extends Factor>) Class
+			Class<? extends Entity> type = (Class<? extends Entity>) Class
 					.forName(Constants.ENTITY_PACKAGE + "." + className);
 
 			return ResponseEntity.ok(crudService.read(type, from(columns), paging, from(groupByColumns)));

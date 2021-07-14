@@ -1,0 +1,13 @@
+:root {
+	--first-color: #1a2942;
+	--second-color: #edf0f0;
+}
+
+.backgroundf {
+	background-color: var(--first-color);
+	color: var(--second-color);
+}
+
+.colorf {
+	color: var(--second-color);
+}

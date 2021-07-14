@@ -9,21 +9,20 @@ export default function AuthenticationContextProvider({ children }) {
 	const [principal, setPrincipal] = useReducer((principal, nextPrincipal) =>
 			principal === null ? nextPrincipal : { ...principal, ...nextPrincipal },
 			null);
-	const logout = () => setPrincipal(null);
 
 	useEffect(() => {
 		const doFetchPrincipal = async () => {
-			const res = await fetchPrincipal();
+			const res = await fetchPrincipal([ "username", "role", "photo" ]);
 
 			setPrincipal(res);
 		};
 
 		doFetchPrincipal();
 
-		return () => logout();
+		return () => setPrincipal(null);
 	}, []);
 
-	return <AuthenticationContext.Provider value={{ principal, logout }}>
+	return <AuthenticationContext.Provider value={{ principal, setPrincipal }}>
 		{ children }
 	</AuthenticationContext.Provider>;
 }

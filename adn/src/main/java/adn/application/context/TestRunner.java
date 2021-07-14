@@ -51,6 +51,20 @@ public class TestRunner implements ContextBuilder {
 	@Transactional
 	public void buildAfterStartUp() throws Exception {
 		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
+
+//		Object[] e = repo.findOne("""
+//				SELECT p.id, p.role, p.firstName, p.lastName
+//				FROM DepartmentChief dc
+//				INNER JOIN Personnel p
+//					ON dc.personnel.id = p.id
+//				WHERE dc.department.id=:id AND dc.endDate IS NULL
+//				""",
+//				Map.of("id", UUID.fromString("14704dfc-3a26-424e-bac7-03e707fd5ab4")));
+//
+//		for (Object col : e) {
+//			System.out.println(col);
+//		}
+
 		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
 	}
 

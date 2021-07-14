@@ -3,23 +3,20 @@
  */
 package adn.model.entities;
 
-import java.io.Serializable;
 import java.time.LocalDate;
-import java.util.Objects;
-import java.util.UUID;
 
 import javax.persistence.Column;
-import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapsId;
 import javax.persistence.Table;
 
-import org.hibernate.annotations.CreationTimestamp;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import adn.model.entities.id.DepartmentChiefId;
 
 /**
  * @author Ngoc Huy
@@ -33,11 +30,13 @@ public class DepartmentChief extends adn.model.entities.Entity {
 	private DepartmentChiefId id;
 
 	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "personnel_id", updatable = false)
 	@MapsId("personnelId")
 	@JsonIgnore
 	private Personnel personnel;
 
 	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "department_id", updatable = false)
 	@MapsId("departmentId")
 	@JsonIgnore
 	private Department department;
@@ -75,73 +74,6 @@ public class DepartmentChief extends adn.model.entities.Entity {
 
 	public void setEndDate(LocalDate endDate) {
 		this.endDate = endDate;
-	}
-
-}
-
-@SuppressWarnings("serial")
-@Embeddable
-class DepartmentChiefId implements Serializable {
-
-	@Column(name = "personnel_id")
-	private String personnelId;
-
-	@Column(name = "department_id")
-	private UUID departmentId;
-
-	@CreationTimestamp
-	@Column(name = "start_date", nullable = false, updatable = false)
-	private LocalDate startDate;
-
-	public DepartmentChiefId(String employeeId, UUID departmentId) {
-		super();
-		this.personnelId = employeeId;
-		this.departmentId = departmentId;
-	}
-
-	public String getPersonnelId() {
-		return personnelId;
-	}
-
-	public void setPersonnelId(String personnelId) {
-		this.personnelId = personnelId;
-	}
-
-	public UUID getDepartmentId() {
-		return departmentId;
-	}
-
-	public void setDepartmentId(UUID departmentId) {
-		this.departmentId = departmentId;
-	}
-
-	public LocalDate getStartDate() {
-		return startDate;
-	}
-
-	public void setStartDate(LocalDate startDate) {
-		this.startDate = startDate;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(departmentId, personnelId);
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (!(obj instanceof DepartmentChiefId)) {
-			return false;
-		}
-
-		if (this == obj) {
-			return true;
-		}
-
-		DepartmentChiefId other = (DepartmentChiefId) obj;
-
-		return Objects.equals(departmentId, other.departmentId) && personnelId.equals(other.personnelId)
-				&& startDate.equals(other.startDate);
 	}
 
 }

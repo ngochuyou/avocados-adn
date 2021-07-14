@@ -6,7 +6,10 @@ package adn.dao;
 import static adn.helpers.ArrayHelper.EMPTY_STRING_ARRAY;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,7 +25,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
 
 import adn.dao.paging.Unpaged;
+import adn.dao.parameter.ParamContext;
+import adn.dao.parameter.ParamType;
 import adn.helpers.EntityUtils;
+import adn.helpers.Utils.Entry;
 import adn.model.DatabaseInteractionResult;
 import adn.model.entities.Entity;
 import adn.model.specification.Specification;
@@ -38,7 +44,13 @@ public abstract class AbstractRepository implements Repository {
 
 	protected final SessionFactory sessionFactory;
 	protected final SpecificationFactory specificationFactory;
-
+	// @formatter:off	
+	protected final Map<ParamType, BiConsumer<Query<?>, Entry<String, Object>>> paramContextResolvers = Map.of(
+			ParamType.SINGULAR, (hql, entry) -> hql.setParameter(entry.getKey(), entry.getValue()),
+			ParamType.PLURAL, (hql, entry) -> hql.setParameterList(entry.getKey(), (Collection<?>) entry.getValue()),
+			ParamType.ARRAY, (hql, entry) -> hql.setParameterList(entry.getKey(), (Object[]) entry.getValue())
+			);
+	// @formatter:on
 	public AbstractRepository(final SessionFactory sessionFactory, final SpecificationFactory specificationFactory) {
 		this.sessionFactory = sessionFactory;
 		this.specificationFactory = specificationFactory;
@@ -70,8 +82,59 @@ public abstract class AbstractRepository implements Repository {
 		// @formatter:off
 		return sessionFactory.getCurrentSession()
 				.createQuery(query)
+				.setMaxResults(1)
 				.getResultStream().findFirst().orElse(null);
 		// @formatter:on
+	}
+
+	@Override
+	public <T extends Entity> T findOne(String query, Class<T> type, Map<String, Object> parameters) {
+		Session session = sessionFactory.getCurrentSession();
+		Query<T> hql = session.createQuery(query, type);
+
+		for (Map.Entry<String, Object> param : parameters.entrySet()) {
+			hql.setParameter(param.getKey(), param.getValue());
+		}
+
+		hql.setMaxResults(1);
+
+		return hql.getResultStream().findFirst().orElse(null);
+	}
+
+	private <T> Query<T> resolveHQL(String query, Class<T> type) {
+		return sessionFactory.getCurrentSession().createQuery(query, type);
+	}
+
+	private <T> Query<T> resolveHQLParams(String query, Class<T> type, Map<String, Object> parameters) {
+		Query<T> hql = resolveHQL(query, type);
+
+		for (Map.Entry<String, Object> param : parameters.entrySet()) {
+			hql.setParameter(param.getKey(), param.getValue());
+		}
+
+		return hql;
+	}
+
+	private <T> Query<T> resolveHQLParamContexts(String query, Class<T> type, Map<String, ParamContext> contexts) {
+		Query<T> hql = resolveHQL(query, type);
+		ParamContext param;
+
+		for (Map.Entry<String, ParamContext> contextEntry : contexts.entrySet()) {
+			param = contextEntry.getValue();
+			paramContextResolvers.get(param.getType()).accept(hql,
+					Entry.entry(contextEntry.getKey(), param.getValue()));
+		}
+
+		return hql;
+	}
+
+	@Override
+	public Object[] findOne(String query, Map<String, Object> parameters) {
+		Query<Object[]> hql = resolveHQLParams(query, Object[].class, parameters);
+
+		hql.setMaxResults(1);
+
+		return hql.getResultStream().findFirst().orElse(null);
 	}
 
 	@Override
@@ -81,6 +144,18 @@ public abstract class AbstractRepository implements Repository {
 				.createQuery(query)
 				.getResultList();
 		// @formatter:on
+	}
+
+	@Override
+	public List<Object[]> find(String query, Map<String, Object> parameters) {
+		return resolveHQLParams(query, Object[].class, parameters).getResultList();
+	}
+
+	@Override
+	public List<Object[]> findWithContext(String query, Map<String, ParamContext> parameters) {
+		Query<Object[]> hql = resolveHQLParamContexts(query, Object[].class, parameters);
+
+		return hql.getResultList();
 	}
 
 	@Override

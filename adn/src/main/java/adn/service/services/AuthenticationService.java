@@ -59,7 +59,6 @@ public class AuthenticationService implements Service {
 	}
 
 	public Boolean validateToken(String token, String username) {
-
 		return (username.equals(username) && !isTokenExpired(token));
 	}
 
