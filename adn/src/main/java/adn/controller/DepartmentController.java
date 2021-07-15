@@ -45,7 +45,7 @@ public class DepartmentController extends BaseController {
 	@GetMapping("/chief/{departmentId}")
 	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
 	public @ResponseBody ResponseEntity<?> getDepartmentChief(
-			@PathVariable(name = "departmentId", required = true) UUID departmentId,
+			@PathVariable(name = "id", required = true) UUID departmentId,
 			@RequestParam(name = "columns", defaultValue = "") List<String> columns) {
 		if (columns.isEmpty()) {
 			Map<String, Object> chief = departmentService.getDepartmentChief(departmentId,
@@ -62,14 +62,13 @@ public class DepartmentController extends BaseController {
 		} catch (SQLSyntaxErrorException ssee) {
 			return sendBadRequest(ssee.getMessage());
 		}
-
 	}
 
 	@Transactional(readOnly = true)
 	@GetMapping("/chiefs")
 	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
 	public @ResponseBody ResponseEntity<?> getDepartmentChiefs(
-			@RequestParam(name = "ids", defaultValue = "") List<UUID> ids,
+			@RequestParam(name = "ids", required = true) List<UUID> ids,
 			@RequestParam(name = "columns", required = true) List<String> columns) {
 		try {
 			List<Map<String, Object>> chiefs = departmentService.getDepartmentChiefs(ids.toArray(new UUID[ids.size()]),
@@ -80,6 +79,14 @@ public class DepartmentController extends BaseController {
 			return sendBadRequest(ssee.getMessage());
 		}
 
+	}
+
+	@Transactional(readOnly = true)
+	@GetMapping("/count")
+	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
+	public @ResponseBody ResponseEntity<?> getPersonnelCounts(
+			@RequestParam(name = "ids", required = true) List<UUID> ids) {
+		return ResponseEntity.ok(departmentService.countPersonnel(ids.toArray(new UUID[ids.size()])));
 	}
 
 }

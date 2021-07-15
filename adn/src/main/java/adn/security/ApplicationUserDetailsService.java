@@ -31,7 +31,8 @@ public class ApplicationUserDetailsService implements UserDetailsService {
 	@Autowired
 	private Repository repo;
 
-	private final String[] attributes = new String[] { "id", "password", "role", "updatedDate" };
+	private final String[] attributes = new String[] { Account.ID_FIELD_NAME, "password", Account.ROLE_FIELD_NAME,
+			Account.VERSION_FIELD_NAME };
 	public static final ZoneId ZONE = ZoneId.systemDefault();
 
 	@Transactional(readOnly = true)

@@ -14,7 +14,7 @@ public class ParamContext {
 	private final ParamType type;
 	private final Object value;
 
-	public ParamContext(ParamType type, Object value) {
+	private ParamContext(ParamType type, Object value) {
 		super();
 		this.type = type;
 		this.value = value;

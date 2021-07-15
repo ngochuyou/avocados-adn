@@ -119,4 +119,21 @@ public class DepartmentService extends DefaultCRUDService {
 		return authenticationBasedModelPropertiesFactory.produce(Personnel.class, rows, validatedColumns, role);
 	}
 
+	public Long[] countPersonnel(UUID[] departmentIds) {
+		String query = """
+				SELECT COUNT(*)
+				FROM Personnel p
+				WHERE p.department.id IN (:ids)
+				GROUP BY p.department.id
+				""";
+		List<Long> countResults = repository.countWithContext(query, Map.of("ids", ParamContext.array(departmentIds)));
+		int size;
+
+		if ((size = countResults.size()) == 0) {
+			return new Long[0];
+		}
+
+		return countResults.toArray(new Long[size]);
+	}
+
 }

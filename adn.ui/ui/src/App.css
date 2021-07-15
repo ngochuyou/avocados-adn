@@ -11,3 +11,11 @@
 .colorf {
 	color: var(--second-color);
 }
+
+.colors {
+	color: var(--first-color);
+}
+
+.max-height-view {
+	max-height: 100vh;
+}

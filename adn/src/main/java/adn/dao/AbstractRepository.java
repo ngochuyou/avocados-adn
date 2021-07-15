@@ -58,7 +58,7 @@ public abstract class AbstractRepository implements Repository {
 
 	@Override
 	public <T extends Entity> T findById(Serializable id, Class<T> clazz) {
-		return sessionFactory.getCurrentSession().get(clazz, id);
+		return getCurrentSession().get(clazz, id);
 	}
 
 	@Override
@@ -69,7 +69,7 @@ public abstract class AbstractRepository implements Repository {
 				EntityUtils.getEntityName(clazz),
 				EntityUtils.getIdentifierPropertyName(clazz));
 		// @formatter:on
-		Session session = sessionFactory.getCurrentSession();
+		Session session = getCurrentSession();
 		Query<Object[]> hql = session.createQuery(query, Object[].class);
 
 		hql.setParameter("id", id);
@@ -80,7 +80,7 @@ public abstract class AbstractRepository implements Repository {
 	@Override
 	public <T extends Entity> T findOne(CriteriaQuery<T> query, Class<T> clazz) {
 		// @formatter:off
-		return sessionFactory.getCurrentSession()
+		return getCurrentSession()
 				.createQuery(query)
 				.setMaxResults(1)
 				.getResultStream().findFirst().orElse(null);
@@ -89,7 +89,7 @@ public abstract class AbstractRepository implements Repository {
 
 	@Override
 	public <T extends Entity> T findOne(String query, Class<T> type, Map<String, Object> parameters) {
-		Session session = sessionFactory.getCurrentSession();
+		Session session = getCurrentSession();
 		Query<T> hql = session.createQuery(query, type);
 
 		for (Map.Entry<String, Object> param : parameters.entrySet()) {
@@ -102,7 +102,7 @@ public abstract class AbstractRepository implements Repository {
 	}
 
 	private <T> Query<T> resolveHQL(String query, Class<T> type) {
-		return sessionFactory.getCurrentSession().createQuery(query, type);
+		return getCurrentSession().createQuery(query, type);
 	}
 
 	private <T> Query<T> resolveHQLParams(String query, Class<T> type, Map<String, Object> parameters) {
@@ -140,7 +140,7 @@ public abstract class AbstractRepository implements Repository {
 	@Override
 	public <T extends Entity> List<T> find(CriteriaQuery<T> query, Class<T> clazz) {
 		// @formatter:off
-		return sessionFactory.getCurrentSession()
+		return getCurrentSession()
 				.createQuery(query)
 				.getResultList();
 		// @formatter:on
@@ -248,6 +248,16 @@ public abstract class AbstractRepository implements Repository {
 
 	private String fromOrder(Order order) {
 		return order.getProperty() + " " + order.getDirection();
+	}
+
+	@Override
+	public List<Long> count(String hql, Map<String, Object> params) {
+		return resolveHQLParams(hql, Long.class, params).getResultList();
+	}
+
+	@Override
+	public List<Long> countWithContext(String hql, Map<String, ParamContext> params) {
+		return resolveHQLParamContexts(hql, Long.class, params).getResultList();
 	}
 
 	protected Session getCurrentSession() {

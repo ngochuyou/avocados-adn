@@ -5,6 +5,7 @@ package adn.application.context;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import org.hibernate.FlushMode;
@@ -143,72 +144,87 @@ public class DatabaseInitializer implements ContextBuilder {
 	}
 
 	private void insertMockPersonnel() {
-		if (repo.fetch(Personnel.class).size() == 0) {
-			Session session = sessionFactory.getCurrentSession();
-			Personnel personnel = new Personnel();
-
-			personnel.setId("lawrence.p.penney");
-			personnel.setPassword(passwordEncoder.encode("password"));
-			personnel.setActive(true);
-			personnel.setEmail("justina_wilkins@gmail.com");
-			personnel.setFirstName("Lawrence");
-			personnel.setLastName("P Penney");
-			personnel.setGender(Gender.MALE);
-			personnel.setPhone("978-224-3032");
-			personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
-			personnel.setRole(Role.PERSONNEL);
-			personnel.setCreatedBy("ngochuy.ou");
-
-			session.save(personnel);
-
-			personnel = new Personnel();
-
-			personnel.setId("timothy_smith");
-			personnel.setPassword(passwordEncoder.encode("password"));
-			personnel.setActive(true);
-			personnel.setEmail("t.smith04@adn.com");
-			personnel.setFirstName("Timothy");
-			personnel.setLastName("Smith");
-			personnel.setGender(Gender.MALE);
-			personnel.setPhone("+1 270 419-3852");
-			personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
-			personnel.setRole(Role.PERSONNEL);
-			personnel.setCreatedBy("ngochuy.ou");
-
-			session.save(personnel);
-
-			personnel = new Personnel();
-
-			personnel.setId("angelo_jeffson");
-			personnel.setPassword(passwordEncoder.encode("password"));
-			personnel.setActive(true);
-			personnel.setEmail("krystina1978@hotmail.com");
-			personnel.setFirstName("Angelo");
-			personnel.setLastName("B Jefferson");
-			personnel.setGender(Gender.MALE);
-			personnel.setPhone("469-467-9379");
-			personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
-			personnel.setRole(Role.PERSONNEL);
-			personnel.setCreatedBy("ngochuy.ou");
-
-			session.save(personnel);
-
-			personnel = new Personnel();
-
-			personnel.setId("biglion949");
-			personnel.setPassword(passwordEncoder.encode("password"));
-			personnel.setActive(true);
-			personnel.setEmail("seyhan.prakken@ex.com");
-			personnel.setFirstName("Seyhan");
-			personnel.setLastName("Parkken");
-			personnel.setGender(Gender.MALE);
-			personnel.setPhone("(843)-440-2148");
-			personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
-			personnel.setRole(Role.PERSONNEL);
-			personnel.setCreatedBy("ngochuy.ou");
-
-			session.save(personnel);
+		if (repo.fetch(Personnel.class).size() != 0) {
+			return;
 		}
+
+		List<Department> departments = repo.fetch(Department.class);
+
+		if (departments.size() == 0) {
+			return;
+		}
+
+		int max = departments.size() - 1;
+		Random rand = new Random();
+
+		Session session = sessionFactory.getCurrentSession();
+		Personnel personnel = new Personnel();
+
+		personnel.setId("lawrence.p.penney");
+		personnel.setPassword(passwordEncoder.encode("password"));
+		personnel.setActive(true);
+		personnel.setEmail("justina_wilkins@gmail.com");
+		personnel.setFirstName("Lawrence");
+		personnel.setLastName("P Penney");
+		personnel.setGender(Gender.MALE);
+		personnel.setPhone("978-224-3032");
+		personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
+		personnel.setRole(Role.PERSONNEL);
+		personnel.setCreatedBy("ngochuy.ou");
+		personnel.setDepartment(departments.get(rand.nextInt() + (max + 1 - 0) + 0));
+
+		session.save(personnel);
+
+		personnel = new Personnel();
+
+		personnel.setId("timothy_smith");
+		personnel.setPassword(passwordEncoder.encode("password"));
+		personnel.setActive(true);
+		personnel.setEmail("t.smith04@adn.com");
+		personnel.setFirstName("Timothy");
+		personnel.setLastName("Smith");
+		personnel.setGender(Gender.MALE);
+		personnel.setPhone("+1 270 419-3852");
+		personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
+		personnel.setRole(Role.PERSONNEL);
+		personnel.setCreatedBy("ngochuy.ou");
+		personnel.setDepartment(departments.get(rand.nextInt() + (max + 1 - 0) + 0));
+
+		session.save(personnel);
+
+		personnel = new Personnel();
+
+		personnel.setId("angelo_jeffson");
+		personnel.setPassword(passwordEncoder.encode("password"));
+		personnel.setActive(true);
+		personnel.setEmail("krystina1978@hotmail.com");
+		personnel.setFirstName("Angelo");
+		personnel.setLastName("B Jefferson");
+		personnel.setGender(Gender.MALE);
+		personnel.setPhone("469-467-9379");
+		personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
+		personnel.setRole(Role.PERSONNEL);
+		personnel.setCreatedBy("ngochuy.ou");
+		personnel.setDepartment(departments.get(rand.nextInt() + (max + 1 - 0) + 0));
+
+		session.save(personnel);
+
+		personnel = new Personnel();
+
+		personnel.setId("biglion949");
+		personnel.setPassword(passwordEncoder.encode("password"));
+		personnel.setActive(true);
+		personnel.setEmail("seyhan.prakken@ex.com");
+		personnel.setFirstName("Seyhan");
+		personnel.setLastName("Parkken");
+		personnel.setGender(Gender.MALE);
+		personnel.setPhone("(843)-440-2148");
+		personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
+		personnel.setRole(Role.PERSONNEL);
+		personnel.setCreatedBy("ngochuy.ou");
+		personnel.setDepartment(departments.get(rand.nextInt() + (max + 1 - 0) + 0));
+
+		session.save(personnel);
 	}
 
 	private void insertMockProviders() {

@@ -1,18 +1,20 @@
-import { useEffect, useState } from 'react';
 import { Link, Route } from 'react-router-dom';
+
 import { useAuth } from '../hooks/authentication-hooks';
+
 import Account from '../models/Account';
 import AccessDenied from './AccessDenied.jsx';
-import { $fetch } from '../fetch';
+
+import DepartmentBoard from '../components/dashboard/DepartmentBoard.jsx';
 
 export default function Dashboard() {
 	const { principal } = useAuth();
 
 	if (principal && principal.role === Account.Role.ADMIN) {
 		return (
-			<div className="uk-grid-collapse uk-grid-match" uk-grid="" uk-height-viewport="expand: true">
-				<div className="uk-width-1-5">
-					<header className="uk-padding-small backgroundf">
+			<div className="uk-grid-collapse" uk-grid="">
+				<div className="uk-width-1-5 backgroundf" uk-height-viewport="expand: true">
+					<header className="uk-padding-small">
 						<h3 className="colorf">
 							<a className="uk-link-reset" href="/">Avocados</a>
 						</h3>
@@ -26,54 +28,36 @@ export default function Dashboard() {
 						</ul>
 					</header>
 				</div>
-				<div className="uk-width-4-5 uk-padding-small">
-					<Route path="/dashboard/department" render={props => <DepartmentBoard { ...props } />} />
+				<div className="uk-width-4-5 max-height-view uk-overflow-auto">
+					<div>
+						<nav className="uk-navbar-container" uk-nav="">
+							<div className="uk-grid-collapse" uk-grid="">
+								<div className="uk-width-1-2">
+									<div className="uk-navbar-item">
+										<form className="uk-width-1-1">
+											<input
+												className="uk-input uk-width-3-4"
+												type="text"
+												placeholder="Search..." />
+											<button
+												className="uk-button uk-button-default uk-width-1-4 backgroundf colorf">
+												Search</button>
+										</form>
+									</div>
+								</div>
+								<div className="uk-width-1-2">
+									
+								</div>
+							</div>
+						</nav>
+						<div className="uk-padding-small">
+							<Route path="/dashboard/department" render={props => <DepartmentBoard { ...props } />} />
+						</div>
+					</div>
 				</div>
 			</div>
 		);
 	}
 
 	return <AccessDenied message="Unauthorized role" />
-}
-
-
-function DepartmentBoard() {
-	const [ list, setList ] = useState([]);
-
-	useEffect(() => {
-		const doFetchList = async () => {
-			const [res, err] = await $fetch('/list/department', {
-				method: 'GET',
-				headers: {
-					'Accept' : 'application/json',
-					'Content-Type': 'application/json'
-				}
-			});
-
-			if (!err) {
-				if (res.ok) {
-					setList(await res.json());
-				}
-			}
-		};
-
-		doFetchList();
-	}, []);
-
-	return (
-		<div className="">
-			<h2>Departments</h2>
-			<div className="uk-grid-small uk-child-width-1-1@s uk-child-width-1-2@m uk-child-width-1-3@l uk-flex-center uk-text-center" uk-grid="">
-			{
-				list.map(item => (
-					<div key={item.id}>
-						<div className="uk-card uk-card-small uk-card-hover uk-card-default uk-card-body">
-							<h3>{item.name}</h3>
-						</div>
-					</div>
-				))
-			}	
-			</div>
-		</div>
-	);
 }

@@ -46,7 +46,11 @@ public interface Repository {
 	List<Object[]> find(String query, Map<String, Object> parameters);
 
 	List<Object[]> findWithContext(String query, Map<String, ParamContext> parameters);
-
+	
+	List<Long> count(String hql, Map<String, Object> params);
+	
+	List<Long> countWithContext(String hql, Map<String, ParamContext> params);
+	
 	<T extends Entity, E extends T> DatabaseInteractionResult<E> insert(Serializable id, E model, Class<E> type);
 
 	<T extends Entity, E extends T> DatabaseInteractionResult<E> update(Serializable id, E model, Class<E> type);
