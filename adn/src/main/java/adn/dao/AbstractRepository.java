@@ -44,7 +44,7 @@ public abstract class AbstractRepository implements Repository {
 
 	protected final SessionFactory sessionFactory;
 	protected final SpecificationFactory specificationFactory;
-	// @formatter:off	
+	// @formatter:off
 	protected final Map<ParamType, BiConsumer<Query<?>, Entry<String, Object>>> paramContextResolvers = Map.of(
 			ParamType.SINGULAR, (hql, entry) -> hql.setParameter(entry.getKey(), entry.getValue()),
 			ParamType.PLURAL, (hql, entry) -> hql.setParameterList(entry.getKey(), (Collection<?>) entry.getValue()),

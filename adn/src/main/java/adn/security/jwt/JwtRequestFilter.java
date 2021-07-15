@@ -16,14 +16,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.WebUtils;
 
 import adn.application.context.ConfigurationContext;
+import adn.security.ApplicationUserDetails;
 import adn.security.ApplicationUserDetailsService;
+import adn.security.context.OnMemoryUserContext;
 import adn.service.services.AuthenticationService;
 import io.jsonwebtoken.ExpiredJwtException;
 
@@ -32,19 +33,21 @@ import io.jsonwebtoken.ExpiredJwtException;
  */
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(JwtRequestFilter.class);
-	
+
 	@Autowired
 	private AuthenticationService authService;
 
 	@Autowired
 	private ApplicationUserDetailsService userDetailsService;
 
+	@Autowired
+	private OnMemoryUserContext onMemUserContext;
+
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
-		// TODO Auto-generated method stub
 		String authHeader = request.getHeader("Authorization");
 
 		if (authHeader != null && authHeader.startsWith(ConfigurationContext.getJwtAuthHeaderValue())) {
@@ -63,9 +66,13 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 				}
 
 				if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-					UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+					ApplicationUserDetails userDetails;
 
-					if (authService.validateToken(jwt, userDetails.getUsername())) {
+					if ((userDetails = onMemUserContext.getUser(username)) == null) {
+						userDetails = (ApplicationUserDetails) userDetailsService.loadUserByUsername(username);
+					}
+
+					if (authService.validateToken(jwt, userDetails.getUsername(), userDetails.getVersion())) {
 						UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(userDetails,
 								null, userDetails.getAuthorities());
 
@@ -74,11 +81,20 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 						SecurityContextHolder.getContext().setAuthentication(token);
 					}
 				}
-			} else {
-				if (logger.isTraceEnabled()) {
-					logger.trace("Unable to locate JWT cookie");
-				}
+
+				filterChain.doFilter(request, response);
+				return;
 			}
+
+			if (logger.isTraceEnabled()) {
+				logger.trace("Unable to locate JWT cookie");
+				filterChain.doFilter(request, response);
+				return;
+			}
+		}
+
+		if (logger.isTraceEnabled()) {
+			logger.trace("JWT header not found");
 		}
 
 		filterChain.doFilter(request, response);

@@ -3,13 +3,8 @@
  */
 package adn.test.application;
 
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.hibernate.property.access.spi.GetterFieldImpl;
-
-import adn.model.entities.id.DepartmentChiefId;
 
 /**
  * @author Ngoc Huy
@@ -41,11 +36,6 @@ public class UnitTest {
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
 			IllegalArgumentException, IllegalAccessException {
-		DepartmentChiefId id = new DepartmentChiefId("ngochuy", UUID.randomUUID());
-		GetterFieldImpl getter = new GetterFieldImpl(DepartmentChiefId.class, "departmentId",
-				DepartmentChiefId.class.getDeclaredField("departmentId"));
-
-		System.out.println(getter.get(id));
 	}
 
 	public static void testUnicodePattern() {

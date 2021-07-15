@@ -3,6 +3,8 @@
  */
 package adn.security;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import adn.dao.Repository;
 import adn.model.entities.Account;
+import adn.service.internal.Role;
 
 /**
  * @author Ngoc Huy
@@ -28,17 +31,23 @@ public class ApplicationUserDetailsService implements UserDetailsService {
 	@Autowired
 	private Repository repo;
 
+	private final String[] attributes = new String[] { "id", "password", "role", "updatedDate" };
+	public static final ZoneId ZONE = ZoneId.systemDefault();
+
 	@Transactional(readOnly = true)
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		Account account = repo.findById(username, Account.class);
+		Object[] account = repo.findById(username, Account.class, attributes);
 
 		if (account == null) {
 			throw new UsernameNotFoundException(String.format("%s not found", username));
 		}
 
-		return new ApplicationUserDetails(username, account.getPassword(),
-				Set.of(new SimpleGrantedAuthority("ROLE_" + account.getRole())), account.getRole());
+		Role role = (Role) account[2];
+
+		return new ApplicationUserDetails((String) account[0], (String) account[1],
+				Set.of(new SimpleGrantedAuthority("ROLE_" + role)), role,
+				((LocalDate) account[3]).atStartOfDay(ZONE).toEpochSecond());
 	}
 
 }

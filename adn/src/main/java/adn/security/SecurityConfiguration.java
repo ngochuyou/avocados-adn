@@ -32,6 +32,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import adn.application.Constants;
 import adn.helpers.StringHelper;
+import adn.security.context.OnMemoryUserContext;
 import adn.security.jwt.JwtRequestFilter;
 import adn.security.jwt.JwtUsernamePasswordAuthenticationFilter;
 import adn.service.services.AuthenticationService;
@@ -61,6 +62,9 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
 	@Autowired
 	private SimpleJwtLogoutFilter jwtLogoutFilter;
+
+	@Autowired
+	private OnMemoryUserContext onMemUserContext;
 
 	public static final String TESTUNIT_PREFIX = "/testunit";
 	// @formatter:off
@@ -162,7 +166,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
 	@Bean
 	public AbstractAuthenticationProcessingFilter jwtUsernamePasswordAuthenticationFilter() throws Exception {
-		AbstractAuthenticationProcessingFilter jwtAuthFilter = new JwtUsernamePasswordAuthenticationFilter(authService);
+		AbstractAuthenticationProcessingFilter jwtAuthFilter = new JwtUsernamePasswordAuthenticationFilter(authService,
+				onMemUserContext);
 
 		jwtAuthFilter.setAuthenticationManager(authenticationManager());
 

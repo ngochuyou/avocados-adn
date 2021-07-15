@@ -63,11 +63,11 @@ public class DatabaseInitializer implements ContextBuilder {
 		insertAdmin();
 
 		if (!env.getProperty("spring.profiles.active").equals("PROD")) {
-			sessionFactory.getCurrentSession().setHibernateFlushMode(FlushMode.MANUAL);
+			sessionFactory.getCurrentSession().setHibernateFlushMode(FlushMode.AUTO);
 
-			insertCustomer();
-			insertMockProviders();
 			insertMockDepartment();
+			insertMockProviders();
+			insertCustomer();
 			insertMockPersonnel();
 			insertMockDepartmentChief();
 
@@ -157,6 +157,7 @@ public class DatabaseInitializer implements ContextBuilder {
 			personnel.setPhone("978-224-3032");
 			personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
 			personnel.setRole(Role.PERSONNEL);
+			personnel.setCreatedBy("ngochuy.ou");
 
 			session.save(personnel);
 
@@ -172,6 +173,7 @@ public class DatabaseInitializer implements ContextBuilder {
 			personnel.setPhone("+1 270 419-3852");
 			personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
 			personnel.setRole(Role.PERSONNEL);
+			personnel.setCreatedBy("ngochuy.ou");
 
 			session.save(personnel);
 
@@ -187,6 +189,7 @@ public class DatabaseInitializer implements ContextBuilder {
 			personnel.setPhone("469-467-9379");
 			personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
 			personnel.setRole(Role.PERSONNEL);
+			personnel.setCreatedBy("ngochuy.ou");
 
 			session.save(personnel);
 
@@ -202,6 +205,7 @@ public class DatabaseInitializer implements ContextBuilder {
 			personnel.setPhone("(843)-440-2148");
 			personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
 			personnel.setRole(Role.PERSONNEL);
+			personnel.setCreatedBy("ngochuy.ou");
 
 			session.save(personnel);
 		}

@@ -43,6 +43,7 @@ public class AccountController extends BaseController {
 
 	protected final static String MISSING_ROLE = "USER ROLE IS MISSING";
 	protected final static String NOT_FOUND = "USER NOT FOUND";
+
 	// @formatter:off
 	@Autowired
 	public AccountController(
@@ -213,7 +214,7 @@ public class AccountController extends BaseController {
 		model.setPhoto(localResourceResult.getBody());
 		// changes made within following operations take effect on the persistence
 		// reference
-		DatabaseInteractionResult<? extends Account> updateResult = crudService.update(persistence.getId(),
+		DatabaseInteractionResult<? extends Account> updateResult = accountService.update(persistence.getId(),
 				TypeHelper.unwrap(model), entityClass);
 
 		resourceService.closeSession(isResourceSessionFlushed && updateResult.isOk());

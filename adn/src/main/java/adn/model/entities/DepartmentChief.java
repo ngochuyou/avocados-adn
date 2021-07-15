@@ -36,7 +36,7 @@ public class DepartmentChief extends adn.model.entities.Entity {
 	private Personnel personnel;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "department_id", updatable = false)
+	@JoinColumn(name = "department_id", updatable = false, columnDefinition = "BINARY(16)")
 	@MapsId("departmentId")
 	@JsonIgnore
 	private Department department;
