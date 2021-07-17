@@ -2,11 +2,34 @@ export default class Account {
 	constructor({
 		username = "",
 		password = "",
-		email = ""
-	}) {
+		rePassword = "",
+		email = "",
+		phone = "",
+		firstName = "",
+		lastName = "",
+		photo = "",
+		role = Account.Role.ANONYMOUS,
+		gender = Account.Gender.UNKNOWN,
+		birthDate = null,
+		active = false,
+		deactivatedDate = null,
+		createdDate = null,
+		updatedDate = null
+	} = {}) {
 		this.username = username;
 		this.password = password;
 		this.email = email;
+		this.phone = phone;
+		this.firstName = firstName;
+		this.lastName = lastName;
+		this.photo = photo;
+		this.role = role;
+		this.gender = gender;
+		this.birthDate = birthDate;
+		this.active = active;
+		this.deactivatedDate = deactivatedDate;
+		this.createdDate = createdDate;
+		this.updatedDate = updatedDate;
 	}
 
 	static validator = {
@@ -43,11 +66,28 @@ export default class Account {
 			placeholder: "Email"
 		}
 	}
-
+	
 	static Role = {
 		ADMIN: 'ADMIN',
 		PERSONNEL: 'PERSONNEL',
 		MANAGER: 'MANAGER',
 		EMPLOYEE: 'EMPLOYEE',
+		ANONYMOUS: 'ANONYMOUS'
+	}
+
+	static Gender = {
+		FEMALE: 'FEMALE',
+		MALE: 'MALE',
+		UNKNOWN: 'UNKNOWN'
+	}
+}
+
+export class Personnel extends Account {
+	constructor(props) {
+		super(props);
+
+		const { createdBy = "" } = props;
+
+		this.createdBy = createdBy;
 	}
 }

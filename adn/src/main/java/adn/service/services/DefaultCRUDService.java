@@ -21,7 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import adn.application.context.ContextProvider;
-import adn.dao.Repository;
+import adn.dao.AbstractRepository;
 import adn.model.DatabaseInteractionResult;
 import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
@@ -44,15 +44,16 @@ public class DefaultCRUDService implements CRUDService {
 	private static final Logger logger = LoggerFactory.getLogger(DefaultCRUDService.class);
 
 	protected final ModelContextProvider modelContext;
-	protected final Repository repository;
+	protected final AbstractRepository repository;
 	protected final EntityBuilderProvider entityBuilderProvider;
 
 	protected final AuthenticationBasedModelPropertiesFactory authenticationBasedModelPropertiesFactory;
 	protected final AuthenticationBasedModelFactory authenticationBasedModelFactory;
+
 	// @formatter:off
 	@Autowired
 	public DefaultCRUDService(
-			Repository baseRepository,
+			AbstractRepository baseRepository,
 			EntityBuilderProvider entityBuilderProvider,
 			AuthenticationBasedModelPropertiesFactory authenticationBasedModelPropertiesFactory,
 			AuthenticationBasedModelFactory authenticationBasedModelFactory,
@@ -67,7 +68,7 @@ public class DefaultCRUDService implements CRUDService {
 	public DefaultCRUDService() {
 		ApplicationContext context = ContextProvider.getApplicationContext();
 		
-		this.repository = context.getBean(Repository.class);
+		this.repository = context.getBean(AbstractRepository.class);
 		this.entityBuilderProvider = context.getBean(EntityBuilderProvider.class);
 		this.authenticationBasedModelPropertiesFactory = context.getBean(AuthenticationBasedModelPropertiesFactory.class);
 		this.authenticationBasedModelFactory = context.getBean(AuthenticationBasedModelFactory.class);
@@ -103,7 +104,12 @@ public class DefaultCRUDService implements CRUDService {
 		return authenticationBasedModelPropertiesFactory.produce(type, rows, validatedColumns, role);
 	}
 
-	protected <T extends Entity, E extends T> String[] getDefaultColumnsOrTranslate(Class<E> type, Role role,
+	public <T extends Entity, E extends T> String[] validateAndTranslateColumnNames(Class<E> type, Role role,
+			String[] columns) throws SQLSyntaxErrorException {
+		return authenticationBasedModelPropertiesFactory.validateAndTranslateColumnNames(type, role, columns);
+	}
+
+	public <T extends Entity, E extends T> String[] getDefaultColumnsOrTranslate(Class<E> type, Role role,
 			String[] columns) throws SQLSyntaxErrorException {
 		if (columns.length == 0) {
 			EntityMetadata metadata = modelContext.getMetadata(type);
@@ -168,8 +174,8 @@ public class DefaultCRUDService implements CRUDService {
 	}
 
 	@Override
-	public <T extends Entity, E extends T> DatabaseInteractionResult<E> remove(E entity, Class<E> type) {
-		return remove(getIdentifier(entity), entity, type);
+	public <T extends Entity, E extends T> DatabaseInteractionResult<E> deactivate(E entity, Class<E> type) {
+		return deactivate(getIdentifier(entity), entity, type);
 	}
 
 	@Override
@@ -201,7 +207,7 @@ public class DefaultCRUDService implements CRUDService {
 	}
 
 	@Override
-	public <T extends Entity, E extends T> DatabaseInteractionResult<E> remove(Serializable id, E entity,
+	public <T extends Entity, E extends T> DatabaseInteractionResult<E> deactivate(Serializable id, E entity,
 			Class<E> type) {
 		EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
 
@@ -211,7 +217,18 @@ public class DefaultCRUDService implements CRUDService {
 
 		entityBuilder.deactivationBuild(id, entity);
 
-		return repository.update(id, getCurrentSession().load(type, id), type);
+		return DatabaseInteractionResult.success(entity);
+	}
+
+	public <T extends Entity, E extends T> String resolveGroupByClause(Class<E> type, Role role, String query,
+			String[] groupByColumns) throws SQLSyntaxErrorException {
+		if (groupByColumns.length == 0) {
+			return query;
+		}
+
+		String[] validatedGroupByColumns = validateAndTranslateColumnNames(type, role, groupByColumns);
+
+		return repository.appendGroupBy(query, validatedGroupByColumns);
 	}
 
 }

@@ -19,7 +19,7 @@ import adn.model.entities.Entity;
  */
 @Component
 @Generic(entityGene = Entity.class)
-public class AbstractEntityBuilder<T extends Entity> implements EntityBuilder<T> {
+public abstract class AbstractEntityBuilder<T extends Entity> implements EntityBuilder<T> {
 
 	@Autowired
 	protected SessionFactory sessionFactory;
@@ -38,19 +38,19 @@ public class AbstractEntityBuilder<T extends Entity> implements EntityBuilder<T>
 		return deactivationBuild(EntityUtils.getIdentifier(entity), entity);
 	}
 
-	@Override
-	public T insertionBuild(Serializable id, T entity) {
-		return insertionBuild(entity);
-	}
-
-	@Override
-	public T updateBuild(Serializable id, T entity) {
-		return updateBuild(entity);
-	}
-
-	@Override
-	public T deactivationBuild(Serializable id, T entity) {
-		return updateBuild(entity);
-	}
+//	@Override
+//	public T insertionBuild(Serializable id, T entity) {
+//		return insertionBuild(entity);
+//	}
+//
+//	@Override
+//	public T updateBuild(Serializable id, T entity) {
+//		return updateBuild(entity);
+//	}
+//
+//	@Override
+//	public T deactivationBuild(Serializable id, T entity) {
+//		return deactivationBuild(entity);
+//	}
 
 }

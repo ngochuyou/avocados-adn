@@ -1,3 +1,4 @@
+import { useReducer } from 'react';
 import { Link, Route } from 'react-router-dom';
 
 import { useAuth } from '../hooks/authentication-hooks';
@@ -7,8 +8,57 @@ import AccessDenied from './AccessDenied.jsx';
 
 import DepartmentBoard from '../components/dashboard/DepartmentBoard.jsx';
 
+const TOGGLE_BACK_BUTTON = "TOGGLE_BACK_BUTTON";
+const SET_BACK_BUTTON_CALLBACK = "SET_BACK_BUTTON_CALLBACK";
+const SET_STATE_AND_TOGGLE = "SET_STATE_AND_TOGGLE";
+
+const BACK_BUTTON_INIT_STATE = {
+	visible: false,
+	callback: () => null
+}
+
 export default function Dashboard() {
 	const { principal } = useAuth();
+	const [ backButton, dispatchBackButton ] = useReducer(
+		(oldState, { type = null, payload = null} = {}) => {
+			switch (type) {
+				case TOGGLE_BACK_BUTTON: {
+					return {
+						...oldState,
+						visible: !oldState.visible
+					}
+				}
+				case SET_BACK_BUTTON_CALLBACK: {
+					if (typeof payload === 'function') {
+						return {
+							...oldState,
+							callback: payload
+						}
+					}
+
+					return oldState;
+				}
+				case SET_STATE_AND_TOGGLE: {
+					const { callback } = payload;
+
+					return {
+						...oldState,
+						visible: !oldState.visible,
+						callback
+					}
+				}
+				default: {
+					return oldState;
+				}
+			}
+		}, BACK_BUTTON_INIT_STATE);
+	const backButtonClick = () => {
+		let result = backButton.callback();
+
+		while (typeof result === 'function') {
+			result = result();
+		}
+	}
 
 	if (principal && principal.role === Account.Role.ADMIN) {
 		return (
@@ -32,7 +82,20 @@ export default function Dashboard() {
 					<div>
 						<nav className="uk-navbar-container" uk-nav="">
 							<div className="uk-grid-collapse" uk-grid="">
-								<div className="uk-width-1-2">
+								<div className="uk-width-auto">
+									<div
+										style={{
+											maxWidth: backButton.visible ? "80px" : "0px",
+											width: "80px"
+										}}
+										onClick={backButtonClick}
+										className="uk-height-1-1 uk-position-relative transition-maxwidth-fast">
+										<span
+											className="uk-position-center uk-icon-button icon-size-small iconf"
+											uk-icon="icon: arrow-left; ratio: 1.5"></span>
+									</div>
+								</div>
+								<div className="uk-width-xlarge">
 									<div className="uk-navbar-item">
 										<form className="uk-width-1-1">
 											<input
@@ -45,13 +108,19 @@ export default function Dashboard() {
 										</form>
 									</div>
 								</div>
-								<div className="uk-width-1-2">
-									
-								</div>
 							</div>
 						</nav>
 						<div className="uk-padding-small">
-							<Route path="/dashboard/department" render={props => <DepartmentBoard { ...props } />} />
+							<Route
+								path="/dashboard/department"
+								render={props => (
+									<DepartmentBoard
+										dispatchBackButton={dispatchBackButton}
+										actions={{ SET_STATE_AND_TOGGLE }}
+										{ ...props }
+									/>
+								)}
+							/>
 						</div>
 					</div>
 				</div>

@@ -28,7 +28,8 @@ public class BaseRepository extends AbstractRepository implements Repository {
 	}
 
 	@Override
-	public <T extends Entity, E extends T> DatabaseInteractionResult<E> insert(Serializable id, E persistence, Class<E> type) {
+	public <T extends Entity, E extends T> DatabaseInteractionResult<E> insert(Serializable id, E persistence,
+			Class<E> type) {
 		Session session = sessionFactory.getCurrentSession();
 		// validate the persisted entity
 		DatabaseInteractionResult<E> result = validate(id, persistence, type);
@@ -45,7 +46,8 @@ public class BaseRepository extends AbstractRepository implements Repository {
 	}
 
 	@Override
-	public <T extends Entity, E extends T> DatabaseInteractionResult<E> update(Serializable id, E persistence, Class<E> type) {
+	public <T extends Entity, E extends T> DatabaseInteractionResult<E> update(Serializable id, E persistence,
+			Class<E> type) {
 		Session session = sessionFactory.getCurrentSession();
 		DatabaseInteractionResult<E> result = validate(id, persistence, type);
 

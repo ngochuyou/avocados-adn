@@ -45,6 +45,8 @@ public interface Repository {
 
 	List<Object[]> find(String query, Map<String, Object> parameters);
 
+	List<Object[]> find(String query, Pageable paging, Map<String, Object> parameters);
+	
 	List<Object[]> findWithContext(String query, Map<String, ParamContext> parameters);
 	
 	List<Long> count(String hql, Map<String, Object> params);

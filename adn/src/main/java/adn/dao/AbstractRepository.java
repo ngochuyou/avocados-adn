@@ -152,6 +152,11 @@ public abstract class AbstractRepository implements Repository {
 	}
 
 	@Override
+	public List<Object[]> find(String query, Pageable paging, Map<String, Object> parameters) {
+		return resolveLimit(resolveHQLParams(query, Object[].class, parameters), paging).getResultList();
+	}
+
+	@Override
 	public List<Object[]> findWithContext(String query, Map<String, ParamContext> parameters) {
 		Query<Object[]> hql = resolveHQLParamContexts(query, Object[].class, parameters);
 
@@ -207,7 +212,7 @@ public abstract class AbstractRepository implements Repository {
 		// @formatter:on
 	}
 
-	private <T> String appendGroupBy(String queryString, String[] groupByColumns) {
+	public <T> String appendGroupBy(String queryString, String[] groupByColumns) {
 		if (groupByColumns.length == 0) {
 			return queryString;
 		}
@@ -228,7 +233,7 @@ public abstract class AbstractRepository implements Repository {
 		// @formatter:on
 	}
 
-	private String appendOrderBy(String queryString, Sort sort) {
+	public String appendOrderBy(String queryString, Sort sort) {
 		// @formatter:off
 		return sort.equals(Sort.unsorted()) ? queryString
 				: queryString + " ORDER BY " +

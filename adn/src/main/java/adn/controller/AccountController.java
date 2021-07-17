@@ -2,7 +2,10 @@ package adn.controller;
 
 import static adn.service.services.AccountService.DEFAULT_ACCOUNT_PHOTO_NAME;
 
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -43,7 +46,7 @@ public class AccountController extends BaseController {
 
 	protected final static String MISSING_ROLE = "USER ROLE IS MISSING";
 	protected final static String NOT_FOUND = "USER NOT FOUND";
-
+	protected final static int PHOTO_CACHE_CONTROL_MAX_AGE = 7; // days
 	// @formatter:off
 	@Autowired
 	public AccountController(
@@ -126,12 +129,12 @@ public class AccountController extends BaseController {
 			@RequestParam(name = "filename", required = false) final String filename, Authentication authentication)
 			throws Exception {
 		if (filename != null) {
-			return resourceService.getImageBytes(filename);
+			return cacheAccountPhoto(resourceService.directlyGetImageBytes(filename));
 		}
 
 		if (!StringHelper.hasLength(username)) {
 			if (authentication == null) {
-				return resourceService.directlyGetImageBytes(DEFAULT_ACCOUNT_PHOTO_NAME);
+				return sendNotFound(NOT_FOUND);
 			}
 
 			username = authentication.getName();
@@ -140,10 +143,18 @@ public class AccountController extends BaseController {
 		Account account = baseRepository.findById(username, Account.class);
 
 		if (account == null) {
-			return resourceService.directlyGetImageBytes(DEFAULT_ACCOUNT_PHOTO_NAME);
+			return sendNotFound(NOT_FOUND);
 		}
 
-		return resourceService.getImageBytes(account.getPhoto());
+		return cacheAccountPhoto(resourceService.directlyGetImageBytes(account.getPhoto()));
+	}
+	
+	private ResponseEntity<?> cacheAccountPhoto(byte[] photoBytes) {
+		// @formatter:off
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.maxAge(PHOTO_CACHE_CONTROL_MAX_AGE, TimeUnit.DAYS))
+				.body(photoBytes);
+		// @formatter:on
 	}
 
 	@Transactional
@@ -167,7 +178,6 @@ public class AccountController extends BaseController {
 			return ResponseEntity.badRequest().body(INVALID_MODEL);
 		}
 
-		String principalName = ContextProvider.getPrincipalName();
 		Role principalRole = ContextProvider.getPrincipalRole();
 
 		if (!principalRole.canModify(modelRole)) {
@@ -184,7 +194,8 @@ public class AccountController extends BaseController {
 		}
 
 		if (!persistence.getRole().equals(model.getRole())) {
-			// determine role update, current only administrators could update an account's
+			// determine role update, currently only administrators could update an
+			// account's
 			// role
 			if (!principalRole.equals(Role.ADMIN)) {
 				return unauthorize(ACCESS_DENIED);
@@ -195,10 +206,8 @@ public class AccountController extends BaseController {
 						String.format("Unable to update role from %s to %s", persistence.getRole(), model.getRole()));
 			}
 		}
-		// only account's owner can update password
-		if (!persistence.getId().equals(principalName)) {
-			model.setPassword(null);
-		}
+		// don't allow password update here
+		model.setPassword(null);
 
 		ServiceResult<String> localResourceResult = updateOrUploadPhoto(persistence, multipartPhoto);
 

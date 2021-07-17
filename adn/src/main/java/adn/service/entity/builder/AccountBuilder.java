@@ -6,6 +6,7 @@ package adn.service.entity.builder;
 import static adn.helpers.StringHelper.get;
 import static adn.helpers.StringHelper.normalizeString;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -76,10 +77,26 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 	}
 
 	@Override
+	public T updateBuild(Serializable id, T entity) {
+		return updateBuild(entity);
+	}
+
+	@Override
+	public T insertionBuild(Serializable id, T entity) {
+		return insertionBuild(entity);
+	}
+
+	@Override
 	public T deactivationBuild(T entity) {
+		entity.setActive(Boolean.FALSE);
 		entity.setDeactivatedDate(LocalDate.now());
 
 		return entity;
+	}
+
+	@Override
+	public T deactivationBuild(Serializable id, T entity) {
+		return deactivationBuild(entity);
 	}
 
 }

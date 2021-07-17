@@ -9,8 +9,12 @@ import java.sql.SQLSyntaxErrorException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,7 +82,6 @@ public class DepartmentController extends BaseController {
 		} catch (SQLSyntaxErrorException ssee) {
 			return sendBadRequest(ssee.getMessage());
 		}
-
 	}
 
 	@Transactional(readOnly = true)
@@ -86,7 +89,29 @@ public class DepartmentController extends BaseController {
 	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
 	public @ResponseBody ResponseEntity<?> getPersonnelCounts(
 			@RequestParam(name = "ids", required = true) List<UUID> ids) {
-		return ResponseEntity.ok(departmentService.countPersonnel(ids.toArray(new UUID[ids.size()])));
+		// @formatter:off
+		return ResponseEntity.ok()
+				.cacheControl(CacheControl.maxAge(7, TimeUnit.DAYS))
+				.body(departmentService.countPersonnel(ids.toArray(new UUID[ids.size()])));
+		// @formatter:on
+	}
+
+	@Transactional(readOnly = true)
+	@GetMapping("/personnel-list/{departmentId}")
+	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
+	public @ResponseBody ResponseEntity<?> getPersonnelList(
+			@PathVariable(name = "departmentId", required = true) UUID departmentId,
+			@PageableDefault(size = 5) Pageable paging,
+			@RequestParam(name = "columns", defaultValue = "") List<String> columns,
+			@RequestParam(name = "groupby", defaultValue = "") List<String> groupByColumns) {
+		try {
+			List<Map<String, Object>> list = departmentService.getPersonnelListByDepartmentId(departmentId,
+					from(columns), paging, from(groupByColumns), ContextProvider.getPrincipalRole());
+
+			return ResponseEntity.ok(list);
+		} catch (SQLSyntaxErrorException ssee) {
+			return sendBadRequest(ssee.getMessage());
+		}
 	}
 
 }

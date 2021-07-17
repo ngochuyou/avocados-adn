@@ -230,7 +230,7 @@ public class LocalStorage implements Storage {
 	private void validateAndPutTemplate(ResourceTemplate template) {
 		templateValidator.validate(template, null);
 		templates.put(template.getTemplateName(), template);
-		logger.info(String.format("Registered new resource template: [\n%s\n]", template.toString()));
+		logger.trace(String.format("Registered new resource template: [\n%s\n]", template.toString()));
 	}
 
 	@Override

@@ -37,7 +37,7 @@ public class AccountModelProducer<T extends Account>
 		model = produceForAnonymous(account, model);
 
 		model.put("createdDate", Utils.localDateToDate(account.getCreatedDate()));
-		model.put("updatedDate", Utils.localDateToDate(account.getUpdatedDate()));
+		model.put("updatedDate", Utils.localDateTimeToDate(account.getUpdatedDate()));
 
 		return model;
 	}

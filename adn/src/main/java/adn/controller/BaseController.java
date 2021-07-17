@@ -84,12 +84,9 @@ public class BaseController {
 		sessionFactory.getCurrentSession().setHibernateFlushMode(Optional.ofNullable(mode).orElse(FlushMode.MANUAL));
 	}
 
-	@SuppressWarnings("unchecked")
-	protected void currentSession(HandledConsumer<Session, Exception>... fncs) {
+	protected void currentSession(HandledConsumer<Session, Exception> fnc) {
 		try {
-			for (HandledConsumer<Session, Exception> fnc : fncs) {
-				fnc.accept(sessionFactory.getCurrentSession());
-			}
+			fnc.accept(sessionFactory.getCurrentSession());
 		} catch (Exception any) {
 			any.printStackTrace();
 		}
@@ -140,8 +137,11 @@ public class BaseController {
 	protected <T extends AbstractModel, E extends T> ResponseEntity<?> send(E instance, Class<E> type, String messageIfNull) {
 		return instance == null ? sendNotFound(messageIfNull) : ResponseEntity.ok(produce(instance, type));
 	}
+	
+	protected <T> ResponseEntity<?> fails(T instance) {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(instance);
+	}
 
-	@SuppressWarnings("unchecked")
 	protected <T extends Entity> ResponseEntity<?> send(DatabaseInteractionResult<T> result) {
 		currentSession(ss -> {
 			if (result.isOk()) {

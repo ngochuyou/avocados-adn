@@ -123,7 +123,6 @@ public class EntityMetadataImpl implements EntityMetadata {
 
 				if (discriminatorColumnName != null) {
 					properties.add(discriminatorColumnName);
-					nonLazyProperties.add(discriminatorColumnName);
 				}
 			}
 		} catch (MappingException me) {

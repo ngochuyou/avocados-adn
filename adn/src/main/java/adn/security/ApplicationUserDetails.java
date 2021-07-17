@@ -26,9 +26,9 @@ public class ApplicationUserDetails extends User {
 		this.version = version;
 	}
 
-	public ApplicationUserDetails(String username, String password, Collection<? extends GrantedAuthority> authorities,
+	public ApplicationUserDetails(String username, String password, boolean isLocked, Collection<? extends GrantedAuthority> authorities,
 			Role role, long version) {
-		super(username, password, true, true, true, true, authorities);
+		super(username, password, true, true, true, isLocked, authorities);
 		this.role = role;
 		this.version = version;
 	}

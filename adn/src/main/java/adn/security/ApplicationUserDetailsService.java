@@ -3,7 +3,7 @@
  */
 package adn.security;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Set;
 
@@ -32,7 +32,7 @@ public class ApplicationUserDetailsService implements UserDetailsService {
 	private Repository repo;
 
 	private final String[] attributes = new String[] { Account.ID_FIELD_NAME, "password", Account.ROLE_FIELD_NAME,
-			Account.VERSION_FIELD_NAME };
+			Account.VERSION_FIELD_NAME, Account.ACTIVE_FIELD_NAME };
 	public static final ZoneId ZONE = ZoneId.systemDefault();
 
 	@Transactional(readOnly = true)
@@ -46,9 +46,9 @@ public class ApplicationUserDetailsService implements UserDetailsService {
 
 		Role role = (Role) account[2];
 
-		return new ApplicationUserDetails((String) account[0], (String) account[1],
+		return new ApplicationUserDetails((String) account[0], (String) account[1], (boolean) account[4],
 				Set.of(new SimpleGrantedAuthority("ROLE_" + role)), role,
-				((LocalDate) account[3]).atStartOfDay(ZONE).toEpochSecond());
+				((LocalDateTime) account[3]).atZone(ZONE).toEpochSecond());
 	}
 
 }

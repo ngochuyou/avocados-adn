@@ -31,11 +31,11 @@ public class ConfigurationContext implements ContextBuilder {
 	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
 		logger.info(getLoggingPrefix(this) + "Building " + this.getClass().getName());
-		this.readSecurityProperties();
+		this.____();
 		logger.info(getLoggingPrefix(this) + "Finished building " + this.getClass().getName());
 	}
 
-	private void readSecurityProperties() {
+	private void ____() {
 		$$$ = new $$$$$$$$$$$$$$$$$$$$$$$$$$$$();
 
 		try {

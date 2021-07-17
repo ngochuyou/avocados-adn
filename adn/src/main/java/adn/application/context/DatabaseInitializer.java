@@ -64,7 +64,7 @@ public class DatabaseInitializer implements ContextBuilder {
 		insertAdmin();
 
 		if (!env.getProperty("spring.profiles.active").equals("PROD")) {
-			sessionFactory.getCurrentSession().setHibernateFlushMode(FlushMode.AUTO);
+			sessionFactory.getCurrentSession().setHibernateFlushMode(FlushMode.MANUAL);
 
 			insertMockDepartment();
 			insertMockProviders();
@@ -74,7 +74,26 @@ public class DatabaseInitializer implements ContextBuilder {
 
 			sessionFactory.getCurrentSession().flush();
 		}
+
 		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
+	}
+
+	@SuppressWarnings("unused")
+	private void assignDepartment() {
+		Session ss = sessionFactory.getCurrentSession();
+
+		List<Department> departments = repo.fetch(Department.class);
+		int max = departments.size() - 1;
+
+		List<Personnel> personnels = repo.fetch(Personnel.class, PageRequest.of(0, 1000));
+
+		for (Personnel p : personnels) {
+			if (p.getDepartment() == null) {
+				p.setDepartment(departments.get(rand(max, 0)));
+			}
+
+			ss.save(p);
+		}
 	}
 
 	private void insertMockDepartmentChief() {
@@ -155,7 +174,6 @@ public class DatabaseInitializer implements ContextBuilder {
 		}
 
 		int max = departments.size() - 1;
-		Random rand = new Random();
 
 		Session session = sessionFactory.getCurrentSession();
 		Personnel personnel = new Personnel();
@@ -171,7 +189,7 @@ public class DatabaseInitializer implements ContextBuilder {
 		personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
 		personnel.setRole(Role.PERSONNEL);
 		personnel.setCreatedBy("ngochuy.ou");
-		personnel.setDepartment(departments.get(rand.nextInt() + (max + 1 - 0) + 0));
+		personnel.setDepartment(departments.get(rand(max, 0)));
 
 		session.save(personnel);
 
@@ -188,7 +206,7 @@ public class DatabaseInitializer implements ContextBuilder {
 		personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
 		personnel.setRole(Role.PERSONNEL);
 		personnel.setCreatedBy("ngochuy.ou");
-		personnel.setDepartment(departments.get(rand.nextInt() + (max + 1 - 0) + 0));
+		personnel.setDepartment(departments.get(rand(max, 0)));
 
 		session.save(personnel);
 
@@ -205,7 +223,7 @@ public class DatabaseInitializer implements ContextBuilder {
 		personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
 		personnel.setRole(Role.PERSONNEL);
 		personnel.setCreatedBy("ngochuy.ou");
-		personnel.setDepartment(departments.get(rand.nextInt() + (max + 1 - 0) + 0));
+		personnel.setDepartment(departments.get(rand(max, 0)));
 
 		session.save(personnel);
 
@@ -222,7 +240,7 @@ public class DatabaseInitializer implements ContextBuilder {
 		personnel.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
 		personnel.setRole(Role.PERSONNEL);
 		personnel.setCreatedBy("ngochuy.ou");
-		personnel.setDepartment(departments.get(rand.nextInt() + (max + 1 - 0) + 0));
+		personnel.setDepartment(departments.get(rand(max, 0)));
 
 		session.save(personnel);
 	}
@@ -325,6 +343,12 @@ public class DatabaseInitializer implements ContextBuilder {
 
 			logger.info("Inserting CUSTOMER: " + customer.getId());
 		}
+	}
+
+	private final Random random = new Random();
+
+	private int rand(int max, int min) {
+		return random.nextInt(max - min + 1) + min;
 	}
 
 }

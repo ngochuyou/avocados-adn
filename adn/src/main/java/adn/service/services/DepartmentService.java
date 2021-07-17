@@ -18,11 +18,15 @@ import javax.persistence.criteria.Root;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import adn.dao.AbstractRepository;
 import adn.dao.parameter.ParamContext;
 import adn.model.entities.DepartmentChief;
 import adn.model.entities.Personnel;
+import adn.model.factory.AuthenticationBasedModelFactory;
+import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
 import adn.service.internal.Role;
 
 /**
@@ -30,15 +34,31 @@ import adn.service.internal.Role;
  *
  */
 @Service
-public class DepartmentService extends DefaultCRUDService {
+public class DepartmentService implements adn.service.internal.Service {
 
 //	private static final Logger logger = LoggerFactory.getLogger(DepartmentService.class);
 
 	private final SessionFactory sessionFactory;
+	private final DefaultCRUDService crudService;
+	private final AbstractRepository repository;
+
+	private final AuthenticationBasedModelFactory modelFactory;
+	private final AuthenticationBasedModelPropertiesFactory modelPropertiesFactory;
 
 	@Autowired
-	public DepartmentService(SessionFactory sessionFactory) {
+	public DepartmentService(
+	// @formatter:off
+			SessionFactory sessionFactory,
+			DefaultCRUDService crudService,
+			AbstractRepository repository,
+			AuthenticationBasedModelFactory modelFactory,
+			AuthenticationBasedModelPropertiesFactory modelPropertiesFactory) {
+		// @formatter:on
 		this.sessionFactory = sessionFactory;
+		this.crudService = crudService;
+		this.repository = repository;
+		this.modelFactory = modelFactory;
+		this.modelPropertiesFactory = modelPropertiesFactory;
 	}
 
 	public Personnel getDepartmentChief(UUID departmentId) {
@@ -70,12 +90,12 @@ public class DepartmentService extends DefaultCRUDService {
 			return null;
 		}
 
-		return authenticationBasedModelFactory.produce(Personnel.class, getDepartmentChief(departmentId), role);
+		return modelFactory.produce(Personnel.class, getDepartmentChief(departmentId), role);
 	}
 
 	public Map<String, Object> getDepartmentChief(UUID departmentId, String[] columns, Role role)
 			throws SQLSyntaxErrorException {
-		String[] validatedColumns = getDefaultColumnsOrTranslate(Personnel.class, role, columns);
+		String[] validatedColumns = crudService.getDefaultColumnsOrTranslate(Personnel.class, role, columns);
 		// @formatter:off
 		String query = String.format("""
 				SELECT %s
@@ -93,12 +113,12 @@ public class DepartmentService extends DefaultCRUDService {
 			return null;
 		}
 
-		return authenticationBasedModelPropertiesFactory.produce(Personnel.class, row, validatedColumns, role);
+		return modelPropertiesFactory.produce(Personnel.class, row, validatedColumns, role);
 	}
 
 	public List<Map<String, Object>> getDepartmentChiefs(UUID[] departmentIds, String[] columns, Role role)
 			throws SQLSyntaxErrorException {
-		String[] validatedColumns = getDefaultColumnsOrTranslate(Personnel.class, role, columns);
+		String[] validatedColumns = crudService.getDefaultColumnsOrTranslate(Personnel.class, role, columns);
 		// @formatter:off
 		String query = String.format("""
 				SELECT %s
@@ -116,7 +136,7 @@ public class DepartmentService extends DefaultCRUDService {
 			return new ArrayList<>();
 		}
 
-		return authenticationBasedModelPropertiesFactory.produce(Personnel.class, rows, validatedColumns, role);
+		return modelPropertiesFactory.produce(Personnel.class, rows, validatedColumns, role);
 	}
 
 	public Long[] countPersonnel(UUID[] departmentIds) {
@@ -134,6 +154,30 @@ public class DepartmentService extends DefaultCRUDService {
 		}
 
 		return countResults.toArray(new Long[size]);
+	}
+
+	public List<Map<String, Object>> getPersonnelListByDepartmentId(UUID departmentId, String[] requestedColumns,
+			Pageable paging, String[] groupByColumns, Role role) throws SQLSyntaxErrorException {
+		String[] validateSelectColumns = crudService.getDefaultColumnsOrTranslate(Personnel.class, role,
+				requestedColumns);
+		// @formatter:off
+		String query = String.format("""
+				SELECT %s FROM Personnel p
+				WHERE p.department.id=:id
+					""", Stream.of(validateSelectColumns)
+					.map(col -> "p.".concat(col))
+					.collect(Collectors.joining(",")));
+		// @formatter:on
+		query = crudService.resolveGroupByClause(Personnel.class, role, query, groupByColumns);
+		query = repository.appendOrderBy(query, paging.getSort());
+
+		List<Object[]> rows = repository.find(query, paging, Map.of("id", departmentId));
+
+		if (rows.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		return modelPropertiesFactory.produce(Personnel.class, rows, validateSelectColumns, role);
 	}
 
 }

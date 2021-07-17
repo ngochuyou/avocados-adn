@@ -3,6 +3,7 @@
  */
 package adn.service.entity.builder;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -57,6 +58,21 @@ public class FactorBuilder<T extends Factor> extends AbstractEntityBuilder<T> {
 		entity.setDeactivatedDate(LocalDateTime.now());
 
 		return entity;
+	}
+
+	@Override
+	public T insertionBuild(Serializable id, T entity) {
+		return insertionBuild(entity);
+	}
+
+	@Override
+	public T updateBuild(Serializable id, T entity) {
+		return updateBuild(entity);
+	}
+
+	@Override
+	public T deactivationBuild(Serializable id, T entity) {
+		return deactivationBuild(entity);
 	}
 
 }

@@ -58,3 +58,26 @@ export const fetchPersonnelCounts = async (departmentIds = []) => {
 
 	return null;
 }
+
+export const fetchPersonnelListByDepartment = async (departmentId = null, columns = [], page = 0, size = 5) => {
+	if (departmentId == null) {
+		return [null, "Department id was null"];
+	}
+
+	const [res, err] = await $fetch(`/rest/department/personnel-list/${departmentId}?columns=${columns.join(',')}&page=${page}&size=${size}`, {
+		method: 'GET',
+		headers: {
+			'Accept': 'application/json'
+		}
+	});
+
+	if (err) {
+		return [null, err];
+	}
+
+	if (res.ok) {
+		return [await res.json(), null];
+	}
+
+	return [null, await res.text()];
+}

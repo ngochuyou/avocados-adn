@@ -22,11 +22,13 @@ public class LocalResourceService implements ResourceService {
 	@Autowired
 	private ResourceManager session;
 
-	private static final URI imageURI;
+	private static final URI IMAGE_URI;
+	private static final String IMAGE_PATH;
 	private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
 	static {
-		imageURI = new File(LocalStorage.DIRECTORY + ImageByBytes.DIRECTORY).toURI();
+		IMAGE_URI = new File(LocalStorage.DIRECTORY + ImageByBytes.DIRECTORY).toURI();
+		IMAGE_PATH = IMAGE_URI.getPath();
 	}
 
 	@Override
@@ -87,7 +89,7 @@ public class LocalResourceService implements ResourceService {
 
 	@Override
 	public byte[] directlyGetImageBytes(String filename) throws IOException {
-		File file = new File(imageURI.getRawPath() + filename);
+		File file = new File(IMAGE_PATH + filename);
 
 		if (!file.exists() || !file.isFile()) {
 			return EMPTY_BYTE_ARRAY;

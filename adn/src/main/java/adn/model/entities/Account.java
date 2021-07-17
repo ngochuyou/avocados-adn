@@ -4,6 +4,7 @@
 package adn.model.entities;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -87,7 +88,7 @@ public class Account extends adn.model.entities.Entity {
 
 	@UpdateTimestamp
 	@Column(name = "updated_date", nullable = false)
-	protected LocalDate updatedDate;
+	protected LocalDateTime updatedDate;
 
 	public String getId() {
 		return id;
@@ -172,11 +173,11 @@ public class Account extends adn.model.entities.Entity {
 	}
 
 	@JsonIgnore
-	public LocalDate getUpdatedDate() {
+	public LocalDateTime getUpdatedDate() {
 		return updatedDate;
 	}
 
-	public void setUpdatedDate(LocalDate updatedDate) {
+	public void setUpdatedDate(LocalDateTime updatedDate) {
 		this.updatedDate = updatedDate;
 	}
 

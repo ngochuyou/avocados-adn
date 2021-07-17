@@ -65,9 +65,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 				}
 
 				if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-					ApplicationUserDetails userDetails;
+					ApplicationUserDetails userDetails = onMemUserContext.getUser(username);
+					boolean isOnMemory = true;
 
-					if ((userDetails = onMemUserContext.getUser(username)) == null) {
+					if (userDetails == null) {
+						isOnMemory = false;
 						userDetails = (ApplicationUserDetails) userDetailsService.loadUserByUsername(username);
 					}
 
@@ -78,6 +80,10 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 						token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
 						SecurityContextHolder.getContext().setAuthentication(token);
+
+						if (!isOnMemory) {
+							onMemUserContext.put(userDetails);
+						}
 					}
 				}
 

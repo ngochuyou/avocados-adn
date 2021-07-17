@@ -6,6 +6,8 @@ package adn.test.application;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
 /**
  * @author Ngoc Huy
  *
@@ -36,6 +38,9 @@ public class UnitTest {
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
 			IllegalArgumentException, IllegalAccessException {
+		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+		
+		System.out.println(encoder.encode("password"));
 	}
 
 	public static void testUnicodePattern() {

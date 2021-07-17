@@ -66,7 +66,7 @@ public class GeneralController extends BaseController {
 	public @ResponseBody ResponseEntity<?> obtainFactor(
 	// @formatter:off
 			@PathVariable(name = "entityname") String entityName,
-			@PageableDefault(size = 20) Pageable paging,
+			@PageableDefault(size = 10) Pageable paging,
 			@RequestParam(name = "columns", defaultValue = "") List<String> columns,
 			@RequestParam(name = "groupby", defaultValue = "") List<String> groupByColumns) {
 	// @formatter:on
