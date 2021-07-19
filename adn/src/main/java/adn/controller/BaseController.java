@@ -71,10 +71,9 @@ public class BaseController {
 
 	protected static final String HAS_ROLE_ADMIN = "hasRole('ADMIN')";
 
-	protected static final String NOT_FOUND = "NOT FOUND";
 	protected static final String LOCKED = "RESOURCE WAS DEACTIVATED";
 	protected static final String INVALID_MODEL = "INVALID MODEL";
-	public static final String ACCESS_DENIED = "ACCESS DENIDED";
+	protected static final String ACCESS_DENIED = "ACCESS DENIDED";
 	protected static final String EXISTED = "RESOURCE IS ALREADY EXSITED";
 
 	protected void setSessionMode() {

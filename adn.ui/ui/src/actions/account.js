@@ -28,7 +28,7 @@ export async function lockAccount(username = "") {
 		return [null, "Username was null"];
 	}
 
-	const [res, err] = await $fetch(`/rest/account/deact/${username}`, {
+	const [res, err] = await $fetch(`/rest/account/deactivate/${username}`, {
 		method: 'PATCH',
 		headers: {
 			'Accept': 'text/plain'

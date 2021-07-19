@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
 import adn.helpers.Utils;
+import adn.model.DatabaseInteractionResult;
 import adn.model.entities.Account;
 import adn.service.internal.AccountRoleExtractor;
 import adn.service.internal.ResourceService;
@@ -77,25 +78,21 @@ public class RestAccountController extends AccountController {
 		}
 	}
 
-	@PatchMapping("/deact/{username}")
+	@PatchMapping("/deactivate/{username}")
 	@Secured("ROLE_ADMIN")
 	@Transactional
 	public ResponseEntity<?> deactivateAccount(@PathVariable(name = "username", required = true) String username) {
-		Account account = baseRepository.findById(username, Account.class);
-
-		if (account == null) {
+		if (baseRepository.countById(username, Account.class) == 0) {
 			return sendNotFound(NOT_FOUND);
 		}
 
-//		DatabaseInteractionResult<Account> result = crudService.deactivate(username, account, Account.class);
+		DatabaseInteractionResult<Account> result = accountService.deactivateAccount(username, true);
 
-//		if (result.isOk()) {
-//			currentSession(ss -> ss.flush());
-//			return ResponseEntity.ok(String.format("Deactivated %s", username));
-//		}
-//
-//		return fails(result.getMessages());
-		return null;
+		if (result.isOk()) {
+			return send(String.format("Deactivated %s", username), null);
+		}
+
+		return ResponseEntity.status(HttpStatus.valueOf(result.getStatus())).body(result.getMessages());
 	}
 
 	protected ResponseEntity<?> obtainPrincipal(String[] requestedColumns) throws SQLSyntaxErrorException {

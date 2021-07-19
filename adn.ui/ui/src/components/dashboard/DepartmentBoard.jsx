@@ -11,8 +11,7 @@ import { server } from '../../config/default.json';
 
 import AccountViewModal from '../account/AccountViewModal.jsx';
 import Paging from '../utils/Paging.jsx';
-
-import { useNavbar } from '../../pages/Dashboard.jsx';
+import Navbar from './Navbar.jsx';
 
 const SET_CHIEFS = "SET_CHIEFS";
 const UPDATE_CHIEF = "UPDATE_CHIEF";
@@ -28,6 +27,8 @@ const SET_SELECTED_PERSONNEL_LIST_INDEX = "SET_SELECTED_PERSONNEL_LIST_INDEX";
 const SET_SELECTED_PERSONNEL_LIST_PAGE = "SET_SELECTED_PERSONNEL_LIST_PAGE";
 const FULFILL_PERSONNEL_STATE = "FULFILL_PERSONNEL_STATE";
 const SET_PERSONNEL_INDIVIDUAL_VIEW_TARGET = "SET_PERSONNEL_INDIVIDUAL_VIEW_TARGET";
+
+const SET_NAVBAR_BACKBUTTON_CALLBACK_AND_TOGGLE = "SET_NAVBAR_BACKBUTTON_CALLBACK_AND_TOGGLE";
 
 export default function DepartmentBoard({ dispatchBackButton = () => null }) {
 	const [ departments, setDepartments ] = useState([]);
@@ -131,7 +132,6 @@ export default function DepartmentBoard({ dispatchBackButton = () => null }) {
 			page, size
 		);
 	};
-	const { setBackButtonCallbackAndToggle } = useNavbar();
 	const onDepartmentClick = async (index) => {
 		if (personnelState.fetchStatus[index] === false) {
 			const department = departments[index];
@@ -158,9 +158,15 @@ export default function DepartmentBoard({ dispatchBackButton = () => null }) {
 		}
 
 		setStage(VIEW_DEPARTMENT_PERSONNEL_LIST);
-		setBackButtonCallbackAndToggle(() => () => {
-			setBackButtonCallbackAndToggle(() => null);
-			setStage(VIEW_DEPARTMENT_LIST);
+		dispatchNavbarState({
+			type: SET_NAVBAR_BACKBUTTON_CALLBACK_AND_TOGGLE,
+			payload: () => () => {
+				dispatchNavbarState({
+					type: SET_NAVBAR_BACKBUTTON_CALLBACK_AND_TOGGLE,
+					payload: () => null
+				});
+				setStage(VIEW_DEPARTMENT_LIST);
+			}
 		});
 	}
 
@@ -369,9 +375,42 @@ export default function DepartmentBoard({ dispatchBackButton = () => null }) {
 			}
 		});
 	};
+	const [ navbarState, dispatchNavbarState ] = useReducer(
+		(oldState, { type = null, payload = null } = {}) => {
+			switch(type) {
+				case SET_NAVBAR_BACKBUTTON_CALLBACK_AND_TOGGLE: {
+					if (typeof payload !== 'function') {
+						return oldState;
+					}
+
+					const { backButton, backButton: { visible} } = oldState;
+
+					return {
+						...oldState,
+						backButton: {
+							...backButton,
+							visible: !visible,
+							callback: payload
+						}
+					};
+				}
+				default: return oldState;
+			}
+		}, {
+			backButton: {
+				visible: false,
+				callback: () => null
+			}
+		}
+	);
 
 	return (
 		<div>
+			<Navbar
+				backButtonVisible={navbarState.backButton.visible}
+				backButtonClick={navbarState.backButton.callback}
+			/>
+			<div className="uk-padding-small">
 			{
 				stage !== VIEW_DEPARTMENT_LIST ? null :
 				<Fragment>
@@ -476,6 +515,7 @@ export default function DepartmentBoard({ dispatchBackButton = () => null }) {
 					);
 				})()
 			}
+			</div>
 		</div>
 	);
 }

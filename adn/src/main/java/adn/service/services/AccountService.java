@@ -2,9 +2,11 @@ package adn.service.services;
 
 import static adn.model.DatabaseInteractionResult.bad;
 import static adn.model.DatabaseInteractionResult.failed;
+import static adn.model.DatabaseInteractionResult.success;
 import static adn.model.DatabaseInteractionResult.unauthorized;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,6 +15,7 @@ import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
 
 import adn.application.context.ContextProvider;
@@ -159,15 +162,23 @@ public class AccountService extends DefaultCRUDService implements Service, Obser
 		return finish(ss, updateResult, flushOnFinish);
 	}
 
-	public <T extends Account, E extends T> DatabaseInteractionResult<E> update(Serializable id, E entity,
-			Class<E> type) {
-		DatabaseInteractionResult<E> result = update(id, entity, type);
+	public DatabaseInteractionResult<Account> deactivateAccount(String id, boolean flushOnFinish) {
+		Session ss = getCurrentSession();
 
-		if (result.isOk()) {
-			observers.values().forEach(observer -> observer.notifyAccountUpdate(result.getInstance()));
+		ss.setHibernateFlushMode(FlushMode.MANUAL);
+
+		Account account = ss.load(Account.class, id);
+
+		if (!account.isActive()) {
+			return DatabaseInteractionResult.error(HttpStatus.NOT_MODIFIED.value(), account,
+					Map.of(Account.ACTIVE_FIELD_NAME, "Account was already deactivated"));
 		}
 
-		return result;
+		account.setActive(Boolean.FALSE);
+		account.setDeactivatedDate(LocalDate.now());
+		// use Hibernate dirty check to flush here, we don't have to call update from
+		// repository to avoid unnecessary Specification validation
+		return finish(ss, success(account), flushOnFinish);
 	}
 
 	private ServiceResult<String> updateOrUploadPhoto(Account persistence, MultipartFile multipartPhoto) {

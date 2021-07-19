@@ -4,6 +4,7 @@ import { fetchProviderList, fetchProviderCount } from '../../actions/provider';
 import { spread, toMap } from '../../utils';
 
 import Paging from '../utils/Paging.jsx';
+import Navbar from './Navbar.jsx';
 
 const STORE = {
 	providers: {},
@@ -17,7 +18,28 @@ const STORE = {
 	}
 };
 
-const FETCH_COLUMNS = [
+const SEARCH_STORE = {
+	totalResults: 0,
+	list: [],
+	isSearching: false
+};
+
+const SET_SEARCH_RESULTS_AND_SEARCHING_STATE = "SET_SEARCH_RESULTS_AND_SEARCHING_STATE";
+
+const NAVBAR_STORE = {
+	searchInput: {
+		disabled: false
+	},
+	backButton: {
+		visible: false,
+		callback: () => null
+	}
+};
+
+const TOGGLE_NAVBAR_SEARCHINPUT_DISABILITY = "TOGGLE_NAVBAR_SEARCHINPUT_DISABILITY";
+const SET_NAVBAR_BACKBUTTON_CALLBACK_AND_VISIBILITY = "SET_NAVBAR_BACKBUTTON_CALLBACK_AND_VISIBILITY";
+
+const FETCHED_COLUMNS = [
 	"id", "name", "email",
 	"phoneNumbers", "representatorName"
 ];
@@ -29,7 +51,7 @@ const SWITCH_PAGE = "SWITCH_PAGE";
 
 const fetchStore = async (dispatch) => {
 	const [providerList, fetchProviderListErr] = await fetchProviderList({
-		columns: FETCH_COLUMNS
+		columns: FETCHED_COLUMNS
 	});
 
 	if (fetchProviderListErr) {
@@ -132,6 +154,96 @@ export default function ProviderBoard({
 			}
 		}, { ...STORE }
 	);
+	const [ navbarState, dispatchNavbarState ] = useReducer(
+		(oldState, { type = null, payload = null } = {}) => {
+			switch(type) {
+				case SET_NAVBAR_BACKBUTTON_CALLBACK_AND_VISIBILITY: {
+					const { callback, visible } = payload;
+
+					if (typeof callback !== 'function' || typeof visible !== 'boolean') {
+						return oldState;
+					}
+
+					const { backButton } = oldState;
+
+					return {
+						...oldState,
+						backButton: { ...backButton, callback, visible }
+					};
+				}
+				case TOGGLE_NAVBAR_SEARCHINPUT_DISABILITY: {
+					const { searchInput } = oldState;
+
+					return {
+						...oldState,
+						searchInput: {
+							...searchInput,
+							disabled: !searchInput.disabled
+						}
+					}
+				}
+				default: return oldState;
+			}
+		}, { ...NAVBAR_STORE }
+	);
+	const [ searchState, dispatchSearchState] = useReducer(
+		(oldState, { type = null, payload = null } = {}) => {
+			switch(type) {
+				case SET_SEARCH_RESULTS_AND_SEARCHING_STATE: {
+					const { list, isSearching } = payload;
+
+					if (!Array.isArray(list) || typeof isSearching !== 'boolean') {
+						return oldState;
+					}
+
+					return {
+						...oldState,
+						totalResults: list.length,
+						list: list,
+						isSearching: isSearching
+					};
+				}
+				default: return oldState;
+			}
+		}, { ...SEARCH_STORE }
+	);
+	const searchProvidersByName = (providerName) => {
+		dispatchNavbarState({ type: TOGGLE_NAVBAR_SEARCHINPUT_DISABILITY });
+		
+		if (providerName.length === 0) {
+			clearSearchResults();
+			dispatchNavbarState({ type: TOGGLE_NAVBAR_SEARCHINPUT_DISABILITY });
+			return;
+		} 
+
+		let list = Object.values(store.providers).filter(provider => provider.name.toLowerCase().includes(providerName.toLowerCase()));
+
+		dispatchSearchState({
+			type: SET_SEARCH_RESULTS_AND_SEARCHING_STATE,
+			payload: { list, isSearching: true }
+		});
+		dispatchNavbarState({
+			type: SET_NAVBAR_BACKBUTTON_CALLBACK_AND_VISIBILITY,
+			payload: {
+				visible: true,
+				callback: () => clearSearchResults()
+			}
+		});
+		dispatchNavbarState({ type: TOGGLE_NAVBAR_SEARCHINPUT_DISABILITY });
+	};
+	const clearSearchResults = () => {
+		dispatchSearchState({
+			type: SET_SEARCH_RESULTS_AND_SEARCHING_STATE,
+			payload: { list: [], isSearching: false }
+		});
+		dispatchNavbarState({
+			type: SET_NAVBAR_BACKBUTTON_CALLBACK_AND_VISIBILITY,
+			payload: {
+				visible: false,
+				callback: () => null
+			}
+		});
+	}
 
 	useEffect(() => fetchStore(dispatchStore), []);
 
@@ -157,32 +269,54 @@ export default function ProviderBoard({
 
 		dispatchStore({
 			type: FULFILL_PAGE_REQUEST,
-			payload: {
-				page,
-				list: providerList
-			}
+			payload: { page, list: providerList }
 		});
 	};
-	const { providerCount, pagination: { page, pageMap, size, totalPages } } = store;
-	console.log("render board");
+	const { providerCount, pagination: { page, pageMap, totalPages } } = store;
+	const {
+		searchInput: {
+			disabled: navbarSearchInputDisabled
+		},
+		backButton: {
+			visible: navbarBackButtonVisible,
+			callback: navbarBackButtonCallback
+		}
+	} = navbarState;
+	const { isSearching, list: searchResults, totalResults } = searchState;
+
 	return (
 		<div>
-			<div className="uk-padding-small">
-				<ProviderList
-					list={pageMap[page]}
-					totalAmount={providerCount}
-					amountPerPage={size}
-					currentPage={page + 1}
-					requestPage={requestProviderListPage}
-					totalPages={totalPages}
-				/>
+			<Navbar
+				backButtonVisible={navbarBackButtonVisible}
+				backButtonClick={navbarBackButtonCallback}
+				searchInputEmptied={clearSearchResults}
+				searchInputEntered={searchProvidersByName}
+				isSearchInputDisabled={navbarSearchInputDisabled}
+			/>
+			<div className="uk-padding uk-padding-remove-top">
+			{
+				!isSearching ? 
+					<ProviderList
+						list={pageMap[page]}
+						totalAmount={providerCount}
+						currentPage={page + 1}
+						requestPage={requestProviderListPage}
+						totalPages={totalPages}
+					/> :
+					<ProviderList
+						list={searchResults}
+						totalAmount={totalResults}
+						currentPage={1}
+						totalPages={1}
+					/>
+			}	
 			</div>
 		</div>
 	);
 }
 
 function ProviderList({
-	list = [], totalAmount = 0, amountPerPage = 1,
+	list = [], totalAmount = 0,
 	currentPage = 0, requestPage = () => null,
 	totalPages = 0
 }) {
@@ -226,12 +360,29 @@ function ProviderList({
 				}
 				</tbody>
 			</table>
-			<Paging
-				amount={totalPages}
-				amountPerChunk={5}
-				selected={currentPage}
-				onPageSelect={requestPage}
-			/>
+			<div
+				className="uk-grid-collapse"
+				uk-grid=""
+			>
+				<div className="uk-width-expand">
+					<Paging
+						amount={totalPages}
+						amountPerChunk={5}
+						selected={currentPage}
+						onPageSelect={requestPage}
+					/>
+				</div>
+				<div className="uk-width-auto">
+					<div
+						className="uk-position-relative uk-height-1-1"
+						style={{ minWidth: "150px" }}
+					>
+						<label
+							className="uk-position-center backgroundf uk-label"
+						>{`${list.length}/${totalAmount} result(s)`}</label>	
+					</div>
+				</div>
+			</div>
 		</div>
 	);
 }
