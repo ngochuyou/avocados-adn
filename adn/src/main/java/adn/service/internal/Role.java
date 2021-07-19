@@ -41,7 +41,7 @@ public enum Role implements RoleDefinition {
 				Role.MANAGER, customerAndPersonnel,
 				Role.EMPLOYEE, customer,
 				Role.CUSTOMER, customer,
-				Role.ANONYMOUS, EMPTY_ROLE_SET);
+				Role.ANONYMOUS, customer);
 		READ_ACCESS_MAP = Map.of(
 				Role.ADMIN, all,
 				Role.PERSONNEL, customerAndPersonnel,

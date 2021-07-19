@@ -94,7 +94,7 @@ public class GeneralController extends BaseController {
 		// which causes violation exception
 		setSessionMode();
 
-		return send(crudService.create(null, instance, type));
+		return finishAndSend(crudService.create(null, instance, type, true));
 	}
 
 	/**
@@ -108,7 +108,7 @@ public class GeneralController extends BaseController {
 			return sendNotFound(String.format("%s not found", instance.getId()));
 		}
 
-		return send(crudService.update(instance.getId(), instance, type));
+		return finishAndSend(crudService.update(instance.getId(), instance, type, true));
 	}
 
 }

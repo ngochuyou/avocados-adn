@@ -6,6 +6,7 @@ package adn.controller;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.servlet.annotation.MultipartConfig;
@@ -14,6 +15,7 @@ import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -69,7 +71,6 @@ public class BaseController {
 
 	protected static final String HAS_ROLE_ADMIN = "hasRole('ADMIN')";
 
-	protected static final String UPLOAD_FAILURE = "Unable to upload file";
 	protected static final String NOT_FOUND = "NOT FOUND";
 	protected static final String LOCKED = "RESOURCE WAS DEACTIVATED";
 	protected static final String INVALID_MODEL = "INVALID MODEL";
@@ -133,16 +134,17 @@ public class BaseController {
 	protected <T extends AbstractModel> ResponseEntity<?> send(T instance, String messageIfNull) {
 		return instance == null ? sendNotFound(messageIfNull) : ResponseEntity.ok(produce(instance));
 	}
-	
-	protected <T extends AbstractModel, E extends T> ResponseEntity<?> send(E instance, Class<E> type, String messageIfNull) {
+
+	protected <T extends AbstractModel, E extends T> ResponseEntity<?> send(E instance, Class<E> type,
+			String messageIfNull) {
 		return instance == null ? sendNotFound(messageIfNull) : ResponseEntity.ok(produce(instance, type));
 	}
-	
+
 	protected <T> ResponseEntity<?> fails(T instance) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(instance);
 	}
 
-	protected <T extends Entity> ResponseEntity<?> send(DatabaseInteractionResult<T> result) {
+	protected <T extends Entity> ResponseEntity<?> finishAndSend(DatabaseInteractionResult<T> result) {
 		currentSession(ss -> {
 			if (result.isOk()) {
 				ss.flush();
@@ -154,6 +156,10 @@ public class BaseController {
 
 		return result.isOk() ? ResponseEntity.ok(produce(result.getInstance()))
 				: ResponseEntity.status(result.getStatus()).body(result.getMessages());
+	}
+
+	protected <T> ResponseEntity<?> cache(T body, long age, TimeUnit unit) {
+		return ResponseEntity.ok().cacheControl(CacheControl.maxAge(age, unit)).body(body);
 	}
 
 }

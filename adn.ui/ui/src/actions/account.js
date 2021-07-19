@@ -29,7 +29,7 @@ export async function lockAccount(username = "") {
 	}
 
 	const [res, err] = await $fetch(`/rest/account/deact/${username}`, {
-		method: 'GET',
+		method: 'PATCH',
 		headers: {
 			'Accept': 'text/plain'
 		}

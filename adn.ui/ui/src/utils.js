@@ -19,3 +19,9 @@ export const isEmpty = (obj = {}) => {
 
 	return true;
 }
+
+export const toMap = (array = [], map = {}, idName) => {
+	array.forEach(ele => map[ele[idName]] = ele);
+
+	return map;
+};

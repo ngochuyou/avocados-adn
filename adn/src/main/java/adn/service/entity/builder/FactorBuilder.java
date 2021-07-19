@@ -4,7 +4,6 @@
 package adn.service.entity.builder;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.stereotype.Component;
@@ -30,49 +29,23 @@ public class FactorBuilder<T extends Factor> extends AbstractEntityBuilder<T> {
 	}
 
 	@Override
-	public T insertionBuild(T model) {
-		super.insertionBuild(model);
+	public <E extends T> E insertionBuild(Serializable id, E model) {
 		mandatoryBuild(model, model);
 
-		model.setActive(true);
+		model.setActive(Boolean.TRUE);
 		model.setCreatedBy(ContextProvider.getPrincipalName());
 		model.setUpdatedBy(model.getCreatedBy());
 
 		return model;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public T updateBuild(T model) {
-		super.updateBuild(model);
-		T persistence = (T) loadPersistence(model.getClass(), model.getId());
-
+	public <E extends T> E updateBuild(Serializable id, E model, E persistence) {
 		mandatoryBuild(persistence, model);
+
 		persistence.setUpdatedBy(ContextProvider.getPrincipalName());
 
 		return persistence;
-	}
-
-	@Override
-	public T deactivationBuild(T entity) {
-		entity.setDeactivatedDate(LocalDateTime.now());
-
-		return entity;
-	}
-
-	@Override
-	public T insertionBuild(Serializable id, T entity) {
-		return insertionBuild(entity);
-	}
-
-	@Override
-	public T updateBuild(Serializable id, T entity) {
-		return updateBuild(entity);
-	}
-
-	@Override
-	public T deactivationBuild(Serializable id, T entity) {
-		return deactivationBuild(entity);
 	}
 
 }

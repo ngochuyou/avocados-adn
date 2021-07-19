@@ -45,7 +45,7 @@ public abstract class Factor extends Entity {
 	@Column(name = "deactivated_date")
 	protected LocalDateTime deactivatedDate;
 
-	@JsonProperty(value = "isActive")
+	@JsonProperty(value = "active")
 	public Boolean isActive() {
 		return active;
 	}

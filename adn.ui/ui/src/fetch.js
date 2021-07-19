@@ -2,7 +2,11 @@ import { server } from "./config/default.json";
 
 const url = server.url;
 
-export async function $fetch(endpoint, options) {
+export async function $fetch(endpoint = null, options = {}) {
+	if (endpoint == null) {
+		return [null, "Endpoint was null"];
+	}
+	
 	try {
 		const res = await fetch(`${url}${encodeURI(endpoint)}`, {
 			...options,

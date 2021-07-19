@@ -12,6 +12,8 @@ import { server } from '../../config/default.json';
 import AccountViewModal from '../account/AccountViewModal.jsx';
 import Paging from '../utils/Paging.jsx';
 
+import { useNavbar } from '../../pages/Dashboard.jsx';
+
 const SET_CHIEFS = "SET_CHIEFS";
 const UPDATE_CHIEF = "UPDATE_CHIEF";
 
@@ -27,7 +29,7 @@ const SET_SELECTED_PERSONNEL_LIST_PAGE = "SET_SELECTED_PERSONNEL_LIST_PAGE";
 const FULFILL_PERSONNEL_STATE = "FULFILL_PERSONNEL_STATE";
 const SET_PERSONNEL_INDIVIDUAL_VIEW_TARGET = "SET_PERSONNEL_INDIVIDUAL_VIEW_TARGET";
 
-export default function DepartmentBoard({ dispatchBackButton = () => null, actions = {} }) {
+export default function DepartmentBoard({ dispatchBackButton = () => null }) {
 	const [ departments, setDepartments ] = useState([]);
 	const [ chiefs, dispatchChiefStates ] = useReducer((oldChiefs, { type = null, payload = null } = {}) => {
 		switch (type) {
@@ -129,6 +131,7 @@ export default function DepartmentBoard({ dispatchBackButton = () => null, actio
 			page, size
 		);
 	};
+	const { setBackButtonCallbackAndToggle } = useNavbar();
 	const onDepartmentClick = async (index) => {
 		if (personnelState.fetchStatus[index] === false) {
 			const department = departments[index];
@@ -155,19 +158,9 @@ export default function DepartmentBoard({ dispatchBackButton = () => null, actio
 		}
 
 		setStage(VIEW_DEPARTMENT_PERSONNEL_LIST);
-		dispatchBackButton({
-			type: actions.SET_STATE_AND_TOGGLE,
-			payload: {
-				callback: () => () => {
-					dispatchBackButton({
-						type: actions.SET_STATE_AND_TOGGLE,
-						payload: {
-							callback: () => null
-						}
-					});
-					setStage(VIEW_DEPARTMENT_LIST);
-				}
-			}
+		setBackButtonCallbackAndToggle(() => () => {
+			setBackButtonCallbackAndToggle(() => null);
+			setStage(VIEW_DEPARTMENT_LIST);
 		});
 	}
 

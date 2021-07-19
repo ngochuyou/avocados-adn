@@ -3,6 +3,8 @@
  */
 package adn.service.entity.builder;
 
+import java.io.Serializable;
+
 import org.springframework.stereotype.Component;
 
 import adn.application.context.ContextProvider;
@@ -18,8 +20,8 @@ import adn.model.entities.Personnel;
 public class PersonnelBuilder extends AccountBuilder<Personnel> {
 
 	@Override
-	public Personnel insertionBuild(Personnel entity) {
-		super.insertionBuild(entity);
+	public <E extends Personnel> E insertionBuild(Serializable id, E entity) {
+		entity = super.insertionBuild(id, entity);
 
 		entity.setCreatedBy(ContextProvider.getPrincipalName());
 

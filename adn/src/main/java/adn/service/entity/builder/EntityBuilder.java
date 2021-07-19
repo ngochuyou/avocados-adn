@@ -29,11 +29,7 @@ public interface EntityBuilder<T extends Entity> {
 	 * @param entity
 	 * @return entity {@link Entity}
 	 */
-	default T insertionBuild(T entity) {
-		return entity;
-	}
-
-	T insertionBuild(Serializable id, T entity);
+	<E extends T> E insertionBuild(Serializable id, E entity);
 
 	/**
 	 * @see EntityBuilder#insertionBuild(Entity)
@@ -41,24 +37,6 @@ public interface EntityBuilder<T extends Entity> {
 	 * @param entity
 	 * @return persisted {@link Entity}
 	 */
-	default T updateBuild(T entity) {
-		return entity;
-	}
-
-	T updateBuild(Serializable id, T entity);
-
-	/**
-	 * <em>Example:</em> Set the deactivated time-stamp
-	 * 
-	 * @see EntityBuilder#insertionBuild(Entity)
-	 * 
-	 * @param entity
-	 * @return
-	 */
-	default T deactivationBuild(T entity) {
-		return entity;
-	}
-
-	T deactivationBuild(Serializable id, T entity);
+	<E extends T> E updateBuild(Serializable id, E entity, E persistence);
 
 }

@@ -77,6 +77,14 @@ public class DatabaseInteractionResult<T> {
 		return new DatabaseInteractionResult<T>(HttpStatus.INTERNAL_SERVER_ERROR.value(), null, messageSet);
 	}
 
+	public static <T> DatabaseInteractionResult<T> unauthorized(T instance, Map<String, String> messageSet) {
+		return new DatabaseInteractionResult<T>(HttpStatus.UNAUTHORIZED.value(), instance, messageSet);
+	}
+
+	public static <T> DatabaseInteractionResult<T> bad(T instance, Map<String, String> messageSet) {
+		return new DatabaseInteractionResult<T>(HttpStatus.BAD_REQUEST.value(), instance, messageSet);
+	}
+
 	public static <T> DatabaseInteractionResult<T> error(int status, T instance, Map<String, String> messageSet) {
 		return new DatabaseInteractionResult<T>(status, instance, messageSet);
 	}

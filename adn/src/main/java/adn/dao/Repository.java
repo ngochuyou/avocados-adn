@@ -53,6 +53,10 @@ public interface Repository {
 	
 	List<Long> countWithContext(String hql, Map<String, ParamContext> params);
 	
+	<T extends Entity> Long count(Class<T> type);
+	
+	<T extends Entity> Long countById(Serializable id, Class<T> type);
+	
 	<T extends Entity, E extends T> DatabaseInteractionResult<E> insert(Serializable id, E model, Class<E> type);
 
 	<T extends Entity, E extends T> DatabaseInteractionResult<E> update(Serializable id, E model, Class<E> type);

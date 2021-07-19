@@ -4,7 +4,6 @@
 package adn.service.services;
 
 import static adn.helpers.ArrayHelper.EMPTY_STRING_ARRAY;
-import static adn.helpers.EntityUtils.getIdentifier;
 
 import java.io.Serializable;
 import java.sql.SQLSyntaxErrorException;
@@ -12,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.hibernate.FlushMode;
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import adn.application.context.ContextProvider;
 import adn.dao.AbstractRepository;
+import adn.helpers.EntityUtils;
 import adn.model.DatabaseInteractionResult;
 import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
@@ -163,64 +165,70 @@ public class DefaultCRUDService implements CRUDService {
 		return authenticationBasedModelFactory.produce(type, rows, role);
 	}
 
-	@Override
-	public <T extends Entity, E extends T> DatabaseInteractionResult<E> create(E entity, Class<E> type) {
-		return create(getIdentifier(entity), entity, type);
+	protected <T extends Entity> Serializable resolveId(Serializable id, T entity) {
+		return id == null ? EntityUtils.getIdentifier(entity) : id;
 	}
 
 	@Override
-	public <T extends Entity, E extends T> DatabaseInteractionResult<E> update(E entity, Class<E> type) {
-		return update(getIdentifier(entity), entity, type);
-	}
+	public <T extends Entity, E extends T> DatabaseInteractionResult<E> create(Serializable id, E entity, Class<E> type,
+			boolean flushOnFinish) {
+		id = resolveId(id, entity);
 
-	@Override
-	public <T extends Entity, E extends T> DatabaseInteractionResult<E> deactivate(E entity, Class<E> type) {
-		return deactivate(getIdentifier(entity), entity, type);
-	}
+		Session ss = getCurrentSession();
 
-	@Override
-	public <T extends Entity, E extends T> DatabaseInteractionResult<E> create(Serializable id, E entity,
-			Class<E> type) {
+		ss.setHibernateFlushMode(FlushMode.MANUAL);
+
 		EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
 
 		if (logger.isDebugEnabled()) {
 			logger.debug(String.format("Building entity for creation [%s#%s]", type.getName(), id));
 		}
 
-		entityBuilder.insertionBuild(id, entity);
+		entity = entityBuilder.insertionBuild(id, entity);
 
-		return repository.insert(id, entity, type);
+		return finish(ss, repository.insert(id, entity, type), flushOnFinish);
+	}
+
+	protected <E> DatabaseInteractionResult<E> finish(Session ss, DatabaseInteractionResult<E> result,
+			boolean flushOnFinish) {
+		if (flushOnFinish) {
+			if (result.isOk()) {
+				ss.flush();
+
+				return result;
+			}
+
+			ss.clear();
+
+			return result;
+		}
+
+		return result;
 	}
 
 	@Override
-	public <T extends Entity, E extends T> DatabaseInteractionResult<E> update(Serializable id, E entity,
-			Class<E> type) {
+	public <T extends Entity, E extends T> DatabaseInteractionResult<E> update(Serializable id, E entity, Class<E> type,
+			boolean flushOnFinish) {
+		id = resolveId(id, entity);
+
+		Session ss = getCurrentSession();
+
+		ss.setHibernateFlushMode(FlushMode.MANUAL);
+
+		E persistence = ss.load(type, id);
 		EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
 
 		if (logger.isDebugEnabled()) {
 			logger.debug(String.format("Building entity for update [%s#%s]", type.getName(), id));
 		}
-
-		entityBuilder.updateBuild(id, entity);
+		// persistence takes effects during updateBuild,
+		// assigning it to the return of updateBuild is just for the sake of it
+		persistence = entityBuilder.updateBuild(id, entity, persistence);
 
 		return repository.update(id, getCurrentSession().load(type, id), type);
 	}
 
-	@Override
-	public <T extends Entity, E extends T> DatabaseInteractionResult<E> deactivate(Serializable id, E entity,
-			Class<E> type) {
-		EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug(String.format("Building entity for deactivation [%s#%s]", type.getName(), id));
-		}
-
-		entityBuilder.deactivationBuild(id, entity);
-
-		return DatabaseInteractionResult.success(entity);
-	}
-
-	public <T extends Entity, E extends T> String resolveGroupByClause(Class<E> type, Role role, String query,
+	protected <T extends Entity, E extends T> String resolveGroupByClause(Class<E> type, Role role, String query,
 			String[] groupByColumns) throws SQLSyntaxErrorException {
 		if (groupByColumns.length == 0) {
 			return query;

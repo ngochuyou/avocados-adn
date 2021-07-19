@@ -7,7 +7,6 @@ import static adn.helpers.StringHelper.get;
 import static adn.helpers.StringHelper.normalizeString;
 
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +28,7 @@ import adn.service.services.AccountService;
 public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> {
 
 	@Autowired
-	protected PasswordEncoder passwordEncoder;
+	private PasswordEncoder passwordEncoder;
 
 	protected <E extends Account> E mandatoryBuild(E target, E model) {
 		// we assumes identifier will always be set before
@@ -46,13 +45,13 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 	}
 
 	@Override
-	public T insertionBuild(T entity) {
-		super.insertionBuild(entity);
-
+	public <E extends T> E insertionBuild(Serializable id, E entity) {
 		mandatoryBuild(entity, entity);
 
 		if (entity.getPassword() == null || entity.getPassword().length() < 8) {
 			entity.setPassword("");
+
+			return entity;
 		}
 
 		entity.setPassword(passwordEncoder.encode(entity.getPassword()));
@@ -61,12 +60,7 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public T updateBuild(T entity) {
-		super.updateBuild(entity);
-		// assumes entity is persistent
-		T persistence = (T) loadPersistence(entity.getClass(), entity.getId());
-
+	public <E extends T> E updateBuild(Serializable id, E entity, E persistence) {
 		mandatoryBuild(persistence, entity);
 		// leave out model's password if there's no need of password editing
 		if (StringHelper.hasLength(entity.getPassword())) {
@@ -74,29 +68,6 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 		}
 
 		return persistence;
-	}
-
-	@Override
-	public T updateBuild(Serializable id, T entity) {
-		return updateBuild(entity);
-	}
-
-	@Override
-	public T insertionBuild(Serializable id, T entity) {
-		return insertionBuild(entity);
-	}
-
-	@Override
-	public T deactivationBuild(T entity) {
-		entity.setActive(Boolean.FALSE);
-		entity.setDeactivatedDate(LocalDate.now());
-
-		return entity;
-	}
-
-	@Override
-	public T deactivationBuild(Serializable id, T entity) {
-		return deactivationBuild(entity);
 	}
 
 }

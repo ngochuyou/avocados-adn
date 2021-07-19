@@ -4,6 +4,8 @@
 package adn.dao;
 
 import static adn.helpers.ArrayHelper.EMPTY_STRING_ARRAY;
+import static adn.helpers.EntityUtils.getEntityName;
+import static adn.helpers.EntityUtils.getIdentifierPropertyName;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -27,7 +29,6 @@ import org.springframework.data.domain.Sort.Order;
 import adn.dao.paging.Unpaged;
 import adn.dao.parameter.ParamContext;
 import adn.dao.parameter.ParamType;
-import adn.helpers.EntityUtils;
 import adn.helpers.Utils.Entry;
 import adn.model.DatabaseInteractionResult;
 import adn.model.entities.Entity;
@@ -66,8 +67,8 @@ public abstract class AbstractRepository implements Repository {
 		// @formatter:off
 		String query = String.format("SELECT %s FROM %s WHERE %s=:id",
 				Stream.of(columns).collect(Collectors.joining(", ")),
-				EntityUtils.getEntityName(clazz),
-				EntityUtils.getIdentifierPropertyName(clazz));
+				getEntityName(clazz),
+				getIdentifierPropertyName(clazz));
 		// @formatter:on
 		Session session = getCurrentSession();
 		Query<Object[]> hql = session.createQuery(query, Object[].class);
@@ -224,12 +225,12 @@ public abstract class AbstractRepository implements Repository {
 		// @formatter:off
 		if (columns.length == 0) {
 			return String.format("FROM %s",
-					EntityUtils.getEntityName(type));
+					getEntityName(type));
 		}
 		
 		return String.format("%s FROM %s",
 				"SELECT " + Stream.of(columns).collect(Collectors.joining(", ")),
-				EntityUtils.getEntityName(type));
+				getEntityName(type));
 		// @formatter:on
 	}
 
@@ -261,8 +262,32 @@ public abstract class AbstractRepository implements Repository {
 	}
 
 	@Override
+	public <T extends Entity> Long count(Class<T> type) {
+		Session session = getCurrentSession();
+		Query<Long> hql = session.createQuery(String.format("SELECT COUNT(*) FROM %s", getEntityName(type)),
+				Long.class);
+
+		return hql.getSingleResult();
+	}
+
+	@Override
 	public List<Long> countWithContext(String hql, Map<String, ParamContext> params) {
 		return resolveHQLParamContexts(hql, Long.class, params).getResultList();
+	}
+
+	@Override
+	public <T extends Entity> Long countById(Serializable id, Class<T> type) {
+		Session session = getCurrentSession();
+		// @formatter:off
+		Query<Long> hql = session.createQuery(String.format("SELECT COUNT(*) FROM %s WHERE %s=:id",
+				getEntityName(type),
+				getIdentifierPropertyName(type)),
+				Long.class);
+		// @formatter:on
+
+		hql.setParameter("id", id);
+
+		return hql.getSingleResult();
 	}
 
 	protected Session getCurrentSession() {

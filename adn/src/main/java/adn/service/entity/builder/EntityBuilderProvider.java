@@ -37,22 +37,18 @@ public class EntityBuilderProvider implements ContextBuilder {
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private Map<Class<? extends Entity>, EntityBuilder<? extends Entity>> builderMap;
+	private static final EntityBuilder<Entity> DEFAULT_BUILDER = new EntityBuilder<Entity>() {
 
-	private EntityBuilder<?> defaultBuilder = new EntityBuilder<Entity>() {
 		@Override
-		public Entity insertionBuild(Serializable id, Entity entity) {
-			return entity;
+		public <E extends Entity> E updateBuild(Serializable id, E entity, E persistence) {
+			return persistence;
 		}
 
 		@Override
-		public Entity updateBuild(Serializable id, Entity entity) {
+		public <E extends Entity> E insertionBuild(Serializable id, E entity) {
 			return entity;
 		}
 
-		@Override
-		public Entity deactivationBuild(Serializable id, Entity entity) {
-			return entity;
-		}
 	};
 
 	@Autowired
@@ -89,12 +85,12 @@ public class EntityBuilderProvider implements ContextBuilder {
 			modelDescriptor.getEntityTree().forEach(branch -> {
 				if (builderMap.get(branch.getNode()) == null) {
 					if (branch.getParent() == null) {
-						builderMap.put((Class<? extends Entity>) branch.getNode(), defaultBuilder);
+						builderMap.put((Class<? extends Entity>) branch.getNode(), DEFAULT_BUILDER);
 						return;
 					}
 
 					if (!builderMap.containsKey(branch.getParent().getNode())) {
-						builderMap.put((Class<? extends Entity>) branch.getNode(), defaultBuilder);
+						builderMap.put((Class<? extends Entity>) branch.getNode(), DEFAULT_BUILDER);
 						return;
 					}
 

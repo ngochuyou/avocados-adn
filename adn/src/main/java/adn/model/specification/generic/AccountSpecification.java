@@ -38,7 +38,7 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 		DatabaseInteractionResult<T> result = super.isSatisfiedBy(id, instance);
 
 		if (!USERNAME_PATTERN.matcher(instance.getId()).matches()) {
-			result.bad().getMessages().put("username", "Invalid username pattern");
+			result.bad().getMessages().put(Account.ID_FIELD_NAME, "Invalid username pattern");
 		}
 
 		if (!StringHelper.isEmail(instance.getEmail())) {
@@ -50,7 +50,7 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 			Root<Account> root = query.from(Account.class);
 
 			query.select(builder.count(root)).where(builder.and(builder.equal(root.get("email"), instance.getEmail()),
-					builder.notEqual(root.get("id"), instance.getId())));
+					builder.notEqual(root.get(Account.ID_FIELD_NAME), instance.getId())));
 
 			if (session.createQuery(query).getResultStream().findFirst().orElse(0L) != 0) {
 				result.bad().getMessages().put("email", "Email is already taken");
@@ -66,7 +66,7 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 		}
 
 		if (instance.getRole() == null) {
-			result.bad().getMessages().put("role", "Role can not be empty");
+			result.bad().getMessages().put(Account.ROLE_FIELD_NAME, "Role can not be empty");
 		}
 
 		if (instance.getGender() == null) {
@@ -74,7 +74,7 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 		}
 
 		if (instance.isActive() == null) {
-			result.bad().getMessages().put("isActive", "Active state must not be empty");
+			result.bad().getMessages().put(Account.ACTIVE_FIELD_NAME, "Active state must not be empty");
 		}
 
 		return result;
