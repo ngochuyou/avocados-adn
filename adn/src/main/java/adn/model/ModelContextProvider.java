@@ -42,13 +42,13 @@ public class ModelContextProvider implements ContextBuilder {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private ModelInheritanceTree<AbstractModel> entityTree;
+	private ModelInheritanceTree<DomainEntity> entityTree;
 	private ModelInheritanceTree<Model> modelTree;
 
-	private Map<Class<? extends AbstractModel>, Set<Class<? extends AbstractModel>>> relationMap;
-	private Map<Class<? extends AbstractModel>, Class<? extends AbstractModel>> defaultModelMap;
+	private Map<Class<? extends DomainEntity>, Set<Class<? extends DomainEntity>>> relationMap;
+	private Map<Class<? extends DomainEntity>, Class<? extends DomainEntity>> defaultModelMap;
 
-	private Map<Class<? extends AbstractModel>, EntityMetadata> metadataMap;
+	private Map<Class<? extends DomainEntity>, EntityMetadata> metadataMap;
 
 	@Override
 	public void buildAfterStartUp() {
@@ -72,20 +72,20 @@ public class ModelContextProvider implements ContextBuilder {
 
 	@SuppressWarnings("unchecked")
 	private void initializeEntityTree() {
-		this.entityTree = new ModelInheritanceTree<>(null, AbstractModel.class, null);
+		this.entityTree = new ModelInheritanceTree<>(null, DomainEntity.class, null);
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
-		scanner.addIncludeFilter(new AssignableTypeFilter(AbstractModel.class));
+		scanner.addIncludeFilter(new AssignableTypeFilter(DomainEntity.class));
 
 		try {
 			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.ROOT_PACKAGE)) {
-				Class<? extends AbstractModel> clazz = (Class<? extends AbstractModel>) Class
+				Class<? extends DomainEntity> clazz = (Class<? extends DomainEntity>) Class
 						.forName(beanDef.getBeanClassName());
 				Stack<?> stack = TypeHelper.getClassStack(clazz);
 
 				while (!stack.isEmpty()) {
-					this.entityTree.add((Class<AbstractModel>) stack.pop());
+					this.entityTree.add((Class<DomainEntity>) stack.pop());
 				}
 			}
 		} catch (Exception e) {
@@ -158,7 +158,7 @@ public class ModelContextProvider implements ContextBuilder {
 				Field[] fields = clazz.getDeclaredFields();
 
 				for (Field f : fields) {
-					if (TypeHelper.isExtendedFrom(f.getType(), AbstractModel.class) && models.contains(clazz)
+					if (TypeHelper.isExtendedFrom(f.getType(), DomainEntity.class) && models.contains(clazz)
 							&& this.entityTree.contains((Class<? extends Model>) f.getType())) {
 						throw new Exception(clazz.getName() + " is a Non-standard Model. " + f.getType().getName()
 								+ " was modelized into a Model. Use the modelized type instead");
@@ -189,7 +189,7 @@ public class ModelContextProvider implements ContextBuilder {
 			if (this.relationMap.get(relatedClass) == null) {
 				this.relationMap.put(relatedClass, Set.of(clazz));
 			} else {
-				Set<Class<? extends AbstractModel>> set = this.relationMap.get(relatedClass).stream()
+				Set<Class<? extends DomainEntity>> set = this.relationMap.get(relatedClass).stream()
 						.collect(Collectors.toSet());
 
 				set.add(clazz);
@@ -239,11 +239,11 @@ public class ModelContextProvider implements ContextBuilder {
 				.info(String.format("[%s] is default for [%s]", v.getName(), k.equals(v) ? "itself" : k.getName())));
 	}
 
-	public ModelInheritanceTree<AbstractModel> getEntityTree() {
+	public ModelInheritanceTree<DomainEntity> getEntityTree() {
 		return entityTree;
 	}
 
-	public void setEntityTree(ModelInheritanceTree<AbstractModel> entityTree) {
+	public void setEntityTree(ModelInheritanceTree<DomainEntity> entityTree) {
 		this.entityTree = entityTree;
 	}
 
@@ -255,30 +255,30 @@ public class ModelContextProvider implements ContextBuilder {
 		return modelTree;
 	}
 
-	public Map<Class<? extends AbstractModel>, Set<Class<? extends AbstractModel>>> getRelationMap() {
+	public Map<Class<? extends DomainEntity>, Set<Class<? extends DomainEntity>>> getRelationMap() {
 		return relationMap;
 	}
 
-	public void setRelationMap(Map<Class<? extends AbstractModel>, Set<Class<? extends AbstractModel>>> relationMap) {
+	public void setRelationMap(Map<Class<? extends DomainEntity>, Set<Class<? extends DomainEntity>>> relationMap) {
 		this.relationMap = relationMap;
 	}
 
-	public Class<? extends AbstractModel> getModelClass(Class<? extends adn.model.entities.Entity> entityClass) {
+	public Class<? extends DomainEntity> getModelClass(Class<? extends adn.model.entities.Entity> entityClass) {
 		return this.defaultModelMap.get(entityClass);
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends AbstractModel> T instantiate(Class<T> type) {
+	public <T extends DomainEntity> T instantiate(Class<T> type) {
 		try {
 			return type.getConstructor().newInstance();
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 				| NoSuchMethodException | SecurityException e) {
 			e.printStackTrace();
-			return (T) new AbstractModel() {};
+			return (T) new DomainEntity() {};
 		}
 	}
 
-	public <T extends AbstractModel> EntityMetadata getMetadata(Class<T> entityType) {
+	public <T extends DomainEntity> EntityMetadata getMetadata(Class<T> entityType) {
 		return metadataMap.get(entityType);
 	}
 

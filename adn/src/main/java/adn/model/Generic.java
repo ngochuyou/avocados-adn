@@ -18,7 +18,7 @@ import adn.model.models.Model;
 @Target({ ElementType.TYPE, ElementType.METHOD })
 public @interface Generic {
 
-	public Class<? extends AbstractModel> entityGene() default AbstractModel.class;
+	public Class<? extends DomainEntity> entityGene() default DomainEntity.class;
 
 	public Class<? extends Model> modelGene() default Model.class;
 

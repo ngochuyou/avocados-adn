@@ -27,7 +27,7 @@ import org.springframework.util.Assert;
 
 import adn.application.Constants;
 import adn.helpers.TypeHelper;
-import adn.model.AbstractModel;
+import adn.model.DomainEntity;
 import adn.model.ModelContextProvider;
 import adn.model.entities.metadata.EntityMetadata;
 import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
@@ -49,7 +49,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 	public static final String NAME = "DefaultAuthenticationBasedModelPropertiesProducerFactory";
 
-	private Map<Class<? extends AbstractModel>, AuthenticationBasedModelPropertiesProducer> producers;
+	private Map<Class<? extends DomainEntity>, AuthenticationBasedModelPropertiesProducer> producers;
 
 	@Override
 	@SuppressWarnings("unchecked")
@@ -96,27 +96,27 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 		modelContext.getEntityTree().forEach(branch -> {
 			producers.put(branch.getNode(),
-					new AuthenticationBasedModelPropertiesProducerImpl((Class<AbstractModel>) branch.getNode(),
+					new AuthenticationBasedModelPropertiesProducerImpl((Class<DomainEntity>) branch.getNode(),
 							builder.propertiesMap.values().stream()
 									.filter(prop -> TypeHelper.isParentOf(prop.getEntityType(), branch.getNode()))
-									.map(prop -> (SecuredProperty<AbstractModel>) prop).collect(Collectors.toSet())));
+									.map(prop -> (SecuredProperty<DomainEntity>) prop).collect(Collectors.toSet())));
 		});
 
 		logger.info(String.format("%s %s", ContextBuilder.super.getLoggingPrefix(this),
 				String.format("Finished building %s", this.getClass().getSimpleName())));
 	}
 
-	private <T extends AbstractModel> AuthenticationBasedModelPropertiesProducer getProducer(Class<T> type) {
+	private <T extends DomainEntity> AuthenticationBasedModelPropertiesProducer getProducer(Class<T> type) {
 		return producers.get(type);
 	}
 
 	@Override
-	public <T extends AbstractModel> Map<String, Object> produce(Class<T> type, Object[] properties, String[] columns) {
+	public <T extends DomainEntity> Map<String, Object> produce(Class<T> type, Object[] properties, String[] columns) {
 		return produce(type, properties, columns, ContextProvider.getPrincipalRole());
 	}
 
 	@Override
-	public <T extends AbstractModel> Map<String, Object> produce(Class<T> type, Object[] properties, String[] columns,
+	public <T extends DomainEntity> Map<String, Object> produce(Class<T> type, Object[] properties, String[] columns,
 			Role role) {
 		AuthenticationBasedModelPropertiesProducer producer = getProducer(type);
 
@@ -124,13 +124,13 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 	}
 
 	@Override
-	public <T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type, List<Object[]> properties,
+	public <T extends DomainEntity> List<Map<String, Object>> produce(Class<T> type, List<Object[]> properties,
 			String[] columns) {
 		return produce(type, properties, columns, ContextProvider.getPrincipalRole());
 	}
 
 	@Override
-	public <T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type, List<Object[]> properties,
+	public <T extends DomainEntity> List<Map<String, Object>> produce(Class<T> type, List<Object[]> properties,
 			String[] columns, Role role) {
 		AuthenticationBasedModelPropertiesProducer producer = getProducer(type);
 
@@ -138,7 +138,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 	}
 
 	@Override
-	public <T extends AbstractModel> String[] validateAndTranslateColumnNames(Class<T> type, Role role,
+	public <T extends DomainEntity> String[] validateAndTranslateColumnNames(Class<T> type, Role role,
 			String[] requestedColumnNames) throws SQLSyntaxErrorException {
 		return getProducer(type).validateAndTranslateColumnNames(role, requestedColumnNames);
 	}
@@ -149,7 +149,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 		private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 		private final ModelContextProvider modelContext;
-		private final Map<Key<? extends AbstractModel>, SecuredProperty<? extends AbstractModel>> propertiesMap = Collections
+		private final Map<Key<? extends DomainEntity>, SecuredProperty<? extends DomainEntity>> propertiesMap = Collections
 				.synchronizedMap(new HashMap<>());
 
 		private AuthenticationBasedModelPropertiesProducersBuilderImpl(ModelContextProvider modelContext) {
@@ -157,12 +157,12 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 		}
 
 		@Override
-		public <T extends AbstractModel, E extends T> WithType<E> type(Class<E> type) {
+		public <T extends DomainEntity, E extends T> WithType<E> type(Class<E> type) {
 			return new WithTypes<>(this, type);
 		}
 
 		@Override
-		public <T extends AbstractModel, E extends T> WithType<E> type(Class<E>[] types) {
+		public <T extends DomainEntity, E extends T> WithType<E> type(Class<E>[] types) {
 			return new WithTypes<>(this, types);
 		}
 
@@ -193,11 +193,11 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 			return apply(getPublisher());
 		}
 
-		private Set<Class<? extends AbstractModel>> getUngivenTypes() {
-			Set<Class<? extends AbstractModel>> ungiven = new HashSet<>();
+		private Set<Class<? extends DomainEntity>> getUngivenTypes() {
+			Set<Class<? extends DomainEntity>> ungiven = new HashSet<>();
 
 			modelContext.getEntityTree().forEach(branch -> {
-				for (Key<? extends AbstractModel> key : propertiesMap.keySet()) {
+				for (Key<? extends DomainEntity> key : propertiesMap.keySet()) {
 					if (branch.getNode().equals(key.type)) {
 						return;
 					}
@@ -211,7 +211,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 		@SuppressWarnings("unchecked")
 		@Override
-		public <T extends AbstractModel> WithType<T> anyType() {
+		public <T extends DomainEntity> WithType<T> anyType() {
 			return new WithTypes<T>(this, (Class<T>[]) getUngivenTypes().toArray(Class<?>[]::new));
 		}
 
@@ -243,7 +243,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 		}
 
-		public class WithTypes<T extends AbstractModel> extends AbstractOwned implements WithType<T> {
+		public class WithTypes<T extends DomainEntity> extends AbstractOwned implements WithType<T> {
 
 			protected final Class<? extends T>[] types;
 
@@ -302,12 +302,12 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 			protected Set<Role> getUngivenRoles() {
 				Set<Role> ungiven = new HashSet<>();
-				Set<Key<? extends AbstractModel>> keysByType = propertiesMap.keySet().stream()
+				Set<Key<? extends DomainEntity>> keysByType = propertiesMap.keySet().stream()
 						.filter(key -> Stream.of(types).filter(type -> type.equals(key.type)).count() != 0)
 						.collect(Collectors.toSet());
 
 				Stream.of(Role.values()).forEach(role -> {
-					for (Key<? extends AbstractModel> key : keysByType) {
+					for (Key<? extends DomainEntity> key : keysByType) {
 						if (key.role.equals(role)) {
 							return;
 						}
@@ -387,7 +387,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 				protected Set<String> getUngivenFields() {
 					final Set<String> ungiven = new HashSet<>();
-					Set<Key<? extends AbstractModel>> keys = propertiesMap.keySet().stream()
+					Set<Key<? extends DomainEntity>> keys = propertiesMap.keySet().stream()
 							.filter(key -> Stream.of(types).filter(type -> type.equals(key.type)).count() != 0
 									&& Stream.of(roles)
 											.filter(role -> (key.role == null && role == null ? true
@@ -399,7 +399,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 						EntityMetadata metadata = modelContext.getMetadata(type);
 
 						metadata.getPropertyNames().forEach(prop -> {
-							for (Key<? extends AbstractModel> key : keys) {
+							for (Key<? extends DomainEntity> key : keys) {
 								if (prop.equals(key.originalName)) {
 									return;
 								}
@@ -443,7 +443,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 									propertiesMap.merge(new Key<>(type, role, name),
 											new SecuredPropertyImpl<>(type, role, name, function),
 											(oldProp, newProp) -> {
-												SecuredPropertyImpl<? extends AbstractModel> oldProperty = (SecuredPropertyImpl<? extends AbstractModel>) oldProp;
+												SecuredPropertyImpl<? extends DomainEntity> oldProperty = (SecuredPropertyImpl<? extends DomainEntity>) oldProp;
 
 												oldProperty.setFunction(function);
 
@@ -555,7 +555,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 	}
 
-	public class SecuredPropertyImpl<T extends AbstractModel> implements SecuredProperty<T> {
+	public class SecuredPropertyImpl<T extends DomainEntity> implements SecuredProperty<T> {
 
 		private final Class<T> type;
 		private final Role role;
@@ -618,7 +618,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 	}
 
-	private class Key<T extends AbstractModel> {
+	private class Key<T extends DomainEntity> {
 
 		private final Class<T> type;
 		private final Role role;

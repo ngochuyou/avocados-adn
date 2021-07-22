@@ -7,12 +7,12 @@ import AccessDenied from './AccessDenied.jsx';
 
 import DepartmentBoard from '../components/dashboard/DepartmentBoard.jsx';
 import ProviderBoard from '../components/dashboard/ProviderBoard.jsx';
+import ProductBoard from '../components/dashboard/ProductBoard';
 
 export default function Dashboard() {
 	const { principal } = useAuth();
-	const location = useLocation();
-
-	if (principal && principal.role === Account.Role.ADMIN) {
+	
+	if (principal && (principal.role === Account.Role.ADMIN || principal.role === Account.Role.PERSONNEL )) {
 		return (
 			<div className="uk-grid-collapse" uk-grid="">
 				<div className="uk-width-1-5 backgroundf" uk-height-viewport="expand: true">
@@ -22,10 +22,22 @@ export default function Dashboard() {
 						</h3>
 						<ul className="uk-list uk-list-large uk-list-divider">
 							<li>
-								<Link to="/dashboard/provider" className="uk-link-reset uk-display-inline-block uk-height-1-1 uk-width-1-1">Provider</Link>
+								<Link
+									to="/dashboard/product"
+									className="uk-link-reset uk-display-inline-block uk-height-1-1 uk-width-1-1"
+								>Product</Link>
 							</li>
 							<li>
-								<Link to="/dashboard/department" className="uk-link-reset uk-display-inline-block uk-height-1-1 uk-width-1-1">Department</Link>
+								<Link
+									to="/dashboard/provider"
+									className="uk-link-reset uk-display-inline-block uk-height-1-1 uk-width-1-1"
+								>Provider</Link>
+							</li>
+							<li>
+								<Link
+									to="/dashboard/department"
+									className="uk-link-reset uk-display-inline-block uk-height-1-1 uk-width-1-1"
+								>Department</Link>
 							</li>
 						</ul>
 					</header>
@@ -44,6 +56,14 @@ export default function Dashboard() {
 							path="/dashboard/provider"
 							render={props => (
 								<ProviderBoard
+									{ ...props }
+								/>
+							)}
+						/>
+						<Route
+							path="/dashboard/product"
+							render={props => (
+								<ProductBoard
 									{ ...props }
 								/>
 							)}

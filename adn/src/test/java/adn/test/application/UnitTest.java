@@ -3,10 +3,10 @@
  */
 package adn.test.application;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 /**
  * @author Ngoc Huy
@@ -38,9 +38,32 @@ public class UnitTest {
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
 			IllegalArgumentException, IllegalAccessException {
-		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-		
-		System.out.println(encoder.encode("password"));
+//		DefaultResourceIdentifierGenerator g = new DefaultResourceIdentifierGenerator();
+//		UserPhoto u = new UserPhoto();
+//		
+//		u.setExtension(".jpg");
+//		
+//		String id = g.generate(null, u).toString() + u.getExtension();
+//		
+//		System.out.println(id);
+//		System.out.println(id.length());
+		System.out.println("1619973416467_0c46022f".substring(0, 25 - 4));
+	}
+
+	public static void x2() {
+		double a = 1.0000000000000001;
+		double b = a + 0.0000000000000009;
+
+		System.out.println(b);
+		System.out.println(Math.ceil(b));
+	}
+
+	public static void bd() {
+		BigDecimal a = new BigDecimal("1.0000000000000001");
+		BigDecimal b = a.add(new BigDecimal("0.0000000000000009"));
+
+		System.out.println(b.toString());
+		System.out.println(b.setScale(2, RoundingMode.HALF_UP));
 	}
 
 	public static void testUnicodePattern() {

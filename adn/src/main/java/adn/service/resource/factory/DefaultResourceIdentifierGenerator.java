@@ -5,9 +5,12 @@ package adn.service.resource.factory;
 
 import java.io.Serializable;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.Properties;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -16,7 +19,6 @@ import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 
-import adn.helpers.StringHelper;
 import adn.service.resource.model.models.Resource;
 
 /**
@@ -31,20 +33,19 @@ public class DefaultResourceIdentifierGenerator implements IdentifierGenerator, 
 
 	public static final String IDENTIFIER_PARTS_SEPERATOR = "_";
 	public static final int PARTS_AMOUNT = 2;
+	public static final int IDENTIFIER_LENGTH = 25; // extension included
 
 	@Override
 	public Serializable generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
-		// @formatter:off
-		if (object instanceof Resource) {
-			Resource instance = (Resource) object;
-			
-			return new StringBuilder("" + new Date().getTime())
-					.append(IDENTIFIER_PARTS_SEPERATOR)
-					.append(StringHelper.hash(instance.getName()))
-					.toString();
-		}
-		// @formatter:on
-		return String.valueOf(new Date().getTime());
+		Resource instance = (Resource) object;
+		StringBuilder builder = new StringBuilder(
+				String.valueOf(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond()))
+						.append(IDENTIFIER_PARTS_SEPERATOR);
+
+		builder.append(RandomStringUtils
+				.randomAlphanumeric(IDENTIFIER_LENGTH - builder.length() - instance.getExtension().length()));
+
+		return builder.toString();
 	}
 
 	@Override

@@ -7,8 +7,8 @@ import java.io.Serializable;
 
 import org.springframework.stereotype.Component;
 
+import adn.dao.DatabaseInteractionResult;
 import adn.helpers.StringHelper;
-import adn.model.DatabaseInteractionResult;
 import adn.model.Generic;
 import adn.model.entities.Provider;
 

@@ -22,8 +22,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import adn.application.context.ContextProvider;
+import adn.dao.DatabaseInteractionResult;
 import adn.helpers.StringHelper;
-import adn.model.DatabaseInteractionResult;
 import adn.model.entities.Account;
 import adn.service.internal.AccountRoleExtractor;
 import adn.service.internal.ResourceService;
@@ -41,7 +41,7 @@ public class AccountController extends BaseController {
 
 	protected final static String MISSING_ROLE = "USER ROLE IS MISSING";
 	protected final static String NOT_FOUND = "USER NOT FOUND";
-	protected final static int PHOTO_CACHE_CONTROL_MAX_AGE = 7; // days
+	protected final static int PHOTO_CACHE_CONTROL_MAX_AGE = 4; // days
 	// @formatter:off
 	@Autowired
 	public AccountController(
@@ -104,7 +104,7 @@ public class AccountController extends BaseController {
 			@RequestParam(name = "filename", required = false) final String filename, Authentication authentication)
 			throws Exception {
 		if (filename != null) {
-			return cacheAccountPhoto(resourceService.directlyGetImageBytes(filename));
+			return cacheAccountPhoto(resourceService.directlyGetUserPhotoBytes(filename));
 		}
 
 		if (!StringHelper.hasLength(username)) {
@@ -121,7 +121,7 @@ public class AccountController extends BaseController {
 			return sendNotFound(NOT_FOUND);
 		}
 
-		return cacheAccountPhoto(resourceService.directlyGetImageBytes(account.getPhoto()));
+		return cacheAccountPhoto(resourceService.directlyGetImageBytes(null, account.getPhoto()));
 	}
 
 	private ResponseEntity<?> cacheAccountPhoto(byte[] photoBytes) {
@@ -160,14 +160,15 @@ public class AccountController extends BaseController {
 		}
 		// get current session with FlushMode.MANUAL
 		setSessionMode();
-
+		
+		Account persistence;
 		// This entity will take effects as the handler progresses
 		// Only changes on this persisted entity will be committed
-		if ((baseRepository.countById(model.getId(), Account.class)) == 0) {
+		if ((persistence = baseRepository.findById(model.getId(), Account.class)) == null) {
 			return sendNotFound(NOT_FOUND);
 		}
 
-		DatabaseInteractionResult<Account> updateResult = accountService.update(model.getId(), model,
+		DatabaseInteractionResult<Account> updateResult = accountService.update(persistence.getId(), model,
 				(Class<Account>) accountClass, multipartPhoto, true);
 
 		if (updateResult.isOk()) {

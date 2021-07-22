@@ -6,16 +6,12 @@ package adn.service.resource.model.models;
 import java.util.Date;
 
 import javax.persistence.Column;
-import javax.persistence.Entity;
+import javax.persistence.MappedSuperclass;
 
-import org.hibernate.annotations.Persister;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
-import adn.service.resource.ResourcePersisterImpl;
-import adn.service.resource.annotation.Constructor;
 import adn.service.resource.annotation.Content;
-import adn.service.resource.annotation.Directory;
 import adn.service.resource.annotation.LocalResource;
 import adn.service.resource.model.type.FileContentByteArrayType;
 
@@ -24,14 +20,9 @@ import adn.service.resource.model.type.FileContentByteArrayType;
  *
  */
 @LocalResource
-@Directory(path = ImageByBytes.DIRECTORY)
-@Constructor(columnNames = FileResource.ID_NAME, argumentTypes = String.class)
-@Persister(impl = ResourcePersisterImpl.class)
-@Entity
+@MappedSuperclass
 @TypeDef(name = FileContentByteArrayType.NAME, typeClass = FileContentByteArrayType.class)
-public class ImageByBytes extends FileResource {
-
-	public static final String DIRECTORY = "images\\";
+public abstract class ImageByBytes extends FileResource {
 
 	@Column(nullable = false)
 	@Type(type = FileContentByteArrayType.NAME)

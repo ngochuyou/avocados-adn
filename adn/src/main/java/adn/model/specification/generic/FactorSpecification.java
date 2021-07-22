@@ -12,8 +12,8 @@ import javax.persistence.criteria.Root;
 import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
+import adn.dao.DatabaseInteractionResult;
 import adn.helpers.EntityUtils;
-import adn.model.DatabaseInteractionResult;
 import adn.model.Generic;
 import adn.model.entities.Factor;
 
@@ -56,7 +56,7 @@ public class FactorSpecification<T extends Factor> extends EntitySpecification<T
 		}
 
 		if (instance.isActive() == null) {
-			result.bad().getMessages().put("isActive", "Active state must not be empty");
+			result.bad().getMessages().put("active", "Active state must not be empty");
 		}
 
 		return result;

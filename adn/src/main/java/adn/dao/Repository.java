@@ -12,7 +12,6 @@ import javax.persistence.criteria.CriteriaQuery;
 import org.springframework.data.domain.Pageable;
 
 import adn.dao.parameter.ParamContext;
-import adn.model.DatabaseInteractionResult;
 import adn.model.entities.Entity;
 
 /**
@@ -34,7 +33,7 @@ public interface Repository {
 	<T extends Entity> T findById(Serializable id, Class<T> clazz);
 
 	<T extends Entity> Object[] findById(Serializable id, Class<T> clazz, String[] columns);
-
+	
 	<T extends Entity> T findOne(CriteriaQuery<T> query, Class<T> clazz);
 
 	<T extends Entity> T findOne(String query, Class<T> clazz, Map<String, Object> parameters);

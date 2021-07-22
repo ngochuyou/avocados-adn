@@ -10,7 +10,5 @@ package adn.service;
 public interface Observable {
 
 	void register(Observer observer);
-	
-	
-	
+
 }

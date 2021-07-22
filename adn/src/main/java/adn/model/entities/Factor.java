@@ -4,14 +4,9 @@
 package adn.model.entities;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import javax.persistence.Column;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
-
-import org.hibernate.annotations.GenericGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -22,12 +17,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 @MappedSuperclass
 public abstract class Factor extends Entity {
-
-	@Id
-	@GeneratedValue(generator = "uuid")
-	@GenericGenerator(name = "uuid", strategy = "uuid2")
-	@Column(columnDefinition = "BINARY(16)")
-	protected UUID id;
 
 	@Column(nullable = false, unique = true)
 	protected String name;
@@ -61,14 +50,6 @@ public abstract class Factor extends Entity {
 
 	public void setDeactivatedDate(LocalDateTime deactivatedDate) {
 		this.deactivatedDate = deactivatedDate;
-	}
-
-	public UUID getId() {
-		return id;
-	}
-
-	public void setId(UUID id) {
-		this.id = id;
 	}
 
 	public String getName() {

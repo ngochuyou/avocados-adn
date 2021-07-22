@@ -5,14 +5,14 @@ package adn.model.factory.dictionary.production;
 
 import java.util.Map;
 
-import adn.model.AbstractModel;
+import adn.model.DomainEntity;
 import adn.model.factory.CompositeModelProducer;
 
 /**
  * @author Ngoc Huy
  *
  */
-public interface CompositeDictionaryModelProducer<T extends AbstractModel>
+public interface CompositeDictionaryModelProducer<T extends DomainEntity>
 		extends DictionaryModelProducer<T>, CompositeModelProducer<T, Map<String, Object>> {
 
 	<E extends T> CompositeDictionaryModelProducer<E> and(CompositeDictionaryModelProducer<E> next);

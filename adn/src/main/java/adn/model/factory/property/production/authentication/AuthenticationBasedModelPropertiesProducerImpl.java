@@ -24,7 +24,7 @@ import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
 import adn.helpers.TypeHelper;
 import adn.helpers.Utils.Entry;
-import adn.model.AbstractModel;
+import adn.model.DomainEntity;
 import adn.model.ModelContextProvider;
 import adn.model.entities.metadata.EntityMetadata;
 import adn.model.factory.AuthenticationBasedModelPropertiesProducer;
@@ -45,7 +45,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 
 	private final String[] properties;
 
-	public <T extends AbstractModel> AuthenticationBasedModelPropertiesProducerImpl(Class<T> entityClass,
+	public <T extends DomainEntity> AuthenticationBasedModelPropertiesProducerImpl(Class<T> entityClass,
 			Set<SecuredProperty<T>> securedProperties) {
 		final Logger logger = LoggerFactory.getLogger(this.getClass());
 		EntityMetadata metadata = ContextProvider.getBean(ModelContextProvider.class).getMetadata(entityClass);
@@ -109,6 +109,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 					StringHelper.hasLength(altName) ?
 							with(logger).trace(String.format("Using alternative name [%s] on property [%s]", altName, name), altName) :
 							name);
+			return;
 		});
 		functionsMap.entrySet().forEach(entry -> {
 			metadata.getPropertyNames().stream().forEach(propName -> {
@@ -156,7 +157,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 		this.alternativeNamesByOriginalNames = Collections.unmodifiableMap(alternativeNamesMap);
 		properties = metadata.getPropertyNames().toArray(String[]::new);
 
-		LoggerFactory.getLogger(this.getClass()).debug(String.format("\n" + "%s:\n" + "\t%s", entityClass.getName(),
+		logger.debug(String.format("\n" + "%s:\n" + "\t%s", entityClass.getName(),
 				functionsMap.entrySet().stream().map(entry -> entry.getValue().entrySet().stream()
 						.map(fEntry -> String.format("%s:\t[%s] -> [%s]", entry.getKey(),
 								this.alternativeNamesByOriginalNames.get(entry.getKey()).get(fEntry.getKey()),
@@ -165,10 +166,8 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 						.collect(Collectors.joining("\n\t"))).collect(Collectors.joining("\n\t"))));
 	}
 
-	private Map<String, Object> produceRow(String[] originalPropNames, Object[] values, Role role) {
-		Map<String, Function<Object, Object>> functionsByRole = functionsMap.get(role);
-		Map<String, String> alternativeNamesByRole = alternativeNamesByOriginalNames.get(role);
-
+	private Map<String, Object> produceRow(String[] originalPropNames, Object[] values,
+			Map<String, Function<Object, Object>> functionsByRole, Map<String, String> alternativeNamesByRole) {
 		try {
 			int span = values.length;
 
@@ -178,7 +177,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 				return Entry.entry(alternativeNamesByRole.get(originalPropName),
 						functionsByRole.get(originalPropName).apply(values[index]));
 			}).collect(
-			// @formatter:off
+					// @formatter:off
 					HashMap<String, Object>::new,
 					(map, entry) -> map.put(entry.getKey(), entry.getValue()),
 					HashMap::putAll);
@@ -202,7 +201,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 
 	@Override
 	public Map<String, Object> produce(Object[] source, Role role, String[] columnNames) {
-		return produceRow(columnNames, source, role);
+		return produceRow(columnNames, source, functionsMap.get(role), alternativeNamesByOriginalNames.get(role));
 	}
 
 	@Override
@@ -212,9 +211,12 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 
 	@Override
 	public List<Map<String, Object>> produce(List<Object[]> source, Role role, String[] columnNames) {
+		Map<String, Function<Object, Object>> functionsByRole = functionsMap.get(role);
+		Map<String, String> alternativeNamesByRole = alternativeNamesByOriginalNames.get(role);
+
 		// @formatter:off
 		return IntStream.range(0, source.size())
-				.mapToObj(index -> produceRow(columnNames, source.get(index), role))
+				.mapToObj(index -> produceRow(columnNames, source.get(index), functionsByRole, alternativeNamesByRole))
 				.collect(Collectors.toList());
 		// @formatter:on
 	}

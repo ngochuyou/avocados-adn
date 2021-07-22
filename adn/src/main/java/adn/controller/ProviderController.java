@@ -30,7 +30,7 @@ import adn.model.entities.Provider;
 @RequestMapping("/rest/provider")
 public class ProviderController extends BaseController {
 
-	private static final int COMMON_CACHE_MAXAGE = 2;
+	private static final int COMMON_CACHE_MAXAGE = 1;
 
 	@GetMapping
 	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
@@ -40,7 +40,7 @@ public class ProviderController extends BaseController {
 		try {
 			List<Map<String, Object>> rows = crudService.read(Provider.class, from(columns), paging);
 
-			return cache(rows, COMMON_CACHE_MAXAGE, TimeUnit.DAYS);
+			return send(rows, null);
 		} catch (SQLSyntaxErrorException ssee) {
 			return sendBadRequest(ssee.getMessage());
 		}
@@ -50,7 +50,8 @@ public class ProviderController extends BaseController {
 	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getProvidersCount() {
-		return cache(baseRepository.count(Provider.class), COMMON_CACHE_MAXAGE, TimeUnit.DAYS);
+		return makeStaleWhileRevalidate(baseRepository.count(Provider.class), COMMON_CACHE_MAXAGE, TimeUnit.DAYS, 3,
+				TimeUnit.DAYS);
 	}
 
 }

@@ -39,7 +39,7 @@ public class DepartmentService implements adn.service.internal.Service {
 //	private static final Logger logger = LoggerFactory.getLogger(DepartmentService.class);
 
 	private final SessionFactory sessionFactory;
-	private final DefaultCRUDService crudService;
+	private final CRUDServiceImpl crudService;
 	private final AbstractRepository repository;
 
 	private final AuthenticationBasedModelFactory modelFactory;
@@ -49,7 +49,7 @@ public class DepartmentService implements adn.service.internal.Service {
 	public DepartmentService(
 	// @formatter:off
 			SessionFactory sessionFactory,
-			DefaultCRUDService crudService,
+			CRUDServiceImpl crudService,
 			AbstractRepository repository,
 			AuthenticationBasedModelFactory modelFactory,
 			AuthenticationBasedModelPropertiesFactory modelPropertiesFactory) {
@@ -178,6 +178,16 @@ public class DepartmentService implements adn.service.internal.Service {
 		}
 
 		return modelPropertiesFactory.produce(Personnel.class, rows, validateSelectColumns, role);
+	}
+	
+	public UUID getPersonnelDepartmentId(String personnelId) {
+		Object[] row = repository.findById(personnelId, Personnel.class, new String[] { "department.id" });
+		
+		if (row == null) {
+			return null;
+		}
+		
+		return (UUID) row[0];
 	}
 
 }

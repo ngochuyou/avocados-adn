@@ -76,11 +76,11 @@ public class StringHelper extends StringUtils {
 	}
 
 	public static String hash(String input) {
-		byte[] hashedPassword = SHA_256_MD.digest(input.getBytes(StandardCharsets.UTF_8));
+		byte[] hashed = SHA_256_MD.digest(input.getBytes(StandardCharsets.UTF_8));
 
 		StringBuilder sb = new StringBuilder();
 
-		for (byte b : hashedPassword)
+		for (byte b : hashed)
 			sb.append(String.format("%02x", b));
 
 		return sb.toString();
@@ -103,16 +103,16 @@ public class StringHelper extends StringUtils {
 	}
 
 	public static String normalizeString(String string) {
-		return hasLength(string) ? string.trim().replaceAll(ONE_OF_WHITESPACE_CHARS + "+", " ") : null;
+		return hasLength(string) ? string.trim().replaceAll(ONE_OF_WHITESPACE_CHARS + "+", " ") : string;
 	}
 
 	public static String removeSpaces(String string) {
-		return hasLength(string) ? string.trim().replaceAll(ONE_OF_WHITESPACE_CHARS + "+", "") : null;
+		return hasLength(string) ? string.trim().replaceAll(ONE_OF_WHITESPACE_CHARS + "+", "") : string;
 	}
 
 	public static String toCamel(String s, CharSequence seperator) {
 		String input = s.trim();
-		
+
 		if (seperator != null) {
 			String[] parts = input.split(seperator.toString());
 

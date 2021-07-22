@@ -9,14 +9,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import adn.model.AbstractModel;
+import adn.model.DomainEntity;
 import adn.service.internal.Role;
 
 /**
  * @author Ngoc Huy
  *
  */
-public abstract class AbstractCompositeDictionaryAuthenticationBasedModelProducer<T extends AbstractModel>
+public abstract class AbstractCompositeDictionaryAuthenticationBasedModelProducer<T extends DomainEntity>
 		implements CompositeDictionaryAuthenticationBasedModelProducer<T> {
 
 	@Override

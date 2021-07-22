@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 import org.springframework.stereotype.Component;
 
-import adn.model.DatabaseInteractionResult;
+import adn.dao.DatabaseInteractionResult;
 import adn.model.Generic;
 import adn.model.entities.Customer;
 

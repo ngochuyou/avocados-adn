@@ -13,7 +13,7 @@ import org.hibernate.SessionFactory;
 import org.springframework.data.domain.Pageable;
 
 import adn.application.context.ContextProvider;
-import adn.model.DatabaseInteractionResult;
+import adn.dao.DatabaseInteractionResult;
 import adn.model.entities.Entity;
 
 /**

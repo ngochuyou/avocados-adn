@@ -13,16 +13,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adn.helpers.Utils;
-import adn.model.AbstractModel;
+import adn.model.DomainEntity;
 import adn.model.entities.metadata.EntityMetadata;
 
 /**
- * Literally get everything, mask nothing from a {@link AbstractModel} instance
+ * Literally get everything, mask nothing from a {@link DomainEntity} instance
  * 
  * @author Ngoc Huy
  *
  */
-public class DefaultModelProducer<T extends AbstractModel>
+public class DefaultModelProducer<T extends DomainEntity>
 		extends AbstractCompositeAuthenticationBasedModelProducerImplementor<T> {
 
 	@SuppressWarnings("unused")
@@ -31,7 +31,7 @@ public class DefaultModelProducer<T extends AbstractModel>
 
 	private final Set<Map.Entry<String, Getter>> getters;
 
-	public static <T extends AbstractModel> boolean shouldUse(Class<T> type) {
+	public static <T extends DomainEntity> boolean shouldUse(Class<T> type) {
 		return type.getDeclaredFields().length > 0;
 	}
 
@@ -81,7 +81,7 @@ public class DefaultModelProducer<T extends AbstractModel>
 	public String toString() {
 		// @formatter:off
 		return String.format("\n%s(\n]tgetters=[%s]\n)",
-				this.getClass().getSimpleName(),
+				name,
 				getters
 					.stream()
 					.map(entry -> String.format("%s(%s)", entry.getValue().getMethodName(), entry.getValue().getMethod().getReturnType()))

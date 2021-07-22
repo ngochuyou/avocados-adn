@@ -23,8 +23,8 @@ import org.springframework.stereotype.Service;
 
 import adn.application.context.ContextProvider;
 import adn.dao.AbstractRepository;
+import adn.dao.DatabaseInteractionResult;
 import adn.helpers.EntityUtils;
-import adn.model.DatabaseInteractionResult;
 import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
 import adn.model.entities.metadata.EntityMetadata;
@@ -41,9 +41,9 @@ import adn.service.internal.Role;
  */
 @Service
 @Primary
-public class DefaultCRUDService implements CRUDService {
+public final class CRUDServiceImpl implements CRUDService {
 
-	private static final Logger logger = LoggerFactory.getLogger(DefaultCRUDService.class);
+	private static final Logger logger = LoggerFactory.getLogger(CRUDServiceImpl.class);
 
 	protected final ModelContextProvider modelContext;
 	protected final AbstractRepository repository;
@@ -54,7 +54,7 @@ public class DefaultCRUDService implements CRUDService {
 
 	// @formatter:off
 	@Autowired
-	public DefaultCRUDService(
+	public CRUDServiceImpl(
 			AbstractRepository baseRepository,
 			EntityBuilderProvider entityBuilderProvider,
 			AuthenticationBasedModelPropertiesFactory authenticationBasedModelPropertiesFactory,
@@ -67,7 +67,7 @@ public class DefaultCRUDService implements CRUDService {
 		this.modelContext = modelContext;
 	}
 
-	public DefaultCRUDService() {
+	public CRUDServiceImpl() {
 		ApplicationContext context = ContextProvider.getApplicationContext();
 		
 		this.repository = context.getBean(AbstractRepository.class);
@@ -225,7 +225,7 @@ public class DefaultCRUDService implements CRUDService {
 		// assigning it to the return of updateBuild is just for the sake of it
 		persistence = entityBuilder.updateBuild(id, entity, persistence);
 
-		return repository.update(id, getCurrentSession().load(type, id), type);
+		return finish(ss, repository.update(id, persistence, type), flushOnFinish);
 	}
 
 	protected <T extends Entity, E extends T> String resolveGroupByClause(Class<E> type, Role role, String query,

@@ -7,9 +7,11 @@ import adn.application.context.DefaultAuthenticationBasedModelPropertiesProducer
 import adn.helpers.Utils;
 import adn.model.entities.Account;
 import adn.model.entities.Admin;
+import adn.model.entities.Category;
 import adn.model.entities.Customer;
 import adn.model.entities.Factor;
 import adn.model.entities.Personnel;
+import adn.model.entities.Provider;
 import adn.model.factory.property.production.authentication.AuthenticationBasedModelPropertiesProducersBuilder;
 import adn.service.internal.Role;
 
@@ -62,6 +64,12 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 				.type(Factor.class)
 					.role(Role.ADMIN, Role.PERSONNEL).publish()
 					.anyRoles().mask()
+			.and()
+				.type(Provider.class)
+					.role(Role.PERSONNEL).publish()
+			.and()
+				.type(Category.class)
+					.role(allRoles).publish()
 			.and()
 				.anyType().role(Role.ADMIN).publish();
 		// @formatter:on

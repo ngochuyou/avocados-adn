@@ -1,26 +1,13 @@
-import { $fetch } from '../fetch';
+import { $fetch, fjson } from '../fetch';
 
 export const fetchAccount = async (username = null, columns = []) => {
 	if (username == null) {
 		return [null, "Username was empty"];
 	}
 
-	const [res, err] = await $fetch(`/rest/account/${username}?columns=${columns.join(',')}`, {
-		method: 'GET',
-		headers: {
-			'Accept': 'application/json'
-		}
+	return await fjson(`/rest/account/${username}?columns=${columns.join(',')}`, {
+		method: 'GET'
 	});
-	
-	if (err) {
-		return [null, err];
-	}
-
-	if (res.ok) {
-		return [await res.json(), null];
-	}
-
-	return [null, await res.text()];
 }
 
 export async function lockAccount(username = "") {

@@ -16,7 +16,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
-import adn.model.AbstractModel;
+import adn.model.DomainEntity;
 import adn.model.Generic;
 import adn.model.ModelContextProvider;
 import adn.model.ModelInheritanceTree;
@@ -35,7 +35,7 @@ public class DefaultAuthenticationBasedModelProducerFactory implements Authentic
 	public static final String NAME = "authenticationBasedProducerProvider";
 	private static final String MODEL_PRODUCER_PACKAGE = "adn.model.factory.dictionary.production.authentication";
 
-	private Map<Class<? extends AbstractModel>, CompositeDictionaryAuthenticationBasedModelProducer<? extends AbstractModel>> producerMap;
+	private Map<Class<? extends DomainEntity>, CompositeDictionaryAuthenticationBasedModelProducer<? extends DomainEntity>> producerMap;
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -59,7 +59,11 @@ public class DefaultAuthenticationBasedModelProducerFactory implements Authentic
 				}
 				
 				Generic anno = clazz.getDeclaredAnnotation(Generic.class);
-
+				
+				if (anno == null) {
+					throw new IllegalStateException(String.format("Missing annotation [%s] on type [%s]", Generic.class, clazz.getName()));
+				}
+				
 				this.producerMap.put(anno.entityGene(), ContextProvider.getApplicationContext().getBean(clazz));
 			}
 			
@@ -73,7 +77,7 @@ public class DefaultAuthenticationBasedModelProducerFactory implements Authentic
 					return;
 				}
 				
-				ModelInheritanceTree<? super AbstractModel> parent = (ModelInheritanceTree<? super AbstractModel>) branch.getParent();
+				ModelInheritanceTree<? super DomainEntity> parent = (ModelInheritanceTree<? super DomainEntity>) branch.getParent();
 				
 				while (parent != null && getProducer(parent.getNode()) == null) {
 					parent = parent.getParent();
@@ -88,7 +92,7 @@ public class DefaultAuthenticationBasedModelProducerFactory implements Authentic
 					return;
 				}
 				
-				producerMap.put(branch.getNode(), combine(this.<AbstractModel>from(producerMap.get(parent.getNode())), producerMap.get(branch.getNode())));
+				producerMap.put(branch.getNode(), combine(this.<DomainEntity>from(producerMap.get(parent.getNode())), producerMap.get(branch.getNode())));
 			});
 			producerMap.forEach((k, v) -> {
 				logger.info(String.format("Registered one %s for type [%s]: %s", CompositeDictionaryAuthenticationBasedModelProducer.class.getSimpleName(), k.getName(), v.getName()));
@@ -102,12 +106,12 @@ public class DefaultAuthenticationBasedModelProducerFactory implements Authentic
 	}
 
 	@SuppressWarnings("unchecked")
-	private <C extends AbstractModel> CompositeDictionaryAuthenticationBasedModelProducer<C> from(
+	private <C extends DomainEntity> CompositeDictionaryAuthenticationBasedModelProducer<C> from(
 			CompositeDictionaryAuthenticationBasedModelProducer<?> target) {
 		return (CompositeDictionaryAuthenticationBasedModelProducer<C>) target;
 	}
 
-	private <T extends AbstractModel, E extends T> CompositeDictionaryAuthenticationBasedModelProducer<E> combine(
+	private <T extends DomainEntity, E extends T> CompositeDictionaryAuthenticationBasedModelProducer<E> combine(
 			CompositeDictionaryAuthenticationBasedModelProducer<T> parent,
 			CompositeDictionaryAuthenticationBasedModelProducer<E> child) {
 		if (parent == null || child == null) {
@@ -119,30 +123,29 @@ public class DefaultAuthenticationBasedModelProducerFactory implements Authentic
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T extends AbstractModel> CompositeDictionaryAuthenticationBasedModelProducer<T> getProducer(
-			Class<T> type) {
+	private <T extends DomainEntity> CompositeDictionaryAuthenticationBasedModelProducer<T> getProducer(Class<T> type) {
 		return (CompositeDictionaryAuthenticationBasedModelProducer<T>) producerMap.get(type);
 	}
 
 	@Override
-	public <T extends AbstractModel> Map<String, Object> produce(Class<T> type, T entity) {
+	public <T extends DomainEntity> Map<String, Object> produce(Class<T> type, T entity) {
 		return getProducer(type).produce(entity, new HashMap<>(16, 1.075f), ContextProvider.getPrincipalRole());
 	}
 
 	@Override
-	public <T extends AbstractModel> Map<String, Object> produce(Class<T> type, T entity, Role role) {
+	public <T extends DomainEntity> Map<String, Object> produce(Class<T> type, T entity, Role role) {
 		return getProducer(type).produce(entity, new HashMap<>(16, 1.075f), role);
 	}
 
 	@Override
-	public <T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type, List<T> entities) {
+	public <T extends DomainEntity> List<Map<String, Object>> produce(Class<T> type, List<T> entities) {
 		return getProducer(type).produce(entities, IntStream.range(0, entities.size())
 				.mapToObj(index -> new HashMap<String, Object>(16, 1.075f)).collect(Collectors.toList()),
 				ContextProvider.getPrincipalRole());
 	}
 
 	@Override
-	public <T extends AbstractModel> List<Map<String, Object>> produce(Class<T> type, List<T> entities, Role role) {
+	public <T extends DomainEntity> List<Map<String, Object>> produce(Class<T> type, List<T> entities, Role role) {
 		return getProducer(type).produce(entities, IntStream.range(0, entities.size())
 				.mapToObj(index -> new HashMap<String, Object>(16, 1.075f)).collect(Collectors.toList()), role);
 	}

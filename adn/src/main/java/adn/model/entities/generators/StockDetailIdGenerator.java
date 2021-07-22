@@ -17,7 +17,6 @@ import org.hibernate.type.Type;
 
 import adn.model.entities.Product;
 import adn.model.entities.StockDetail;
-import adn.model.entities.constants.NamedSize;
 
 /**
  * @author Ngoc Huy
@@ -27,7 +26,7 @@ public class StockDetailIdGenerator implements IdentifierGenerator, Configurable
 
 	public static final String NAME = "StockDetailIdGenerator";
 	public static final String PATH = "adn.model.entities.generators.StockDetailIdGenerator";
-	private static final String DELIMETER = "-";
+	private static final String DELIMITER = "-";
 
 	@Override
 	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) throws MappingException {
@@ -40,26 +39,14 @@ public class StockDetailIdGenerator implements IdentifierGenerator, Configurable
 		StringBuilder builder = new StringBuilder();
 		Product product = details.getProduct();
 
-		builder.append(product.getCategory().getCode());
-		builder.append(DELIMETER);
-		builder.append(product.getCode());
-		builder.append(DELIMETER);
-		builder.append(getSizeCode(details.getSize(), details.getNumericSize()));
-		builder.append(DELIMETER);
-		builder.append(RandomStringUtils.randomAlphabetic(StockDetail.IDENTIFIER_LENGTH - builder.length()));
-		// @formatter:off
+		builder.append(product.getId());
+		builder.append(DELIMITER);
+
+		int remainingSize = StockDetail.IDENTIFIER_LENGTH - builder.length();
+
+		builder.append(RandomStringUtils.randomAlphabetic(remainingSize));
+
 		return builder.toString();
-		// @formatter:on
-	}
-
-	private String getSizeCode(NamedSize namedSize, Integer numericSize) {
-		boolean noNamedSize, noNumericSize;
-
-		if ((noNamedSize = (namedSize == null)) || (noNumericSize = (numericSize == null))) {
-			throw new HibernateException("Product's size informations are missing");
-		}
-
-		return String.format("%s%s", noNamedSize ? "" : namedSize, noNumericSize ? "" : numericSize).toUpperCase();
 	}
 
 }

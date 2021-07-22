@@ -5,7 +5,7 @@ package adn.model.models;
 
 import java.io.Serializable;
 
-import adn.model.AbstractModel;
+import adn.model.DomainEntity;
 import adn.model.Generic;
 import adn.model.entities.Entity;
 
@@ -14,7 +14,7 @@ import adn.model.entities.Entity;
  *
  */
 @Generic(entityGene = Entity.class, modelGene = Model.class)
-public abstract class Model extends AbstractModel {
+public abstract class Model extends DomainEntity {
 
 	protected Serializable id;
 

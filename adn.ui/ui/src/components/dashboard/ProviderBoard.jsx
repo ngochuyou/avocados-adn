@@ -11,7 +11,7 @@ const STORE = {
 	providerCount: 0,
 	pagination: {
 		page: 0,
-		totalPage: 0,
+		totalPages: 0,
 		size: 10,
 		fetchStatus: [],
 		pageMap: {}
@@ -260,7 +260,7 @@ export default function ProviderBoard({
 			return;
 		}
 
-		const [providerList, err] = await fetchProviderList({ page, size });
+		const [providerList, err] = await fetchProviderList({ page, size, columns: FETCHED_COLUMNS });
 
 		if (err) {
 			console.error(err);
@@ -346,9 +346,9 @@ function ProviderList({
 							<td>
 								<ul className="uk-list">
 								{
-									provider.phoneNumbers.map((phone, index) => (
+									(provider.phoneNumbers && provider.phoneNumbers.map((phone, index) => (
 										<li key={index}>{phone}</li>
-									))
+									)))
 								}
 								</ul>
 							</td>

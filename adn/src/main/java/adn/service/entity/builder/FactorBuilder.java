@@ -21,7 +21,7 @@ import adn.model.entities.Factor;
 @Generic(entityGene = Factor.class)
 public class FactorBuilder<T extends Factor> extends AbstractEntityBuilder<T> {
 
-	protected <E extends Factor> E mandatoryBuild(E target, E model) {
+	protected <E extends T> E mandatoryBuild(E target, E model) {
 		target.setName(StringHelper.normalizeString(model.getName()));
 		target.setActive(Optional.ofNullable(model.isActive()).orElse(true));
 
@@ -35,13 +35,14 @@ public class FactorBuilder<T extends Factor> extends AbstractEntityBuilder<T> {
 		model.setActive(Boolean.TRUE);
 		model.setCreatedBy(ContextProvider.getPrincipalName());
 		model.setUpdatedBy(model.getCreatedBy());
+		model.setDeactivatedDate(null);
 
 		return model;
 	}
 
 	@Override
 	public <E extends T> E updateBuild(Serializable id, E model, E persistence) {
-		mandatoryBuild(persistence, model);
+		persistence = mandatoryBuild(persistence, model);
 
 		persistence.setUpdatedBy(ContextProvider.getPrincipalName());
 

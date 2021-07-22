@@ -3,6 +3,7 @@
  */
 package adn.model.specification;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
+import adn.dao.DatabaseInteractionResult;
 import adn.helpers.TypeHelper;
 import adn.model.Generic;
 import adn.model.ModelContextProvider;
@@ -36,7 +38,19 @@ public class SpecificationFactory implements ContextBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(SpecificationFactory.class);
 
-	private Specification<?> defaultSpecification = new Specification<>() {};
+	private Specification<?> defaultSpecification = new Specification<>() {
+
+		@Override
+		public DatabaseInteractionResult<Object> isSatisfiedBy(Object instance) {
+			return DatabaseInteractionResult.success(instance);
+		}
+
+		@Override
+		public DatabaseInteractionResult<Object> isSatisfiedBy(Serializable id, Object instance) {
+			return DatabaseInteractionResult.success(instance);
+		}
+
+	};
 
 	@Autowired
 	private ModelContextProvider modelManager;

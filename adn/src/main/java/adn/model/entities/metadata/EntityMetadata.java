@@ -21,6 +21,8 @@ public interface EntityMetadata {
 	Set<String> getNonLazyPropertyNames();
 
 	int getNonLazyPropertiesSpan();
+
+	int getPropertiesSpan();
 	
 	String getDiscriminatorColumnName();
 	

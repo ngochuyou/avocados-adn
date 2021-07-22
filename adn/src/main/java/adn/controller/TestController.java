@@ -42,7 +42,7 @@ import adn.model.entities.Admin;
 import adn.model.entities.Customer;
 import adn.security.SecurityConfiguration;
 import adn.service.resource.ResourceManager;
-import adn.service.resource.model.models.ImageByBytes;
+import adn.service.resource.model.models.UserPhoto;
 
 /**
  * @author Ngoc Huy
@@ -218,7 +218,7 @@ public class TestController extends BaseController {
 //				"1623406220771_12d4fc19efc1899e0731cd4d7e67f66daec3c271105cc0eb0ed6757f94822615.jpg"));
 //
 //		Query<ImageByBytes> hql = session.createQuery(query);
-		ImageByBytes image = new ImageByBytes();
+		UserPhoto image = new UserPhoto();
 
 		image.setName("asdasd");
 		image.setExtension(".jpg");

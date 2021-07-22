@@ -65,7 +65,7 @@ public abstract class FileResource implements Resource {
 		super();
 		this.name = pathname;
 		this.createdDate = timestamp;
-		this.extension = "." + extension;
+		this.extension = extension;
 	}
 
 	public String getName() {

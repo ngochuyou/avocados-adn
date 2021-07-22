@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.controller;
+package adn.controller.exception;
 
 import java.sql.SQLSyntaxErrorException;
 
@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
+import adn.controller.BaseController;
 
 /**
  * @author Ngoc Huy
@@ -29,7 +31,7 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 	}
 
 	@ExceptionHandler(value = { FileSizeLimitExceededException.class })
-	public ResponseEntity<?> handleFileSizeLimitExceeded(RuntimeException ex, WebRequest request) {
+	public ResponseEntity<?> handleFileSizeLimitExceeded(Exception ex, WebRequest request) {
 		return handleExceptionInternal(ex,
 				String.format("File size is too large, expect size to be less than %d MB",
 						BaseController.MAXIMUM_FILE_SIZE / (1024 * 1024)),
@@ -37,8 +39,13 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 	}
 	
 	@ExceptionHandler(value = { SQLSyntaxErrorException.class })
-	public ResponseEntity<?> handleUnknownColumnInFetch(RuntimeException ex, WebRequest request) {
+	public ResponseEntity<?> handleUnknownColumnInFetch(Exception ex, WebRequest request) {
 		return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+	}
+	
+	@ExceptionHandler(value = { UnauthorisedDepartmentException.class })
+	public ResponseEntity<?> handleUnauthorisedDepartment(RuntimeException ex, WebRequest request) {
+		return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.UNAUTHORIZED, request);
 	}
 
 }

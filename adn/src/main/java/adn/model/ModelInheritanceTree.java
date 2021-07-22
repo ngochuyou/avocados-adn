@@ -11,7 +11,7 @@ import java.util.function.Consumer;
  * @author Ngoc Huy
  *
  */
-public class ModelInheritanceTree<T extends AbstractModel> {
+public class ModelInheritanceTree<T extends DomainEntity> {
 
 	private ModelInheritanceTree<? super T> parent;
 
@@ -28,8 +28,8 @@ public class ModelInheritanceTree<T extends AbstractModel> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void add(Class<? extends AbstractModel> clazz) {
-		if (clazz == null || clazz == AbstractModel.class) {
+	public void add(Class<? extends DomainEntity> clazz) {
+		if (clazz == null || clazz == DomainEntity.class) {
 			return;
 		}
 
@@ -46,7 +46,7 @@ public class ModelInheritanceTree<T extends AbstractModel> {
 		this.childrens.forEach(tree -> tree.add(clazz));
 	}
 
-	public boolean contains(Class<? extends AbstractModel> clazz) {
+	public boolean contains(Class<? extends DomainEntity> clazz) {
 		if (clazz == null) {
 			return false;
 		}

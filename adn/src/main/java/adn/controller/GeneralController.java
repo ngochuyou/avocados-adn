@@ -17,15 +17,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import adn.application.Constants;
 import adn.model.entities.Entity;
-import adn.model.entities.Factor;
 import adn.model.entities.Provider;
 
 /**
@@ -36,20 +32,6 @@ import adn.model.entities.Provider;
  */
 @Controller
 public class GeneralController extends BaseController {
-
-	@Transactional
-	@PostMapping("/provider")
-	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
-	public @ResponseBody ResponseEntity<?> createProvider(@RequestBody Provider provider) {
-		return createFactor(provider, Provider.class);
-	}
-
-	@Transactional
-	@PutMapping("/provider")
-	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
-	public @ResponseBody ResponseEntity<?> updateProvider(@RequestBody Provider provider) {
-		return updateFactor(provider, Provider.class);
-	}
 
 	@Transactional(readOnly = true)
 	@GetMapping("/provider")
@@ -81,34 +63,6 @@ public class GeneralController extends BaseController {
 		} catch (SQLSyntaxErrorException e) {
 			return sendBadRequest(e.getMessage());
 		}
-	}
-
-	/**
-	 * @param instance always non-null
-	 * @param type     always non-null
-	 */
-	protected <T extends Factor> ResponseEntity<?> createFactor(T instance, Class<T> type) {
-		// there is a chance where id field in the model is provided. In such case, we
-		// ignore it since it could cause the Specification check on the name uniqueness
-		// to success. This results in Session being flushed upon a duplicated name,
-		// which causes violation exception
-		setSessionMode();
-
-		return finishAndSend(crudService.create(null, instance, type, true));
-	}
-
-	/**
-	 * @param instance always non-null
-	 * @param type     always non-null
-	 */
-	protected <T extends Factor> ResponseEntity<?> updateFactor(T instance, Class<T> type) {
-		setSessionMode();
-		// load the actual factor into Session, hit the DB
-		if (baseRepository.findById(instance.getId(), type) == null) {
-			return sendNotFound(String.format("%s not found", instance.getId()));
-		}
-
-		return finishAndSend(crudService.update(instance.getId(), instance, type, true));
 	}
 
 }

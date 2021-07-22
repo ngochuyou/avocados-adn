@@ -27,7 +27,7 @@ public class ProductProviderDetail extends adn.model.entities.Entity {
 
 	@Id
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "product_id", referencedColumnName = "id")
+	@JoinColumn(name = "product_id", referencedColumnName = "id", updatable = false, columnDefinition = "VARCHAR(11)")
 	private Product product;
 
 	@Id
@@ -121,23 +121,23 @@ public class ProductProviderDetail extends adn.model.entities.Entity {
 @SuppressWarnings("serial")
 class ProductProviderDetailId implements Serializable {
 
-	private UUID product;
+	private String product;
 
 	private UUID provider;
 
 	public ProductProviderDetailId() {}
 
-	public ProductProviderDetailId(UUID productId, UUID providerId) {
+	public ProductProviderDetailId(String productId, UUID providerId) {
 		super();
 		this.product = productId;
 		this.provider = providerId;
 	}
 
-	public UUID getProduct() {
+	public String getProduct() {
 		return product;
 	}
 
-	public void setProduct(UUID product) {
+	public void setProduct(String product) {
 		this.product = product;
 	}
 

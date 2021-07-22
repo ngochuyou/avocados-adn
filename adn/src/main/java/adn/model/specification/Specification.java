@@ -5,7 +5,7 @@ package adn.model.specification;
 
 import java.io.Serializable;
 
-import adn.model.DatabaseInteractionResult;
+import adn.dao.DatabaseInteractionResult;
 
 /**
  * @author Ngoc Huy
@@ -13,12 +13,8 @@ import adn.model.DatabaseInteractionResult;
  */
 public interface Specification<T> {
 
-	default DatabaseInteractionResult<T> isSatisfiedBy(T instance) {
-		return DatabaseInteractionResult.success(instance);
-	}
+	DatabaseInteractionResult<T> isSatisfiedBy(T instance);
 
-	default DatabaseInteractionResult<T> isSatisfiedBy(Serializable id, T instance) {
-		return DatabaseInteractionResult.success(instance);
-	}
+	DatabaseInteractionResult<T> isSatisfiedBy(Serializable id, T instance);
 
 }

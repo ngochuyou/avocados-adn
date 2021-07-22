@@ -22,3 +22,30 @@ export async function $fetch(endpoint = null, options = {}) {
 		return [null, error];
 	}
 }
+
+export async function fjson(endpoint = null, options = {}) {
+	const { headers } = options;
+	const [res, err] = await $fetch(endpoint, {
+		...options,
+		headers: headers != null ? {
+			...headers,
+			'Accept': 'application/json'
+		} : {
+			'Accept': 'application/json'
+		}
+	});
+
+	if (err) {
+		return [null, err];
+	}
+	
+	try {
+		if (res.ok) {
+			return [await res.json(), null];
+		}
+
+		return [null, await res.json()];
+	} catch (exception) {
+		return [null, exception];
+	}
+}

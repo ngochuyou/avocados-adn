@@ -9,13 +9,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import adn.model.AbstractModel;
+import adn.model.DomainEntity;
 
 /**
  * @author Ngoc Huy
  *
  */
-public abstract class AbstractCompositeDictionaryModelProducer<T extends AbstractModel>
+public abstract class AbstractCompositeDictionaryModelProducer<T extends DomainEntity>
 		implements CompositeDictionaryModelProducer<T> {
 
 	@Override

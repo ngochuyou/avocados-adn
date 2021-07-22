@@ -5,14 +5,12 @@ package adn.service.entity.builder;
 
 import static adn.helpers.StringHelper.normalizeString;
 
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
 import adn.helpers.StringHelper;
 import adn.model.Generic;
-import adn.model.entities.Factor;
 import adn.model.entities.Provider;
 
 /**
@@ -24,25 +22,23 @@ import adn.model.entities.Provider;
 public class ProviderBuilder extends FactorBuilder<Provider> {
 
 	@Override
-	protected <E extends Factor> E mandatoryBuild(E target, E model) {
-		super.mandatoryBuild(target, model);
+	protected <E extends Provider> E mandatoryBuild(E target, E model) {
+		target = super.mandatoryBuild(target, model);
 
-		Provider targetRef = (Provider) target;
-		Provider modelRef = (Provider) model;
-
-		targetRef.setEmail(modelRef.getEmail());
-		targetRef.setAddress(normalizeString(modelRef.getAddress()));
+		target.setEmail(model.getEmail());
+		target.setAddress(normalizeString(model.getAddress()));
 		// @formatter:off
-		targetRef.setPhoneNumbers(
-				modelRef.getPhoneNumbers() != null ?
-					modelRef.getPhoneNumbers()
-						.stream().map(StringHelper::normalizeString)
-						.filter(Objects::nonNull).collect(Collectors.toSet()) :
+		target.setPhoneNumbers(
+				model.getPhoneNumbers() != null ?
+						model.getPhoneNumbers()
+						.stream().filter(StringHelper::hasLength)
+						.map(String::trim)
+						.collect(Collectors.toSet()) :
 					null);
 		// @formatter:on
-		targetRef.setRepresentatorName(normalizeString(modelRef.getRepresentatorName()));
+		target.setRepresentatorName(normalizeString(model.getRepresentatorName()));
 
-		return super.mandatoryBuild(target, model);
+		return target;
 	}
 
 }

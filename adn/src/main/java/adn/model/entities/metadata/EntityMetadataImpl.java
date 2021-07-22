@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import adn.engine.access.StandardAccess;
 import adn.helpers.EntityUtils;
-import adn.model.AbstractModel;
+import adn.model.DomainEntity;
 import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
 
@@ -42,11 +42,12 @@ public class EntityMetadataImpl implements EntityMetadata {
 	private final Set<String> properties;
 	private final Set<String> nonLazyProperties;
 	private final int nonLazyPropertiesSpan;
+	private final int propertiesSpan;
 	private final Set<Map.Entry<String, Getter>> getters;
 	private final String discriminatorColumnName;
 
 	@SuppressWarnings("unchecked")
-	public <T extends AbstractModel> EntityMetadataImpl(final ModelContextProvider modelContext, Class<T> entityClass) {
+	public <T extends DomainEntity> EntityMetadataImpl(final ModelContextProvider modelContext, Class<T> entityClass) {
 		final Logger logger = LoggerFactory.getLogger(this.getClass());
 		Set<Map.Entry<String, Getter>> getters;
 		Set<String> properties;
@@ -96,7 +97,6 @@ public class EntityMetadataImpl implements EntityMetadata {
 				if (!Entity.class.isAssignableFrom(clz)) {
 					return true;
 				}
-
 				// this is how a CollectionPersister role is resolved by Hibernate
 				// see org.hibernate.cfg.annotations.CollectionBinder.bind()
 				String collectionRole = StringHelper.qualify(type.getName(), prop);
@@ -137,7 +137,7 @@ public class EntityMetadataImpl implements EntityMetadata {
 			EntityMetadata superMetadata = null;
 
 			while (superClass != null && superClass != Object.class
-					&& ((superMetadata) = modelContext.getMetadata((Class<AbstractModel>) superClass)) == null) {
+					&& ((superMetadata) = modelContext.getMetadata((Class<DomainEntity>) superClass)) == null) {
 				superClass = superClass.getSuperclass();
 			}
 
@@ -170,6 +170,7 @@ public class EntityMetadataImpl implements EntityMetadata {
 		this.properties = properties;
 		this.nonLazyProperties = nonLazyProperties;
 		nonLazyPropertiesSpan = this.nonLazyProperties.size();
+		propertiesSpan = this.properties.size();
 		this.discriminatorColumnName = discriminatorColumnName;
 	}
 
@@ -213,6 +214,11 @@ public class EntityMetadataImpl implements EntityMetadata {
 	@Override
 	public int getNonLazyPropertiesSpan() {
 		return nonLazyPropertiesSpan;
+	}
+
+	@Override
+	public int getPropertiesSpan() {
+		return propertiesSpan;
 	}
 
 	@Override

@@ -3,22 +3,31 @@
  */
 package adn.model.entities;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import adn.model.entities.converters.StringSetConverter;
+import adn.model.entities.generators.ProductIdGenerator;
 
 /**
  * @author Ngoc Huy
@@ -28,8 +37,16 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @Table(name = "products")
 public class Product extends Factor {
 
-	@Column(scale = 3, nullable = false)
-	private Double price;
+	public static final int IDENTIFIER_LENGTH = Category.IDENTIFIER_LENGTH + 5 + 1; // 5 + delimiter
+
+	@Id
+	@GeneratedValue(generator = ProductIdGenerator.NAME)
+	@GenericGenerator(name = ProductIdGenerator.NAME, strategy = ProductIdGenerator.PATH)
+	@Column(updatable = false, length = IDENTIFIER_LENGTH, columnDefinition = "VARCHAR(11)")
+	private String id;
+
+	@Column(columnDefinition = "DECIMAL(13,4)", nullable = false)
+	private BigDecimal price;
 
 	@CreationTimestamp
 	@Column(name = "created_timestamp", nullable = false, updatable = false)
@@ -42,26 +59,30 @@ public class Product extends Factor {
 	@ManyToOne(optional = false, fetch = FetchType.LAZY)
 	@JoinColumn(name = "category_id", referencedColumnName = "id")
 	private Category category;
+	// IDENTIFIER_LENGTH
+	@Column(columnDefinition = "VARCHAR(500)")
+	@Convert(converter = StringSetConverter.class)
+	private Set<String> images;
 
 	@OneToMany(cascade = CascadeType.PERSIST, mappedBy = "product", fetch = FetchType.LAZY)
 	private List<ProductProviderDetail> providerDetails;
 
-	@Column(nullable = false, updatable = false, length = 10, columnDefinition = "NVARCHAR(10)")
-	private String code;
+	@Column(columnDefinition = "TEXT")
+	private String description;
 
-	public String getCode() {
-		return code;
+	public String getId() {
+		return id;
 	}
 
-	public void setCode(String code) {
-		this.code = code;
+	public void setId(String code) {
+		this.id = code;
 	}
 
-	public Double getPrice() {
+	public BigDecimal getPrice() {
 		return price;
 	}
 
-	public void setPrice(Double price) {
+	public void setPrice(BigDecimal price) {
 		this.price = price;
 	}
 
@@ -97,6 +118,22 @@ public class Product extends Factor {
 
 	public void setProviderDetails(List<ProductProviderDetail> providerDetails) {
 		this.providerDetails = providerDetails;
+	}
+
+	public Set<String> getImages() {
+		return images;
+	}
+
+	public void setImages(Set<String> images) {
+		this.images = images;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 }

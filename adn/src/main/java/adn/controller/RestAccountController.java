@@ -24,9 +24,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.context.ContextProvider;
+import adn.dao.DatabaseInteractionResult;
 import adn.helpers.StringHelper;
 import adn.helpers.Utils;
-import adn.model.DatabaseInteractionResult;
 import adn.model.entities.Account;
 import adn.service.internal.AccountRoleExtractor;
 import adn.service.internal.ResourceService;

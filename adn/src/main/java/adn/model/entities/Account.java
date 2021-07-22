@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import adn.model.entities.constants.Gender;
 import adn.service.internal.Role;
+import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
 
 /**
  * @author Ngoc Huy
@@ -61,16 +62,18 @@ public class Account extends adn.model.entities.Entity {
 	@Column(name = "last_name")
 	protected String lastName;
 
-	@Column(updatable = false)
+	@Column(updatable = false, length = DefaultResourceIdentifierGenerator.IDENTIFIER_LENGTH)
 	protected String photo;
 
 	@Column(nullable = false)
 	protected String password;
 
 	@Enumerated(EnumType.STRING)
+	@Column(length = 20, columnDefinition = "VARCHAR(20)")
 	protected Role role;
 
 	@Enumerated(EnumType.STRING)
+	@Column(length = 20, columnDefinition = "VARCHAR(20)")
 	protected Gender gender;
 
 	@Column(name = "birth_date")

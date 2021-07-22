@@ -11,7 +11,7 @@ import adn.security.ApplicationUserDetails;
  */
 public class Mutex {
 
-	private ApplicationUserDetails userInfo;
+	private volatile ApplicationUserDetails userInfo;
 
 	public Mutex(ApplicationUserDetails userInfo) {
 		super();

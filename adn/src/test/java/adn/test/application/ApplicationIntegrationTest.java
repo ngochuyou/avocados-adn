@@ -61,7 +61,7 @@ import adn.dao.paging.Unpaged;
 import adn.model.entities.Account;
 import adn.model.entities.Provider;
 import adn.security.SecurityConfiguration;
-import adn.service.resource.model.models.ImageByBytes;
+import adn.service.resource.model.models.UserPhoto;
 
 /**
  * @author Ngoc Huy
@@ -97,7 +97,7 @@ public class ApplicationIntegrationTest {
 
 	@Test
 	private void testGetImageBytes() throws Exception {
-		File directory = new File(ImageByBytes.DIRECTORY);
+		File directory = new File(UserPhoto.DIRECTORY);
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
 				.get(MULTITHREADING_ENDPOINT + "/file/public/image/bytes");
 		int amount = directory.listFiles().length;

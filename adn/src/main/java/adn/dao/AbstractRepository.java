@@ -30,7 +30,6 @@ import adn.dao.paging.Unpaged;
 import adn.dao.parameter.ParamContext;
 import adn.dao.parameter.ParamType;
 import adn.helpers.Utils.Entry;
-import adn.model.DatabaseInteractionResult;
 import adn.model.entities.Entity;
 import adn.model.specification.Specification;
 import adn.model.specification.SpecificationFactory;
@@ -65,18 +64,54 @@ public abstract class AbstractRepository implements Repository {
 	@Override
 	public <T extends Entity> Object[] findById(Serializable id, Class<T> clazz, String[] columns) {
 		// @formatter:off
-		String query = String.format("SELECT %s FROM %s WHERE %s=:id",
-				Stream.of(columns).collect(Collectors.joining(", ")),
-				getEntityName(clazz),
+		String query = String.format("%s WHERE %s=:id",
+				resolveSelect(clazz, columns),
 				getIdentifierPropertyName(clazz));
 		// @formatter:on
 		Session session = getCurrentSession();
+
+		if (columns.length == 1) {
+			Query<Object> hql = session.createQuery(query, Object.class);
+
+			hql.setParameter("id", id);
+
+			return new Object[] { hql.getSingleResult() };
+		}
+
 		Query<Object[]> hql = session.createQuery(query, Object[].class);
 
 		hql.setParameter("id", id);
 
-		return hql.getResultStream().findFirst().orElse(null);
+		return hql.getSingleResult();
 	}
+
+//	@Override
+//	@SuppressWarnings("unchecked")
+//	public <T extends Entity> T findById(Serializable id, Class<T> clazz, String[] columns, boolean persistOnFinish) {
+//		Session session = getCurrentSession();
+//		Query<Object[]> hql = session.createQuery(
+//				String.format("%s WHERE %s=:id", resolveSelect(clazz, columns), getIdentifierPropertyName(clazz)),
+//				Object[].class);
+//		Object[] row = hql.getSingleResult();
+//
+//		if (row == null) {
+//			return null;
+//		}
+//
+//		EntityTuplizer tuplizer = getEntityPersister(clazz).getEntityTuplizer();
+//		T instance = (T) tuplizer.instantiate(id, session.unwrap(SharedSessionContractImplementor.class));
+//		int i = 0;
+//
+//		for (String prop : columns) {
+//			tuplizer.setPropertyValue(instance, prop, row[i++]);
+//		}
+//
+//		if (persistOnFinish) {
+//			session.persist(instance);
+//		}
+//
+//		return instance;
+//	}
 
 	@Override
 	public <T extends Entity> T findOne(CriteriaQuery<T> query, Class<T> clazz) {

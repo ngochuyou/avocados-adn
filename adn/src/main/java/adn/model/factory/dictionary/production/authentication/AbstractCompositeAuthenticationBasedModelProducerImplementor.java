@@ -9,13 +9,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import adn.model.AbstractModel;
+import adn.model.DomainEntity;
 import adn.model.entities.Entity;
 import adn.model.factory.dictionary.production.AbstractCompositeDictionaryAuthenticationBasedModelProducer;
 import adn.model.factory.dictionary.production.CompositeDictionaryAuthenticationBasedModelProducer;
 import adn.service.internal.Role;
 
-public abstract class AbstractCompositeAuthenticationBasedModelProducerImplementor<T extends AbstractModel>
+public abstract class AbstractCompositeAuthenticationBasedModelProducerImplementor<T extends DomainEntity>
 		extends AbstractCompositeDictionaryAuthenticationBasedModelProducer<T>
 		implements CompositeDictionaryAuthenticationBasedModelProducer<T> {
 

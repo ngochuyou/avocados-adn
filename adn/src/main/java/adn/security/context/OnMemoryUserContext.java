@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 import adn.model.entities.Account;
 import adn.security.ApplicationUserDetails;
-import adn.service.AccountServiceObserver;
+import adn.service.DomainEntityServiceObserver;
 import adn.service.services.AccountService;
 
 /**
@@ -21,7 +21,7 @@ import adn.service.services.AccountService;
  *
  */
 @Component
-public class OnMemoryUserContext implements AccountServiceObserver {
+public class OnMemoryUserContext implements DomainEntityServiceObserver<Account> {
 
 	private static final Logger logger = LoggerFactory.getLogger(OnMemoryUserContext.class);
 	private static final String ID = UUID.randomUUID().toString();
@@ -35,11 +35,11 @@ public class OnMemoryUserContext implements AccountServiceObserver {
 
 	public ApplicationUserDetails getUser(String username) {
 		Mutex mutex;
-		
+
 		if ((mutex = context.get(username)) == null) {
 			return null;
 		}
-		
+
 		return mutex.getUserInfo();
 	}
 
@@ -83,13 +83,16 @@ public class OnMemoryUserContext implements AccountServiceObserver {
 	}
 
 	@Override
-	public void notifyAccountUpdate(Account newState) {
+	public void notifyUpdate(Account newState) {
 		if (logger.isTraceEnabled()) {
 			logger.trace(String.format("Removing user info on user update, user id: [%s]", newState.getId()));
 		}
 
 		remove(newState.getId());
 	}
+
+	@Override
+	public void notifyCreation(Account newState) {}
 
 }
 

@@ -10,6 +10,7 @@ import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
@@ -27,36 +28,46 @@ import adn.model.entities.generators.StockDetailIdGenerator;
 @Table(name = "stock_details")
 public class StockDetail extends Entity {
 
-	public static final int IDENTIFIER_LENGTH = 25;
+	public static final int IDENTIFIER_LENGTH = Product.IDENTIFIER_LENGTH + 8 + 1; // 8 + delimiter
 
 	@Id
 	@GeneratedValue(generator = StockDetailIdGenerator.NAME)
 	@GenericGenerator(name = StockDetailIdGenerator.NAME, strategy = StockDetailIdGenerator.PATH)
-	@Column(columnDefinition = "NVARCHAR(25)")
+	@Column(columnDefinition = "VARCHAR(20)", updatable = false)
 	private String id;
 
-	@ManyToOne
+	@ManyToOne(optional = false)
 	private Product product;
 
 	@Enumerated
-	@Column(columnDefinition = "NVARCHAR(4)")
+	@Column(columnDefinition = "VARCHAR(4)")
 	private NamedSize size;
 
 	@Column(name = "numeric_size", columnDefinition = "TINYINT")
 	private Integer numericSize;
 
+	@Column(name = "color", columnDefinition = "VARCHAR(50)", nullable = false)
+	private String color;
+
 	@Column(name = "stocked_date")
 	private LocalDate stockedDate;
 
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(referencedColumnName = "id", name = "stocked_by")
+	private Personnel stockedBy;
+
 	@ManyToOne(fetch = FetchType.LAZY)
-	private Personnel personnel;
+	@JoinColumn(referencedColumnName = "id", name = "sold_by")
+	private Personnel soldBy;
 
 	@Enumerated
-	@Column(nullable = false, columnDefinition = "NVARCHAR(20)")
+	@Column(nullable = false, columnDefinition = "VARCHAR(20)")
 	private Status status;
 
 	@Column(nullable = false)
 	private Boolean active;
+
+	private String description;
 
 	public String getId() {
 		return id;
@@ -98,12 +109,16 @@ public class StockDetail extends Entity {
 		this.stockedDate = stockedDate;
 	}
 
-	public Personnel getPersonnel() {
-		return personnel;
+	public Personnel getStockedBy() {
+		return stockedBy;
 	}
 
-	public void setPersonnel(Personnel personnel) {
-		this.personnel = personnel;
+	public void setStockedBy(Personnel stockedBy) {
+		this.stockedBy = stockedBy;
+	}
+
+	public Boolean getActive() {
+		return active;
 	}
 
 	public Status getStatus() {
@@ -120,6 +135,30 @@ public class StockDetail extends Entity {
 
 	public void setActive(Boolean active) {
 		this.active = active;
+	}
+
+	public String getColor() {
+		return color;
+	}
+
+	public void setColor(String color) {
+		this.color = color;
+	}
+
+	public Personnel getSoldBy() {
+		return soldBy;
+	}
+
+	public void setSoldBy(Personnel soldBy) {
+		this.soldBy = soldBy;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 }

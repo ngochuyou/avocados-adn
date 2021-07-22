@@ -5,14 +5,14 @@ package adn.model.factory.property.production;
 
 import java.util.function.Function;
 
-import adn.model.AbstractModel;
+import adn.model.DomainEntity;
 import adn.service.internal.Role;
 
 /**
  * @author Ngoc Huy
  *
  */
-public interface SecuredProperty<T extends AbstractModel> {
+public interface SecuredProperty<T extends DomainEntity> {
 
 	Class<T> getEntityType();
 

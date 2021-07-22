@@ -8,8 +8,14 @@ import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+
+import org.hibernate.annotations.GenericGenerator;
+
+import adn.model.entities.generators.CategoryIdGenerator;
 
 /**
  * @author Ngoc Huy
@@ -19,11 +25,17 @@ import javax.persistence.Table;
 @Table(name = "categories")
 public class Category extends Factor {
 
+	public static final int IDENTIFIER_LENGTH = 5;
+	public static final int DESCRIPTION_LENGTH = 255;
+	
+	@Id
+	@GeneratedValue(generator = CategoryIdGenerator.NAME)
+	@GenericGenerator(name = CategoryIdGenerator.NAME, strategy = CategoryIdGenerator.PATH)
+	@Column(updatable = false, length = 5, columnDefinition = "VARCHAR(5)")
+	private String id;
+
 	@Column
 	private String description;
-
-	@Column(nullable = false, updatable = false, length = 5, columnDefinition = "NVARCHAR(5)")
-	private String code;
 
 	@OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
 	private List<Product> products;
@@ -44,12 +56,12 @@ public class Category extends Factor {
 		this.products = products;
 	}
 
-	public String getCode() {
-		return code;
+	public String getId() {
+		return id;
 	}
 
-	public void setCode(String code) {
-		this.code = code;
+	public void setId(String code) {
+		this.id = code;
 	}
 
 }

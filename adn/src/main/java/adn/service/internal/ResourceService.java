@@ -8,6 +8,8 @@ import java.io.IOException;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import adn.service.resource.model.models.ImageByBytes;
+
 /**
  * @author Ngoc Huy
  *
@@ -22,7 +24,7 @@ public interface ResourceService extends Service {
 	 * @return a {@link ServiceResult} contains a filename if success, null
 	 *         otherwise
 	 */
-	ServiceResult<String> uploadImage(MultipartFile file);
+	ServiceResult<String> uploadUserPhoto(MultipartFile file);
 
 	/**
 	 * Update the content of an image located by the current filename, using the
@@ -33,7 +35,7 @@ public interface ResourceService extends Service {
 	 * @return a {@link ServiceResult} contains a filename if success, null
 	 *         otherwise
 	 */
-	ServiceResult<String> updateContent(MultipartFile file, String filename);
+	ServiceResult<String> updateUserPhotoContent(MultipartFile file, String filename);
 
 	/**
 	 * Read all of the bytes of the requested {@link File} using it's filename
@@ -41,9 +43,11 @@ public interface ResourceService extends Service {
 	 * @param filename
 	 * @return
 	 */
-	byte[] getImageBytes(String filename);
+	<T extends ImageByBytes> byte[] getImageBytes(Class<T> type, String filename);
 
-	byte[] directlyGetImageBytes(String filename) throws IOException;
+	byte[] directlyGetImageBytes(String path, String filename) throws IOException;
+
+	byte[] directlyGetUserPhotoBytes(String filename) throws IOException;
 
 	void closeSession(boolean doFlush);
 

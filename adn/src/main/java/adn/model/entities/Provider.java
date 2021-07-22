@@ -5,15 +5,21 @@ package adn.model.entities;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.GenericGenerator;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import adn.model.DepartmentScoped;
 import adn.model.entities.converters.StringSetConverter;
 
 /**
@@ -22,7 +28,13 @@ import adn.model.entities.converters.StringSetConverter;
  */
 @javax.persistence.Entity
 @Table(name = "providers")
-public class Provider extends Factor {
+public class Provider extends Factor implements DepartmentScoped {
+
+	@Id
+	@GeneratedValue(generator = "uuid")
+	@GenericGenerator(name = "uuid", strategy = "uuid2")
+	@Column(columnDefinition = "BINARY(16)")
+	protected UUID id;
 
 	@Column(nullable = false)
 	private String email;
@@ -40,6 +52,14 @@ public class Provider extends Factor {
 	@JsonIgnore
 	@OneToMany(cascade = CascadeType.PERSIST, mappedBy = "provider")
 	private List<ProductProviderDetail> productDetails;
+
+	public UUID getId() {
+		return id;
+	}
+
+	public void setId(UUID id) {
+		this.id = id;
+	}
 
 	public String getEmail() {
 		return email;

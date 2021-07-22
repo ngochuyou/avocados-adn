@@ -5,7 +5,7 @@ package adn.model.factory.property.production.authentication;
 
 import java.util.function.Function;
 
-import adn.model.AbstractModel;
+import adn.model.DomainEntity;
 import adn.service.internal.Role;
 
 /**
@@ -17,27 +17,27 @@ public interface AuthenticationBasedModelPropertiesProducersBuilder {
 	/**
 	 * With these types
 	 */
-	<T extends AbstractModel, E extends T> WithType<E> type(Class<E> type);
+	<T extends DomainEntity, E extends T> WithType<E> type(Class<E> type);
 
 	/**
 	 * With these types
 	 */
-	<T extends AbstractModel, E extends T> WithType<E> type(Class<E>[] types);
+	<T extends DomainEntity, E extends T> WithType<E> type(Class<E>[] types);
 
 	/**
-	 * Mask every {@link AbstractModel}
+	 * Mask every {@link DomainEntity}
 	 */
 	AuthenticationBasedModelPropertiesProducersBuilder mask();
 
 	/**
-	 * Publish every {@link AbstractModel}
+	 * Publish every {@link DomainEntity}
 	 */
 	AuthenticationBasedModelPropertiesProducersBuilder publish();
 
 	/**
 	 * With every other types
 	 */
-	<T extends AbstractModel> WithType<T> anyType();
+	<T extends DomainEntity> WithType<T> anyType();
 
 	public interface Owned {
 
@@ -50,7 +50,7 @@ public interface AuthenticationBasedModelPropertiesProducersBuilder {
 	
 	
 
-	public interface WithType<T extends AbstractModel> extends Owned {
+	public interface WithType<T extends DomainEntity> extends Owned {
 
 		/**
 		 * With these {@link Role}
@@ -74,7 +74,7 @@ public interface AuthenticationBasedModelPropertiesProducersBuilder {
 
 	}
 
-	public interface WithRole<T extends AbstractModel> extends Owned {
+	public interface WithRole<T extends DomainEntity> extends Owned {
 
 		/**
 		 * With these fields
@@ -108,7 +108,7 @@ public interface AuthenticationBasedModelPropertiesProducersBuilder {
 
 	}
 
-	public interface WithField<T extends AbstractModel> extends Owned {
+	public interface WithField<T extends DomainEntity> extends Owned {
 
 		/**
 		 * Get back to role level, with this field

@@ -1,9 +1,9 @@
 package adn.service.services;
 
-import static adn.model.DatabaseInteractionResult.bad;
-import static adn.model.DatabaseInteractionResult.failed;
-import static adn.model.DatabaseInteractionResult.success;
-import static adn.model.DatabaseInteractionResult.unauthorized;
+import static adn.dao.DatabaseInteractionResult.bad;
+import static adn.dao.DatabaseInteractionResult.failed;
+import static adn.dao.DatabaseInteractionResult.success;
+import static adn.dao.DatabaseInteractionResult.unauthorized;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -19,18 +19,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
 
 import adn.application.context.ContextProvider;
-import adn.dao.AbstractRepository;
-import adn.model.DatabaseInteractionResult;
-import adn.model.ModelContextProvider;
+import adn.dao.DatabaseInteractionResult;
 import adn.model.entities.Account;
 import adn.model.entities.Admin;
 import adn.model.entities.Customer;
 import adn.model.entities.Personnel;
-import adn.model.factory.AuthenticationBasedModelFactory;
-import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
-import adn.service.AccountServiceObserver;
-import adn.service.ObservableAccountService;
-import adn.service.entity.builder.EntityBuilderProvider;
+import adn.service.DomainEntityServiceObserver;
+import adn.service.ObservableDomainEntityService;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Role;
 import adn.service.internal.Service;
@@ -38,17 +33,16 @@ import adn.service.internal.ServiceResult;
 import adn.service.resource.ResourceSession;
 
 @org.springframework.stereotype.Service
-public class AccountService extends DefaultCRUDService implements Service, ObservableAccountService {
-
-	private static final Logger logger = LoggerFactory.getLogger(AccountService.class);
+public class AccountService implements Service, ObservableDomainEntityService<Account> {
 
 	public static final String UNKNOWN_USER_FIRSTNAME = "APP";
 	public static final String UNKNOWN_USER_LASTNAME = "USER";
 	protected static final String INVALID_ROLE = "Invalid role";
 	protected static final String UPLOAD_FAILURE = "Unable to upload file";
 
-	private final Map<String, AccountServiceObserver> observers = new HashMap<>(10);
+	private final Map<String, DomainEntityServiceObserver<Account>> observers = new HashMap<>(0);
 
+	protected final CRUDServiceImpl crudService;
 	protected final ResourceService resourceService;
 
 	@Autowired
@@ -60,18 +54,14 @@ public class AccountService extends DefaultCRUDService implements Service, Obser
 			Role.PERSONNEL, Personnel.class,
 			Role.ANONYMOUS, Account.class);
 
-	public static final String DEFAULT_ACCOUNT_PHOTO_NAME = "1619973416467_0c46022fcfda4d9f4bb8c09e8c42e9efc12d839d35c78c73e4dab1d24fac8a1c.png";
+	public static final String DEFAULT_ACCOUNT_PHOTO_NAME = "1619973416467_0c46022.png";
 	// keep this constructor
 	@Autowired
 	public AccountService(
-			AbstractRepository repository,
-			EntityBuilderProvider entityBuilderProvider,
-			AuthenticationBasedModelPropertiesFactory authenticationBasedModelPropertiesFactory,
-			AuthenticationBasedModelFactory authenticationBasedModelFactory,
-			ModelContextProvider modelContext,
-			ResourceService resourceService) {
-		super(repository, entityBuilderProvider, authenticationBasedModelPropertiesFactory, authenticationBasedModelFactory, modelContext);
+			ResourceService resourceService,
+			CRUDServiceImpl crudService) {
 		this.resourceService = resourceService;
+		this.crudService = crudService;
 	}
 	// @formatter:on
 	@SuppressWarnings("unchecked")
@@ -90,16 +80,16 @@ public class AccountService extends DefaultCRUDService implements Service, Obser
 
 	public <T extends Account, E extends T> DatabaseInteractionResult<E> create(Serializable id, E account,
 			Class<E> type, MultipartFile photo, boolean flushOnFinish) {
-		id = resolveId(id, account);
+		id = crudService.resolveId(id, account);
 
-		Session ss = getCurrentSession();
+		Session ss = crudService.getCurrentSession();
 
 		ss.setHibernateFlushMode(FlushMode.MANUAL);
 
 		boolean isResourceSessionFlushed = false;
 
 		if (photo != null) {
-			ServiceResult<String> uploadResult = resourceService.uploadImage(photo);
+			ServiceResult<String> uploadResult = resourceService.uploadUserPhoto(photo);
 
 			if (!uploadResult.isOk()) {
 				return failed(Map.of("photo", UPLOAD_FAILURE));
@@ -109,18 +99,18 @@ public class AccountService extends DefaultCRUDService implements Service, Obser
 			account.setPhoto(uploadResult.getBody());
 		}
 
-		DatabaseInteractionResult<E> insertResult = create(account.getId(), account, type, false);
+		DatabaseInteractionResult<E> insertResult = crudService.create(account.getId(), account, type, false);
 
 		resourceService.closeSession(isResourceSessionFlushed && insertResult.isOk());
 
-		return finish(ss, insertResult, flushOnFinish);
+		return crudService.finish(ss, insertResult, flushOnFinish);
 	}
 
 	public <T extends Account, E extends T> DatabaseInteractionResult<E> update(Serializable id, E account,
 			Class<E> type, MultipartFile photo, boolean flushOnFinish) {
-		id = resolveId(id, account);
+		id = crudService.resolveId(id, account);
 
-		Session ss = getCurrentSession();
+		Session ss = crudService.getCurrentSession();
 
 		ss.setHibernateFlushMode(FlushMode.MANUAL);
 
@@ -155,15 +145,16 @@ public class AccountService extends DefaultCRUDService implements Service, Obser
 		// directly into persistence here
 		account.setPhoto(localResourceResult.getBody());
 
-		DatabaseInteractionResult<E> updateResult = update(persistence.getId(), account, type, false);
+		DatabaseInteractionResult<E> updateResult = crudService.update(persistence.getId(), account, type, false);
 
 		resourceService.closeSession(isResourceSessionFlushed && updateResult.isOk());
+		observers.values().forEach(observer -> observer.notifyUpdate(persistence));
 
-		return finish(ss, updateResult, flushOnFinish);
+		return crudService.finish(ss, updateResult, flushOnFinish);
 	}
 
 	public DatabaseInteractionResult<Account> deactivateAccount(String id, boolean flushOnFinish) {
-		Session ss = getCurrentSession();
+		Session ss = crudService.getCurrentSession();
 
 		ss.setHibernateFlushMode(FlushMode.MANUAL);
 
@@ -178,23 +169,25 @@ public class AccountService extends DefaultCRUDService implements Service, Obser
 		account.setDeactivatedDate(LocalDate.now());
 		// use Hibernate dirty check to flush here, we don't have to call update from
 		// repository to avoid unnecessary Specification validation
-		return finish(ss, success(account), flushOnFinish);
+		return crudService.finish(ss, success(account), flushOnFinish);
 	}
 
 	private ServiceResult<String> updateOrUploadPhoto(Account persistence, MultipartFile multipartPhoto) {
 		if (multipartPhoto != null) {
 			if (!persistence.getPhoto().equals(DEFAULT_ACCOUNT_PHOTO_NAME)) {
-				return resourceService.updateContent(multipartPhoto, persistence.getPhoto());
+				return resourceService.updateUserPhotoContent(multipartPhoto, persistence.getPhoto());
 			}
 
-			return resourceService.uploadImage(multipartPhoto);
+			return resourceService.uploadUserPhoto(multipartPhoto);
 		}
 
 		return ServiceResult.<String>status(Status.UNMODIFIED).body(persistence.getPhoto());
 	}
 
 	@Override
-	public void register(AccountServiceObserver observer) {
+	public void register(DomainEntityServiceObserver<Account> observer) {
+		final Logger logger = LoggerFactory.getLogger(this.getClass());
+
 		if (observers.containsKey(observer.getId())) {
 			logger.trace(String.format("Ignoring existing observer [%s], id: [%s]", observer.getClass().getName(),
 					observer.getId()));

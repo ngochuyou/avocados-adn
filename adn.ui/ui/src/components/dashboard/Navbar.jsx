@@ -7,7 +7,8 @@ export default function Navbar({
 	isSearchInputDisabled = false,
 	backButtonClick = () => null,
 	searchInputEntered = () => null,
-	searchInputEmptied = () => null
+	searchInputEmptied = () => null,
+	centerElement = null
 }) {
 	const [searchInputState, dispatchSearchInputState] = useReducer(
 		(oldState, { type = null, payload = null} = {}) => {
@@ -74,6 +75,9 @@ export default function Navbar({
 							className="uk-position-center uk-icon-button icon-size-small iconf"
 							uk-icon="icon: arrow-left; ratio: 1.5"></span>
 					</div>
+				</div>
+				<div className="uk-width-expand">
+					{ centerElement }
 				</div>
 				<div className="uk-width-xlarge">
 					<div className="uk-navbar-item">

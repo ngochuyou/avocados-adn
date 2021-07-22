@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
@@ -90,9 +89,10 @@ public class DepartmentController extends BaseController {
 	public @ResponseBody ResponseEntity<?> getPersonnelCounts(
 			@RequestParam(name = "ids", required = true) List<UUID> ids) {
 		// @formatter:off
-		return ResponseEntity.ok()
-				.cacheControl(CacheControl.maxAge(7, TimeUnit.DAYS))
-				.body(departmentService.countPersonnel(ids.toArray(new UUID[ids.size()])));
+		return makeStaleWhileRevalidate(
+				departmentService.countPersonnel(ids.toArray(new UUID[ids.size()])),
+				1, TimeUnit.DAYS,
+				3, TimeUnit.DAYS);
 		// @formatter:on
 	}
 

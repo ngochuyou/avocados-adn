@@ -23,10 +23,10 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.context.ContextProvider;
+import adn.dao.DatabaseInteractionResult;
 import adn.dao.Repository;
 import adn.helpers.FunctionHelper.HandledConsumer;
-import adn.model.AbstractModel;
-import adn.model.DatabaseInteractionResult;
+import adn.model.DomainEntity;
 import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
 import adn.model.factory.AuthenticationBasedModelFactory;
@@ -73,7 +73,7 @@ public class BaseController {
 
 	protected static final String LOCKED = "RESOURCE WAS DEACTIVATED";
 	protected static final String INVALID_MODEL = "INVALID MODEL";
-	protected static final String ACCESS_DENIED = "ACCESS DENIDED";
+	public static final String ACCESS_DENIED = "ACCESS DENIDED";
 	protected static final String EXISTED = "RESOURCE IS ALREADY EXSITED";
 
 	protected void setSessionMode() {
@@ -92,20 +92,20 @@ public class BaseController {
 		}
 	}
 
-	protected <T extends AbstractModel, M extends AbstractModel> T extract(M model, Class<T> entityClass) {
+	protected <T extends DomainEntity, M extends DomainEntity> T extract(M model, Class<T> entityClass) {
 		return extractorProvider.getExtractor(entityClass).extract(model, modelContext.instantiate(entityClass));
 	}
 
-	protected <T extends AbstractModel, E extends T> Map<String, Object> produce(E entity, Class<E> entityClass) {
+	protected <T extends DomainEntity, E extends T> Map<String, Object> produce(E entity, Class<E> entityClass) {
 		return produce(entity, entityClass, ContextProvider.getPrincipalRole());
 	}
 
 	@SuppressWarnings("unchecked")
-	protected <T extends AbstractModel, E extends T> Map<String, Object> produce(E entity) {
+	protected <T extends DomainEntity, E extends T> Map<String, Object> produce(E entity) {
 		return produce(entity, (Class<E>) entity.getClass(), ContextProvider.getPrincipalRole());
 	}
 
-	protected <T extends AbstractModel, E extends T> Map<String, Object> produce(E entity, Class<E> entityClass,
+	protected <T extends DomainEntity, E extends T> Map<String, Object> produce(E entity, Class<E> entityClass,
 			Role role) {
 		return authenticationBasedModelFactory.produce(entityClass, entity, role);
 	}
@@ -126,15 +126,15 @@ public class BaseController {
 		return instance == null ? sendNotFound(messageIfNull) : ResponseEntity.ok(instance);
 	}
 
-	protected <T extends AbstractModel> ResponseEntity<?> send(List<T> instances) {
+	protected <T extends DomainEntity> ResponseEntity<?> send(List<T> instances) {
 		return ResponseEntity.ok(instances.stream().map(this::produce).collect(Collectors.toList()));
 	}
 
-	protected <T extends AbstractModel> ResponseEntity<?> send(T instance, String messageIfNull) {
+	protected <T extends DomainEntity> ResponseEntity<?> send(T instance, String messageIfNull) {
 		return instance == null ? sendNotFound(messageIfNull) : ResponseEntity.ok(produce(instance));
 	}
 
-	protected <T extends AbstractModel, E extends T> ResponseEntity<?> send(E instance, Class<E> type,
+	protected <T extends DomainEntity, E extends T> ResponseEntity<?> send(E instance, Class<E> type,
 			String messageIfNull) {
 		return instance == null ? sendNotFound(messageIfNull) : ResponseEntity.ok(produce(instance, type));
 	}
@@ -143,22 +143,19 @@ public class BaseController {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(instance);
 	}
 
-	protected <T extends Entity> ResponseEntity<?> finishAndSend(DatabaseInteractionResult<T> result) {
-		currentSession(ss -> {
-			if (result.isOk()) {
-				ss.flush();
-				return;
-			}
-
-			ss.clear();
-		});
-
+	protected <T extends Entity> ResponseEntity<?> send(DatabaseInteractionResult<T> result) {
 		return result.isOk() ? ResponseEntity.ok(produce(result.getInstance()))
 				: ResponseEntity.status(result.getStatus()).body(result.getMessages());
 	}
 
 	protected <T> ResponseEntity<?> cache(T body, long age, TimeUnit unit) {
 		return ResponseEntity.ok().cacheControl(CacheControl.maxAge(age, unit)).body(body);
+	}
+
+	protected <T> ResponseEntity<?> makeStaleWhileRevalidate(T body, long maxAge, TimeUnit maxAgeDurationUnit,
+			long revalidateDuration, TimeUnit revalidateDurationUnit) {
+		return ResponseEntity.ok().cacheControl(CacheControl.maxAge(maxAge, maxAgeDurationUnit)
+				.staleWhileRevalidate(revalidateDuration, maxAgeDurationUnit)).body(body);
 	}
 
 }
