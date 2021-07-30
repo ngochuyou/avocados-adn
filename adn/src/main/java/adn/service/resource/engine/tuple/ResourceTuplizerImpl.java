@@ -102,7 +102,7 @@ public class ResourceTuplizerImpl extends ResourceTuplizerContract implements Tu
 		try {
 			return accessor.getGetter().get(instance);
 		} catch (RuntimeException re) {
-			logger.trace(String.format("Exception thrown while invoking getter [%s] with message [%s]",
+			logger.error(String.format("Exception thrown while invoking getter [%s] with message [%s]",
 					accessor.getGetter(), re.getMessage()));
 			throw re;
 		}

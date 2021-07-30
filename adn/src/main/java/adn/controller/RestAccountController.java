@@ -3,10 +3,8 @@
  */
 package adn.controller;
 
-import static adn.helpers.ArrayHelper.from;
-
-import java.sql.SQLSyntaxErrorException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,11 +56,11 @@ public class RestAccountController extends AccountController {
 			String principalName = ContextProvider.getPrincipalName();
 
 			if (!StringHelper.hasLength(username) || principalName.equals(username)) {
-				return obtainPrincipal(from(columns));
+				return obtainPrincipal(columns);
 			}
 
 			return doObtainAccount(username, columns);
-		} catch (SQLSyntaxErrorException ssee) {
+		} catch (NoSuchFieldException ssee) {
 			return sendBadRequest(ssee.getMessage());
 		}
 	}
@@ -73,7 +71,7 @@ public class RestAccountController extends AccountController {
 			@RequestParam(name = "columns", defaultValue = "") List<String> columns) {
 		try {
 			return doObtainAccount(username, columns);
-		} catch (SQLSyntaxErrorException ssee) {
+		} catch (NoSuchFieldException ssee) {
 			return sendBadRequest(ssee.getMessage());
 		}
 	}
@@ -95,10 +93,10 @@ public class RestAccountController extends AccountController {
 		return ResponseEntity.status(HttpStatus.valueOf(result.getStatus())).body(result.getMessages());
 	}
 
-	protected ResponseEntity<?> obtainPrincipal(String[] requestedColumns) throws SQLSyntaxErrorException {
+	protected ResponseEntity<?> obtainPrincipal(Collection<String> requestedColumns) throws NoSuchFieldException {
 		String username = ContextProvider.getPrincipalName();
 
-		if (requestedColumns.length == 0) {
+		if (requestedColumns.size() == 0) {
 			Account model = baseRepository.findById(username, Account.class);
 
 			if (model == null) {
@@ -115,8 +113,8 @@ public class RestAccountController extends AccountController {
 		return super.<Map<String, Object>>send(crudService.find(username, Account.class, requestedColumns), NOT_FOUND);
 	}
 
-	protected ResponseEntity<?> doObtainAccount(String username, List<String> requestedColumns)
-			throws SQLSyntaxErrorException {
+	protected ResponseEntity<?> doObtainAccount(String username, Collection<String> requestedColumns)
+			throws NoSuchFieldException {
 		Role principalRole = ContextProvider.getPrincipalRole();
 
 		if (requestedColumns.size() == 0) {
@@ -151,7 +149,7 @@ public class RestAccountController extends AccountController {
 			columns.add(Account.ROLE_FIELD_NAME);
 		}
 
-		Map<String, Object> fetchedRow = crudService.find(username, Account.class, from(columns));
+		Map<String, Object> fetchedRow = crudService.find(username, Account.class, columns);
 
 		if (fetchedRow == null) {
 			return sendNotFound(NOT_FOUND);
@@ -174,7 +172,8 @@ public class RestAccountController extends AccountController {
 		return ResponseEntity.ok(extractRequestedColumns(requestedColumns, fetchedRow));
 	}
 
-	private Map<String, Object> extractRequestedColumns(List<String> requestedColumns, Map<String, Object> fetchedRow) {
+	private Map<String, Object> extractRequestedColumns(Collection<String> requestedColumns,
+			Map<String, Object> fetchedRow) {
 		return requestedColumns.stream().map(col -> Utils.Entry.<String, Object>entry(col, fetchedRow.get(col)))
 				.collect(HashMap<String, Object>::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()),
 						HashMap::putAll);

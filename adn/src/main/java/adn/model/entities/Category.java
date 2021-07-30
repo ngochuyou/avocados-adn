@@ -15,6 +15,8 @@ import javax.persistence.Table;
 
 import org.hibernate.annotations.GenericGenerator;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import adn.model.entities.generators.CategoryIdGenerator;
 
 /**
@@ -27,7 +29,7 @@ public class Category extends Factor {
 
 	public static final int IDENTIFIER_LENGTH = 5;
 	public static final int DESCRIPTION_LENGTH = 255;
-	
+
 	@Id
 	@GeneratedValue(generator = CategoryIdGenerator.NAME)
 	@GenericGenerator(name = CategoryIdGenerator.NAME, strategy = CategoryIdGenerator.PATH)
@@ -38,6 +40,7 @@ public class Category extends Factor {
 	private String description;
 
 	@OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
+	@JsonIgnore
 	private List<Product> products;
 
 	public String getDescription() {

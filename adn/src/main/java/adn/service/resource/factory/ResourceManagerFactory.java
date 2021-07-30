@@ -17,7 +17,7 @@ import adn.service.resource.engine.Storage;
  * @author Ngoc Huy
  *
  */
-public class ManagerFactory extends SessionFactoryImpl implements EntityManagerFactoryImplementor {
+public class ResourceManagerFactory extends SessionFactoryImpl implements EntityManagerFactoryImplementor {
 
 	private static final long serialVersionUID = 1L;
 
@@ -26,7 +26,7 @@ public class ManagerFactory extends SessionFactoryImpl implements EntityManagerF
 	public static final String DTYPE_COLUMNNAME = "DTYPE";
 	public static final String DTYPE_SEPERATOR = "_";
 
-	public ManagerFactory(
+	public ResourceManagerFactory(
 	// @formatter:off
 		final Storage localStorage,
 		final MetadataImplementor metadata,

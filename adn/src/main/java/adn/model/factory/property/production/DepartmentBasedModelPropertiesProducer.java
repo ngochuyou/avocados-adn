@@ -3,7 +3,6 @@
  */
 package adn.model.factory.property.production;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -21,14 +20,8 @@ public interface DepartmentBasedModelPropertiesProducer
 
 	List<Map<String, Object>> produce(List<Object[]> sources, String[] columns, UUID departmentId);
 
-	@Override
-	default List<Map<String, Object>> produceImmutable(List<Object[]> sources) {
-		return Collections.unmodifiableList(produce(sources));
-	}
+	Map<String, Object> singularProduce(Object source, String columnName, UUID departmentId);
 
-	@Override
-	default Map<String, Object> produceImmutable(Object[] source) {
-		return Collections.unmodifiableMap(produce(source));
-	}
+	List<Map<String, Object>> singularProduce(List<Object> sources, String columnName, UUID departmentId);
 
 }

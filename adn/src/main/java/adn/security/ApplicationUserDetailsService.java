@@ -31,14 +31,14 @@ public class ApplicationUserDetailsService implements UserDetailsService {
 	@Autowired
 	private Repository repo;
 
-	private static final String[] ATTRIBUTES = new String[] { Account.ID_FIELD_NAME, "password", Account.ROLE_FIELD_NAME,
-			Account.VERSION_FIELD_NAME, Account.ACTIVE_FIELD_NAME };
+	private static final String[] ATTRIBUTES = new String[] { Account.ID_FIELD_NAME, "password",
+			Account.ROLE_FIELD_NAME, Account.VERSION_FIELD_NAME, Account.ACTIVE_FIELD_NAME };
 	public static final ZoneId ZONE = ZoneId.systemDefault();
 
 	@Transactional(readOnly = true)
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		Object[] account = repo.findById(username, Account.class, ATTRIBUTES);
+		Object[] account = (Object[]) repo.findById(username, Account.class, ATTRIBUTES);
 
 		if (account == null) {
 			throw new UsernameNotFoundException(String.format("%s not found", username));

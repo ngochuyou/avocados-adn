@@ -4,22 +4,24 @@
 package adn.service.resource.engine.persistence;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import adn.helpers.ArrayHelper;
 import adn.helpers.ArrayHelper.ArrayBuilder;
 import adn.service.resource.engine.Finder;
-import adn.service.resource.engine.FinderImpl;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.query.UpdateQuery;
 import adn.service.resource.engine.template.ResourceTemplate;
@@ -30,7 +32,7 @@ import adn.service.resource.engine.tuple.ResourceTuplizer;
  *
  */
 @Component
-public class PersistenceContext {
+public class PersistentResourceContext {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -38,7 +40,7 @@ public class PersistenceContext {
 	private final Map<String, Mutex> mutexMap = new MutexMap();
 
 	@Autowired
-	public PersistenceContext(@Autowired @Qualifier(FinderImpl.NAME) Finder finder) {
+	public PersistentResourceContext(@Autowired Finder finder) {
 		super();
 		this.finder = finder;
 	}
@@ -66,6 +68,58 @@ public class PersistenceContext {
 		return createMutex(file);
 	}
 
+	private void release(File file) {
+		String path = file.getPath();
+
+		if (!mutexMap.containsKey(path)) {
+			// serious problem here, possible thread violation
+			throw new IllegalThreadStateException((String.format("Unable to locate lock for [%s]", path)));
+		}
+
+		if (logger.isTraceEnabled()) {
+			logger.trace(String.format("Releasing [%s] lock", file.getPath()));
+		}
+
+		mutexMap.remove(file.getPath());
+	}
+
+	public boolean delete(Query query, ResourceTemplate template, SQLException error) {
+		Set<String> registeredColumns = new HashSet<>(Arrays.asList(template.getColumnNames()));
+		// extract delete conditions, ignore unknowns
+		String[] whereStatementColumnNames = Stream.of(query.getColumnNames()).filter(registeredColumns::contains)
+				.toArray(String[]::new);
+		Object[] conditionValues = Stream.of(whereStatementColumnNames).map(query::getParameterValue).toArray();
+		ResourceTuplizer tuplizer = template.getTuplizer();
+		// validate the delete conditions
+		tuplizer.validate(conditionValues, whereStatementColumnNames);
+		// perform search
+		File[] files = finder.find(template, conditionValues, whereStatementColumnNames);
+
+		if (files.length == 0) {
+			error = new SQLException("Unable to find any file for delete");
+			return false;
+		}
+
+		if (logger.isTraceEnabled()) {
+			logger.trace(String.format("Found {%d} file(s) for delete", files.length));
+		}
+
+		File targetedFile = files[0];
+
+		synchronized (obtainMutex(targetedFile)) {
+			try {
+				Files.delete(targetedFile.toPath());
+			} catch (Exception any) {
+				error = new SQLException(any);
+				return false;
+			} finally {
+				release(targetedFile);
+			}
+		}
+
+		return true;
+	}
+
 	public boolean save(Query query, ResourceTemplate template, SQLException error) {
 		String[] registeredColumnNames = template.getColumnNames();
 		// extract values from the query, ignore those which are unknown
@@ -91,6 +145,8 @@ public class PersistenceContext {
 			} catch (Exception any) {
 				error = new SQLException(any);
 				return false;
+			} finally {
+				release(newFile);
 			}
 		}
 
@@ -98,7 +154,7 @@ public class PersistenceContext {
 	}
 
 	public boolean update(UpdateQuery query, ResourceTemplate template, SQLException error) {
-		ArrayBuilder<String> registeredColumns = ArrayHelper.from(template.getColumnNames());
+		Set<String> registeredColumns = new HashSet<>(Arrays.asList(template.getColumnNames()));
 		// extract update conditions, ignore unknowns
 		String[] whereStatementColumnNames = Stream.of(query.getWhereStatementColumnNames())
 				.filter(registeredColumns::contains).toArray(String[]::new);
@@ -167,26 +223,15 @@ public class PersistenceContext {
 				rte.printStackTrace();
 				error = new SQLException(rte);
 				return false;
+			} finally {
+				release(file);
 			}
 		}
 
 		return true;
 	}
 
-	@SuppressWarnings("unused")
 	private class Mutex {
-
-		private volatile boolean isLocked;
-
-		Mutex() {}
-
-		public void setLocked(boolean isLocked) {
-			this.isLocked = isLocked;
-		}
-
-		public boolean isLocked() {
-			return isLocked;
-		}
 
 	}
 

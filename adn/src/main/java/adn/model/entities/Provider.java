@@ -3,21 +3,16 @@
  */
 package adn.model.entities;
 
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.GenericGenerator;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import adn.model.DepartmentScoped;
 import adn.model.entities.converters.StringSetConverter;
@@ -48,10 +43,6 @@ public class Provider extends Factor implements DepartmentScoped {
 
 	@Column(name = "representator_name")
 	private String representatorName;
-
-	@JsonIgnore
-	@OneToMany(cascade = CascadeType.PERSIST, mappedBy = "provider")
-	private List<ProductProviderDetail> productDetails;
 
 	public UUID getId() {
 		return id;
@@ -91,14 +82,6 @@ public class Provider extends Factor implements DepartmentScoped {
 
 	public void setRepresentatorName(String representatorName) {
 		this.representatorName = representatorName;
-	}
-
-	public List<ProductProviderDetail> getProductDetails() {
-		return productDetails;
-	}
-
-	public void setProductDetails(List<ProductProviderDetail> productDetails) {
-		this.productDetails = productDetails;
 	}
 
 }

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * @author Ngoc Huy
@@ -45,6 +46,11 @@ public class QueryImpl implements Query {
 			this.indexMap = sibling.indexMap;
 			this.columnNames = sibling.columnNames;
 			this.aliasList = sibling.aliasList;
+
+			int valuesSize = sibling.values.size();
+
+			this.values = new ArrayList<>(valuesSize);
+			IntStream.range(0, valuesSize).forEach(index -> this.values.add(null));
 		}
 
 		this.statement = other.getStatement();
@@ -178,7 +184,7 @@ public class QueryImpl implements Query {
 
 	@Override
 	public void batch(Query query) {
-		if (query.equals(this)) {
+		if (query == this) {
 			return;
 		}
 

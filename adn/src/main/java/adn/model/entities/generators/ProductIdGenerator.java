@@ -44,14 +44,15 @@ public class ProductIdGenerator implements IdentifierGenerator, Configurable {
 		}
 
 		StringBuilder idBuilder = new StringBuilder(category.getId()).append(DELIMITER);
-		String name = product.getName();
+		String name = String.valueOf(product.getName());
 
 		Assert.isTrue(StringHelper.hasLength(name), "Product name was empty");
 
 		int remainingSize = Product.IDENTIFIER_LENGTH - idBuilder.length();
-
-		idBuilder.append(name.length() >= remainingSize ? name.substring(0, remainingSize)
-				: RandomStringUtils.randomAlphanumeric(remainingSize));
+		
+		name = StringHelper.removeSpaces(name);
+		idBuilder.append(name.length() >= remainingSize ? name.substring(0, remainingSize).toUpperCase()
+				: RandomStringUtils.randomAlphanumeric(remainingSize).toUpperCase());
 
 		return idBuilder.toString();
 	}

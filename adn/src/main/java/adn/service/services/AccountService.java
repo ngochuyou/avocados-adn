@@ -30,7 +30,6 @@ import adn.service.internal.ResourceService;
 import adn.service.internal.Role;
 import adn.service.internal.Service;
 import adn.service.internal.ServiceResult;
-import adn.service.resource.ResourceSession;
 
 @org.springframework.stereotype.Service
 public class AccountService implements Service, ObservableDomainEntityService<Account> {
@@ -38,15 +37,11 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 	public static final String UNKNOWN_USER_FIRSTNAME = "APP";
 	public static final String UNKNOWN_USER_LASTNAME = "USER";
 	protected static final String INVALID_ROLE = "Invalid role";
-	protected static final String UPLOAD_FAILURE = "Unable to upload file";
 
 	private final Map<String, DomainEntityServiceObserver<Account>> observers = new HashMap<>(0);
 
 	protected final CRUDServiceImpl crudService;
 	protected final ResourceService resourceService;
-
-	@Autowired
-	protected ResourceSession resourceSession;
 	// @formatter:off
 	private final Map<Role, Class<? extends Account>> roleClassMap = Map.of(
 			Role.ADMIN, Admin.class,
@@ -101,7 +96,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 
 		DatabaseInteractionResult<E> insertResult = crudService.create(account.getId(), account, type, false);
 
-		resourceService.closeSession(isResourceSessionFlushed && insertResult.isOk());
+		resourceService.closeSession(isResourceSessionFlushed && insertResult.isOk() && flushOnFinish);
 
 		return crudService.finish(ss, insertResult, flushOnFinish);
 	}

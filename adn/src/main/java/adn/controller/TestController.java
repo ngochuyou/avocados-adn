@@ -18,9 +18,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.hibernate.FlushMode;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +25,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -37,12 +33,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
-import adn.helpers.StringHelper;
-import adn.model.entities.Admin;
-import adn.model.entities.Customer;
 import adn.security.SecurityConfiguration;
 import adn.service.resource.ResourceManager;
-import adn.service.resource.model.models.UserPhoto;
+import adn.service.resource.model.models.ProductImage;
 
 /**
  * @author Ngoc Huy
@@ -50,6 +43,7 @@ import adn.service.resource.model.models.UserPhoto;
  */
 @Controller
 @RequestMapping(SecurityConfiguration.TESTUNIT_PREFIX)
+@SuppressWarnings("all")
 public class TestController extends BaseController {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -209,58 +203,20 @@ public class TestController extends BaseController {
 
 	@GetMapping("/file/public/image/session-load")
 	public @ResponseBody ResponseEntity<?> testGetImageBytes() throws IOException, InterruptedException {
-//		CriteriaBuilder builder = session.getCriteriaBuilder();
-//		CriteriaQuery<ImageByBytes> query = builder.createQuery(ImageByBytes.class);
-//		Root<ImageByBytes> root = query.from(ImageByBytes.class);
-//
-//		query.multiselect(root.get("name"), root.get("extension"), root.get("createdDate"));
-//		query.where(builder.equal(root.get("name"),
-//				"1623406220771_12d4fc19efc1899e0731cd4d7e67f66daec3c271105cc0eb0ed6757f94822615.jpg"));
-//
-//		Query<ImageByBytes> hql = session.createQuery(query);
-		UserPhoto image = new UserPhoto();
+		ProductImage image1 = session.get(ProductImage.class, "1626973200_TzvUg0KR2X.jpg");
+		ProductImage image2 = session.get(ProductImage.class, "1626973200_fF55Fwt693.jpg");
 
-		image.setName("asdasd");
-		image.setExtension(".jpg");
-		image.setContent(getDummyBytes());
-
-		session.save(image);
+		session.delete(image1);
+		session.delete(image2);
 		session.flush();
 
-		return image != null ? ResponseEntity.ok(image.getExtension())
+		return image1 != null ? ResponseEntity.ok(image1.getExtension())
 				: ResponseEntity.status(HttpStatus.NOT_FOUND).body(String.format("File [%s] not found", filename));
 	}
 
 	private byte[] getDummyBytes() throws IOException {
 		return Files.readAllBytes(
 				Paths.get("C:\\Users\\Ngoc Huy\\Pictures\\Saved Pictures\\alesia-kazantceva-XLm6-fPwK5Q-unsplash.jpg"));
-	}
-
-	@Autowired
-	private SessionFactory sessionFactory;
-
-	@GetMapping("/transaction")
-	@Transactional
-	public @ResponseBody ResponseEntity<?> testTransactional() throws IOException, InterruptedException {
-		Session ss = sessionFactory.getCurrentSession();
-
-		ss.setHibernateFlushMode(FlushMode.MANUAL);
-
-		Customer customer = ss.get(Customer.class, "adn.customer.0");
-
-		customer.setAddress(StringHelper.hash("ngochuy.ou"));
-
-		ss.update(customer);
-		ss.flush();
-
-		return ResponseEntity.ok(null);
-	}
-
-	@GetMapping("/produce")
-	@Transactional
-	public @ResponseBody ResponseEntity<?> testExtraction() {
-		return ResponseEntity
-				.ok(authenticationBasedModelFactory.produce(Admin.class, baseRepository.fetch(Admin.class)));
 	}
 
 }

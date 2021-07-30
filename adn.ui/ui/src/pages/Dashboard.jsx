@@ -9,10 +9,12 @@ import DepartmentBoard from '../components/dashboard/DepartmentBoard.jsx';
 import ProviderBoard from '../components/dashboard/ProviderBoard.jsx';
 import ProductBoard from '../components/dashboard/ProductBoard';
 
+const dev = true;
+
 export default function Dashboard() {
 	const { principal } = useAuth();
 	
-	if (principal && (principal.role === Account.Role.ADMIN || principal.role === Account.Role.PERSONNEL )) {
+	if (dev || (principal && (principal.role === Account.Role.ADMIN || principal.role === Account.Role.PERSONNEL))) {
 		return (
 			<div className="uk-grid-collapse" uk-grid="">
 				<div className="uk-width-1-5 backgroundf" uk-height-viewport="expand: true">

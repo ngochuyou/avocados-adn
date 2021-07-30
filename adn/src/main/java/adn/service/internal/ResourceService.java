@@ -5,6 +5,7 @@ package adn.service.internal;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 
 import org.springframework.web.multipart.MultipartFile;
 
@@ -37,6 +38,10 @@ public interface ResourceService extends Service {
 	 */
 	ServiceResult<String> updateUserPhotoContent(MultipartFile file, String filename);
 
+	ServiceResult<String> removeProductImages(Collection<String> filenames);
+	
+	ServiceResult<String[]> uploadProductImages(MultipartFile[] files);
+
 	/**
 	 * Read all of the bytes of the requested {@link File} using it's filename
 	 * 
@@ -49,6 +54,8 @@ public interface ResourceService extends Service {
 
 	byte[] directlyGetUserPhotoBytes(String filename) throws IOException;
 
+	byte[] directlyGetProductImageBytes(String filename) throws IOException;
+	
 	void closeSession(boolean doFlush);
 
 }

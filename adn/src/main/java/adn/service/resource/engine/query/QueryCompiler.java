@@ -9,7 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import adn.helpers.StringHelper;
-import adn.service.resource.factory.ManagerFactory;
+import adn.service.resource.factory.ResourceManagerFactory;
 
 /**
  * @author Ngoc Huy
@@ -59,7 +59,9 @@ public final class QueryCompiler {
 	private static final Pattern UPDATE_PATTERN;
 	private static final Pattern SET_STATEMENT_PATTERN;
 	private static final Pattern WHERE_CONDITION_PATTERN;
-
+	
+	private static final Pattern DELETE_PATTERN;
+	
 	private static final String TABLENAME_GROUP_NAME = "tablename";
 	private static final String SET_STATEMENTS_GROUP_NAME = "statements";
 	private static final String WHERE_CONDITIONS_GROUP_NAME = "conditions";
@@ -138,6 +140,14 @@ public final class QueryCompiler {
 				STATEMENT_COLUMNNAME_GROUP_NAME, letter,
 				STATEMENT_VALUE_GROUP_NAME, letter + mark)
 		);
+		
+		DELETE_PATTERN = Pattern.compile(
+			String.format(""
+					+ "(delete|DELETE)\\s+(from|FROM)\\s+(?<%s>[%s]+)\\s+"
+					+ "((where|WHERE)\\s+(?<%s>[%s]+)\\s?)?",
+					TABLENAME_GROUP_NAME, letter,
+					WHERE_CONDITIONS_GROUP_NAME, letter + mark + ops)
+		);
 		// @formatter:on
 	}
 
@@ -159,8 +169,44 @@ public final class QueryCompiler {
 			case UPDATE: {
 				return compileUpdate(new UpdateQueryImpl(query), sql.trim()).lockQuery();
 			}
+			case DELETE: {
+				return compileDelete(query, sql.trim()).lockQuery();
+			}
 			default:
 				throw new SQLException(String.format("Unable to compile query [%s], unknown query type", sql));
+		}
+	}
+	
+	private static Query compileDelete(QueryImpl query, String sql) throws SQLException {
+		Matcher matcher = DELETE_PATTERN.matcher(sql);
+		
+		if (!matcher.matches()) {
+			throw new SQLException(String.format("Invalid query [%s]", sql));
+		}
+		
+		try {
+			String templateName = matcher.group(TABLENAME_GROUP_NAME) + ResourceManagerFactory.DTYPE_SEPERATOR;
+			String conditions[] = matcher.group(WHERE_CONDITIONS_GROUP_NAME).split("\\s+(and|AND)\\s+");
+			Matcher conditionMatcher;
+
+			for (String condition : conditions) {
+				if ((conditionMatcher = WHERE_CONDITION_PATTERN.matcher(condition)).matches()) {
+					if (conditionMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME)
+							.equals(ResourceManagerFactory.DTYPE_COLUMNNAME)) {
+						templateName += conditionMatcher.group(STATEMENT_VALUE_GROUP_NAME).replaceAll("'", "");
+						continue;
+					}
+
+					query.addColumnName(conditionMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME));
+					continue;
+				}
+
+				throw new SQLException(String.format("Invalid where pattern [%s]", condition));
+			}
+
+			return query.setTemplateName(templateName);
+		} catch (RuntimeException any) {			
+			throw new SQLException(any);
 		}
 	}
 
@@ -172,7 +218,7 @@ public final class QueryCompiler {
 		}
 
 		try {
-			String templateName = matcher.group(TABLENAME_GROUP_NAME) + ManagerFactory.DTYPE_SEPERATOR;
+			String templateName = matcher.group(TABLENAME_GROUP_NAME) + ResourceManagerFactory.DTYPE_SEPERATOR;
 
 			if (matcher.group(SET_STATEMENTS_GROUP_NAME) == null) {
 				throw new SQLException(
@@ -184,7 +230,7 @@ public final class QueryCompiler {
 
 			for (String statement : parts) {
 				if ((innerMatcher = SET_STATEMENT_PATTERN.matcher(statement)).matches()) {
-					if (innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME).equals(ManagerFactory.DTYPE_COLUMNNAME)) {
+					if (innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME).equals(ResourceManagerFactory.DTYPE_COLUMNNAME)) {
 						continue;
 					}
 
@@ -204,7 +250,7 @@ public final class QueryCompiler {
 
 			for (String condition : parts) {
 				if ((innerMatcher = WHERE_CONDITION_PATTERN.matcher(condition)).matches()) {
-					if (innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME).equals(ManagerFactory.DTYPE_COLUMNNAME)) {
+					if (innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME).equals(ResourceManagerFactory.DTYPE_COLUMNNAME)) {
 						templateName += innerMatcher.group(STATEMENT_VALUE_GROUP_NAME).replaceAll("'", "");
 						continue;
 					}
@@ -230,7 +276,7 @@ public final class QueryCompiler {
 		}
 
 		try {
-			String templateName = matcher.group(TABLENAME_GROUP_NAME) + ManagerFactory.DTYPE_SEPERATOR;
+			String templateName = matcher.group(TABLENAME_GROUP_NAME) + ResourceManagerFactory.DTYPE_SEPERATOR;
 
 			if (matcher.group(WHERE_CONDITIONS_GROUP_NAME) == null) {
 				return query.setTemplateName(templateName);
@@ -242,7 +288,7 @@ public final class QueryCompiler {
 			for (String condition : conditions) {
 				if ((conditionMatcher = WHERE_CONDITION_PATTERN.matcher(condition)).matches()) {
 					if (conditionMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME)
-							.equals(ManagerFactory.DTYPE_COLUMNNAME)) {
+							.equals(ResourceManagerFactory.DTYPE_COLUMNNAME)) {
 						templateName += conditionMatcher.group(STATEMENT_VALUE_GROUP_NAME).replaceAll("'", "");
 						continue;
 					}
@@ -270,7 +316,7 @@ public final class QueryCompiler {
 		String templateName;
 
 		try {
-			templateName = matcher.group(TABLENAME_GROUP_NAME) + ManagerFactory.DTYPE_SEPERATOR;
+			templateName = matcher.group(TABLENAME_GROUP_NAME) + ResourceManagerFactory.DTYPE_SEPERATOR;
 
 			String[] columnNames = matcher.group(COLUMNGROUP_GROUP_NAME).split("\\s?,\\s?");
 			int span = columnNames.length;
@@ -279,7 +325,7 @@ public final class QueryCompiler {
 			for (int i = 0; i < span; i++) {
 				columnName = columnNames[i];
 
-				if (columnName.equals(ManagerFactory.DTYPE_COLUMNNAME)) {
+				if (columnName.equals(ResourceManagerFactory.DTYPE_COLUMNNAME)) {
 					// @formatter:off
 					templateName += matcher.group(SET_STATEMENTS_GROUP_NAME)
 							.split("\\s?,\\s?")[i]

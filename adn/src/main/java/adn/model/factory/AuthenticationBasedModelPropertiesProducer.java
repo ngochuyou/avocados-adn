@@ -3,8 +3,7 @@
  */
 package adn.model.factory;
 
-import java.sql.SQLSyntaxErrorException;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -23,36 +22,38 @@ public interface AuthenticationBasedModelPropertiesProducer
 		return produce(source, null);
 	}
 
-	Map<String, Object> produce(Object[] source, Role role);
-
-	default Map<String, Object> produceImmutable(Object[] source, Role role) {
-		return Collections.unmodifiableMap(produce(source, role));
-	}
-
 	@Override
 	default List<Map<String, Object>> produce(List<Object[]> source) {
 		return produce(source, null);
 	}
 
-	List<Map<String, Object>> produce(List<Object[]> source, Role role);
+	Map<String, Object> produce(Object[] source, Role role);
 
-	default List<Map<String, Object>> produceImmutable(List<Object[]> source, Role role) {
-		return Collections.unmodifiableList(produce(source, role));
-	}
+	List<Map<String, Object>> produce(List<Object[]> source, Role role);
 
 	Map<String, Object> produce(Object[] source, Role role, String[] columnNames);
 
-	default Map<String, Object> produceImmutable(Object[] source, Role role, String[] columnNames) {
-		return Collections.unmodifiableMap(produce(source, role, columnNames));
+	List<Map<String, Object>> produce(List<Object[]> source, Role role, String[] columnNames);
+
+	default Map<String, Object> singularProduce(Object source, String columnName) {
+		return singularProduce(source, null, columnName);
 	}
 
-	List<Map<String, Object>> produce(List<Object[]> source, Role role, String[] columnNames);
-	
+	default List<Map<String, Object>> singularProduce(List<Object> source, String columnName) {
+		return singularProduce(source, null, columnName);
+	}
+
+	Map<String, Object> singularProduce(Object source, Role role, String columnName);
+
+	List<Map<String, Object>> singularProduce(List<Object> source, Role role, String columnName);
+
 	@Override
-	default String[] validateAndTranslateColumnNames(String[] requestedColumns) throws SQLSyntaxErrorException {
+	default Collection<String> validateAndTranslateColumnNames(Collection<String> requestedColumns)
+			throws NoSuchFieldException {
 		return validateAndTranslateColumnNames(null, requestedColumns);
 	}
-	
-	String[] validateAndTranslateColumnNames(Role role, String[] requestedColumns) throws SQLSyntaxErrorException;
-	
+
+	Collection<String> validateAndTranslateColumnNames(Role role, Collection<String> requestedColumns)
+			throws NoSuchFieldException;
+
 }

@@ -46,7 +46,7 @@ public class ServiceResult<T> {
 		return new ServiceResult<>(status);
 	}
 
-	public static ServiceResult<String> bad() {
+	public static <T> ServiceResult<T> bad() {
 		return new ServiceResult<>(Status.BAD);
 	}
 

@@ -213,7 +213,7 @@ public class ApplicationIntegrationTest {
 	}
 
 	@Test
-	private void sessionLoadTest() throws Exception {
+	public void sessionLoadTest() throws Exception {
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
 				.get(PREFIX + "/file/public/image/session-load");
 
@@ -291,7 +291,7 @@ public class ApplicationIntegrationTest {
 	}
 
 	@Test
-	public void testPageableDefault() throws Exception {
+	private void testPageableDefault() throws Exception {
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get(PREFIX + "/list");
 		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
 

@@ -3,9 +3,6 @@
  */
 package adn.controller;
 
-import static adn.helpers.ArrayHelper.from;
-
-import java.sql.SQLSyntaxErrorException;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,19 +46,16 @@ public class GeneralController extends BaseController {
 	// @formatter:off
 			@PathVariable(name = "entityname") String entityName,
 			@PageableDefault(size = 10) Pageable paging,
-			@RequestParam(name = "columns", defaultValue = "") List<String> columns,
-			@RequestParam(name = "groupby", defaultValue = "") List<String> groupByColumns) {
+			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws NoSuchFieldException {
 	// @formatter:on
 		try {
 			String className = Character.toUpperCase(entityName.charAt(0)) + entityName.substring(1);
 			Class<? extends Entity> type = (Class<? extends Entity>) Class
 					.forName(Constants.ENTITY_PACKAGE + "." + className);
 
-			return ResponseEntity.ok(crudService.read(type, from(columns), paging, from(groupByColumns)));
+			return ResponseEntity.ok(crudService.read(type, columns, paging));
 		} catch (ClassNotFoundException e) {
 			return sendNotFound(String.format("Resource %s not found", entityName));
-		} catch (SQLSyntaxErrorException e) {
-			return sendBadRequest(e.getMessage());
 		}
 	}
 

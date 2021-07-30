@@ -70,7 +70,7 @@ import adn.service.resource.engine.Storage;
 import adn.service.resource.factory.BootstrapContextImpl;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
-import adn.service.resource.factory.ManagerFactory;
+import adn.service.resource.factory.ResourceManagerFactory;
 import adn.service.resource.factory.MetadataBuildingOptionsImpl;
 
 /**
@@ -82,7 +82,7 @@ import adn.service.resource.factory.MetadataBuildingOptionsImpl;
 @SuppressWarnings("serial")
 @Component
 @Order(6)
-public class ManagerFactoryBuilder implements ContextBuilder {
+public class ResourceManagerFactoryBuilder implements ContextBuilder {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -100,7 +100,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 	// @formatter:off
 	// TODO: Clone all of these so that we have completely different instances.
 	// If so, we can destroy the ManagerFactory by hooking it's destruction into Spring's container and not the Hibernate's SessionFactory
-	private static List<Class<? extends Service>> STANDARD_SERVICES_CLASSES = Collections.unmodifiableList(Arrays.asList(
+	private static List<Class<? extends Service>> STANDARD_SERVICE_CLASSES = Collections.unmodifiableList(Arrays.asList(
 			MutableIdentifierGeneratorFactory.class,
 			JdbcServices.class,
 			JdbcEnvironment.class,
@@ -206,7 +206,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 		ContextProvider.getAccess().setLocalResourceSessionFactory(sf.unwrap(SessionFactoryImpl.class));
 		defaultServiceGetter = null;
 		serviceGetters = null;
-		STANDARD_SERVICES_CLASSES = null;
+		STANDARD_SERVICE_CLASSES = null;
 	}
 
 	private MutableIdentifierGeneratorFactory registerCustomIdentifierGeneratorFactory(
@@ -218,7 +218,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private List<ProvidedService> getProvidedServices(SessionFactoryImplementor sfi) {
-		return STANDARD_SERVICES_CLASSES.stream().map(role -> {
+		return STANDARD_SERVICE_CLASSES.stream().map(role -> {
 			if (!serviceGetters.containsKey(role)) {
 				return new ProvidedService(role, defaultServiceGetter.apply(sfi, role));
 			}
@@ -233,7 +233,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 				return new ProvidedService(role, ((Supplier<Service>) getter).get());
 			}
 
-			logger.error(String.format("Unable to locate service of type [%s]", role.asSubclass(null)));
+			logger.error(String.format("Unable to locate service of type [%s]", role.getClass()));
 			SpringApplication.exit(ContextProvider.getApplicationContext());
 			return null;
 		}).collect(Collectors.toList());
@@ -322,7 +322,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 	}
 
 	private void traceSetting(String settingName, Object value) {
-		logger.trace(String.format("Setting default configuration [%s] -> [%s]", settingName, value));
+		logger.trace(String.format("Setting configuration [%s] -> [%s]", settingName, value));
 	}
 
 	private EntityManagerFactoryImplementor build(SessionFactoryImplementor hibernateSessionFactoryInstance,
@@ -337,7 +337,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 
 		addSessionFactoryObservers(optionsBuilder);
 		// @formatter:off
-		EntityManagerFactoryImplementor sf = new ManagerFactory(
+		EntityManagerFactoryImplementor sf = new ResourceManagerFactory(
 				localStorage,
 				metadata,
 				serviceRegistry,
@@ -360,7 +360,7 @@ public class ManagerFactoryBuilder implements ContextBuilder {
 					}
 
 					throw new IllegalArgumentException(
-							String.format("factory must be instance of [%s]", SessionFactoryImpl.class));
+							String.format("Factory must be instance of [%s]", SessionFactoryImpl.class));
 				} catch (IllegalAccessException | IllegalArgumentException ex) {
 					ex.printStackTrace();
 					SpringApplication.exit(ContextProvider.getApplicationContext());

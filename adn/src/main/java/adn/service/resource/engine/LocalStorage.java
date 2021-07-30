@@ -4,6 +4,9 @@
 package adn.service.resource.engine;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,12 +15,11 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 import adn.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
-import adn.service.resource.engine.persistence.PersistenceContext;
+import adn.service.resource.engine.persistence.PersistentResourceContext;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.query.UpdateQuery;
 import adn.service.resource.engine.template.ResourceTemplate;
@@ -35,7 +37,6 @@ public class LocalStorage implements Storage {
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Autowired
-	@Qualifier(FinderImpl.NAME)
 	private Finder finder;
 
 	private final Validator templateValidator;
@@ -43,7 +44,7 @@ public class LocalStorage implements Storage {
 	private final MetadataFactory metadataFactory = MetadataFactory.INSTANCE;
 
 	@Autowired
-	private PersistenceContext persistenceContext;
+	private PersistentResourceContext persistenceContext;
 
 	public static final String DIRECTORY = "C:\\Users\\Ngoc Huy\\Documents\\avocados-adn\\";
 	public static final double MAX_SIZE_IN_ONE_READ = 1.4 * 1024 * 1024; // 1.4MB
@@ -68,6 +69,9 @@ public class LocalStorage implements Storage {
 			case UPDATE: {
 				return doUpdate((UpdateQuery) query);
 			}
+			case DELETE: {
+				return doDelete(query);
+			}
 			default: {
 				return new ExceptionResultSet(
 						new RuntimeException(String.format("Unknown query [%s]", query.getActualSQLString())),
@@ -76,6 +80,37 @@ public class LocalStorage implements Storage {
 		}
 	}
 
+	private ResultSetImplementor doDelete(Query batch) {
+		Query current = batch;
+		long modCount = 0;
+		SQLException error = null;
+		boolean success;
+
+		try {
+			while (current != null) {
+				success = persistenceContext.delete(current, getResourceTemplate(current.getTemplateName()), error);
+
+				if (success) {
+					modCount++;
+					current = current.next();
+					continue;
+				}
+
+				if (error != null) {
+					error.printStackTrace();
+					return new ExceptionResultSet(error, batch.getStatement());
+				}
+
+				return new ExceptionResultSet(batch.getStatement());
+			}
+		} catch (RuntimeException rte) {
+			rte.printStackTrace();
+			return new ExceptionResultSet(rte, batch.getStatement());
+		}
+
+		return new ResourceUpdateCount(new Long[] { modCount }, batch.getTemplateName(), batch.getStatement());
+	}
+	
 	private ResultSetImplementor doUpdate(UpdateQuery batch) {
 		ResourceTemplate template = templates.get(batch.getTemplateName());
 		UpdateQuery current = batch;
@@ -94,9 +129,10 @@ public class LocalStorage implements Storage {
 
 			if (error != null) {
 				error.printStackTrace();
+				return new ExceptionResultSet(error, current.getStatement());
 			}
 
-			return new ExceptionResultSet(error, current.getStatement());
+			return new ExceptionResultSet(current.getStatement());
 		}
 
 		return new ResourceUpdateCount(new Long[] { modCount }, template.getTemplateName(), batch.getStatement());
@@ -195,9 +231,10 @@ public class LocalStorage implements Storage {
 
 				if (error != null) {
 					error.printStackTrace();
+					return new ExceptionResultSet(error, batch.getStatement());
 				}
 
-				return new ExceptionResultSet(error, batch.getStatement());
+				return new ExceptionResultSet(batch.getStatement());
 			}
 		} catch (RuntimeException rte) {
 			rte.printStackTrace();
@@ -229,6 +266,17 @@ public class LocalStorage implements Storage {
 
 	private void validateAndPutTemplate(ResourceTemplate template) {
 		templateValidator.validate(template, null);
+
+		Path path = Paths.get(template.getDirectory());
+
+		if (!Files.isDirectory(path)) {
+			logger.trace(String.format("Creating new directory with path [%s]", path.toAbsolutePath()));
+
+			File directory = path.toFile();
+
+			directory.mkdir();
+		}
+
 		templates.put(template.getTemplateName(), template);
 		logger.trace(String.format("Registered new resource template: [\n%s\n]", template.toString()));
 	}

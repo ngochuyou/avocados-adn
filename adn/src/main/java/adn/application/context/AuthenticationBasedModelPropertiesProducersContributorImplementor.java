@@ -3,6 +3,11 @@
  */
 package adn.application.context;
 
+import static adn.service.internal.Role.ADMIN;
+import static adn.service.internal.Role.EMPLOYEE;
+import static adn.service.internal.Role.MANAGER;
+import static adn.service.internal.Role.PERSONNEL;
+
 import adn.application.context.DefaultAuthenticationBasedModelPropertiesProducerFactory.AuthenticationBasedModelPropertiesProducersContributor;
 import adn.helpers.Utils;
 import adn.model.entities.Account;
@@ -11,6 +16,7 @@ import adn.model.entities.Category;
 import adn.model.entities.Customer;
 import adn.model.entities.Factor;
 import adn.model.entities.Personnel;
+import adn.model.entities.Product;
 import adn.model.entities.Provider;
 import adn.model.factory.property.production.authentication.AuthenticationBasedModelPropertiesProducersBuilder;
 import adn.service.internal.Role;
@@ -25,7 +31,7 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 	@Override
 	public void contribute(AuthenticationBasedModelPropertiesProducersBuilder builder) {
 		final Role[] allRoles = Role.values();
-		final Role[] personnels = new Role[] { Role.ADMIN, Role.PERSONNEL, Role.MANAGER, Role.EMPLOYEE };
+		final Role[] personnels = new Role[] { ADMIN, PERSONNEL, MANAGER, EMPLOYEE };
 		// @formatter:off
 		builder
 			.type(Account.class)
@@ -33,15 +39,15 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 					.field("password").mask()
 					.field("id").use("username").publish()
 					.fields("firstName", "lastName", "photo", "role", "gender", "active").publish()
-					.field("birthDay").use(Utils::localDateToDate)
+					.field("birthDay").use(Utils::formatLocalDate)
 					.anyFields().mask()
 					.type()
 				.role(personnels)
-					.field("createdDate").use(Utils::localDateToDate)
-					.field("updatedDate").use(Utils::localDateTimeToDate)
+					.field("createdDate").use(Utils::formatLocalDate)
+					.field("updatedDate").use(Utils::formatLocalDateTime)
 					.anyFields().mask()
 					.type()
-				.role(Role.ADMIN)
+				.role(ADMIN)
 					.field("email", "phone").publish()
 					.type()
 					.anyRoles().mask()
@@ -62,16 +68,24 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 					.anyRoles().anyFields().mask()
 		 	.and()
 				.type(Factor.class)
-					.role(Role.ADMIN, Role.PERSONNEL).publish()
+					.role(ADMIN, PERSONNEL).publish()
 					.anyRoles().mask()
 			.and()
 				.type(Provider.class)
-					.role(Role.PERSONNEL).publish()
+					.role(PERSONNEL).publish()
 			.and()
 				.type(Category.class)
 					.role(allRoles).publish()
+					.field("deactivatedDate").use(Utils::formatLocalDateTime)
 			.and()
-				.anyType().role(Role.ADMIN).publish();
+				.type(Product.class)
+					.role(ADMIN, PERSONNEL)
+						.field("createdTimestamp").use(Utils::formatLocalDateTime)
+						.field("updatedTimestamp").use(Utils::formatLocalDateTime)
+						.anyFields().publish()
+					.anyRoles().mask()
+			.and()
+				.anyType().role(PERSONNEL, ADMIN).publish();
 		// @formatter:on
 	}
 

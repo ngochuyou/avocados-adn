@@ -5,19 +5,15 @@ package adn.model.entities;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -56,7 +52,7 @@ public class Product extends Factor {
 	@Column(name = "updated_timestamp", nullable = false)
 	private LocalDateTime updatedTimestamp;
 
-	@ManyToOne(optional = false, fetch = FetchType.LAZY)
+	@ManyToOne(optional = false)
 	@JoinColumn(name = "category_id", referencedColumnName = "id")
 	private Category category;
 	// IDENTIFIER_LENGTH
@@ -64,11 +60,11 @@ public class Product extends Factor {
 	@Convert(converter = StringSetConverter.class)
 	private Set<String> images;
 
-	@OneToMany(cascade = CascadeType.PERSIST, mappedBy = "product", fetch = FetchType.LAZY)
-	private List<ProductProviderDetail> providerDetails;
-
 	@Column(columnDefinition = "TEXT")
 	private String description;
+
+	@Column
+	private Float rating;
 
 	public String getId() {
 		return id;
@@ -112,14 +108,6 @@ public class Product extends Factor {
 		this.category = category;
 	}
 
-	public List<ProductProviderDetail> getProviderDetails() {
-		return providerDetails;
-	}
-
-	public void setProviderDetails(List<ProductProviderDetail> providerDetails) {
-		this.providerDetails = providerDetails;
-	}
-
 	public Set<String> getImages() {
 		return images;
 	}
@@ -134,6 +122,14 @@ public class Product extends Factor {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public Float getRating() {
+		return rating;
+	}
+
+	public void setRating(Float rating) {
+		this.rating = rating;
 	}
 
 }

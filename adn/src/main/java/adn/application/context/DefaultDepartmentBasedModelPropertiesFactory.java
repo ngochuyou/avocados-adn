@@ -3,7 +3,7 @@
  */
 package adn.application.context;
 
-import java.sql.SQLSyntaxErrorException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -130,8 +130,24 @@ public class DefaultDepartmentBasedModelPropertiesFactory
 	}
 
 	@Override
-	public <T extends DepartmentScoped> String[] validateColumnNames(Class<T> type, String[] requestedColumns)
-			throws SQLSyntaxErrorException {
+	public <T extends DepartmentScoped> Map<String, Object> singularProduce(Class<T> type, Object source, String column,
+			UUID departmentId) {
+		DepartmentBasedModelPropertiesProducer producer = getProducer(type);
+
+		return producer.singularProduce(source, column, departmentId);
+	}
+
+	@Override
+	public <T extends DepartmentScoped> List<Map<String, Object>> singularProduce(Class<T> type, List<Object> sources,
+			String column, UUID departmentId) {
+		DepartmentBasedModelPropertiesProducer producer = getProducer(type);
+
+		return producer.singularProduce(sources, column, departmentId);
+	}
+
+	@Override
+	public <T extends DepartmentScoped> Collection<String> validateColumnNames(Class<T> type,
+			Collection<String> requestedColumns) throws NoSuchFieldException {
 		DepartmentBasedModelPropertiesProducer producer = getProducer(type);
 
 		return producer.validateAndTranslateColumnNames(requestedColumns);

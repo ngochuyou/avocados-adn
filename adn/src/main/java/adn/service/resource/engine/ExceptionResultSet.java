@@ -17,6 +17,12 @@ public class ExceptionResultSet extends ResourceResultSet {
 				ExceptionResultSetMetadata.INSTANCE, statement);
 	}
 
+	public ExceptionResultSet(Statement statement) {
+		super(new Serializable[][] {
+				new Serializable[] { 0, RuntimeException.class, "Encountered an unknown exception" } },
+				ExceptionResultSetMetadata.INSTANCE, statement);
+	}
+
 	public static class ExceptionResultSetMetadata extends ResultSetMetaDataImpl {
 
 		private static final ExceptionResultSetMetadata INSTANCE = new ExceptionResultSetMetadata();

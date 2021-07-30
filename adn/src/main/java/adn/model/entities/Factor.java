@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.MappedSuperclass;
+import javax.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -18,21 +19,24 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @MappedSuperclass
 public abstract class Factor extends Entity {
 
+	@Transient
+	public static transient final String ACTIVE_FIELD_NAME = "active";
+
 	@Column(nullable = false, unique = true)
-	protected String name;
+	private String name;
 
 	@Column(name = "created_by", nullable = false)
-	protected String createdBy;
+	private String createdBy;
 
 	@Column(name = "updated_by", nullable = false)
-	protected String updatedBy;
+	private String updatedBy;
 
 	@JsonProperty
 	@Column(name = "active", nullable = false)
-	protected Boolean active;
+	private Boolean active;
 
 	@Column(name = "deactivated_date")
-	protected LocalDateTime deactivatedDate;
+	private LocalDateTime deactivatedDate;
 
 	@JsonProperty(value = "active")
 	public Boolean isActive() {

@@ -1,11 +1,11 @@
-import { $fetch, fjson } from '../fetch';
+import { $fetch, fjson, asBlob } from '../fetch';
 
-export async function fetchCategoryList({ page = 0, size = 10, columns = [] }) {
-	return await fjson(`/rest/category/list?page=${page}&size=${size}&columns=${columns.join(',')}`);
+export function fetchCategoryList({ page = 0, size = 10, columns = [] }) {
+	return fjson(`/rest/product/category/list?page=${page}&size=${size}&columns=${columns.join(',')}`);
 }
 
-export async function fetchCategoryCount() {
-	return await fjson(`/rest/category/count`);
+export function fetchCategoryCount() {
+	return fjson(`/rest/product/category/count`);
 }
 
 async function doModifyCategory(method, model = null) {
@@ -13,7 +13,7 @@ async function doModifyCategory(method, model = null) {
 		return [null, "Model was null"];
 	}
 
-	return await fjson('/rest/category', {
+	return await fjson('/rest/product/category', {
 		method,
 		headers: {
 			'Content-Type': 'application/json'
@@ -35,7 +35,7 @@ export async function updateCategoryActivationState(categoryId = null, state = n
 		return [null, "Invalid parameter"];
 	}
 
-	const [res, err] = await $fetch(`/rest/category/activation?id=${categoryId}&active=${state}`, {
+	const [res, err] = await $fetch(`/rest/product/category/activation?id=${categoryId}&active=${state}`, {
 		method: 'PATCH',
 		headers: {
 			'Accept' : 'text/plain'
@@ -55,4 +55,115 @@ export async function updateCategoryActivationState(categoryId = null, state = n
 	} catch(exception) {
 		return [null, exception];
 	}
+}
+
+export function getAllCategories() {
+	return fjson('/rest/product/category/all');
+}
+
+export function getProductCount() {
+	return fjson('/rest/product/count');
+}
+
+export async function createProduct(model = null) {
+	if (model == null) {
+		return [null, "Model was null"];
+	}
+
+	const productModel = {...model};
+	const form = new FormData();
+
+	for (let file of model.images) {
+		if (!(file instanceof Blob)) {
+			return [null, "One of the files was not Blob"];
+		}
+
+		form.append("images", file);
+	}
+
+	delete productModel.images;
+
+	form.append("model", asBlob(productModel));
+
+	const [res, err] = await $fetch('/rest/product', {
+		method: 'POST',
+		headers: {
+			'Accept': 'application/json'
+		},
+		body: form
+	});
+
+	if (err) {
+		return [null, err];
+	}
+
+	if (res.ok) {
+		try {
+			return [await res.json(), null];
+		} catch (exception) {
+			return [null, exception];
+		}
+	}
+
+	return [null, await res.json()];
+}
+
+export async function updateProduct(model = null) {
+	if (model == null) {
+		return [null, "Model was null"];
+	}
+
+	const productModel = {...model};
+	const form = new FormData();
+	const images = [...productModel.images];
+	const removedIndicies = [];
+
+	for (let i in images) {
+		if (images[i] instanceof Blob) {
+			form.append("images", images[i]);
+			removedIndicies.push(parseInt(i));
+			continue;
+		}
+
+		if (typeof images[i] !== 'string') {
+			return [null, `Unsupported file type: ${typeof images[i]}`];
+		}
+	}
+
+	productModel.images = images.filter((file, index) => !removedIndicies.includes(index));
+
+	form.append("model", asBlob(productModel));
+
+	const [res, err] = await $fetch('/product', {
+		method: 'PUT',
+		headers: {
+			'Accept': 'application/json'
+		},
+		body: form
+	});
+
+	if (err) {
+		return [null, err];
+	}
+
+	if (res.ok) {
+		try {
+			return [await res.json(), null];
+		} catch (exception) {
+			return [null, exception];
+		}
+	}
+
+	return [null, await res.json()];
+}
+
+export function getProductListByCategory({
+	columns = [], categoryId = null,
+	page = 0, size = 18
+}) {
+	if (categoryId == null || categoryId.length === 0) {
+		return [null, "Category id was empty"];
+	}
+
+	return fjson(`/rest/product?category=${categoryId}&columns=${columns.join(',')}`);
 }

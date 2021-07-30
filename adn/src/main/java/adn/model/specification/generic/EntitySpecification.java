@@ -5,11 +5,8 @@ package adn.model.specification.generic;
 
 import java.io.Serializable;
 
-import org.springframework.stereotype.Component;
-
 import adn.dao.DatabaseInteractionResult;
 import adn.helpers.EntityUtils;
-import adn.model.Generic;
 import adn.model.entities.Entity;
 import adn.model.specification.Specification;
 import adn.model.specification.TransactionalSpecification;
@@ -18,9 +15,8 @@ import adn.model.specification.TransactionalSpecification;
  * @author Ngoc Huy
  *
  */
-@Component
-@Generic(entityGene = Entity.class)
-public class EntitySpecification<T extends Entity> extends TransactionalSpecification<T> implements Specification<T> {
+public abstract class EntitySpecification<T extends Entity> extends TransactionalSpecification<T>
+		implements Specification<T> {
 
 	@Override
 	public DatabaseInteractionResult<T> isSatisfiedBy(Serializable id, T instance) {

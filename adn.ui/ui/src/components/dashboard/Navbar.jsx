@@ -8,7 +8,8 @@ export default function Navbar({
 	backButtonClick = () => null,
 	searchInputEntered = () => null,
 	searchInputEmptied = () => null,
-	centerElement = null
+	centerElement = null,
+	outerRightElement = null
 }) {
 	const [searchInputState, dispatchSearchInputState] = useReducer(
 		(oldState, { type = null, payload = null} = {}) => {
@@ -55,9 +56,6 @@ export default function Navbar({
 			result();
 		}
 	};
-	const onSubmit = (event) => {
-		event.preventDefault();
-	};
 	const { value: searchInputValue } = searchInputState;
 	
 	return (
@@ -81,7 +79,7 @@ export default function Navbar({
 				</div>
 				<div className="uk-width-xlarge">
 					<div className="uk-navbar-item">
-						<form className="uk-width-1-1" onSubmit={onSubmit}>
+						<div className="uk-width-1-1">
 							<input
 								value={searchInputValue}
 								onKeyUp={onSearchInputKeyUp}
@@ -96,8 +94,11 @@ export default function Navbar({
 								onClick={onSearchButtonClick}
 								className="uk-button uk-button-default uk-width-1-4 backgroundf colorf"
 							>Search</button>
-						</form>
+						</div>
 					</div>
+				</div>
+				<div className="uk-width-auto">
+					{outerRightElement}
 				</div>
 			</div>
 		</nav>

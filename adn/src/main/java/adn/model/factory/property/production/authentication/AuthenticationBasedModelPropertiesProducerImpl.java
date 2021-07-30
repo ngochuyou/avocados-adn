@@ -5,7 +5,8 @@ package adn.model.factory.property.production.authentication;
 
 import static adn.helpers.LoggerHelper.with;
 
-import java.sql.SQLSyntaxErrorException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -58,7 +59,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 			boolean nullFunction = prop.getFunction() == null;
 			
 			if (!isParent || unknownProperty || nullFunction) {
-				logger.debug(String.format("[%s]: Ignoring %s [%s] %s", entityClass.getName(),
+				logger.trace(String.format("[%s]: Ignoring %s [%s] %s", entityClass.getName(),
 						SecuredProperty.class.getSimpleName(), prop.getPropertyName(),
 						!isParent ? "invalid type"
 								: unknownProperty ? "unknown property"
@@ -79,7 +80,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 						Stream.of(Map.entry(name, fnc))
 							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 				alternativeNamesMap.put(prop.getRole(),
-						Stream.of(Map.entry(name, StringHelper.hasLength(altName) ? with(logger).trace(String.format("Using alternative name [%s] on property [%s]", altName, name), altName) : name))
+						Stream.of(Map.entry(name, StringHelper.hasLength(altName) ? with(logger).debug(String.format("Using alternative name [%s] on property [%s]", altName, name), altName) : name))
 							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 				return;
 			}
@@ -107,7 +108,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 			functions.put(name, fnc);
 			alternativeNames.put(name,
 					StringHelper.hasLength(altName) ?
-							with(logger).trace(String.format("Using alternative name [%s] on property [%s]", altName, name), altName) :
+							with(logger).debug(String.format("Using alternative name [%s] on property [%s]", altName, name), altName) :
 							name);
 			return;
 		});
@@ -169,7 +170,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 	private Map<String, Object> produceRow(String[] originalPropNames, Object[] values,
 			Map<String, Function<Object, Object>> functionsByRole, Map<String, String> alternativeNamesByRole) {
 		try {
-			int span = values.length;
+			int span = originalPropNames.length;
 
 			return IntStream.range(0, span).mapToObj(index -> {
 				String originalPropName = originalPropNames[index];
@@ -177,7 +178,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 				return Entry.entry(alternativeNamesByRole.get(originalPropName),
 						functionsByRole.get(originalPropName).apply(values[index]));
 			}).collect(
-					// @formatter:off
+			// @formatter:off
 					HashMap<String, Object>::new,
 					(map, entry) -> map.put(entry.getKey(), entry.getValue()),
 					HashMap::putAll);
@@ -213,7 +214,6 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 	public List<Map<String, Object>> produce(List<Object[]> source, Role role, String[] columnNames) {
 		Map<String, Function<Object, Object>> functionsByRole = functionsMap.get(role);
 		Map<String, String> alternativeNamesByRole = alternativeNamesByOriginalNames.get(role);
-
 		// @formatter:off
 		return IntStream.range(0, source.size())
 				.mapToObj(index -> produceRow(columnNames, source.get(index), functionsByRole, alternativeNamesByRole))
@@ -222,22 +222,57 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 	}
 
 	@Override
-	public String[] validateAndTranslateColumnNames(Role role, String[] requestedColumns)
-			throws SQLSyntaxErrorException {
+	public Collection<String> validateAndTranslateColumnNames(Role role, Collection<String> requestedColumns)
+			throws NoSuchFieldException {
 		Map<String, String> alternativeName = originalNamesByAlternativeNames.get(role);
-		String[] translatedColumnNames = new String[requestedColumns.length];
-		int i = 0;
+		List<String> translatedColumnNames = new ArrayList<>(requestedColumns.size());
 		String translatedColumn;
 
 		for (String requestedColumn : requestedColumns) {
 			if ((translatedColumn = alternativeName.get(requestedColumn)) == null) {
-				throw new SQLSyntaxErrorException(String.format("Unknown property [%s]", requestedColumn));
+				throw new NoSuchFieldException(String.format("Unknown property [%s]", requestedColumn));
 			}
 
-			translatedColumnNames[i++] = translatedColumn;
+			translatedColumnNames.add(translatedColumn);
 		}
 
 		return translatedColumnNames;
+	}
+
+	@Override
+	public Map<String, Object> singularProduce(Object source) {
+		throw new UnsupportedOperationException("Singular production wiht no column name is not supported");
+	}
+
+	@Override
+	public List<Map<String, Object>> singularProduce(List<Object> source) {
+		throw new UnsupportedOperationException("Singular production wiht no column name is not supported");
+	}
+
+	@Override
+	public Map<String, Object> singularProduce(Object source, Role role, String columnName) {
+		Map<String, Function<Object, Object>> authenticatedFunctions = functionsMap.get(role);
+		Map<String, String> authenticatedAlternativeNames = alternativeNamesByOriginalNames.get(role);
+		Map<String, Object> result = new HashMap<>();
+
+		result.put(authenticatedAlternativeNames.get(columnName), authenticatedFunctions.get(columnName).apply(source));
+
+		return result;
+	}
+
+	@Override
+	public List<Map<String, Object>> singularProduce(List<Object> source, Role role, String columnName) {
+		Map<String, Function<Object, Object>> authenticatedFunctions = functionsMap.get(role);
+		Map<String, String> authenticatedAlternativeNames = alternativeNamesByOriginalNames.get(role);
+
+		return IntStream.range(0, source.size()).mapToObj(index -> {
+			Map<String, Object> result = new HashMap<>();
+
+			result.put(authenticatedAlternativeNames.get(columnName),
+					authenticatedFunctions.get(columnName).apply(source.get(index)));
+
+			return result;
+		}).collect(Collectors.toList());
 	}
 
 }

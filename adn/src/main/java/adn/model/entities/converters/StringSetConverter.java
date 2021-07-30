@@ -3,6 +3,7 @@
  */
 package adn.model.entities.converters;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,12 +21,12 @@ public class StringSetConverter implements AttributeConverter<Set<String>, Strin
 
 	@Override
 	public String convertToDatabaseColumn(Set<String> attributes) {
-		return attributes.stream().collect(Collectors.joining(DELIMETER));
+		return attributes == null ? "" : attributes.stream().collect(Collectors.joining(DELIMETER));
 	}
 
 	@Override
 	public Set<String> convertToEntityAttribute(String dbData) {
-		return Set.of(dbData.split(DELIMETER));
+		return dbData != null ? Set.of(dbData.split(DELIMETER)) : new HashSet<>();
 	}
 
 }

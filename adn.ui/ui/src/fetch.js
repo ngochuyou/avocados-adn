@@ -49,3 +49,7 @@ export async function fjson(endpoint = null, options = {}) {
 		return [null, exception];
 	}
 }
+
+export function asBlob(model = null) {
+	return model == null ? [null, "Model was null"] : new Blob([JSON.stringify(model)], { type: "application/json" });
+}

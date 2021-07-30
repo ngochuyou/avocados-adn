@@ -10,14 +10,12 @@ package adn.application.context;
 public interface EffectivelyFinal {
 
 	Access getAccess() throws IllegalAccessException;
-	
+
 	public interface Access {
-		
+
 		void close();
-		
-		default void execute() throws Exception {
-			close();
-		}
+
+		void execute() throws Exception;
 
 	}
 

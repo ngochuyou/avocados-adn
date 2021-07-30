@@ -63,3 +63,42 @@
             user-select: none; /* Non-prefixed version, currently
                                   supported by Chrome, Edge, Opera and Firefox */
 }
+
+.fade-in {
+	opacity: 0;
+	animation: _fade-in .25s;
+}
+
+.overflow-auto {
+	max-height: 100%;
+	overflow: auto;
+}
+
+@keyframes _fade-in {
+	0% {
+		opacity: 0;
+	}
+
+	100% {
+		opacity: 1;
+	}
+}
+
+.fade-out {
+	opacity: 1;
+	animation: _fade-out .2s;
+}
+
+@keyframes _fade-out {
+	0% {
+		opacity: 1;
+	}
+
+	100% {
+		opacity: 0;
+	}
+}
+
+.color-inherit {
+	color: inherit !important;
+}

@@ -3,7 +3,7 @@
  */
 package adn.application.context;
 
-import java.sql.SQLSyntaxErrorException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -111,22 +111,11 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 	}
 
 	@Override
-	public <T extends DomainEntity> Map<String, Object> produce(Class<T> type, Object[] properties, String[] columns) {
-		return produce(type, properties, columns, ContextProvider.getPrincipalRole());
-	}
-
-	@Override
 	public <T extends DomainEntity> Map<String, Object> produce(Class<T> type, Object[] properties, String[] columns,
 			Role role) {
 		AuthenticationBasedModelPropertiesProducer producer = getProducer(type);
 
 		return producer.produce(properties, role, columns);
-	}
-
-	@Override
-	public <T extends DomainEntity> List<Map<String, Object>> produce(Class<T> type, List<Object[]> properties,
-			String[] columns) {
-		return produce(type, properties, columns, ContextProvider.getPrincipalRole());
 	}
 
 	@Override
@@ -138,8 +127,24 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 	}
 
 	@Override
-	public <T extends DomainEntity> String[] validateAndTranslateColumnNames(Class<T> type, Role role,
-			String[] requestedColumnNames) throws SQLSyntaxErrorException {
+	public <T extends DomainEntity> Map<String, Object> singularProduce(Class<T> type, Object source, String column,
+			Role role) {
+		AuthenticationBasedModelPropertiesProducer producer = getProducer(type);
+
+		return producer.singularProduce(source, role, column);
+	}
+
+	@Override
+	public <T extends DomainEntity> List<Map<String, Object>> singularProduce(Class<T> type, List<Object> sources,
+			String column, Role role) {
+		AuthenticationBasedModelPropertiesProducer producer = getProducer(type);
+
+		return producer.singularProduce(sources, role, column);
+	}
+
+	@Override
+	public <T extends DomainEntity> Collection<String> validateAndTranslateColumnNames(Class<T> type, Role role,
+			Collection<String> requestedColumnNames) throws NoSuchFieldException {
 		return getProducer(type).validateAndTranslateColumnNames(role, requestedColumnNames);
 	}
 
@@ -322,10 +327,6 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 			@Override
 			public WithRole<T> anyRoles() {
 				return new WithRoles(owner, this, getUngivenRoles().toArray(Role[]::new));
-			}
-
-			protected WithField<T> ungivenRoles(String... fields) {
-				return new WithRoles(owner, this, getUngivenRoles().toArray(Role[]::new)).field(fields);
 			}
 
 			public class WithRoles extends AbstractOwned implements WithRole<T> {

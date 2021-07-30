@@ -29,6 +29,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CharacterEncodingFilter;
+import org.springframework.web.filter.CorsFilter;
 
 import adn.application.Constants;
 import adn.helpers.StringHelper;
@@ -70,6 +72,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	// @formatter:off
 	private static final String[] PUBLIC_ENDPOINTS = {
 			"/account/photo\\GET",
+			"/product/image/**\\GET",
 			"public/**"
 	};
 	// @formatter:on
@@ -121,6 +124,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 			logger.debug("Publishing " + TESTUNIT_PREFIX + " endpoints");
 		}
 		
+		CharacterEncodingFilter charsetFilter = new CharacterEncodingFilter("UTF-8", true);
+		
 		http
 			.authorizeRequests()
 			.antMatchers(HttpMethod.POST, "/auth/token").permitAll()
@@ -129,6 +134,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 			.sessionManagement()
 				.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
 		.and()
+			.addFilterBefore(charsetFilter, CorsFilter.class)
 			.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
 			.addFilterAfter(jwtLogoutFilter, JwtRequestFilter.class)
 			.exceptionHandling()

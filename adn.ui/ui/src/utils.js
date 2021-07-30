@@ -25,3 +25,27 @@ export const toMap = (array = [], map = {}, idName) => {
 
 	return map;
 };
+
+export const isImage = (blob) => {
+	if (!(blob instanceof Blob)) {
+		return false;
+	}
+
+	return blob.type.startsWith('image');
+}
+
+export const linear = (list = [], propName = null, value = null) => {
+	if (propName == null) {
+		return null;
+	}
+
+	for (let element of list) {
+		if (element[propName] === value) {
+			return element;
+		}
+	}
+
+	return null;
+}
+
+export const VIETNAMESE_CHARACTERS = "ÁáÀàẢảÃãẠạĂăẮắẰằẲẳẴẵẶặÂâẤấẦầẨẩẪẫẬậĐđÉéÈèẺẻẼẽẸẹÊêỂểẾếỀềỄễỆệÍíÌìỊịỈỉĨĩỊịÓóÒòỎỏÕõỌọÔôỐốỒồỔổỖỗỘộƠơỚớỜờỞởỠỡỢợÚùÙùỦủŨũỤụƯưỨứỪừỬửỮữỰựÝýỲỳỶỷỸỹỴỵ";

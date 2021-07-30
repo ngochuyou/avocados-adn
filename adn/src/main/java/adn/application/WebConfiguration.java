@@ -5,6 +5,7 @@ package adn.application;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Properties;
@@ -22,10 +23,10 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.support.SimpleThreadScope;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
@@ -36,8 +37,6 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.context.ContextBuilder;
 import adn.service.internal.Role;
@@ -99,10 +98,19 @@ public class WebConfiguration implements WebMvcConfigurer {
 		return sessionFactory;
 	}
 
+//	@Bean
+//	@Primary
+//	public ObjectMapper objectMapper() {
+//		return new ObjectMapper();
+//	}
+
 	@Bean
-	@Primary
-	public ObjectMapper objectMapper() {
-		return new ObjectMapper();
+	public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter() {
+		MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter();
+
+		jsonConverter.setDefaultCharset(StandardCharsets.UTF_8);
+
+		return jsonConverter;
 	}
 
 	@Bean

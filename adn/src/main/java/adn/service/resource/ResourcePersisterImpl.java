@@ -48,7 +48,7 @@ import adn.service.resource.engine.template.ResourceTemplateImpl;
 import adn.service.resource.engine.tuple.InstantiatorFactory;
 import adn.service.resource.engine.tuple.InstantiatorFactory.PojoInstantiator;
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
-import adn.service.resource.factory.ManagerFactory;
+import adn.service.resource.factory.ResourceManagerFactory;
 import adn.service.resource.model.type.AbstractExplicitlyBindedType;
 import adn.service.resource.model.type.NoOperationSet;
 
@@ -117,7 +117,7 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			LocalStorageConnection connection = (LocalStorageConnection) delegate;
 			// @formatter:off
 			logger.trace(String.format("Registering template [%s]", getEntityName()));
-			connection.getStorage().registerTemplate(String.format("%s%s%s", getTableName(), ManagerFactory.DTYPE_SEPERATOR, StringHelper.get((String) getDiscriminatorValue()).orElse("")),
+			connection.getStorage().registerTemplate(String.format("%s%s%s", getTableName(), ResourceManagerFactory.DTYPE_SEPERATOR, StringHelper.get((String) getDiscriminatorValue()).orElse("")),
 					determineDirectoryName(getMappedClass()),
 					columnNames,
 					columnTypes,

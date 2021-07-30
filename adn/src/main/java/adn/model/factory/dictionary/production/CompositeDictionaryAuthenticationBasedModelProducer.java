@@ -18,11 +18,7 @@ public interface CompositeDictionaryAuthenticationBasedModelProducer<T extends D
 
 	Map<String, Object> produce(T entity, Map<String, Object> modelMap, Role role);
 
-	Map<String, Object> produceImmutable(T entity, Map<String, Object> modelMap, Role role);
-
 	List<Map<String, Object>> produce(List<T> source, List<Map<String, Object>> models, Role role);
-
-	List<Map<String, Object>> produceImmutable(List<T> source, List<Map<String, Object>> models, Role role);
 
 	@Override
 	default <E extends T> CompositeDictionaryModelProducer<E> and(CompositeDictionaryModelProducer<E> next) {

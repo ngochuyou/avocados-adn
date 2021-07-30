@@ -3,8 +3,7 @@
  */
 package adn.model.factory.property.production;
 
-import java.sql.SQLSyntaxErrorException;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -24,18 +23,12 @@ public interface ModelPropertiesProducer extends ModelProducer<Object[], Map<Str
 	Map<String, Object> produce(Object[] source);
 
 	@Override
-	default Map<String, Object> produceImmutable(Object[] source) {
-		return Collections.unmodifiableMap(produce(source));
-	}
-
-	@Override
 	List<Map<String, Object>> produce(List<Object[]> source);
 
-	@Override
-	default List<Map<String, Object>> produceImmutable(List<Object[]> source) {
-		return Collections.unmodifiableList(produce(source));
-	}
+	Map<String, Object> singularProduce(Object source);
 
-	String[] validateAndTranslateColumnNames(String[] requestedColumns) throws SQLSyntaxErrorException;
+	List<Map<String, Object>> singularProduce(List<Object> source);
+
+	Collection<String> validateAndTranslateColumnNames(Collection<String> requestedColumns) throws NoSuchFieldException;
 
 }

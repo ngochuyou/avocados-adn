@@ -3,8 +3,9 @@
  */
 package adn.service.services;
 
-import java.sql.SQLSyntaxErrorException;
-import java.util.ArrayList;
+import static adn.helpers.ArrayHelper.from;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,8 +36,6 @@ import adn.service.internal.Role;
  */
 @Service
 public class DepartmentService implements adn.service.internal.Service {
-
-//	private static final Logger logger = LoggerFactory.getLogger(DepartmentService.class);
 
 	private final SessionFactory sessionFactory;
 	private final CRUDServiceImpl crudService;
@@ -93,9 +92,9 @@ public class DepartmentService implements adn.service.internal.Service {
 		return modelFactory.produce(Personnel.class, getDepartmentChief(departmentId), role);
 	}
 
-	public Map<String, Object> getDepartmentChief(UUID departmentId, String[] columns, Role role)
-			throws SQLSyntaxErrorException {
-		String[] validatedColumns = crudService.getDefaultColumnsOrTranslate(Personnel.class, role, columns);
+	public Map<String, Object> getDepartmentChief(UUID departmentId, Collection<String> columns, Role role)
+			throws NoSuchFieldException {
+		String[] validatedColumns = from(crudService.getDefaultColumnsOrTranslate(Personnel.class, role, columns));
 		// @formatter:off
 		String query = String.format("""
 				SELECT %s
@@ -116,9 +115,9 @@ public class DepartmentService implements adn.service.internal.Service {
 		return modelPropertiesFactory.produce(Personnel.class, row, validatedColumns, role);
 	}
 
-	public List<Map<String, Object>> getDepartmentChiefs(UUID[] departmentIds, String[] columns, Role role)
-			throws SQLSyntaxErrorException {
-		String[] validatedColumns = crudService.getDefaultColumnsOrTranslate(Personnel.class, role, columns);
+	public List<Map<String, Object>> getDepartmentChiefs(UUID[] departmentIds, Collection<String> columns, Role role)
+			throws NoSuchFieldException {
+		String[] validatedColumns = from(crudService.getDefaultColumnsOrTranslate(Personnel.class, role, columns));
 		// @formatter:off
 		String query = String.format("""
 				SELECT %s
@@ -130,13 +129,9 @@ public class DepartmentService implements adn.service.internal.Service {
 						.map(col -> "p.".concat(col))
 						.collect(Collectors.joining(",")));
 		// @formatter:on
-		List<Object[]> rows = repository.findWithContext(query, Map.of("ids", ParamContext.array(departmentIds)));
+		List<?> rows = repository.findWithContext(query, Map.of("ids", ParamContext.array(departmentIds)));
 
-		if (rows.isEmpty()) {
-			return new ArrayList<>();
-		}
-
-		return modelPropertiesFactory.produce(Personnel.class, rows, validatedColumns, role);
+		return crudService.resolveReadResult(Personnel.class, rows, validatedColumns, role);
 	}
 
 	public Long[] countPersonnel(UUID[] departmentIds) {
@@ -156,37 +151,31 @@ public class DepartmentService implements adn.service.internal.Service {
 		return countResults.toArray(new Long[size]);
 	}
 
-	public List<Map<String, Object>> getPersonnelListByDepartmentId(UUID departmentId, String[] requestedColumns,
-			Pageable paging, String[] groupByColumns, Role role) throws SQLSyntaxErrorException {
-		String[] validateSelectColumns = crudService.getDefaultColumnsOrTranslate(Personnel.class, role,
-				requestedColumns);
+	public List<Map<String, Object>> getPersonnelListByDepartmentId(UUID departmentId, Collection<String> columns,
+			Pageable paging, Role role) throws NoSuchFieldException {
+		String[] validatedColumns = from(crudService.getDefaultColumnsOrTranslate(Personnel.class, role, columns));
 		// @formatter:off
 		String query = String.format("""
 				SELECT %s FROM Personnel p
 				WHERE p.department.id=:id
-					""", Stream.of(validateSelectColumns)
+					""", Stream.of(validatedColumns)
 					.map(col -> "p.".concat(col))
 					.collect(Collectors.joining(",")));
 		// @formatter:on
-		query = crudService.resolveGroupByClause(Personnel.class, role, query, groupByColumns);
 		query = repository.appendOrderBy(query, paging.getSort());
 
-		List<Object[]> rows = repository.find(query, paging, Map.of("id", departmentId));
+		List<?> rows = repository.find(query, paging, Map.of("id", departmentId));
 
-		if (rows.isEmpty()) {
-			return new ArrayList<>();
-		}
-
-		return modelPropertiesFactory.produce(Personnel.class, rows, validateSelectColumns, role);
+		return crudService.resolveReadResult(Personnel.class, rows, validatedColumns, role);
 	}
-	
+
 	public UUID getPersonnelDepartmentId(String personnelId) {
 		Object[] row = repository.findById(personnelId, Personnel.class, new String[] { "department.id" });
-		
+
 		if (row == null) {
 			return null;
 		}
-		
+
 		return (UUID) row[0];
 	}
 

@@ -16,10 +16,8 @@ import org.springframework.util.Assert;
 import adn.engine.access.AbstractPropertyAccess;
 import adn.engine.access.HybridAccess;
 import adn.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccess;
-import adn.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.engine.access.PropertyAccessStrategyFactory.LambdaPropertyAccess.LambdaType;
-import adn.helpers.ArrayHelper;
-import adn.helpers.ArrayHelper.ArrayBuilder;
+import adn.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
 import adn.helpers.FunctionHelper.HandledBiFunction;
 import adn.helpers.FunctionHelper.HandledFunction;
 import adn.helpers.TypeHelper;
@@ -99,11 +97,9 @@ public abstract class ResourceTuplizerContract implements ResourceTuplizer {
 		}
 
 		final int span = template.getPropertySpan();
-		final ArrayBuilder<Integer> ignoredIndicies = ArrayHelper
-				.from(new Integer[] { pathColumnIndex, extensionColumnIndex, contentColumnIndex });
 
 		for (int i = 0; i < span; i++) {
-			if (ignoredIndicies.contains(i)) {
+			if (i == pathColumnIndex || i == extensionColumnIndex || i == contentColumnIndex) {
 				continue;
 			}
 

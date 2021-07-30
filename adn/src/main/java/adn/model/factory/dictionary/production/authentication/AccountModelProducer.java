@@ -36,8 +36,8 @@ public class AccountModelProducer<T extends Account>
 	protected Map<String, Object> produceForPersonnel(T account, Map<String, Object> model) {
 		model = produceForAnonymous(account, model);
 
-		model.put("createdDate", Utils.localDateToDate(account.getCreatedDate()));
-		model.put("updatedDate", Utils.localDateTimeToDate(account.getUpdatedDate()));
+		model.put("createdDate", Utils.formatLocalDate(account.getCreatedDate()));
+		model.put("updatedDate", Utils.formatLocalDateTime(account.getUpdatedDate()));
 
 		return model;
 	}

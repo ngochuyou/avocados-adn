@@ -1,5 +1,7 @@
+const dev = true;
+
 function AuthenticatedComponent({ principal, children }) {
-	if (principal === null) {
+	if (principal === null && !dev) {
 		return <></>;
 	}
 

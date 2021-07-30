@@ -3,9 +3,6 @@
  */
 package adn.controller;
 
-import static adn.helpers.ArrayHelper.from;
-
-import java.sql.SQLSyntaxErrorException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -49,7 +46,7 @@ public class DepartmentController extends BaseController {
 	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
 	public @ResponseBody ResponseEntity<?> getDepartmentChief(
 			@PathVariable(name = "id", required = true) UUID departmentId,
-			@RequestParam(name = "columns", defaultValue = "") List<String> columns) {
+			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws NoSuchFieldException {
 		if (columns.isEmpty()) {
 			Map<String, Object> chief = departmentService.getDepartmentChief(departmentId,
 					ContextProvider.getPrincipalRole());
@@ -57,14 +54,10 @@ public class DepartmentController extends BaseController {
 			return send(chief, CHIEF_NOT_FOUND);
 		}
 
-		try {
-			Map<String, Object> chief = departmentService.getDepartmentChief(departmentId, from(columns),
-					ContextProvider.getPrincipalRole());
+		Map<String, Object> chief = departmentService.getDepartmentChief(departmentId, columns,
+				ContextProvider.getPrincipalRole());
 
-			return send(chief, CHIEF_NOT_FOUND);
-		} catch (SQLSyntaxErrorException ssee) {
-			return sendBadRequest(ssee.getMessage());
-		}
+		return send(chief, CHIEF_NOT_FOUND);
 	}
 
 	@Transactional(readOnly = true)
@@ -72,15 +65,11 @@ public class DepartmentController extends BaseController {
 	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
 	public @ResponseBody ResponseEntity<?> getDepartmentChiefs(
 			@RequestParam(name = "ids", required = true) List<UUID> ids,
-			@RequestParam(name = "columns", required = true) List<String> columns) {
-		try {
-			List<Map<String, Object>> chiefs = departmentService.getDepartmentChiefs(ids.toArray(new UUID[ids.size()]),
-					from(columns), ContextProvider.getPrincipalRole());
+			@RequestParam(name = "columns", required = true) List<String> columns) throws NoSuchFieldException {
+		List<Map<String, Object>> chiefs = departmentService.getDepartmentChiefs(ids.toArray(new UUID[ids.size()]),
+				columns, ContextProvider.getPrincipalRole());
 
-			return ResponseEntity.ok(chiefs);
-		} catch (SQLSyntaxErrorException ssee) {
-			return sendBadRequest(ssee.getMessage());
-		}
+		return ResponseEntity.ok(chiefs);
 	}
 
 	@Transactional(readOnly = true)
@@ -102,16 +91,11 @@ public class DepartmentController extends BaseController {
 	public @ResponseBody ResponseEntity<?> getPersonnelList(
 			@PathVariable(name = "departmentId", required = true) UUID departmentId,
 			@PageableDefault(size = 5) Pageable paging,
-			@RequestParam(name = "columns", defaultValue = "") List<String> columns,
-			@RequestParam(name = "groupby", defaultValue = "") List<String> groupByColumns) {
-		try {
-			List<Map<String, Object>> list = departmentService.getPersonnelListByDepartmentId(departmentId,
-					from(columns), paging, from(groupByColumns), ContextProvider.getPrincipalRole());
+			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws NoSuchFieldException {
+		List<Map<String, Object>> list = departmentService.getPersonnelListByDepartmentId(departmentId, columns, paging,
+				ContextProvider.getPrincipalRole());
 
-			return ResponseEntity.ok(list);
-		} catch (SQLSyntaxErrorException ssee) {
-			return sendBadRequest(ssee.getMessage());
-		}
+		return ResponseEntity.ok(list);
 	}
 
 }

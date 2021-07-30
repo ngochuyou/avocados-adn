@@ -29,6 +29,12 @@ import adn.model.entities.generators.StockDetailIdGenerator;
 public class StockDetail extends Entity {
 
 	public static final int IDENTIFIER_LENGTH = Product.IDENTIFIER_LENGTH + 8 + 1; // 8 + delimiter
+	public static final int NAMED_SIZE_MAXIMUM_LENGTH = 4;
+	public static final int NAMED_COLOR_MAXIMUM_LENGTH = 50;
+	public static final int MATERIAL_MAXIMUM_LENGTH = 50;
+	public static final int STATUS_MAXIMUM_LENGTH = 50;
+	public static final int DESCRIPTION_MAXIMUM_LENGTH = 50;
+	public static final int NUMERIC_SIZE_MAXIMUM_VALUE = 255; // UNSIGNED
 
 	@Id
 	@GeneratedValue(generator = StockDetailIdGenerator.NAME)
@@ -43,13 +49,16 @@ public class StockDetail extends Entity {
 	@Column(columnDefinition = "VARCHAR(4)")
 	private NamedSize size;
 
-	@Column(name = "numeric_size", columnDefinition = "TINYINT")
+	@Column(name = "numeric_size", columnDefinition = "TINYINT UNSIGNED")
 	private Integer numericSize;
 
 	@Column(name = "color", columnDefinition = "VARCHAR(50)", nullable = false)
 	private String color;
 
-	@Column(name = "stocked_date")
+	@Column(columnDefinition = "VARCHAR(50)")
+	private String material;
+
+	@Column(name = "stocked_date", nullable = false)
 	private LocalDate stockedDate;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -59,6 +68,10 @@ public class StockDetail extends Entity {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(referencedColumnName = "id", name = "sold_by")
 	private Personnel soldBy;
+
+	@ManyToOne(optional = false)
+	@JoinColumn(referencedColumnName = "id")
+	private Provider provider;
 
 	@Enumerated
 	@Column(nullable = false, columnDefinition = "VARCHAR(20)")
@@ -159,6 +172,22 @@ public class StockDetail extends Entity {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public String getMaterial() {
+		return material;
+	}
+
+	public void setMaterial(String material) {
+		this.material = material;
+	}
+
+	public Provider getProvider() {
+		return provider;
+	}
+
+	public void setProvider(Provider provider) {
+		this.provider = provider;
 	}
 
 }

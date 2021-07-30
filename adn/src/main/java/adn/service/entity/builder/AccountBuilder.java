@@ -30,7 +30,8 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
-	protected <E extends Account> E mandatoryBuild(E target, E model) {
+	protected <E extends T> E mandatoryBuild(E target, E model) {
+		target = super.mandatoryBuild(target, model);
 		// we assumes identifier will always be set before
 		target.setEmail(model.getEmail().trim());
 		target.setPhone(model.getPhone().trim());
@@ -46,7 +47,7 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 
 	@Override
 	public <E extends T> E insertionBuild(Serializable id, E entity) {
-		mandatoryBuild(entity, entity);
+		entity = super.insertionBuild(id, entity);
 
 		if (entity.getPassword() == null || entity.getPassword().length() < 8) {
 			entity.setPassword("");
@@ -61,7 +62,7 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 
 	@Override
 	public <E extends T> E updateBuild(Serializable id, E entity, E persistence) {
-		mandatoryBuild(persistence, entity);
+		entity = super.mandatoryBuild(entity, persistence);
 		// leave out model's password if there's no need of password editing
 		if (StringHelper.hasLength(entity.getPassword())) {
 			persistence.setPassword(passwordEncoder.encode(entity.getPassword()));

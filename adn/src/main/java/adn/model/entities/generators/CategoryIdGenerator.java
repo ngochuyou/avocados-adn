@@ -56,8 +56,10 @@ public class CategoryIdGenerator
 		Category category = (Category) object;
 		String name;
 
-		Assert.isTrue(StringHelper.hasLength(name = category.getName()), "Category name as null");
-
+		Assert.isTrue(StringHelper.hasLength(name = String.valueOf(category.getName())), "Category name was null");
+		
+		name = StringHelper.removeSpaces(name);
+		
 		String id = name.length() >= Category.IDENTIFIER_LENGTH
 				? name.substring(0, Category.IDENTIFIER_LENGTH).toUpperCase()
 				: RandomStringUtils.randomAlphanumeric(Category.IDENTIFIER_LENGTH).toUpperCase();
@@ -75,6 +77,10 @@ public class CategoryIdGenerator
 		}
 
 		existingIds.add(id);
+	}
+
+	public boolean hasId(String id) {
+		return existingIds.contains(id);
 	}
 
 	private Access access = new Access() {

@@ -3,8 +3,6 @@
  */
 package adn.controller.exception;
 
-import java.sql.SQLSyntaxErrorException;
-
 import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -37,12 +35,12 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 						BaseController.MAXIMUM_FILE_SIZE / (1024 * 1024)),
 				new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
 	}
-	
-	@ExceptionHandler(value = { SQLSyntaxErrorException.class })
+
+	@ExceptionHandler(value = { NoSuchFieldException.class })
 	public ResponseEntity<?> handleUnknownColumnInFetch(Exception ex, WebRequest request) {
 		return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
 	}
-	
+
 	@ExceptionHandler(value = { UnauthorisedDepartmentException.class })
 	public ResponseEntity<?> handleUnauthorisedDepartment(RuntimeException ex, WebRequest request) {
 		return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.UNAUTHORIZED, request);

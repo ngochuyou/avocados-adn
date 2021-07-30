@@ -5,8 +5,10 @@ package adn.helpers;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author Ngoc Huy
@@ -18,8 +20,8 @@ public class ArrayHelper {
 
 	public static final String[] EMPTY_STRING_ARRAY = new String[0];
 
-	public static final String[] from(List<String> elements) {
-		return elements.toArray(new String[elements.size()]);
+	public static final String[] from(Collection<String> elements) {
+		return elements.toArray(String[]::new);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -27,8 +29,29 @@ public class ArrayHelper {
 		return collection.toArray((E[]) Array.newInstance(type, collection.size()));
 	}
 
+	@SuppressWarnings("unchecked")
+	public static <E> E[] from(E[] elements, Class<E> type) {
+		return elements == null ? (E[]) Array.newInstance(type, 0) : elements;
+	}
+
 	public static <T> ArrayBuilder<T> from(T[] elements) {
 		return elements == null ? FunctionHelper.doThrow("Cannot build Array from null") : new ArrayBuilder<>(elements);
+	}
+
+	/**
+	 * @return A pair of value where key is the result String collection and value
+	 *         determines whether the result array differs from the input collection
+	 *         in terms of elements presence
+	 */
+	public static Map.Entry<Collection<String>, Boolean> appendIfAbsent(Collection<String> elements, String target) {
+		Set<String> set = new HashSet<>(elements);
+
+		if (set.contains(target)) {
+			return Map.entry(set, Boolean.FALSE);
+		}
+
+		set.add(target);
+		return Map.entry(set, Boolean.TRUE);
 	}
 
 	/**

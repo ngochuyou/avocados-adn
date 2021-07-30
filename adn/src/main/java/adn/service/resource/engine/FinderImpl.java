@@ -7,6 +7,7 @@ import java.io.File;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import adn.helpers.ArrayHelper;
@@ -17,10 +18,9 @@ import adn.service.resource.engine.tuple.ResourceTuplizer;
  * @author Ngoc Huy
  *
  */
-@Component(FinderImpl.NAME)
+@Component
+@Primary
 public class FinderImpl implements Finder {
-
-	public static final String NAME = "localStorageFinder";
 
 	private final Storage storage;
 	private final String rootPath;

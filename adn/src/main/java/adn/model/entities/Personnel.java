@@ -16,10 +16,16 @@ import javax.persistence.ManyToOne;
 public class Personnel extends Account {
 
 	@Column(name = "created_by")
-	protected String createdBy;
+	private String createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	protected Department department;
+	private Department department;
+
+	public Personnel() {}
+	
+	public Personnel(String id) {
+		setId(id);
+	}
 
 	public String getCreatedBy() {
 		return createdBy;

@@ -3,13 +3,17 @@
  */
 package adn.service.services;
 
-import static adn.helpers.ArrayHelper.EMPTY_STRING_ARRAY;
+import static adn.application.context.ContextProvider.getPrincipalRole;
+import static adn.helpers.ArrayHelper.from;
+import static adn.helpers.EntityUtils.getEntityName;
+import static adn.helpers.EntityUtils.getIdentifierPropertyName;
 
 import java.io.Serializable;
-import java.sql.SQLSyntaxErrorException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
@@ -45,12 +49,13 @@ public final class CRUDServiceImpl implements CRUDService {
 
 	private static final Logger logger = LoggerFactory.getLogger(CRUDServiceImpl.class);
 
-	protected final ModelContextProvider modelContext;
-	protected final AbstractRepository repository;
-	protected final EntityBuilderProvider entityBuilderProvider;
+	private final ModelContextProvider modelContext;
+	private final AbstractRepository repository;
+	private final EntityBuilderProvider entityBuilderProvider;
 
-	protected final AuthenticationBasedModelPropertiesFactory authenticationBasedModelPropertiesFactory;
-	protected final AuthenticationBasedModelFactory authenticationBasedModelFactory;
+	private final AuthenticationBasedModelPropertiesFactory propertiesFactory;
+
+	private static final String GENERIC_ALIAS = "e";
 
 	// @formatter:off
 	@Autowired
@@ -62,8 +67,7 @@ public final class CRUDServiceImpl implements CRUDService {
 			ModelContextProvider modelContext) {
 		this.repository = baseRepository;
 		this.entityBuilderProvider = entityBuilderProvider;
-		this.authenticationBasedModelPropertiesFactory = authenticationBasedModelPropertiesFactory;
-		this.authenticationBasedModelFactory = authenticationBasedModelFactory;
+		this.propertiesFactory = authenticationBasedModelPropertiesFactory;
 		this.modelContext = modelContext;
 	}
 
@@ -72,28 +76,21 @@ public final class CRUDServiceImpl implements CRUDService {
 		
 		this.repository = context.getBean(AbstractRepository.class);
 		this.entityBuilderProvider = context.getBean(EntityBuilderProvider.class);
-		this.authenticationBasedModelPropertiesFactory = context.getBean(AuthenticationBasedModelPropertiesFactory.class);
-		this.authenticationBasedModelFactory = context.getBean(AuthenticationBasedModelFactory.class);
+		this.propertiesFactory = context.getBean(AuthenticationBasedModelPropertiesFactory.class);
 		this.modelContext = context.getBean(ModelContextProvider.class);
 	}
 	// @formatter:on
 	@Override
-	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, String[] columns,
-			Pageable pageable) throws SQLSyntaxErrorException {
-		return read(type, columns, pageable, EMPTY_STRING_ARRAY);
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> columns,
+			Pageable pageable) throws NoSuchFieldException {
+		return read(type, columns, pageable, getPrincipalRole());
 	}
 
 	@Override
-	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, String[] columns,
-			Pageable pageable, String[] groupByColumns) throws SQLSyntaxErrorException {
-		return read(type, columns, pageable, groupByColumns, ContextProvider.getPrincipalRole());
-	}
-
-	@Override
-	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, String[] columns,
-			Pageable pageable, String[] groupByColumns, Role role) throws SQLSyntaxErrorException {
-		String[] validatedColumns = getDefaultColumnsOrTranslate(type, role, columns);
-		List<Object[]> rows = repository.fetch(type, validatedColumns, pageable, groupByColumns);
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> columns,
+			Pageable pageable, Role role) throws NoSuchFieldException {
+		String[] validatedColumns = from(getDefaultColumnsOrTranslate(type, role, columns));
+		List<Object[]> rows = repository.fetch(type, validatedColumns, pageable);
 
 		if (rows.isEmpty()) {
 			return new ArrayList<Map<String, Object>>();
@@ -103,66 +100,59 @@ public final class CRUDServiceImpl implements CRUDService {
 			return new ArrayList<Map<String, Object>>();
 		}
 
-		return authenticationBasedModelPropertiesFactory.produce(type, rows, validatedColumns, role);
+		return resolveReadResult(type, rows, validatedColumns, role);
 	}
 
-	public <T extends Entity, E extends T> String[] validateAndTranslateColumnNames(Class<E> type, Role role,
-			String[] columns) throws SQLSyntaxErrorException {
-		return authenticationBasedModelPropertiesFactory.validateAndTranslateColumnNames(type, role, columns);
+	private String prependAlias(String columnName) {
+		return GENERIC_ALIAS + "." + columnName;
 	}
 
-	public <T extends Entity, E extends T> String[] getDefaultColumnsOrTranslate(Class<E> type, Role role,
-			String[] columns) throws SQLSyntaxErrorException {
-		if (columns.length == 0) {
+	/**
+	 * We don't validate associating attribute name, that's up to devs as a contract
+	 */
+	@Override
+	public <T extends Entity> List<Map<String, Object>> readByAssociation(Class<T> type,
+			Class<? extends Entity> associatingType, String associatingAttribute, Serializable associationIdentifier,
+			Collection<String> columns, Pageable pageable, Role role) throws NoSuchFieldException {
+		Collection<String> validatedColumns = getDefaultColumnsOrTranslate(type, role, columns);
+		List<?> rows = repository.find(
+				String.format("""
+						SELECT %s FROM %s e WHERE e.%s.%s=:associationIdentifier
+						""", validatedColumns.stream().map(this::prependAlias).collect(Collectors.joining(",")),
+						getEntityName(type), associatingAttribute, getIdentifierPropertyName(associatingType)),
+				Map.of("associationIdentifier", associationIdentifier));
+
+		return resolveReadResult(type, rows, from(validatedColumns), role);
+	}
+
+	protected <T extends Entity> Collection<String> getDefaultColumnsOrTranslate(Class<T> type, Role role,
+			Collection<String> columns) throws NoSuchFieldException {
+		if (columns.size() == 0) {
 			EntityMetadata metadata = modelContext.getMetadata(type);
 
-			return metadata.getNonLazyPropertyNames().toArray(new String[metadata.getNonLazyPropertiesSpan()]);
+			return metadata.getNonLazyPropertyNames();
 		}
 
-		return authenticationBasedModelPropertiesFactory.validateAndTranslateColumnNames(type, role, columns);
+		return propertiesFactory.validateAndTranslateColumnNames(type, role, columns);
 	}
 
 	@Override
-	public <T extends Entity, E extends T> Map<String, Object> find(Serializable id, Class<E> type, String[] columns)
-			throws SQLSyntaxErrorException {
-		return find(id, type, columns, ContextProvider.getPrincipalRole());
+	public <T extends Entity> Map<String, Object> find(Serializable id, Class<T> type, Collection<String> columns)
+			throws NoSuchFieldException {
+		return find(id, type, columns, getPrincipalRole());
 	}
 
 	@Override
-	public <T extends Entity, E extends T> Map<String, Object> find(Serializable id, Class<E> type, String[] columns,
-			Role role) throws SQLSyntaxErrorException {
-		String[] validatedColumns = getDefaultColumnsOrTranslate(type, role, columns);
+	public <T extends Entity> Map<String, Object> find(Serializable id, Class<T> type, Collection<String> columns,
+			Role role) throws NoSuchFieldException {
+		String[] validatedColumns = from(getDefaultColumnsOrTranslate(type, role, columns));
 		Object[] row = repository.findById(id, type, validatedColumns);
 
 		if (row == null) {
 			return null;
 		}
 
-		return authenticationBasedModelPropertiesFactory.produce(type, row, validatedColumns, role);
-	}
-
-	@Override
-	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, Pageable pageable)
-			throws SQLSyntaxErrorException {
-		return read(type, pageable, EMPTY_STRING_ARRAY);
-	}
-
-	@Override
-	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, Pageable pageable,
-			String[] groupByColumns) throws SQLSyntaxErrorException {
-		return read(type, pageable, groupByColumns, ContextProvider.getPrincipalRole());
-	}
-
-	@Override
-	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, Pageable pageable,
-			String[] groupByColumns, Role role) throws SQLSyntaxErrorException {
-		List<E> rows = repository.fetch(type, pageable, groupByColumns);
-
-		if (rows.isEmpty()) {
-			return new ArrayList<>();
-		}
-
-		return authenticationBasedModelFactory.produce(type, rows, role);
+		return propertiesFactory.produce(type, row, validatedColumns, role);
 	}
 
 	protected <T extends Entity> Serializable resolveId(Serializable id, T entity) {
@@ -223,20 +213,27 @@ public final class CRUDServiceImpl implements CRUDService {
 		}
 		// persistence takes effects during updateBuild,
 		// assigning it to the return of updateBuild is just for the sake of it
-		persistence = entityBuilder.updateBuild(id, entity, persistence);
+		entityBuilder.updateBuild(id, entity, persistence);
 
-		return finish(ss, repository.update(id, persistence, type), flushOnFinish);
+		return finish(ss, repository.update(id, (E) ss.load(type, id), type), flushOnFinish);
 	}
 
-	protected <T extends Entity, E extends T> String resolveGroupByClause(Class<E> type, Role role, String query,
-			String[] groupByColumns) throws SQLSyntaxErrorException {
-		if (groupByColumns.length == 0) {
-			return query;
+	protected Map.Entry<Integer, Long> resolveLimitOffset(Pageable paging) {
+		return Map.entry(paging.getPageSize(), Long.valueOf(paging.getPageNumber() * paging.getPageSize()));
+	}
+
+	@SuppressWarnings("unchecked")
+	protected <T extends Entity> List<Map<String, Object>> resolveReadResult(Class<T> type, List<?> source,
+			String[] validatedColumns, Role role) {
+		if (source.isEmpty()) {
+			return new ArrayList<>();
 		}
 
-		String[] validatedGroupByColumns = validateAndTranslateColumnNames(type, role, groupByColumns);
+		if (source.get(0).getClass().isArray()) {
+			return propertiesFactory.produce(type, (List<Object[]>) source, validatedColumns, role);
+		}
 
-		return repository.appendGroupBy(query, validatedGroupByColumns);
+		return propertiesFactory.singularProduce(type, (List<Object>) source, validatedColumns[0], role);
 	}
 
 }

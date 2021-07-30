@@ -27,10 +27,13 @@ import adn.model.entities.Account;
 public class AccountSpecification<T extends Account> extends EntitySpecification<T> {
 
 	private static final Pattern USERNAME_PATTERN;
-	private static final short MINIMUM_USERNAME_LENGTH = 8;
+	private static final int MINIMUM_USERNAME_LENGTH = 8;
+	private static final Pattern NAME_PATTERN;
 
 	static {
 		USERNAME_PATTERN = Pattern.compile(String.format("^[\\p{L}\\p{N}\\._]{%d,}$", MINIMUM_USERNAME_LENGTH));
+		NAME_PATTERN = Pattern
+				.compile(String.format("^[\\p{L}\\p{N}\\._\\-\\!\\@%s]{0,255}$", StringHelper.VIETNAMESE_CHARACTERS));
 	}
 
 	@Override
@@ -61,6 +64,16 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 			result.bad().getMessages().put("phone", "Invalid phone number");
 		}
 
+		if (!NAME_PATTERN.matcher(instance.getFirstName()).matches()) {
+			result.bad().getMessages().put("firstName",
+					"Firstname can only contain alphabetic, numeric characters or '.', '_', '-', '!', '@'");
+		}
+
+		if (!NAME_PATTERN.matcher(instance.getLastName()).matches()) {
+			result.bad().getMessages().put("lastName",
+					"Lastname can only contain alphabetic, numeric characters or '.', '_', '-', '!', '@'");
+		}
+
 		if (!StringHelper.isBCrypt(instance.getPassword())) {
 			result.bad().getMessages().put("password", "Invalid password");
 		}
@@ -75,6 +88,10 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 
 		if (instance.isActive() == null) {
 			result.bad().getMessages().put(Account.ACTIVE_FIELD_NAME, "Active state must not be empty");
+		}
+
+		if (!StringHelper.isAcceptablePhoneNumber(instance.getPhone())) {
+			result.bad().getMessages().put(Account.ACTIVE_FIELD_NAME, "Invalid phone number");
 		}
 
 		return result;

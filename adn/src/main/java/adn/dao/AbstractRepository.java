@@ -19,6 +19,7 @@ import javax.persistence.criteria.CriteriaQuery;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
 
-import adn.dao.paging.Unpaged;
 import adn.dao.parameter.ParamContext;
 import adn.dao.parameter.ParamType;
 import adn.helpers.Utils.Entry;
@@ -43,9 +43,9 @@ public abstract class AbstractRepository implements Repository {
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	protected final SessionFactory sessionFactory;
-	protected final SpecificationFactory specificationFactory;
+	private final SpecificationFactory specificationFactory;
 	// @formatter:off
-	protected final Map<ParamType, BiConsumer<Query<?>, Entry<String, Object>>> paramContextResolvers = Map.of(
+	private static final Map<ParamType, BiConsumer<Query<?>, Entry<String, Object>>> PARAM_CONTEXT_RESOLVER = Map.of(
 			ParamType.SINGULAR, (hql, entry) -> hql.setParameter(entry.getKey(), entry.getValue()),
 			ParamType.PLURAL, (hql, entry) -> hql.setParameterList(entry.getKey(), (Collection<?>) entry.getValue()),
 			ParamType.ARRAY, (hql, entry) -> hql.setParameterList(entry.getKey(), (Object[]) entry.getValue())
@@ -61,6 +61,20 @@ public abstract class AbstractRepository implements Repository {
 		return getCurrentSession().get(clazz, id);
 	}
 
+	private Object[] resolveResult(Object result) {
+		if (result == null) {
+			return null;
+		}
+
+		return result.getClass().isArray() ? (Object[]) result : new Object[] { result };
+	}
+
+	private Query<?> resolveQueryByColumns(String query, String[] columns) {
+		Session ss = getCurrentSession();
+
+		return columns.length == 1 ? ss.createQuery(query, Object.class) : ss.createQuery(query, Object[].class);
+	}
+
 	@Override
 	public <T extends Entity> Object[] findById(Serializable id, Class<T> clazz, String[] columns) {
 		// @formatter:off
@@ -68,50 +82,14 @@ public abstract class AbstractRepository implements Repository {
 				resolveSelect(clazz, columns),
 				getIdentifierPropertyName(clazz));
 		// @formatter:on
-		Session session = getCurrentSession();
-
-		if (columns.length == 1) {
-			Query<Object> hql = session.createQuery(query, Object.class);
-
-			hql.setParameter("id", id);
-
-			return new Object[] { hql.getSingleResult() };
-		}
-
-		Query<Object[]> hql = session.createQuery(query, Object[].class);
+		Query<?> hql = resolveQueryByColumns(query, columns);
 
 		hql.setParameter("id", id);
 
-		return hql.getSingleResult();
-	}
+		Object result = hql.getResultStream().findFirst().orElse(null);
 
-//	@Override
-//	@SuppressWarnings("unchecked")
-//	public <T extends Entity> T findById(Serializable id, Class<T> clazz, String[] columns, boolean persistOnFinish) {
-//		Session session = getCurrentSession();
-//		Query<Object[]> hql = session.createQuery(
-//				String.format("%s WHERE %s=:id", resolveSelect(clazz, columns), getIdentifierPropertyName(clazz)),
-//				Object[].class);
-//		Object[] row = hql.getSingleResult();
-//
-//		if (row == null) {
-//			return null;
-//		}
-//
-//		EntityTuplizer tuplizer = getEntityPersister(clazz).getEntityTuplizer();
-//		T instance = (T) tuplizer.instantiate(id, session.unwrap(SharedSessionContractImplementor.class));
-//		int i = 0;
-//
-//		for (String prop : columns) {
-//			tuplizer.setPropertyValue(instance, prop, row[i++]);
-//		}
-//
-//		if (persistOnFinish) {
-//			session.persist(instance);
-//		}
-//
-//		return instance;
-//	}
+		return resolveResult(result);
+	}
 
 	@Override
 	public <T extends Entity> T findOne(CriteriaQuery<T> query, Class<T> clazz) {
@@ -137,12 +115,12 @@ public abstract class AbstractRepository implements Repository {
 		return hql.getResultStream().findFirst().orElse(null);
 	}
 
-	private <T> Query<T> resolveHQL(String query, Class<T> type) {
-		return getCurrentSession().createQuery(query, type);
+	private Query<?> resolveHQL(String query) {
+		return getCurrentSession().createQuery(query);
 	}
 
-	private <T> Query<T> resolveHQLParams(String query, Class<T> type, Map<String, Object> parameters) {
-		Query<T> hql = resolveHQL(query, type);
+	private Query<?> resolveHQLParams(String query, Map<String, Object> parameters) {
+		Query<?> hql = resolveHQL(query);
 
 		for (Map.Entry<String, Object> param : parameters.entrySet()) {
 			hql.setParameter(param.getKey(), param.getValue());
@@ -151,13 +129,13 @@ public abstract class AbstractRepository implements Repository {
 		return hql;
 	}
 
-	private <T> Query<T> resolveHQLParamContexts(String query, Class<T> type, Map<String, ParamContext> contexts) {
-		Query<T> hql = resolveHQL(query, type);
+	private Query<?> resolveHQLParamContexts(String query, Map<String, ParamContext> contexts) {
+		Query<?> hql = resolveHQL(query);
 		ParamContext param;
 
 		for (Map.Entry<String, ParamContext> contextEntry : contexts.entrySet()) {
 			param = contextEntry.getValue();
-			paramContextResolvers.get(param.getType()).accept(hql,
+			PARAM_CONTEXT_RESOLVER.get(param.getType()).accept(hql,
 					Entry.entry(contextEntry.getKey(), param.getValue()));
 		}
 
@@ -166,53 +144,47 @@ public abstract class AbstractRepository implements Repository {
 
 	@Override
 	public Object[] findOne(String query, Map<String, Object> parameters) {
-		Query<Object[]> hql = resolveHQLParams(query, Object[].class, parameters);
+		Query<?> hql = resolveHQLParams(query, parameters);
 
 		hql.setMaxResults(1);
 
-		return hql.getResultStream().findFirst().orElse(null);
+		return resolveResult(hql.getResultStream().findFirst().orElse(null));
 	}
 
 	@Override
-	public <T extends Entity> List<T> find(CriteriaQuery<T> query, Class<T> clazz) {
-		// @formatter:off
-		return getCurrentSession()
-				.createQuery(query)
-				.getResultList();
-		// @formatter:on
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public List<Object[]> nativelyFind(String query) {
+		Session session = getCurrentSession();
+		NativeQuery nativeQuery = session.createSQLQuery(query);
+
+		return nativeQuery.list();
 	}
 
 	@Override
-	public List<Object[]> find(String query, Map<String, Object> parameters) {
-		return resolveHQLParams(query, Object[].class, parameters).getResultList();
+	public List<?> find(String query, Map<String, Object> parameters) {
+		return resolveHQLParams(query, parameters).getResultList();
 	}
 
 	@Override
-	public List<Object[]> find(String query, Pageable paging, Map<String, Object> parameters) {
-		return resolveLimit(resolveHQLParams(query, Object[].class, parameters), paging).getResultList();
+	public List<?> find(String query, Pageable paging, Map<String, Object> parameters) {
+		return resolveLimit(resolveHQLParams(query, parameters), paging).getResultList();
 	}
 
 	@Override
-	public List<Object[]> findWithContext(String query, Map<String, ParamContext> parameters) {
-		Query<Object[]> hql = resolveHQLParamContexts(query, Object[].class, parameters);
-
-		return hql.getResultList();
+	public List<?> findWithContext(String query, Map<String, ParamContext> parameters) {
+		return resolveHQLParamContexts(query, parameters).getResultList();
 	}
 
 	@Override
-	public <T extends Entity> List<T> fetch(Class<T> clazz) {
-		return fetch(clazz, Unpaged.INSTANCE);
+	public List<Object[]> findWithContext(String query, Pageable paging, Map<String, ParamContext> parameters) {
+
+		return null;
 	}
 
 	@Override
 	public <T extends Entity> List<T> fetch(Class<T> type, Pageable paging) {
-		return fetch(type, paging, EMPTY_STRING_ARRAY);
-	}
-
-	@Override
-	public <T extends Entity> List<T> fetch(Class<T> type, Pageable paging, String[] groupByColumns) {
 		Session session = getCurrentSession();
-		String hql = resolveFetchQuery(type, EMPTY_STRING_ARRAY, paging, groupByColumns);
+		String hql = resolveFetchQuery(type, EMPTY_STRING_ARRAY, paging);
 		Query<T> query = session.createQuery(hql, type);
 
 		resolveLimit(query, paging);
@@ -222,14 +194,8 @@ public abstract class AbstractRepository implements Repository {
 
 	@Override
 	public <T extends Entity> List<Object[]> fetch(Class<T> type, String[] columns, Pageable paging) {
-		return fetch(type, columns, paging, EMPTY_STRING_ARRAY);
-	}
-
-	@Override
-	public <T extends Entity> List<Object[]> fetch(Class<T> type, String[] columns, Pageable paging,
-			String[] groupByColumns) {
 		Session session = getCurrentSession();
-		String hql = resolveFetchQuery(type, columns, paging, groupByColumns);
+		String hql = resolveFetchQuery(type, columns, paging);
 		Query<Object[]> query = session.createQuery(hql, Object[].class);
 
 		resolveLimit(query, paging);
@@ -237,15 +203,8 @@ public abstract class AbstractRepository implements Repository {
 		return query.getResultList();
 	}
 
-	private <T extends Entity> String resolveFetchQuery(Class<T> type, String[] columns, Pageable paging,
-			String[] groupByColumns) {
-		// @formatter:off
-		return appendOrderBy(
-					appendGroupBy(
-						resolveSelect(type, columns),
-						groupByColumns),
-					paging.getSort());
-		// @formatter:on
+	private <T extends Entity> String resolveFetchQuery(Class<T> type, String[] columns, Pageable paging) {
+		return appendOrderBy(resolveSelect(type, columns), paging.getSort());
 	}
 
 	public <T> String appendGroupBy(String queryString, String[] groupByColumns) {
@@ -291,9 +250,10 @@ public abstract class AbstractRepository implements Repository {
 		return order.getProperty() + " " + order.getDirection();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public List<Long> count(String hql, Map<String, Object> params) {
-		return resolveHQLParams(hql, Long.class, params).getResultList();
+		return (List<Long>) resolveHQLParams(hql, params).getResultList();
 	}
 
 	@Override
@@ -305,9 +265,10 @@ public abstract class AbstractRepository implements Repository {
 		return hql.getSingleResult();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public List<Long> countWithContext(String hql, Map<String, ParamContext> params) {
-		return resolveHQLParamContexts(hql, Long.class, params).getResultList();
+		return (List<Long>) resolveHQLParamContexts(hql, params).getResultList();
 	}
 
 	@Override

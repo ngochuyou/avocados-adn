@@ -3,31 +3,36 @@
  */
 package adn.controller;
 
-import static adn.service.services.DepartmentScopedService.assertDepartment;
-import static adn.service.services.DepartmentScopedService.stock;
+import static adn.application.context.ContextProvider.getPrincipalRole;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
-import java.sql.SQLSyntaxErrorException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.context.ContextProvider;
+import adn.helpers.StringHelper;
 import adn.model.entities.Category;
+import adn.model.entities.Product;
+import adn.service.internal.ResourceService;
 import adn.service.services.DepartmentService;
 import adn.service.services.ProductService;
 
@@ -36,35 +41,70 @@ import adn.service.services.ProductService;
  *
  */
 @RestController
-public class RestProductController extends DepartmentScopedController {
-
-	private final ProductService productService;
+@RequestMapping("/rest/product")
+public class RestProductController extends ProductController {
 
 	@Autowired
-	public RestProductController(DepartmentService departmentService, ProductService productService) {
-		super(departmentService);
-		this.productService = productService;
+	public RestProductController(DepartmentService departmentService, ProductService productService, ResourceService resourceService) {
+		super(departmentService, productService, resourceService);
 	}
 
-	protected void assertStockDepartment() {
-		assertDepartment(getPrincipalDepartment(), stock());
+	@GetMapping(path = "/count", produces = APPLICATION_JSON_VALUE)
+	@Transactional(readOnly = true)
+	public ResponseEntity<?> getProductCount() {
+		return makeStaleWhileRevalidate(
+				ResponseEntity
+						.ok(productService.countWithActiveState(Product.class, ContextProvider.getPrincipalRole())),
+				2, TimeUnit.DAYS, 7, TimeUnit.DAYS);
 	}
 
-	@PostMapping(path = "/rest/category", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@GetMapping(path = "/{productId}", produces = APPLICATION_JSON_VALUE)
+	@Transactional(readOnly = true)
+	public ResponseEntity<?> obtainProduct(@PathVariable(name = "productId", required = true) String productId,
+			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns)
+			throws NoSuchFieldException {
+		return send(productService.readWithActiveCheck(productId, Product.class, columns, getPrincipalRole()),
+				String.format("Product %s not found", productId));
+	}
+	
+	@GetMapping(produces = APPLICATION_JSON_VALUE)
+	@Transactional(readOnly = true)
+	public ResponseEntity<?> getProductsByCategory(
+			@RequestParam(name = "category", required = false, defaultValue = "") String categoryId,
+			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
+			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException {
+		if (StringHelper.hasLength(categoryId)) {
+			return send(crudService.readByAssociation(Product.class, Category.class, "category", categoryId, columns,
+					paging, getPrincipalRole()), null);
+		}
+
+		return send(productService.read(Product.class, columns, paging, getPrincipalRole()), null);
+	}
+
+	@GetMapping(path = "/bycategories", produces = APPLICATION_JSON_VALUE)
+	@Transactional(readOnly = true)
+	public ResponseEntity<?> getProductsByCategories(
+			@RequestParam(name = "ids", required = false, defaultValue = "") List<String> categoryIds,
+			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
+			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException {
+		return send(productService.getProductsByCategories(categoryIds, columns, paging, getPrincipalRole()), null);
+	}
+
+	@PostMapping(path = "/category", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
 	@Secured("ROLE_PERSONNEL")
 	@Transactional
 	public ResponseEntity<?> createCategory(@RequestBody Category category) {
-		assertStockDepartment();
+		assertSaleDepartment();
 		// we dont't have to check for id here since it will be generated by
 		// IdentifierGenerator and service layer
 		return send(productService.createCategory(category, true));
 	}
 
-	@PutMapping(path = "/rest/category", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@PutMapping(path = "/category", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
 	@Secured("ROLE_PERSONNEL")
 	@Transactional
 	public ResponseEntity<?> updateCategory(@RequestBody Category model) {
-		assertStockDepartment();
+		assertSaleDepartment();
 
 		Category persistence = baseRepository.findById(model.getId(), Category.class);
 
@@ -75,34 +115,42 @@ public class RestProductController extends DepartmentScopedController {
 		return send(crudService.update(persistence.getId(), model, Category.class, true));
 	}
 
-	@GetMapping("/rest/category/list")
+	@GetMapping("/category/list")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getCategoryList(@PageableDefault(size = 5) Pageable pageable,
-			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws SQLSyntaxErrorException {
-		return send(crudService.read(Category.class, columns.toArray(new String[columns.size()]), pageable), null);
+			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws NoSuchFieldException {
+		return send(crudService.read(Category.class, columns, pageable), null);
 	}
 
-	@GetMapping("/rest/category/count")
+	@GetMapping("/category/all")
+	@Transactional(readOnly = true)
+	public ResponseEntity<?> getAllCategory() throws NoSuchFieldException {
+		return makeStaleWhileRevalidate(
+				crudService.read(Category.class, Arrays.asList("id", "name", "active"), PageRequest.of(0, 500)), 1,
+				TimeUnit.DAYS, 2, TimeUnit.DAYS);
+	}
+
+	@GetMapping("/category/count")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getCategoryCount() {
 		return makeStaleWhileRevalidate(baseRepository.count(Category.class), 1, TimeUnit.DAYS, 3, TimeUnit.DAYS);
 	}
 
-	@PatchMapping("/rest/category/activation")
+	@PatchMapping("/category/activation")
 	@Transactional
 	public ResponseEntity<?> deactivateCategory(@RequestParam(name = "id", required = true) String categoryId,
 			@RequestParam(name = "active", required = true) Boolean requestedActiveState) {
-		assertStockDepartment();
+		assertSaleDepartment();
 
 		Category category = baseRepository.findById(categoryId, Category.class);
 		// we use AUTO-FLUSH here
 		category.setActive(requestedActiveState);
-		
+
 		if (requestedActiveState == false) {
 			category.setDeactivatedDate(LocalDateTime.now());
 			category.setUpdatedBy(ContextProvider.getPrincipalName());
 		}
-		
+
 		return send(String.format("Modified activation state of category %s", categoryId), null);
 	}
 

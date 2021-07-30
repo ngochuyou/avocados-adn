@@ -67,7 +67,7 @@ public class BaseController {
 	@Autowired
 	protected ObjectMapper objectMapper;
 
-	public static final long MAXIMUM_FILE_SIZE = 1 * 1024 * 1024;
+	public static final long MAXIMUM_FILE_SIZE = 30 * 1024 * 1024;
 
 	protected static final String HAS_ROLE_ADMIN = "hasRole('ADMIN')";
 

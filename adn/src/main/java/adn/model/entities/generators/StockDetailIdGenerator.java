@@ -44,7 +44,7 @@ public class StockDetailIdGenerator implements IdentifierGenerator, Configurable
 
 		int remainingSize = StockDetail.IDENTIFIER_LENGTH - builder.length();
 
-		builder.append(RandomStringUtils.randomAlphabetic(remainingSize));
+		builder.append(RandomStringUtils.randomAlphanumeric(remainingSize).toUpperCase());
 
 		return builder.toString();
 	}

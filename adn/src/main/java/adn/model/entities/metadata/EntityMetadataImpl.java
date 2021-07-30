@@ -4,6 +4,7 @@
 package adn.model.entities.metadata;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.HashMap;
@@ -148,6 +149,10 @@ public class EntityMetadataImpl implements EntityMetadata {
 			}
 
 			for (Field f : entityClass.getDeclaredFields()) {
+				if (Modifier.isTransient(f.getModifiers())) {
+					continue;
+				}
+				
 				properties.add(f.getName());
 			}
 

@@ -100,18 +100,8 @@ public abstract class AbstractCompositeAuthenticationBasedModelProducerImplement
 	}
 
 	@Override
-	public final Map<String, Object> produceImmutable(T entity, Role role) {
-		return Collections.unmodifiableMap(produce(entity, role));
-	}
-
-	@Override
 	public final Map<String, Object> produce(T entity, Map<String, Object> modelMap, Role role) {
 		return injectiveProducers.get(role).apply(entity, modelMap);
-	}
-
-	@Override
-	public final Map<String, Object> produceImmutable(T entity, Map<String, Object> modelMap, Role role) {
-		return Collections.unmodifiableMap(produce(entity, modelMap, role));
 	}
 
 	@Override
@@ -120,18 +110,8 @@ public abstract class AbstractCompositeAuthenticationBasedModelProducerImplement
 	}
 
 	@Override
-	public final Map<String, Object> produceImmutable(T source) {
-		return Collections.unmodifiableMap(produce(source));
-	}
-
-	@Override
 	public final Map<String, Object> produce(T source, Map<String, Object> model) {
 		return injectiveProducers.get(null).apply(source, model);
-	}
-
-	@Override
-	public final Map<String, Object> produceImmutable(T source, Map<String, Object> model) {
-		return Collections.unmodifiableMap(produce(source, model));
 	}
 
 	@Override
@@ -143,11 +123,6 @@ public abstract class AbstractCompositeAuthenticationBasedModelProducerImplement
 	}
 
 	@Override
-	public List<Map<String, Object>> produceImmutable(List<T> sources) {
-		return Collections.unmodifiableList(produce(sources));
-	}
-
-	@Override
 	public List<Map<String, Object>> produce(List<T> source, Role role) {
 		Function<T, Map<String, Object>> producer = mappingProducers.get(role);
 
@@ -156,18 +131,8 @@ public abstract class AbstractCompositeAuthenticationBasedModelProducerImplement
 	}
 
 	@Override
-	public List<Map<String, Object>> produceImmutable(List<T> source, Role role) {
-		return Collections.unmodifiableList(produce(source, role));
-	}
-
-	@Override
 	public List<Map<String, Object>> produce(List<T> source, List<Map<String, Object>> models) {
 		return produce(source, models, null);
-	}
-
-	@Override
-	public List<Map<String, Object>> produceImmutable(List<T> source, List<Map<String, Object>> models) {
-		return Collections.unmodifiableList(produce(source, models));
 	}
 
 	@Override
@@ -176,11 +141,6 @@ public abstract class AbstractCompositeAuthenticationBasedModelProducerImplement
 
 		return IntStream.range(0, source.size()).mapToObj(index -> producer.apply(source.get(index), models.get(index)))
 				.collect(Collectors.toList());
-	}
-
-	@Override
-	public List<Map<String, Object>> produceImmutable(List<T> source, List<Map<String, Object>> models, Role role) {
-		return Collections.unmodifiableList(produce(source, models, role));
 	}
 
 	protected Map<String, Object> createModel() {

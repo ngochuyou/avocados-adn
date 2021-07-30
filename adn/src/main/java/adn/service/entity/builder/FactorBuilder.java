@@ -4,7 +4,6 @@
 package adn.service.entity.builder;
 
 import java.io.Serializable;
-import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
@@ -22,17 +21,17 @@ import adn.model.entities.Factor;
 public class FactorBuilder<T extends Factor> extends AbstractEntityBuilder<T> {
 
 	protected <E extends T> E mandatoryBuild(E target, E model) {
+		target = super.mandatoryBuild(target, model);
+
 		target.setName(StringHelper.normalizeString(model.getName()));
-		target.setActive(Optional.ofNullable(model.isActive()).orElse(true));
 
 		return target;
 	}
 
 	@Override
 	public <E extends T> E insertionBuild(Serializable id, E model) {
-		mandatoryBuild(model, model);
+		model = super.insertionBuild(id, model);
 
-		model.setActive(Boolean.TRUE);
 		model.setCreatedBy(ContextProvider.getPrincipalName());
 		model.setUpdatedBy(model.getCreatedBy());
 		model.setDeactivatedDate(null);
@@ -42,7 +41,7 @@ public class FactorBuilder<T extends Factor> extends AbstractEntityBuilder<T> {
 
 	@Override
 	public <E extends T> E updateBuild(Serializable id, E model, E persistence) {
-		persistence = mandatoryBuild(persistence, model);
+		persistence = super.updateBuild(id, model, persistence);
 
 		persistence.setUpdatedBy(ContextProvider.getPrincipalName());
 

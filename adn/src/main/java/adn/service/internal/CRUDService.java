@@ -4,7 +4,7 @@
 package adn.service.internal;
 
 import java.io.Serializable;
-import java.sql.SQLSyntaxErrorException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -22,29 +22,21 @@ import adn.model.entities.Entity;
  */
 public interface CRUDService extends Service {
 
-	<T extends Entity, E extends T> Map<String, Object> find(Serializable id, Class<E> type, String[] columns)
-			throws SQLSyntaxErrorException;
+	<T extends Entity> Map<String, Object> find(Serializable id, Class<T> type, Collection<String> columns)
+			throws NoSuchFieldException;
 
-	<T extends Entity, E extends T> Map<String, Object> find(Serializable id, Class<E> type, String[] columns,
-			Role role) throws SQLSyntaxErrorException;
+	<T extends Entity> Map<String, Object> find(Serializable id, Class<T> type, Collection<String> columns, Role role)
+			throws NoSuchFieldException;
 
-	<T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, String[] columns, Pageable pageable)
-			throws SQLSyntaxErrorException;
+	<T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> columns, Pageable pageable)
+			throws NoSuchFieldException;
 
-	<T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, String[] columns, Pageable pageable,
-			String[] groupByColumns) throws SQLSyntaxErrorException;
+	<T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> columns, Pageable pageable,
+			Role role) throws NoSuchFieldException;
 
-	<T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, String[] columns, Pageable pageable,
-			String[] groupByColumns, Role role) throws SQLSyntaxErrorException;
-
-	<T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, Pageable pageable)
-			throws SQLSyntaxErrorException;
-
-	<T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, Pageable pageable,
-			String[] groupByColumns) throws SQLSyntaxErrorException;
-
-	<T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, Pageable pageable,
-			String[] groupByColumns, Role role) throws SQLSyntaxErrorException;
+	<T extends Entity> List<Map<String, Object>> readByAssociation(Class<T> type,
+			Class<? extends Entity> associatingType, String associatingAttribute, Serializable associationIdentifier,
+			Collection<String> columns, Pageable pageable, Role role) throws NoSuchFieldException;
 
 	default <T extends Entity, E extends T> DatabaseInteractionResult<E> create(Serializable id, E model,
 			Class<E> type) {
@@ -65,5 +57,4 @@ public interface CRUDService extends Service {
 	default Session getCurrentSession() {
 		return ContextProvider.getApplicationContext().getBean(SessionFactory.class).getCurrentSession();
 	}
-
 }

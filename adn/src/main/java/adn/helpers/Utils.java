@@ -5,8 +5,7 @@ package adn.helpers;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
 
@@ -16,20 +15,12 @@ import java.util.Objects;
  */
 public class Utils {
 
-	public static Date localDateToDate(LocalDate ldt) {
-		return ldt == null ? null : Date.from(ldt.atStartOfDay(ZoneId.systemDefault()).toInstant());
+	public static String formatLocalDateTime(LocalDateTime ldt) {
+		return ldt != null ? ldt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null;
 	}
 
-	public static LocalDate dateToLocalDate(Date date) {
-		return date == null ? null : LocalDate.ofInstant(date.toInstant(), ZoneId.systemDefault());
-	}
-
-	public static Date localDateTimeToDate(LocalDateTime ldt) {
-		return ldt == null ? null : Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
-	}
-
-	public static LocalDateTime dateToLocalDateTime(Date date) {
-		return date == null ? null : LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+	public static String formatLocalDate(LocalDate ld) {
+		return ld != null ? ld.format(DateTimeFormatter.ISO_LOCAL_DATE) : null;
 	}
 
 	public static class Entry<K, V> implements Map.Entry<K, V> {

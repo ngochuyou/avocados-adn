@@ -4,6 +4,7 @@
 package adn.model.specification.generic;
 
 import java.io.Serializable;
+import java.util.regex.Pattern;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import adn.dao.DatabaseInteractionResult;
 import adn.helpers.EntityUtils;
+import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Factor;
 
@@ -25,34 +27,51 @@ import adn.model.entities.Factor;
 @Generic(entityGene = Factor.class)
 public class FactorSpecification<T extends Factor> extends EntitySpecification<T> {
 
+	private static final Pattern NAME_PATTERN;
+	private static final int MINIMUM_NAME_LENGTH = 1;
+	private static final int MAXIMUM_NAME_LENGTH = 255;
+
+	static {
+		NAME_PATTERN = Pattern.compile(String.format("^[\\p{L}\\p{N}\\s\\.,_\\-@\"\'%%\\*%s]+$",
+				StringHelper.VIETNAMESE_CHARACTERS, MINIMUM_NAME_LENGTH, MAXIMUM_NAME_LENGTH));
+	}
+
 	@Override
 	public DatabaseInteractionResult<T> isSatisfiedBy(Serializable id, T instance) {
 		// TODO Auto-generated method stub
 		DatabaseInteractionResult<T> result = super.isSatisfiedBy(id, instance);
 
-		if (instance.getName() == null || instance.getName().length() == 0) {
-			result.bad().getMessages().put("name", "Name must not be empty");
+		if (instance.getName() == null || instance.getName().length() == MINIMUM_NAME_LENGTH
+				|| instance.getName().length() > MAXIMUM_NAME_LENGTH) {
+			result.bad().getMessages().put("name",
+					String.format("Name length must vary between %d and %d", MINIMUM_NAME_LENGTH, MAXIMUM_NAME_LENGTH));
 		}
 
-		Class<? extends T> persistentClass = EntityUtils.getPersistentClass(instance);
-		Session session = getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<Long> query = builder.createQuery(Long.class);
-		Root<? extends T> root = query.from(persistentClass);
-		String idPropertyName = EntityUtils.getIdentifierPropertyName(persistentClass);
-		// UUID needs a different approach to check uniqueness by id
-		// @formatter:off
-		query
-			.select(builder.count(root))
-			.where(
-				builder.and(
-					builder.equal(root.get("name"), instance.getName()),
-					id == null ?
-						builder.isNotNull(root.get(idPropertyName)) :
-							builder.notEqual(root.get(idPropertyName), id)));
-		// @formatter:on
-		if (session.createQuery(query).getResultStream().findFirst().orElse(0L) != 0) {
-			result.bad().getMessages().put("name", "Name was taken");
+		if (!NAME_PATTERN.matcher(instance.getName()).matches()) {
+			result.bad().getMessages().put("name",
+					"Name can only contain alphabetic, numeric characters, spaces or '.', ',', '_', '-', @, \", ' and * character");
+		} else {
+			Class<? extends T> persistentClass = EntityUtils.getPersistentClass(instance);
+			Session session = getCurrentSession();
+			CriteriaBuilder builder = session.getCriteriaBuilder();
+			CriteriaQuery<Long> query = builder.createQuery(Long.class);
+			Root<? extends T> root = query.from(persistentClass);
+			String idPropertyName = EntityUtils.getIdentifierPropertyName(persistentClass);
+			// UUID needs a different approach to check uniqueness by id
+			// @formatter:off
+			query
+				.select(builder.count(root))
+				.where(
+					builder.and(
+						builder.equal(root.get("name"), instance.getName()),
+						id == null ?
+							builder.isNotNull(root.get(idPropertyName)) :
+								builder.notEqual(root.get(idPropertyName), id)));
+			// @formatter:on
+
+			if (session.createQuery(query).getResultStream().findFirst().orElse(0L) != 0) {
+				result.bad().getMessages().put("name", "Name was taken");
+			}
 		}
 
 		if (instance.isActive() == null) {

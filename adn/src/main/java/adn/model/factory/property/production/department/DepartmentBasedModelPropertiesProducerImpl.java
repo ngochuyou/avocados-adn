@@ -5,7 +5,7 @@ package adn.model.factory.property.production.department;
 
 import static adn.helpers.LoggerHelper.with;
 
-import java.sql.SQLSyntaxErrorException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -26,8 +26,8 @@ import org.slf4j.LoggerFactory;
 import adn.application.context.ContextProvider;
 import adn.helpers.TypeHelper;
 import adn.helpers.Utils.Entry;
-import adn.model.DomainEntity;
 import adn.model.DepartmentScoped;
+import adn.model.DomainEntity;
 import adn.model.ModelContextProvider;
 import adn.model.entities.metadata.EntityMetadata;
 import adn.model.factory.property.production.DepartmentBasedModelPropertiesProducer;
@@ -44,7 +44,7 @@ public class DepartmentBasedModelPropertiesProducerImpl implements DepartmentBas
 
 	private final Map<UUID, Map<String, Function<Object, Object>>> functionsMap;
 
-	private final Set<String> properties;
+	private final Set<String> registeredProperties;
 
 	@SuppressWarnings("unchecked")
 	public <T extends DepartmentScoped> DepartmentBasedModelPropertiesProducerImpl(Class<T> type,
@@ -146,14 +146,14 @@ public class DepartmentBasedModelPropertiesProducerImpl implements DepartmentBas
 														: innerEntry.getValue()))
 								.collect(Collectors.joining("\n\t")))
 						.collect(Collectors.joining("\n\t"))));
-		this.properties = metadata.getPropertyNames();
+		this.registeredProperties = metadata.getPropertyNames();
 		this.functionsMap = Collections.unmodifiableMap(functionsMap);
 	}
 
 	private Map<String, Object> produceRow(Object[] source, String[] columns,
 			Map<String, Function<Object, Object>> functions) {
 		try {
-			int span = source.length;
+			int span = columns.length;
 
 			return IntStream.range(0, span).mapToObj(index -> {
 				String propName = columns[index];
@@ -192,12 +192,12 @@ public class DepartmentBasedModelPropertiesProducerImpl implements DepartmentBas
 
 	@Override
 	public Map<String, Object> produce(Object[] source, UUID departmentId) {
-		return produce(source, properties.toArray(new String[properties.size()]), departmentId);
+		return produce(source, registeredProperties.toArray(new String[registeredProperties.size()]), departmentId);
 	}
 
 	@Override
 	public List<Map<String, Object>> produce(List<Object[]> sources, UUID departmentId) {
-		return produce(sources, properties.toArray(new String[properties.size()]), departmentId);
+		return produce(sources, registeredProperties.toArray(new String[registeredProperties.size()]), departmentId);
 	}
 
 	@Override
@@ -211,14 +211,48 @@ public class DepartmentBasedModelPropertiesProducerImpl implements DepartmentBas
 	}
 
 	@Override
-	public String[] validateAndTranslateColumnNames(String[] requestedColumns) throws SQLSyntaxErrorException {
+	public Collection<String> validateAndTranslateColumnNames(Collection<String> requestedColumns)
+			throws NoSuchFieldException {
 		for (String requestedColumn : requestedColumns) {
-			if (!properties.contains(requestedColumn)) {
-				throw new SQLSyntaxErrorException(String.format("Unknown property [%s]", requestedColumn));
+			if (!registeredProperties.contains(requestedColumn)) {
+				throw new NoSuchFieldException(String.format("Unknown property [%s]", requestedColumn));
 			}
 		}
 
 		return requestedColumns;
+	}
+
+	@Override
+	public Map<String, Object> singularProduce(Object source) {
+		throw new UnsupportedOperationException("Singular production with no column name is not supported");
+	}
+
+	@Override
+	public List<Map<String, Object>> singularProduce(List<Object> source) {
+		throw new UnsupportedOperationException("Singular production with no column name is not supported");
+	}
+
+	@Override
+	public Map<String, Object> singularProduce(Object source, String columnName, UUID departmentId) {
+		Map<String, Function<Object, Object>> functions = functionsMap.get(departmentId);
+		Map<String, Object> result = new HashMap<>();
+
+		result.put(columnName, functions.get(columnName).apply(source));
+
+		return result;
+	}
+
+	@Override
+	public List<Map<String, Object>> singularProduce(List<Object> sources, String columnName, UUID departmentId) {
+		Map<String, Function<Object, Object>> functions = functionsMap.get(departmentId);
+
+		return IntStream.range(0, sources.size()).mapToObj(index -> {
+			Map<String, Object> result = new HashMap<>();
+
+			result.put(columnName, functions.get(columnName).apply(sources.get(index)));
+
+			return result;
+		}).collect(Collectors.toList());
 	}
 
 }

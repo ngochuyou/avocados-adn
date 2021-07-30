@@ -35,6 +35,7 @@ public class TemplateValidator implements Validator {
 
 		logger.trace(String.format("Validating template: [%s]", template.getTemplateName()));
 
+		Assert.isTrue(!template.getDirectory().startsWith("\\"), "Invalid template directory");
 		Assert.isTrue(StringHelper.hasLength(template.getTemplateName()), "Template name must not be empty");
 		Assert.isTrue(StringHelper.hasLength(template.getPathColumn()), "Unable to locate pathname column");
 		Assert.notNull(template.getColumnNames(),

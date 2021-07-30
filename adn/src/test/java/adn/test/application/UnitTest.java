@@ -5,8 +5,11 @@ package adn.test.application;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import adn.helpers.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -38,16 +41,22 @@ public class UnitTest {
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
 			IllegalArgumentException, IllegalAccessException {
-//		DefaultResourceIdentifierGenerator g = new DefaultResourceIdentifierGenerator();
-//		UserPhoto u = new UserPhoto();
-//		
-//		u.setExtension(".jpg");
-//		
-//		String id = g.generate(null, u).toString() + u.getExtension();
-//		
-//		System.out.println(id);
-//		System.out.println(id.length());
-		System.out.println("1619973416467_0c46022f".substring(0, 25 - 4));
+//		Pattern p = Pattern
+//				.compile(String.format("^[\\p{L}\\p{N}\\s\\.\\,\\_\\-\\@\"'\\*%s]{%d,%d}$", VIETNAMESE_CHARACTERS, 0, 255));
+//		Matcher m = p.matcher("White LeÌ FrÃÃnt");
+//		System.out.println(VIETNAMESE_CHARACTERS.contains("Ã"));
+//		System.out.println(m.matches());
+		Pattern p = Pattern.compile(String.format("^[%s\\p{L}\\p{N}\s\n\\(\\)\\._\\-\"\'\\!@#$%%^&*]{0,255}$", StringHelper.VIETNAMESE_CHARACTERS));
+		Matcher m = p.matcher("aEnglish%@^.ti*ến#g_\"việt\"-('Q$&&uốc!'\n"
+				+ "Ngữ)子及");
+		
+		System.out.println(m.matches());
+	}
+	
+	public static void a(LocalDate date) {
+		if (date == null || date.isAfter(LocalDate.now())) {
+			System.out.println("asas");
+		}
 	}
 
 	public static void x2() {

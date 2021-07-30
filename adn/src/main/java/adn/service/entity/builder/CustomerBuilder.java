@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 
 import adn.helpers.StringHelper;
 import adn.model.Generic;
-import adn.model.entities.Account;
 import adn.model.entities.Customer;
 
 /**
@@ -19,14 +18,11 @@ import adn.model.entities.Customer;
 public class CustomerBuilder extends AccountBuilder<Customer> {
 
 	@Override
-	protected <E extends Account> E mandatoryBuild(E target, E model) {
-		super.mandatoryBuild(target, model);
+	protected <E extends Customer> E mandatoryBuild(E target, E model) {
+		target = super.mandatoryBuild(target, model);
 
-		Customer targetedRef = (Customer) target;
-		Customer modelingRef = (Customer) model;
-
-		targetedRef.setAddress(StringHelper.normalizeString(modelingRef.getAddress()));
-		targetedRef.setPrestigePoint(modelingRef.getPrestigePoint());
+		target.setAddress(StringHelper.normalizeString(model.getAddress()));
+		target.setPrestigePoint(model.getPrestigePoint());
 
 		return target;
 	}
