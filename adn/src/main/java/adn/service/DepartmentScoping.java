@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.services;
+package adn.service;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,7 +22,7 @@ import adn.controller.exception.UnauthorisedDepartmentException;
  *
  */
 @ConstructorBinding
-public class DepartmentScopedService implements EffectivelyFinal {
+public class DepartmentScoping implements EffectivelyFinal {
 
 	private static UUID STOCK;
 	private static UUID SALE;
@@ -38,31 +38,37 @@ public class DepartmentScopedService implements EffectivelyFinal {
 
 		public void execute() throws Exception {
 			final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+			final String STOCK_NAME = "Stock";
+			final String SALE_NAME = "Sale";
+			final String PERSONNEL_NAME = "Personnel";
+			final String FINANCE_NAME = "Finance";
+
 			SessionFactory sf = ContextProvider.getBean(SessionFactory.class);
 			Session ss = sf.openSession();
 			Query<Object[]> hql = ss.createQuery("SELECT d.id, d.name FROM Department d WHERE d.name IN (:names)",
 					Object[].class);
 			ss.setDefaultReadOnly(true);
-			hql.setParameterList("names", new String[] { "Stock", "Sale", "Personnel", "Finance" });
+			hql.setParameterList("names", new String[] { STOCK_NAME, SALE_NAME, PERSONNEL_NAME, FINANCE_NAME });
 
 			List<Object[]> rows = hql.getResultList();
 
 			ss.clear();
 			ss.close();
 
-			STOCK = (UUID) rows.stream().filter(row -> row[1].equals("Stock")).findFirst()
+			STOCK = (UUID) rows.stream().filter(row -> row[1].equals(STOCK_NAME)).findFirst()
 					.orElseThrow(() -> new IllegalStateException("Unable to locate Stock department"))[0];
 
-			SALE = (UUID) rows.stream().filter(row -> row[1].equals("Sale")).findFirst()
+			SALE = (UUID) rows.stream().filter(row -> row[1].equals(SALE_NAME)).findFirst()
 					.orElseThrow(() -> new IllegalStateException("Unable to locate Sale department"))[0];
 
-			FINANCE = (UUID) rows.stream().filter(row -> row[1].equals("Finance")).findFirst()
+			FINANCE = (UUID) rows.stream().filter(row -> row[1].equals(FINANCE_NAME)).findFirst()
 					.orElseThrow(() -> new IllegalStateException("Unable to locate Finance department"))[0];
 
-			PERSONNEL = (UUID) rows.stream().filter(row -> row[1].equals("Personnel")).findFirst()
+			PERSONNEL = (UUID) rows.stream().filter(row -> row[1].equals(PERSONNEL_NAME)).findFirst()
 					.orElseThrow(() -> new IllegalStateException("Unable to locate Personnel department"))[0];
 
-			logger.info(String.format("Configured [%s]", DepartmentScopedService.class));
+			logger.info(String.format("Configured [%s]", DepartmentScoping.class));
 		};
 
 	};

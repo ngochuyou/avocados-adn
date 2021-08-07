@@ -25,7 +25,7 @@ public abstract class AbstractEntityBuilder<T extends Entity> implements EntityB
 	}
 
 	@Override
-	public <E extends T> E insertionBuild(Serializable id, E model) {
+	public <E extends T> E buildInsertion(Serializable id, E model) {
 		Class<? extends Entity> type = model.getClass();
 		// to avoid unique column constraint violation when callers
 		// explicitly set an existing id into the model.
@@ -44,7 +44,7 @@ public abstract class AbstractEntityBuilder<T extends Entity> implements EntityB
 	}
 
 	@Override
-	public <E extends T> E updateBuild(Serializable id, E model, E persistence) {
+	public <E extends T> E buildUpdate(Serializable id, E model, E persistence) {
 		return mandatoryBuild(persistence, model);
 	}
 

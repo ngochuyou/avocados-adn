@@ -19,26 +19,6 @@ public interface AuthenticationBasedModelPropertiesProducersBuilder {
 	 */
 	<T extends DomainEntity, E extends T> WithType<E> type(Class<E> type);
 
-	/**
-	 * With these types
-	 */
-	<T extends DomainEntity, E extends T> WithType<E> type(Class<E>[] types);
-
-	/**
-	 * Mask every {@link DomainEntity}
-	 */
-	AuthenticationBasedModelPropertiesProducersBuilder mask();
-
-	/**
-	 * Publish every {@link DomainEntity}
-	 */
-	AuthenticationBasedModelPropertiesProducersBuilder publish();
-
-	/**
-	 * With every other types
-	 */
-	<T extends DomainEntity> WithType<T> anyType();
-
 	public interface Owned {
 
 		/**
@@ -47,8 +27,6 @@ public interface AuthenticationBasedModelPropertiesProducersBuilder {
 		AuthenticationBasedModelPropertiesProducersBuilder and();
 
 	}
-	
-	
 
 	public interface WithType<T extends DomainEntity> extends Owned {
 
@@ -82,22 +60,17 @@ public interface AuthenticationBasedModelPropertiesProducersBuilder {
 		WithField<T> field(String... field);
 
 		/**
-		 * Mask everything against every given roles of this instance,
-		 */
-		WithRole<T> mask();
-
-		/**
-		 * Publish everything for every given roles of this instance,
-		 */
-		WithRole<T> publish();
-
-		/**
 		 * With every other roles of these types
 		 */
 		WithRole<T> anyRoles();
 
 		/**
 		 * With every other fields for the given roles in this instance
+		 */
+		WithField<T> anyFields(String[] existingFields);
+
+		/**
+		 * With every fields for the given roles in this instance
 		 */
 		WithField<T> anyFields();
 
@@ -111,14 +84,9 @@ public interface AuthenticationBasedModelPropertiesProducersBuilder {
 	public interface WithField<T extends DomainEntity> extends Owned {
 
 		/**
-		 * Get back to role level, with this field
+		 * Get back to role level, with theses field
 		 */
-		WithField<T> field(String field);
-
-		/**
-		 * Get back to role level, with these fields
-		 */
-		WithField<T> fields(String... field);
+		WithField<T> field(String... fields);
 
 		/**
 		 * use this alternative name
@@ -144,13 +112,7 @@ public interface AuthenticationBasedModelPropertiesProducersBuilder {
 		 * With the given fields of this instance, against this other role, in these
 		 * types
 		 */
-		WithField<T> role(Role role);
-
-		/**
-		 * With the given fields of this instance, against these other roles, in these
-		 * types
-		 */
-		WithField<T> roles(Role... roles);
+		WithField<T> role(Role... roles);
 
 		/**
 		 * With the given fields of this instance, against every other roles, in these

@@ -10,11 +10,13 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,10 +31,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.context.ContextProvider;
+import adn.controller.query.ProductQuery;
+import adn.dao.generic.ResultBatch;
 import adn.helpers.StringHelper;
 import adn.model.entities.Category;
 import adn.model.entities.Product;
+import adn.model.entities.StockDetail;
+import adn.model.models.StockDetailBatch;
 import adn.service.internal.ResourceService;
+import adn.service.internal.Service.Status;
 import adn.service.services.DepartmentService;
 import adn.service.services.ProductService;
 
@@ -45,7 +52,8 @@ import adn.service.services.ProductService;
 public class RestProductController extends ProductController {
 
 	@Autowired
-	public RestProductController(DepartmentService departmentService, ProductService productService, ResourceService resourceService) {
+	public RestProductController(DepartmentService departmentService, ProductService productService,
+			ResourceService resourceService) {
 		super(departmentService, productService, resourceService);
 	}
 
@@ -66,7 +74,7 @@ public class RestProductController extends ProductController {
 		return send(productService.readWithActiveCheck(productId, Product.class, columns, getPrincipalRole()),
 				String.format("Product %s not found", productId));
 	}
-	
+
 	@GetMapping(produces = APPLICATION_JSON_VALUE)
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getProductsByCategory(
@@ -88,6 +96,18 @@ public class RestProductController extends ProductController {
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
 			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException {
 		return send(productService.getProductsByCategories(categoryIds, columns, paging, getPrincipalRole()), null);
+	}
+
+	@GetMapping(path = "/search", produces = APPLICATION_JSON_VALUE)
+	@Transactional(readOnly = true)
+	public ResponseEntity<?> searchForProducts(ProductQuery query,
+			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
+			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException {
+		if (query.isEmpty()) {
+			return sendBadRequest(MISSING_QUERY);
+		}
+
+		return ResponseEntity.ok(productService.searchProduct(columns, paging, query, getPrincipalRole()).getContent());
 	}
 
 	@PostMapping(path = "/category", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
@@ -152,6 +172,30 @@ public class RestProductController extends ProductController {
 		}
 
 		return send(String.format("Modified activation state of category %s", categoryId), null);
+	}
+
+	@PostMapping("/stockdetail")
+	@Secured("ROLE_PERSONNEL")
+	@Transactional
+	public ResponseEntity<?> createStockDetails(@RequestBody(required = true) StockDetailBatch batch) {
+		assertStockDepartment();
+
+		ResultBatch<StockDetail> results = crudService.createBatch(batch.getDetails(), StockDetail.class, true);
+
+		if (results.isOk()) {
+			return ResponseEntity
+					.ok(results
+							.getResults().stream().map(result -> authenticationBasedModelFactory
+									.produce(StockDetail.class, result.getInstance(), getPrincipalRole()))
+							.collect(Collectors.toList()));
+		}
+
+		if (results.getStatus() == Status.BAD) {
+			return sendBadRequest(
+					results.getResults().stream().map(result -> result.getMessages()).collect(Collectors.toList()));
+		}
+
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(FAILED);
 	}
 
 }

@@ -5,9 +5,11 @@ package adn.model.specification.generic;
 
 import java.io.Serializable;
 
+import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
-import adn.dao.DatabaseInteractionResult;
+import adn.dao.generic.Result;
+import adn.helpers.EntityUtils;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Category;
@@ -21,10 +23,16 @@ import adn.model.entities.Category;
 public class CategorySpecification extends FactorSpecification<Category> {
 
 	@Override
-	public DatabaseInteractionResult<Category> isSatisfiedBy(Serializable id, Category instance) {
-		DatabaseInteractionResult<Category> result = super.isSatisfiedBy(id, instance);
+	public Result<Category> isSatisfiedBy(Session session, Category instance) {
+		return isSatisfiedBy(session, EntityUtils.getIdentifier(instance), instance);
+	}
 
-		if (StringHelper.hasLength(instance.getDescription()) && instance.getDescription().length() > Category.DESCRIPTION_LENGTH) {
+	@Override
+	public Result<Category> isSatisfiedBy(Session session, Serializable id, Category instance) {
+		Result<Category> result = super.isSatisfiedBy(session, id, instance);
+
+		if (StringHelper.hasLength(instance.getDescription())
+				&& instance.getDescription().length() > Category.DESCRIPTION_LENGTH) {
 			result.getMessages().put("description",
 					String.format("Description can only contain %d chacracters", Category.DESCRIPTION_LENGTH));
 		}

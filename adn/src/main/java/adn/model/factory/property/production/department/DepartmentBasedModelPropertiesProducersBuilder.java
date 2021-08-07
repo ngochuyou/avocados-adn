@@ -24,7 +24,7 @@ public interface DepartmentBasedModelPropertiesProducersBuilder {
 
 	interface WithType<T extends DepartmentScoped> extends Owned {
 
-		WithDepartment department(UUID departmentId, String loggableName);
+		WithDepartment department(String loggableName, UUID... departmentId);
 
 	}
 

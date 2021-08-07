@@ -77,7 +77,7 @@ public class BootEntry {
 		for (Class<ContextBuilder> contextBuilderClass: contextBuilderClasses) {
 			try {
 				ContextBuilder manager = context.getBean(contextBuilderClass);
-				
+
 				manager.buildAfterStartUp();
 			} catch (BeansException be) {
 				try {	

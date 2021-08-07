@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.persistence.metamodel.Attribute;
+import javax.persistence.metamodel.EntityType;
 
 import org.hibernate.MappingException;
 import org.hibernate.internal.util.StringHelper;
@@ -38,22 +39,27 @@ import adn.model.entities.Entity;
  * @author Ngoc Huy
  *
  */
-public class EntityMetadataImpl implements EntityMetadata {
+public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 
 	private final Set<String> properties;
+	private final Set<String> declaredProperties;
 	private final Set<String> nonLazyProperties;
 	private final int nonLazyPropertiesSpan;
 	private final int propertiesSpan;
 	private final Set<Map.Entry<String, Getter>> getters;
 	private final String discriminatorColumnName;
+	private final Map<String, Class<? extends DomainEntity>> propertyTypes;
 
 	@SuppressWarnings("unchecked")
-	public <T extends DomainEntity> EntityMetadataImpl(final ModelContextProvider modelContext, Class<T> entityClass) {
+	public <T extends DomainEntity> DomainEntityMetadataImpl(final ModelContextProvider modelContext,
+			Class<T> entityClass) {
 		final Logger logger = LoggerFactory.getLogger(this.getClass());
 		Set<Map.Entry<String, Getter>> getters;
 		Set<String> properties;
 		Set<String> nonLazyProperties;
 		String discriminatorColumnName = null;
+		Set<String> declaredProperties;
+		Map<String, Class<? extends DomainEntity>> propertyTypes;
 
 		try {
 			if (!Entity.class.isAssignableFrom(entityClass)) {
@@ -69,10 +75,15 @@ public class EntityMetadataImpl implements EntityMetadata {
 					.map(name -> Map.entry(name, tuplizer.getGetter(metamodel.getPropertyIndex(name))))
 					.collect(Collectors.toSet());
 			properties = Stream.of(metamodel.getPropertyNames()).collect(Collectors.toSet());
-			// notice-start: to following before adding identifiers
+			// notice-start: do following before adding identifier
 			boolean[] laziness = metamodel.getPropertyLaziness();
-			Map<String, Attribute<T, ?>> attrs = persister.getFactory().getMetamodel().entity(type).getAttributes()
-					.stream().map(attr -> Map.entry(attr.getName(), (Attribute<T, ?>) attr))
+			EntityType<? extends Entity> persistenceType = persister.getFactory().getMetamodel().entity(type);
+			Map<String, Attribute<T, ?>> attrs = persistenceType.getAttributes().stream()
+					.map(attr -> Map.entry(attr.getName(), (Attribute<T, ?>) attr))
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+			propertyTypes = persistenceType.getAttributes().stream()
+					.map(attr -> Map.entry(attr.getName(), (Class<? extends DomainEntity>) attr.getJavaType()))
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 			nonLazyProperties = properties.stream().filter(prop -> {
@@ -112,9 +123,11 @@ public class EntityMetadataImpl implements EntityMetadata {
 			IdentifierProperty identifier = metamodel.getIdentifierProperty();
 
 			if (!identifier.isVirtual()) {
-				getters.add(Map.entry(metamodel.getIdentifierProperty().getName(), tuplizer.getIdentifierGetter()));
-				properties.add(metamodel.getIdentifierProperty().getName());
-				nonLazyProperties.add(metamodel.getIdentifierProperty().getName());
+				String identifierName = metamodel.getIdentifierProperty().getName();
+				getters.add(Map.entry(identifierName, tuplizer.getIdentifierGetter()));
+				properties.add(identifierName);
+				nonLazyProperties.add(identifierName);
+				propertyTypes.put(identifierName, identifier.getType().getReturnedClass());
 			}
 
 			if (persister instanceof SingleTableEntityPersister) {
@@ -124,8 +137,12 @@ public class EntityMetadataImpl implements EntityMetadata {
 
 				if (discriminatorColumnName != null) {
 					properties.add(discriminatorColumnName);
+					propertyTypes.put(discriminatorColumnName, singleTableEntityPersister.getType().getReturnedClass());
 				}
 			}
+
+			declaredProperties = persistenceType.getDeclaredAttributes().stream().map(attr -> attr.getName())
+					.collect(Collectors.toSet());
 		} catch (MappingException me) {
 			if (logger.isTraceEnabled()) {
 				me.printStackTrace();
@@ -135,25 +152,32 @@ public class EntityMetadataImpl implements EntityMetadata {
 			}
 
 			Class<?> superClass = entityClass.getSuperclass();
-			EntityMetadata superMetadata = null;
+			DomainEntityMetadataImpl superMetadata = null;
 
 			while (superClass != null && superClass != Object.class
-					&& ((superMetadata) = modelContext.getMetadata((Class<DomainEntity>) superClass)) == null) {
+					&& ((superMetadata) = (DomainEntityMetadataImpl) modelContext
+							.getMetadata((Class<DomainEntity>) superClass)) == null) {
 				superClass = superClass.getSuperclass();
 			}
 
 			properties = new HashSet<>(0, 1f);
+			propertyTypes = new HashMap<>(0, 1f);
 
 			if (superMetadata != null) {
 				properties.addAll(superMetadata.getPropertyNames());
+				propertyTypes.putAll(superMetadata.getPropertyTypes());
 			}
+
+			declaredProperties = new HashSet<>();
 
 			for (Field f : entityClass.getDeclaredFields()) {
 				if (Modifier.isTransient(f.getModifiers())) {
 					continue;
 				}
-				
+
 				properties.add(f.getName());
+				propertyTypes.put(f.getName(), (Class<? extends DomainEntity>) f.getType());
+				declaredProperties.add(f.getName());
 			}
 
 			int propertySpan = properties.size();
@@ -173,14 +197,20 @@ public class EntityMetadataImpl implements EntityMetadata {
 
 		this.getters = getters;
 		this.properties = properties;
+		this.propertyTypes = propertyTypes;
+		this.declaredProperties = declaredProperties;
 		this.nonLazyProperties = nonLazyProperties;
 		nonLazyPropertiesSpan = this.nonLazyProperties.size();
 		propertiesSpan = this.properties.size();
 		this.discriminatorColumnName = discriminatorColumnName;
 	}
 
+	private Map<String, Class<? extends DomainEntity>> getPropertyTypes() {
+		return propertyTypes;
+	}
+
 	@Override
-	public boolean hasAttribute(String attributeName) {
+	public boolean hasProperty(String attributeName) {
 		return properties.contains(attributeName);
 	}
 
@@ -229,6 +259,21 @@ public class EntityMetadataImpl implements EntityMetadata {
 	@Override
 	public String getDiscriminatorColumnName() {
 		return discriminatorColumnName;
+	}
+
+	@Override
+	public Set<String> getDeclaredPropertyNames() {
+		return declaredProperties;
+	}
+
+	@Override
+	public boolean isEntityType(String attributeName) {
+		return hasProperty(attributeName) && Entity.class.isAssignableFrom(propertyTypes.get(attributeName));
+	}
+
+	@Override
+	public Class<?> getPropertyType(String propertyName) {
+		return propertyTypes.get(propertyName);
 	}
 
 }

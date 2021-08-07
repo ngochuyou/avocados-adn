@@ -12,25 +12,10 @@ import adn.model.entities.Personnel;
 public class PersonnelModelProducer extends AbstractCompositeAuthenticationBasedModelProducerImplementor<Personnel> {
 
 	@Override
-	protected Map<String, Object> produceForEmployee(Personnel account, Map<String, Object> model) {
-		model.put("createdBy", account.getCreatedBy());
+	protected Map<String, Object> produceForPersonnel(Personnel entity, Map<String, Object> model) {
+		model.put("createdBy", entity.getCreatedBy());
 
 		return model;
-	}
-
-	@Override
-	protected Map<String, Object> produceForManager(Personnel entity, Map<String, Object> model) {
-		return produceForEmployee(entity, model);
-	}
-
-	@Override
-	protected Map<String, Object> produceForPersonnel(Personnel entity, Map<String, Object> model) {
-		return produceForEmployee(entity, model);
-	}
-
-	@Override
-	protected Map<String, Object> produceForAdmin(Personnel entity, Map<String, Object> model) {
-		return produceForEmployee(entity, model);
 	}
 
 }

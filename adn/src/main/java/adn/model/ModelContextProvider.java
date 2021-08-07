@@ -28,8 +28,8 @@ import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
 import adn.helpers.TypeHelper;
-import adn.model.entities.metadata.EntityMetadata;
-import adn.model.entities.metadata.EntityMetadataImpl;
+import adn.model.entities.metadata.DomainEntityMetadata;
+import adn.model.entities.metadata.DomainEntityMetadataImpl;
 import adn.model.models.Model;
 
 /**
@@ -48,25 +48,25 @@ public class ModelContextProvider implements ContextBuilder {
 	private Map<Class<? extends DomainEntity>, Set<Class<? extends DomainEntity>>> relationMap;
 	private Map<Class<? extends DomainEntity>, Class<? extends DomainEntity>> defaultModelMap;
 
-	private Map<Class<? extends DomainEntity>, EntityMetadata> metadataMap;
+	private Map<Class<? extends DomainEntity>, DomainEntityMetadata> metadataMap;
 
 	@Override
 	public void buildAfterStartUp() {
 		initializeEntityTree();
-		logger.info("---------------------------------------");
+		logger.debug("---------------------------------------");
 		initializeModelTree();
-		logger.info("---------------------------------------");
+		logger.debug("---------------------------------------");
 		initializeRelationMap();
-		logger.info("---------------------------------------");
+		logger.debug("---------------------------------------");
 		initializeDefaultModelMap();
-		logger.info("---------------------------------------");
+		logger.debug("---------------------------------------");
 		initializeMetadataMap();
 	}
 
 	private void initializeMetadataMap() {
 		metadataMap = new HashMap<>();
-		entityTree.forEach(branch -> metadataMap.put(branch.getNode(), new EntityMetadataImpl(this, branch.getNode())));		
-		entityTree.forEach(branch -> logger.info(
+		entityTree.forEach(branch -> metadataMap.put(branch.getNode(), new DomainEntityMetadataImpl(this, branch.getNode())));		
+		entityTree.forEach(branch -> logger.debug(
 				String.format("%s -> %s", branch.getNode().getName(), metadataMap.get(branch.getNode()).toString())));
 	}
 
@@ -93,7 +93,7 @@ public class ModelContextProvider implements ContextBuilder {
 			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
 		this.entityTree.forEach(tree -> {
-			logger.info(String.format("[%s] added to Entity tree %s", tree.getNode().getName(), (tree.getParent() == null ? " as super root"
+			logger.debug(String.format("[%s] added to Entity tree %s", tree.getNode().getName(), (tree.getParent() == null ? " as super root"
 							: String.format("with root [%s]", tree.getParent().getNode().getName()))));
 		});
 		// @formatter:on
@@ -121,7 +121,7 @@ public class ModelContextProvider implements ContextBuilder {
 			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
 		this.modelTree.forEach(tree -> {
-			logger.info(String.format("[%s] added to Model tree %s", tree.getNode().getName(), (tree.getParent() == null ? " as super root"
+			logger.debug(String.format("[%s] added to Model tree %s", tree.getNode().getName(), (tree.getParent() == null ? " as super root"
 							: String.format(" with root [%s]", tree.getParent().getNode().getName()))));
 		});
 		// @formatter:on
@@ -202,7 +202,7 @@ public class ModelContextProvider implements ContextBuilder {
 			}
 		});
 		// @formatter:on
-		this.relationMap.forEach((key, val) -> val.forEach(clazz -> logger.info(
+		this.relationMap.forEach((key, val) -> val.forEach(clazz -> logger.debug(
 				String.format("[%s] related to [%s]", key.getName(), key.equals(clazz) ? "itself" : clazz.getName()))));
 	}
 
@@ -236,7 +236,7 @@ public class ModelContextProvider implements ContextBuilder {
 		});
 		// @formatter:on
 		this.defaultModelMap.forEach((k, v) -> logger
-				.info(String.format("[%s] is default for [%s]", v.getName(), k.equals(v) ? "itself" : k.getName())));
+				.debug(String.format("[%s] is default for [%s]", v.getName(), k.equals(v) ? "itself" : k.getName())));
 	}
 
 	public ModelInheritanceTree<DomainEntity> getEntityTree() {
@@ -278,7 +278,7 @@ public class ModelContextProvider implements ContextBuilder {
 		}
 	}
 
-	public <T extends DomainEntity> EntityMetadata getMetadata(Class<T> entityType) {
+	public <T extends DomainEntity> DomainEntityMetadata getMetadata(Class<T> entityType) {
 		return metadataMap.get(entityType);
 	}
 

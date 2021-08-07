@@ -13,7 +13,8 @@ import javax.persistence.criteria.Root;
 import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
-import adn.dao.DatabaseInteractionResult;
+import adn.dao.generic.Result;
+import adn.helpers.EntityUtils;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Account;
@@ -37,8 +38,13 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 	}
 
 	@Override
-	public DatabaseInteractionResult<T> isSatisfiedBy(Serializable id, T instance) {
-		DatabaseInteractionResult<T> result = super.isSatisfiedBy(id, instance);
+	public Result<T> isSatisfiedBy(Session session, T instance) {
+		return isSatisfiedBy(session, EntityUtils.getIdentifier(instance), instance);
+	}
+	
+	@Override
+	public Result<T> isSatisfiedBy(Session session, Serializable id, T instance) {
+		Result<T> result = super.isSatisfiedBy(session, id, instance);
 
 		if (!USERNAME_PATTERN.matcher(instance.getId()).matches()) {
 			result.bad().getMessages().put(Account.ID_FIELD_NAME, "Invalid username pattern");
@@ -47,7 +53,6 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 		if (!StringHelper.isEmail(instance.getEmail())) {
 			result.bad().getMessages().put("email", "Invalid email");
 		} else {
-			Session session = getCurrentSession();
 			CriteriaBuilder builder = session.getCriteriaBuilder();
 			CriteriaQuery<Long> query = builder.createQuery(Long.class);
 			Root<Account> root = query.from(Account.class);

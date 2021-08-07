@@ -16,36 +16,41 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.hibernate.SessionFactory;
 import org.springframework.data.domain.Pageable;
 
-import adn.dao.Repository;
+import adn.application.context.ContextProvider;
+import adn.dao.generic.Repository;
 import adn.helpers.ArrayHelper;
 import adn.helpers.StringHelper;
 import adn.helpers.Utils;
 import adn.model.entities.Factor;
 import adn.model.factory.AuthenticationBasedModelFactory;
 import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
+import adn.model.factory.DepartmentBasedModelPropertiesFactory;
 import adn.service.internal.Role;
 import adn.service.internal.Service;
+import adn.service.specification.AbstractSpecificationExecutor;
 
 /**
  * @author Ngoc Huy
  *
  */
-public abstract class FactorService implements Service {
+public abstract class AbstractFactorService<E extends Factor> extends AbstractSpecificationExecutor<E> implements Service {
 
 	protected final CRUDServiceImpl crudService;
 	protected final Repository repository;
 	protected final AuthenticationBasedModelFactory modelFactory;
-	protected final AuthenticationBasedModelPropertiesFactory propertiesFactory;
 
-	public FactorService(CRUDServiceImpl crudService, Repository repository,
-			AuthenticationBasedModelFactory modelFactory, AuthenticationBasedModelPropertiesFactory propertiesFactory) {
-		super();
+	public AbstractFactorService(CRUDServiceImpl crudService, Repository repository,
+			AuthenticationBasedModelFactory modelFactory,
+			AuthenticationBasedModelPropertiesFactory authenticationBasedPropertiesFactory,
+			DepartmentBasedModelPropertiesFactory departmentBasedPropertiesFactory) {
+		super(ContextProvider.getBean(SessionFactory.class), crudService, authenticationBasedPropertiesFactory,
+				departmentBasedPropertiesFactory);
 		this.crudService = crudService;
 		this.repository = repository;
 		this.modelFactory = modelFactory;
-		this.propertiesFactory = propertiesFactory;
 	}
 
 	public <T extends Factor> Long countWithActiveState(Class<T> type, Role principalRole) {
@@ -60,7 +65,7 @@ public abstract class FactorService implements Service {
 
 	public <T extends Factor> Map<String, Object> readWithActiveCheck(Serializable id, Class<T> type,
 			Collection<String> columns, Role principalRole) throws NoSuchFieldException {
-		Collection<String> validatedColumns = crudService.getDefaultColumnsOrTranslate(type, principalRole, columns);
+		Collection<String> validatedColumns = crudService.getDefaultColumns(type, principalRole, columns);
 
 		if (principalRole == ADMIN || principalRole == PERSONNEL) {
 			Map<String, Object> row = crudService.find(id, type, validatedColumns, principalRole);
@@ -82,7 +87,7 @@ public abstract class FactorService implements Service {
 
 	public <T extends Factor> List<Map<String, Object>> read(Class<T> type, Collection<String> columns, Pageable paging,
 			Role principalRole) throws NoSuchFieldException {
-		Collection<String> validatedColumns = crudService.getDefaultColumnsOrTranslate(type, principalRole, columns);
+		Collection<String> validatedColumns = crudService.getDefaultColumns(type, principalRole, columns);
 
 		if (principalRole == ADMIN || principalRole == PERSONNEL) {
 			return crudService.read(type, validatedColumns, paging, principalRole);
@@ -103,7 +108,7 @@ public abstract class FactorService implements Service {
 			Collection<String> requestedColumns, String additionalWhereClauseMember,
 			Map<String, Object> additionalWhereClauseParameters, Pageable paging, Role role)
 			throws NoSuchFieldException {
-		Collection<String> validatedColumns = crudService.getDefaultColumnsOrTranslate(type, role, requestedColumns);
+		Collection<String> validatedColumns = crudService.getDefaultColumns(type, role, requestedColumns);
 		// @formatter:off
 		HashMap<String, Object> criterias = new HashMap<>();
 		

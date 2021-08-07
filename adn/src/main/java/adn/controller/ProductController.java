@@ -21,9 +21,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import adn.dao.DatabaseInteractionResult;
+import adn.dao.generic.Result;
 import adn.helpers.ArrayHelper;
 import adn.model.entities.Product;
 import adn.service.internal.ResourceService;
@@ -64,20 +62,11 @@ public class ProductController extends DepartmentScopedController {
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@Secured("ROLE_PERSONNEL")
 	@Transactional
-	public @ResponseBody ResponseEntity<?> createProduct(@RequestPart(name = "model", required = true) String jsonPart,
+	public @ResponseBody ResponseEntity<?> createProduct(@RequestPart(name = "model", required = true) Product model,
 			@RequestPart(name = "images", required = false) MultipartFile[] images) {
 		assertSaleDepartment();
 
-		Product model;
-
-		try {
-			model = objectMapper.readValue(jsonPart, Product.class);
-		} catch (JsonProcessingException any) {
-			any.printStackTrace();
-			return ResponseEntity.badRequest().body(INVALID_MODEL);
-		}
-
-		DatabaseInteractionResult<Product> result = productService.createProduct(model, images, true);
+		Result<Product> result = productService.createProduct(model, images, true);
 
 		return send(result);
 	}
@@ -89,21 +78,13 @@ public class ProductController extends DepartmentScopedController {
 			@RequestPart(name = "images", required = false) MultipartFile[] images) {
 		assertSaleDepartment();
 
-//		Product model;
-//
-//		try {
-//			model = objectMapper.readValue(jsonPart, Product.class);
-//		} catch (JsonProcessingException jpe) {
-//			return sendBadRequest("Invalid model");
-//		}
-
 		Product persistence = baseRepository.findById(model.getId(), Product.class);
 
 		if (persistence == null) {
 			return sendNotFound(String.format("Product %s not found", model.getId()));
 		}
 
-		DatabaseInteractionResult<Product> result = productService.updateProduct(model,
+		Result<Product> result = productService.updateProduct(model,
 				ArrayHelper.from(images, MultipartFile.class), true);
 
 		return send(result);

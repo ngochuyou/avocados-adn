@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import adn.model.DomainEntity;
 import adn.model.factory.property.production.ModelPropertiesProducer;
 import adn.service.internal.Role;
 
@@ -15,7 +16,8 @@ import adn.service.internal.Role;
  *
  */
 public interface AuthenticationBasedModelPropertiesProducer
-		extends ModelPropertiesProducer, AuthenticationBasedModelProducer<Object[], Map<String, Object>> {
+		extends ModelPropertiesProducer, AuthenticationBasedModelProducer<Object[], Map<String, Object>>,
+		FactoryObserver<DomainEntity, Object[], Map<String, Object>, AuthenticationBasedModelPropertiesProducer> {
 
 	@Override
 	default Map<String, Object> produce(Object[] source) {

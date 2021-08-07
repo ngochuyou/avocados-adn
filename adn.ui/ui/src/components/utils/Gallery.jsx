@@ -31,7 +31,6 @@ export const PureGallery = memo(Gallery, (o, n) => {
 	return o.elements === n.elements &&
 			o.max === n.max && o.message === n.message &&
 			o.name === n.name && o.url === n.url;
-
 });
 
 function Gallery({
@@ -197,7 +196,7 @@ function ClientImageCard({
 	);
 }
 
-function SourcedImage({ src = null, name = "udef" }) {
+export function SourcedImage({ src = null, name = "udef" }) {
 	return <img
 		className="uk-width-1-1 uk-height-1-1"
 		src={src}
@@ -210,9 +209,9 @@ function SourcedImage({ src = null, name = "udef" }) {
 	/>;
 }
 
-export function DomainImage({ url = "", name = "" }) {
+export function DomainImage({ url = "", name = "", className = "" }) {
 	return <img
-		className="uk-width-1-1 uk-height-1-1"
+		className={`uk-width-1-1 uk-height-1-1 ${className}`}
 		src={`${server.url}${url}`}
 		alt={name}
 		style={{

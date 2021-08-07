@@ -1,9 +1,7 @@
 package adn.service.services;
 
-import static adn.dao.DatabaseInteractionResult.bad;
-import static adn.dao.DatabaseInteractionResult.failed;
-import static adn.dao.DatabaseInteractionResult.success;
-import static adn.dao.DatabaseInteractionResult.unauthorized;
+import static adn.dao.generic.Result.bad;
+import static adn.dao.generic.Result.success;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -15,11 +13,10 @@ import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
 
 import adn.application.context.ContextProvider;
-import adn.dao.DatabaseInteractionResult;
+import adn.dao.generic.Result;
 import adn.model.entities.Account;
 import adn.model.entities.Admin;
 import adn.model.entities.Customer;
@@ -73,7 +70,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 		// @formatter:on
 	}
 
-	public <T extends Account, E extends T> DatabaseInteractionResult<E> create(Serializable id, E account,
+	public <T extends Account, E extends T> Result<E> create(Serializable id, E account,
 			Class<E> type, MultipartFile photo, boolean flushOnFinish) {
 		id = crudService.resolveId(id, account);
 
@@ -87,21 +84,21 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 			ServiceResult<String> uploadResult = resourceService.uploadUserPhoto(photo);
 
 			if (!uploadResult.isOk()) {
-				return failed(Map.of("photo", UPLOAD_FAILURE));
+				return bad(Map.of("photo", UPLOAD_FAILURE));
 			}
 
 			isResourceSessionFlushed = true;
 			account.setPhoto(uploadResult.getBody());
 		}
 
-		DatabaseInteractionResult<E> insertResult = crudService.create(account.getId(), account, type, false);
+		Result<E> insertResult = crudService.create(account.getId(), account, type, false);
 
 		resourceService.closeSession(isResourceSessionFlushed && insertResult.isOk() && flushOnFinish);
 
 		return crudService.finish(ss, insertResult, flushOnFinish);
 	}
 
-	public <T extends Account, E extends T> DatabaseInteractionResult<E> update(Serializable id, E account,
+	public <T extends Account, E extends T> Result<E> update(Serializable id, E account,
 			Class<E> type, MultipartFile photo, boolean flushOnFinish) {
 		id = crudService.resolveId(id, account);
 
@@ -116,12 +113,12 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 			// determine role update, currently only administrators could update account
 			// role
 			if (!principalRole.equals(Role.ADMIN)) {
-				return unauthorized(account, Map.of(Account.ROLE_FIELD_NAME, INVALID_ROLE));
+				return bad(Map.of(Account.ROLE_FIELD_NAME, INVALID_ROLE));
 			}
 
 			if (!persistence.getRole().canBeUpdatedTo(account.getRole())) {
-				return bad(persistence, Map.of(Account.ROLE_FIELD_NAME, String
-						.format("Unable to update role from %s to %s", persistence.getRole(), account.getRole())));
+				return bad(Map.of(Account.ROLE_FIELD_NAME, String.format("Unable to update role from %s to %s",
+						persistence.getRole(), account.getRole())));
 			}
 		}
 		// don't allow password update here
@@ -130,7 +127,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 		ServiceResult<String> localResourceResult = updateOrUploadPhoto(persistence, photo);
 
 		if (localResourceResult.getStatus().equals(Status.FAILED)) {
-			return failed(Map.of("photo", UPLOAD_FAILURE));
+			return bad(Map.of("photo", UPLOAD_FAILURE));
 		}
 
 		boolean isResourceSessionFlushed = localResourceResult.isOk();
@@ -140,7 +137,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 		// directly into persistence here
 		account.setPhoto(localResourceResult.getBody());
 
-		DatabaseInteractionResult<E> updateResult = crudService.update(persistence.getId(), account, type, false);
+		Result<E> updateResult = crudService.update(persistence.getId(), account, type, false);
 
 		resourceService.closeSession(isResourceSessionFlushed && updateResult.isOk());
 		observers.values().forEach(observer -> observer.notifyUpdate(persistence));
@@ -148,7 +145,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 		return crudService.finish(ss, updateResult, flushOnFinish);
 	}
 
-	public DatabaseInteractionResult<Account> deactivateAccount(String id, boolean flushOnFinish) {
+	public Result<Account> deactivateAccount(String id, boolean flushOnFinish) {
 		Session ss = crudService.getCurrentSession();
 
 		ss.setHibernateFlushMode(FlushMode.MANUAL);
@@ -156,8 +153,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 		Account account = ss.load(Account.class, id);
 
 		if (!account.isActive()) {
-			return DatabaseInteractionResult.error(HttpStatus.NOT_MODIFIED.value(), account,
-					Map.of(Account.ACTIVE_FIELD_NAME, "Account was already deactivated"));
+			return bad(Map.of(Account.ACTIVE_FIELD_NAME, "Account was already deactivated"));
 		}
 
 		account.setActive(Boolean.FALSE);

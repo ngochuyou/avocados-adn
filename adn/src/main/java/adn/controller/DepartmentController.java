@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.context.ContextProvider;
@@ -44,8 +43,7 @@ public class DepartmentController extends BaseController {
 	@Transactional(readOnly = true)
 	@GetMapping("/chief/{departmentId}")
 	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
-	public @ResponseBody ResponseEntity<?> getDepartmentChief(
-			@PathVariable(name = "id", required = true) UUID departmentId,
+	public ResponseEntity<?> getDepartmentChief(@PathVariable(name = "id", required = true) UUID departmentId,
 			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws NoSuchFieldException {
 		if (columns.isEmpty()) {
 			Map<String, Object> chief = departmentService.getDepartmentChief(departmentId,
@@ -63,8 +61,7 @@ public class DepartmentController extends BaseController {
 	@Transactional(readOnly = true)
 	@GetMapping("/chiefs")
 	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
-	public @ResponseBody ResponseEntity<?> getDepartmentChiefs(
-			@RequestParam(name = "ids", required = true) List<UUID> ids,
+	public ResponseEntity<?> getDepartmentChiefs(@RequestParam(name = "ids", required = true) List<UUID> ids,
 			@RequestParam(name = "columns", required = true) List<String> columns) throws NoSuchFieldException {
 		List<Map<String, Object>> chiefs = departmentService.getDepartmentChiefs(ids.toArray(new UUID[ids.size()]),
 				columns, ContextProvider.getPrincipalRole());
@@ -73,10 +70,17 @@ public class DepartmentController extends BaseController {
 	}
 
 	@Transactional(readOnly = true)
+	@GetMapping("/id/{username:.+}")
+	public ResponseEntity<?> getPersonnelDepartmentId(@PathVariable(name = "username", required = true) String username)
+			throws NoSuchFieldException {
+		return makeStaleWhileRevalidate(departmentService.getPersonnelDepartmentId(username), 12, TimeUnit.HOURS, 24,
+				TimeUnit.HOURS);
+	}
+
+	@Transactional(readOnly = true)
 	@GetMapping("/count")
 	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
-	public @ResponseBody ResponseEntity<?> getPersonnelCounts(
-			@RequestParam(name = "ids", required = true) List<UUID> ids) {
+	public ResponseEntity<?> getPersonnelCounts(@RequestParam(name = "ids", required = true) List<UUID> ids) {
 		// @formatter:off
 		return makeStaleWhileRevalidate(
 				departmentService.countPersonnel(ids.toArray(new UUID[ids.size()])),
@@ -88,8 +92,7 @@ public class DepartmentController extends BaseController {
 	@Transactional(readOnly = true)
 	@GetMapping("/personnel-list/{departmentId}")
 	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
-	public @ResponseBody ResponseEntity<?> getPersonnelList(
-			@PathVariable(name = "departmentId", required = true) UUID departmentId,
+	public ResponseEntity<?> getPersonnelList(@PathVariable(name = "departmentId", required = true) UUID departmentId,
 			@PageableDefault(size = 5) Pageable paging,
 			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws NoSuchFieldException {
 		List<Map<String, Object>> list = departmentService.getPersonnelListByDepartmentId(departmentId, columns, paging,

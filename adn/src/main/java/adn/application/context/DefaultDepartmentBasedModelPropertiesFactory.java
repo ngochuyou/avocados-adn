@@ -28,7 +28,7 @@ import adn.helpers.TypeHelper;
 import adn.model.DepartmentScoped;
 import adn.model.DomainEntity;
 import adn.model.ModelContextProvider;
-import adn.model.entities.metadata.EntityMetadata;
+import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.DepartmentBasedModelPropertiesFactory;
 import adn.model.factory.property.production.DepartmentBasedModelPropertiesProducer;
 import adn.model.factory.property.production.DepartmentScopedProperty;
@@ -98,12 +98,14 @@ public class DefaultDepartmentBasedModelPropertiesFactory
 			Class<DepartmentScoped> entityType = (Class<DepartmentScoped>) branch.getNode();
 
 			producersMap.put(entityType,
-					new DepartmentBasedModelPropertiesProducerImpl(entityType,
+					new DepartmentBasedModelPropertiesProducerImpl<>(entityType,
 							builder.propertiesMap.values().stream()
 									.filter(prop -> TypeHelper.isParentOf(entityType, prop.getEntityType()))
 									.map(prop -> (DepartmentScopedProperty<DepartmentScoped>) prop)
 									.collect(Collectors.toSet())));
 		});
+
+		producersMap.values().stream().forEach(producer -> producer.afterFactoryBuild(producersMap));
 
 		logger.info(String.format("%s %s", ContextBuilder.super.getLoggingPrefix(this),
 				String.format("Finished building %s", this.getClass().getSimpleName())));
@@ -165,7 +167,7 @@ public class DefaultDepartmentBasedModelPropertiesFactory
 		}
 
 		@SuppressWarnings("unchecked")
-		private <T extends DepartmentScoped> EntityMetadata getMetadata(Class<T> type) {
+		private <T extends DepartmentScoped> DomainEntityMetadata getMetadata(Class<T> type) {
 			return modelContext.getMetadata((Class<DomainEntity>) type);
 		}
 
@@ -208,21 +210,22 @@ public class DefaultDepartmentBasedModelPropertiesFactory
 			}
 
 			@Override
-			public WithDepartment department(UUID departmentId, String loggableName) {
-				return new WithDepartmentImpl(owner, this, departmentId, loggableName);
+			public WithDepartment department(String loggableName, UUID... departmentId) {
+				return new WithDepartmentImpl(owner, this, loggableName, departmentId);
 			}
 
 			public class WithDepartmentImpl extends AbstractOwned implements WithDepartment {
 
-				private final UUID departmentId;
+				private final UUID[] departmentIds;
 				private final WithType<T> owningType;
 
 				public WithDepartmentImpl(DepartmentBasedModelPropertiesProducersBuilder owner, WithType<T> owningType,
-						UUID departmentId, String loggableName) {
+						String loggableName, UUID... departmentIds) {
 					super(owner);
-					this.departmentId = departmentId;
+					this.departmentIds = departmentIds;
 					this.owningType = owningType;
-					logger.trace(String.format("With department id [%s] named [%s]", departmentId,
+					logger.trace(String.format("With department id [%s] named [%s]",
+							Stream.of(departmentIds).map(id -> id.toString()).collect(Collectors.joining(",")),
 							Optional.ofNullable(loggableName).orElse("UNKNOWN")));
 				}
 
@@ -232,10 +235,10 @@ public class DefaultDepartmentBasedModelPropertiesFactory
 				}
 
 				private WithDepartment apply(Function<Object, Object> fnc) {
-					getMetadata(type).getPropertyNames().forEach(name -> {
-						propertiesMap.put(new Key<>(type, departmentId, name),
-								new ScopedPropertyImpl<>(type, name, departmentId, fnc));
-					});
+					getMetadata(type).getPropertyNames()
+							.forEach(name -> Stream.of(departmentIds)
+									.forEach(departmentId -> propertiesMap.put(new Key<>(type, departmentId, name),
+											new ScopedPropertyImpl<>(type, name, departmentId, fnc))));
 
 					return this;
 				}
@@ -254,7 +257,7 @@ public class DefaultDepartmentBasedModelPropertiesFactory
 
 				@Override
 				public WithDepartment department(UUID departmentId, String loggableName) {
-					return owningType.department(departmentId, loggableName);
+					return owningType.department(loggableName, departmentId);
 				}
 
 				public class WithFieldImpl extends AbstractOwned implements WithField {
@@ -272,11 +275,10 @@ public class DefaultDepartmentBasedModelPropertiesFactory
 					}
 
 					private WithField apply(Function<Object, Object> fnc) {
-						Stream.of(names).forEach(name -> {
-							propertiesMap.put(new Key<>(type, departmentId, name),
-									new ScopedPropertyImpl<>(type, name, departmentId, fnc));
-						});
-
+						Stream.of(names)
+								.forEach(name -> Stream.of(departmentIds)
+										.forEach(departmentId -> propertiesMap.put(new Key<>(type, departmentId, name),
+												new ScopedPropertyImpl<>(type, name, departmentId, fnc))));
 						return this;
 					}
 
@@ -306,7 +308,7 @@ public class DefaultDepartmentBasedModelPropertiesFactory
 
 					@Override
 					public WithDepartment department(UUID departmentId, String loggableName) {
-						return owningType.department(departmentId, loggableName);
+						return owningType.department(loggableName, departmentId);
 					}
 
 					@Override

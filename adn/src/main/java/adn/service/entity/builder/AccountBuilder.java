@@ -46,8 +46,8 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 	}
 
 	@Override
-	public <E extends T> E insertionBuild(Serializable id, E entity) {
-		entity = super.insertionBuild(id, entity);
+	public <E extends T> E buildInsertion(Serializable id, E entity) {
+		entity = super.buildInsertion(id, entity);
 
 		if (entity.getPassword() == null || entity.getPassword().length() < 8) {
 			entity.setPassword("");
@@ -61,7 +61,7 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 	}
 
 	@Override
-	public <E extends T> E updateBuild(Serializable id, E entity, E persistence) {
+	public <E extends T> E buildUpdate(Serializable id, E entity, E persistence) {
 		entity = super.mandatoryBuild(entity, persistence);
 		// leave out model's password if there's no need of password editing
 		if (StringHelper.hasLength(entity.getPassword())) {

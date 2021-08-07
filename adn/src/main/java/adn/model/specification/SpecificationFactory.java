@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,7 @@ import org.springframework.stereotype.Component;
 import adn.application.Constants;
 import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
-import adn.dao.DatabaseInteractionResult;
+import adn.dao.generic.Result;
 import adn.helpers.TypeHelper;
 import adn.model.Generic;
 import adn.model.ModelContextProvider;
@@ -38,16 +39,16 @@ public class SpecificationFactory implements ContextBuilder {
 
 	private Logger logger = LoggerFactory.getLogger(SpecificationFactory.class);
 
-	private Specification<?> defaultSpecification = new Specification<>() {
+	private Specification<Entity> defaultSpecification = new Specification<>() {
 
 		@Override
-		public DatabaseInteractionResult<Object> isSatisfiedBy(Object instance) {
-			return DatabaseInteractionResult.success(instance);
+		public Result<Entity> isSatisfiedBy(Session session, Entity instance) {
+			return Result.success(instance);
 		}
 
 		@Override
-		public DatabaseInteractionResult<Object> isSatisfiedBy(Serializable id, Object instance) {
-			return DatabaseInteractionResult.success(instance);
+		public Result<Entity> isSatisfiedBy(Session session, Serializable id, Entity instance) {
+			return Result.success(instance);
 		}
 
 	};

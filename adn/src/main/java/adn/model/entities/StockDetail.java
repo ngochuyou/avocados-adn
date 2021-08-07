@@ -16,6 +16,8 @@ import javax.persistence.Table;
 
 import org.hibernate.annotations.GenericGenerator;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import adn.model.entities.constants.NamedSize;
 import adn.model.entities.constants.Status;
 import adn.model.entities.generators.StockDetailIdGenerator;
@@ -33,8 +35,9 @@ public class StockDetail extends Entity {
 	public static final int NAMED_COLOR_MAXIMUM_LENGTH = 50;
 	public static final int MATERIAL_MAXIMUM_LENGTH = 50;
 	public static final int STATUS_MAXIMUM_LENGTH = 50;
-	public static final int DESCRIPTION_MAXIMUM_LENGTH = 50;
+	public static final int DESCRIPTION_MAXIMUM_LENGTH = 255;
 	public static final int NUMERIC_SIZE_MAXIMUM_VALUE = 255; // UNSIGNED
+	public static final int NUMERIC_SIZE_MINIMUM_VALUE = 1;
 
 	@Id
 	@GeneratedValue(generator = StockDetailIdGenerator.NAME)
@@ -130,10 +133,6 @@ public class StockDetail extends Entity {
 		this.stockedBy = stockedBy;
 	}
 
-	public Boolean getActive() {
-		return active;
-	}
-
 	public Status getStatus() {
 		return status;
 	}
@@ -142,7 +141,8 @@ public class StockDetail extends Entity {
 		this.status = status;
 	}
 
-	public boolean isActive() {
+	@JsonProperty(value = "active")
+	public Boolean isActive() {
 		return active;
 	}
 

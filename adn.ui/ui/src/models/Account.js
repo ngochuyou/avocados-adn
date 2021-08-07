@@ -35,8 +35,8 @@ export default class Account {
 	static validator = {
 		username: (username) => {
 			// eslint-disable-next-line
-			let ok = /^[A-Za-z\u00c0-\u00FF\u0100-\u0280\._]{8,}$/.test(username);
-
+			let ok = /^[0-9A-Za-z\u00c0-\u00FF\u0100-\u0280\._]{8,}$/.test(username);
+			
 			return [ok, ok ? null : "Invalid username"];
 		},
 		password: (password) => {

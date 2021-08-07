@@ -4,15 +4,6 @@ import { server } from '../../config/default.json';
 import { isEmpty } from '../../utils';
 import { v4 } from 'uuid';
 
-// import { Personnel } from '../../models/Account';
-
-// const FIELDS = Object.getOwnPropertyNames(new Personnel({}));
-
-// const FIELDS = [
-// 	"username", "email", "phone", "firstName",
-// 	"lastName", "gender", "active", "birthDate"
-// ];
-
 export default function AccountViewModal({
 	id = v4(),
 	account = null,

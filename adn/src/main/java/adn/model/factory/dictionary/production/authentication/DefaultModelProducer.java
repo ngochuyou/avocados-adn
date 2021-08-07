@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import adn.helpers.Utils;
 import adn.model.DomainEntity;
-import adn.model.entities.metadata.EntityMetadata;
+import adn.model.entities.metadata.DomainEntityMetadata;
 
 /**
  * Literally get everything, mask nothing from a {@link DomainEntity} instance
@@ -35,7 +35,7 @@ public class DefaultModelProducer<T extends DomainEntity>
 		return type.getDeclaredFields().length > 0;
 	}
 
-	public DefaultModelProducer(Class<T> type, EntityMetadata metadata) {
+	public DefaultModelProducer(Class<T> type, DomainEntityMetadata metadata) {
 		getters = metadata.getGetters();
 		name = String.format("%s<%s>", this.getClass().getSimpleName(), type.getName());
 	}
@@ -59,16 +59,6 @@ public class DefaultModelProducer<T extends DomainEntity>
 
 	@Override
 	protected Map<String, Object> produceForPersonnel(T entity, Map<String, Object> model) {
-		return injectAll(entity, model);
-	}
-
-	@Override
-	protected Map<String, Object> produceForEmployee(T entity, Map<String, Object> model) {
-		return injectAll(entity, model);
-	}
-
-	@Override
-	protected Map<String, Object> produceForManager(T entity, Map<String, Object> model) {
 		return injectAll(entity, model);
 	}
 

@@ -37,8 +37,8 @@ public class StockDetailBuilder extends AbstractEntityBuilder<StockDetail> {
 	}
 
 	@Override
-	public <E extends StockDetail> E insertionBuild(Serializable id, E model) {
-		model = super.insertionBuild(id, model);
+	public <E extends StockDetail> E buildInsertion(Serializable id, E model) {
+		model = super.buildInsertion(id, model);
 
 		model.setStockedBy(new Personnel(ContextProvider.getPrincipalName()));
 		model.setStockedDate(LocalDate.now());

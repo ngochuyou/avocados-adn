@@ -12,6 +12,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
@@ -23,7 +24,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,6 +40,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import adn.security.SecurityConfiguration;
 import adn.service.resource.ResourceManager;
 import adn.service.resource.model.models.ProductImage;
+import adn.service.services.CRUDServiceImpl;
 
 /**
  * @author Ngoc Huy
@@ -212,6 +217,42 @@ public class TestController extends BaseController {
 
 		return image1 != null ? ResponseEntity.ok(image1.getExtension())
 				: ResponseEntity.status(HttpStatus.NOT_FOUND).body(String.format("File [%s] not found", filename));
+	}
+
+	@Autowired
+	private A a;
+
+	@GetMapping("/multi")
+	public ResponseEntity<String> multi() throws InterruptedException {
+		Future<String> getA = a.get();
+		Future<String> getB = a.get();
+
+		String a = "";
+		String b = "";
+
+		try {
+			a = getA.get(3, TimeUnit.SECONDS);
+			b = getB.get(3, TimeUnit.SECONDS);
+		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+			e.printStackTrace();
+		}
+
+		return ResponseEntity.ok(a + b);
+	}
+
+	@Component
+	public class A {
+		@Async(CRUDServiceImpl.EXECUTOR_NAME)
+		public Future<String> get() {
+			try {
+				System.out.println("starting " + Thread.currentThread().getName());
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return new AsyncResult(Thread.currentThread().getName());
+		}
 	}
 
 	private byte[] getDummyBytes() throws IOException {

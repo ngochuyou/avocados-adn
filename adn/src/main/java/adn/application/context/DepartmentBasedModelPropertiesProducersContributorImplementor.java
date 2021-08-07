@@ -12,6 +12,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
 
 import adn.application.context.DefaultDepartmentBasedModelPropertiesFactory.DepartmentBasedModelPropertiesProducersBuilderContributor;
+import adn.helpers.Utils;
 import adn.model.entities.Provider;
 import adn.model.factory.property.production.department.DepartmentBasedModelPropertiesProducersBuilder;
 
@@ -34,18 +35,19 @@ public class DepartmentBasedModelPropertiesProducersContributorImplementor
 				Object[].class);
 
 //		hql.setParameterList("names", new String[] { "Stock", "Sale", "Personnel", "Finance" });
-		hql.setParameterList("names", new String[] { "Stock" });
+		hql.setParameterList("names", new String[] { "Stock", "Sale" });
 		List<Object[]> departmentList = hql.getResultList();
 
 		ss.clear();
 		ss.close();
 
 		UUID stock = getDepartmentId("Stock", departmentList);
+		UUID sale = getDepartmentId("Sale", departmentList);
 		// @formatter:off
 		builder
 			.type(Provider.class)
-				.department(stock, "Stock")
-				.publish();
+				.department("Stock, Sale", stock, sale).publish()
+				.fields("deactivatedDate").use(Utils::formatLocalDateTime);
 		// @formatter:on
 	}
 

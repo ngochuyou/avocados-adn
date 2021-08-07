@@ -59,4 +59,9 @@ public enum Unpaged implements Pageable {
 		return false;
 	}
 
+	@Override
+	public Pageable withPage(int pageNumber) {
+		return INSTANCE;
+	}
+
 }

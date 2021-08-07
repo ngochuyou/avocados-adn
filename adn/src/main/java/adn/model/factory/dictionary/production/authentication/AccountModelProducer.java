@@ -52,13 +52,4 @@ public class AccountModelProducer<T extends Account>
 		return model;
 	}
 
-	@Override
-	protected Map<String, Object> produceForEmployee(T entity, Map<String, Object> model) {
-		return produceForPersonnel(entity, model);
-	}
-
-	@Override
-	protected Map<String, Object> produceForManager(T entity, Map<String, Object> model) {
-		return produceForPersonnel(entity, model);
-	}
 }

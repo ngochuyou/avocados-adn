@@ -22,7 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import adn.application.context.ContextProvider;
-import adn.dao.DatabaseInteractionResult;
+import adn.dao.generic.Result;
 import adn.helpers.StringHelper;
 import adn.model.entities.Account;
 import adn.service.internal.AccountRoleExtractor;
@@ -87,14 +87,14 @@ public class AccountController extends BaseController {
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(EXISTED);
 		}
 
-		DatabaseInteractionResult<Account> insertResult = accountService.create(model.getId(), model,
+		Result<Account> insertResult = accountService.create(model.getId(), model,
 				(Class<Account>) accountClass, photo, true);
 
 		if (insertResult.isOk()) {
 			return ResponseEntity.ok(produce(insertResult.getInstance(), (Class<Account>) accountClass, principalRole));
 		}
 
-		return ResponseEntity.status(insertResult.getStatus()).body(insertResult.getMessages());
+		return sendBadRequest(insertResult.getMessages());
 	}
 
 	@Transactional(readOnly = true)
@@ -160,7 +160,7 @@ public class AccountController extends BaseController {
 		}
 		// get current session with FlushMode.MANUAL
 		setSessionMode();
-		
+
 		Account persistence;
 		// This entity will take effects as the handler progresses
 		// Only changes on this persisted entity will be committed
@@ -168,14 +168,14 @@ public class AccountController extends BaseController {
 			return sendNotFound(NOT_FOUND);
 		}
 
-		DatabaseInteractionResult<Account> updateResult = accountService.update(persistence.getId(), model,
+		Result<Account> updateResult = accountService.update(persistence.getId(), model,
 				(Class<Account>) accountClass, multipartPhoto, true);
 
 		if (updateResult.isOk()) {
 			return ResponseEntity.ok(produce(updateResult.getInstance(), (Class<Account>) accountClass, principalRole));
 		}
 
-		return ResponseEntity.status(updateResult.getStatus()).body(updateResult.getMessages());
+		return sendBadRequest(updateResult.getStatus());
 	}
 
 }

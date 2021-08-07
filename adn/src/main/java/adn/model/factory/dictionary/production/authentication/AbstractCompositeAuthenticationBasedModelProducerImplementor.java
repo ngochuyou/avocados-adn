@@ -25,12 +25,10 @@ public abstract class AbstractCompositeAuthenticationBasedModelProducerImplement
 	private final Map<Role, BiFunction<T, Map<String, Object>, Map<String, Object>>> injectiveProducers;
 
 	private static final Function<Entity, Map<String, Object>> DEFAULT_MAP_PRODUCER = new Function<>() {
-
 		@Override
 		public Map<String, Object> apply(Entity t) {
 			return Collections.emptyMap();
 		}
-
 	};
 
 	private static final BiFunction<Entity, Map<String, Object>, Map<String, Object>> DEFAULT_INJECTIVE_PRODUCER = new BiFunction<>() {
@@ -49,8 +47,6 @@ public abstract class AbstractCompositeAuthenticationBasedModelProducerImplement
 		
 		mapProducers.put(Role.ADMIN, this::produceForAdmin);
 		mapProducers.put(Role.PERSONNEL, this::produceForPersonnel);
-		mapProducers.put(Role.EMPLOYEE, this::produceForEmployee);
-		mapProducers.put(Role.MANAGER, this::produceForManager);
 		mapProducers.put(Role.CUSTOMER, this::produceForCustomer);
 
 		registerDefaultMappingProducers(mapProducers);
@@ -59,8 +55,6 @@ public abstract class AbstractCompositeAuthenticationBasedModelProducerImplement
 		
 		injectiveProducers.put(Role.ADMIN, this::produceForAdmin);
 		injectiveProducers.put(Role.PERSONNEL, this::produceForPersonnel);
-		injectiveProducers.put(Role.EMPLOYEE, this::produceForEmployee);
-		injectiveProducers.put(Role.MANAGER, this::produceForManager);
 		injectiveProducers.put(Role.CUSTOMER, this::produceForCustomer);
 
 		registerDefaultInjectiveProducers(injectiveProducers);
@@ -155,14 +149,6 @@ public abstract class AbstractCompositeAuthenticationBasedModelProducerImplement
 		return produceForPersonnel(entity, createModel());
 	}
 
-	protected final Map<String, Object> produceForEmployee(T entity) {
-		return produceForEmployee(entity, createModel());
-	}
-
-	protected final Map<String, Object> produceForManager(T entity) {
-		return produceForManager(entity, createModel());
-	}
-
 	protected final Map<String, Object> produceForCustomer(T entity) {
 		return produceForCustomer(entity, createModel());
 	}
@@ -178,14 +164,6 @@ public abstract class AbstractCompositeAuthenticationBasedModelProducerImplement
 	}
 
 	protected Map<String, Object> produceForPersonnel(T entity, Map<String, Object> model) {
-		return model;
-	}
-
-	protected Map<String, Object> produceForEmployee(T entity, Map<String, Object> model) {
-		return model;
-	}
-
-	protected Map<String, Object> produceForManager(T entity, Map<String, Object> model) {
 		return model;
 	}
 

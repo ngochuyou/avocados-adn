@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.dao;
+package adn.dao.generic;
 
 import static adn.helpers.ArrayHelper.EMPTY_STRING_ARRAY;
 import static adn.helpers.EntityUtils.getEntityName;
@@ -177,7 +177,6 @@ public abstract class AbstractRepository implements Repository {
 
 	@Override
 	public List<Object[]> findWithContext(String query, Pageable paging, Map<String, ParamContext> parameters) {
-
 		return null;
 	}
 
@@ -294,7 +293,7 @@ public abstract class AbstractRepository implements Repository {
 		return specificationFactory.getSpecification(type);
 	}
 
-	protected <T extends Entity, E extends T> DatabaseInteractionResult<E> validate(Serializable id, E instance,
+	protected <T extends Entity, E extends T> Result<E> validate(Session session, Serializable id, E instance,
 			Class<E> type) {
 		Specification<E> spec = getSpecification(type);
 
@@ -302,7 +301,7 @@ public abstract class AbstractRepository implements Repository {
 			logger.debug(String.format("Validating [%s#%s] using [%s]", type.getName(), id, spec.getClass().getName()));
 		}
 
-		return spec.isSatisfiedBy(id, instance);
+		return spec.isSatisfiedBy(session, id, instance);
 	}
 
 }

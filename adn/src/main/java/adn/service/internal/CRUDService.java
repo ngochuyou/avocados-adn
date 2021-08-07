@@ -7,13 +7,16 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.data.domain.Pageable;
 
 import adn.application.context.ContextProvider;
-import adn.dao.DatabaseInteractionResult;
+import adn.dao.generic.Result;
+import adn.dao.generic.ResultBatch;
+import adn.model.DepartmentScoped;
 import adn.model.entities.Entity;
 
 /**
@@ -38,23 +41,32 @@ public interface CRUDService extends Service {
 			Class<? extends Entity> associatingType, String associatingAttribute, Serializable associationIdentifier,
 			Collection<String> columns, Pageable pageable, Role role) throws NoSuchFieldException;
 
-	default <T extends Entity, E extends T> DatabaseInteractionResult<E> create(Serializable id, E model,
-			Class<E> type) {
+	default <T extends Entity, E extends T> Result<E> create(Serializable id, E model, Class<E> type) {
 		return create(id, model, type, false);
 	}
 
-	<T extends Entity, E extends T> DatabaseInteractionResult<E> create(Serializable id, E model, Class<E> type,
+	<T extends Entity, E extends T> Result<E> create(Serializable id, E model, Class<E> type, boolean flushOnFinish);
+
+	default <T extends Entity, E extends T> ResultBatch<E> createBatch(Collection<E> batch, Class<E> type) {
+		return createBatch(batch, type, false);
+	};
+
+	<T extends Entity, E extends T> ResultBatch<E> createBatch(Collection<E> batch, Class<E> type,
 			boolean flushOnFinish);
 
-	default <T extends Entity, E extends T> DatabaseInteractionResult<E> update(Serializable id, E model,
-			Class<E> type) {
+	default <T extends Entity, E extends T> Result<E> update(Serializable id, E model, Class<E> type) {
 		return update(id, model, type, false);
 	}
 
-	<T extends Entity, E extends T> DatabaseInteractionResult<E> update(Serializable id, E model, Class<E> type,
-			boolean flushOnFinish);
+	<T extends Entity, E extends T> Result<E> update(Serializable id, E model, Class<E> type, boolean flushOnFinish);
 
 	default Session getCurrentSession() {
 		return ContextProvider.getApplicationContext().getBean(SessionFactory.class).getCurrentSession();
 	}
+
+	<T extends Entity> List<String> getDefaultColumns(Class<T> type, Role role, Collection<String> columns)
+			throws NoSuchFieldException;
+	
+	<T extends DepartmentScoped> List<String> getDefaultColumns(Class<T> type, UUID departmentId, Collection<String> columns)
+			throws NoSuchFieldException;
 }

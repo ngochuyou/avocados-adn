@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.dao;
+package adn.dao.generic;
 
 import java.io.Serializable;
 
@@ -27,11 +27,15 @@ public class BaseRepository extends AbstractRepository implements Repository {
 	}
 
 	@Override
-	public <T extends Entity, E extends T> DatabaseInteractionResult<E> insert(Serializable id, E persistence,
+	public <T extends Entity, E extends T> Result<E> insert(Serializable id, E persistence, Class<E> type) {
+		return insert(getCurrentSession(), id, persistence, type);
+	}
+
+	@Override
+	public <T extends Entity, E extends T> Result<E> insert(Session session, Serializable id, E persistence,
 			Class<E> type) {
-		Session session = sessionFactory.getCurrentSession();
 		// validate the persisted entity
-		DatabaseInteractionResult<E> result = validate(id, persistence, type);
+		Result<E> result = validate(session, id, persistence, type);
 
 		if (result.isOk()) {
 			session.save(persistence);
@@ -45,10 +49,14 @@ public class BaseRepository extends AbstractRepository implements Repository {
 	}
 
 	@Override
-	public <T extends Entity, E extends T> DatabaseInteractionResult<E> update(Serializable id, E persistence,
+	public <T extends Entity, E extends T> Result<E> update(Serializable id, E persistence, Class<E> type) {
+		return update(getCurrentSession(), id, persistence, type);
+	}
+
+	@Override
+	public <T extends Entity, E extends T> Result<E> update(Session session, Serializable id, E persistence,
 			Class<E> type) {
-		Session session = sessionFactory.getCurrentSession();
-		DatabaseInteractionResult<E> result = validate(id, persistence, type);
+		Result<E> result = validate(session, id, persistence, type);
 
 		if (result.isOk()) {
 			session.update(persistence);

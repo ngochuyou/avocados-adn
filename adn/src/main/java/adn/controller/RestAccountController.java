@@ -3,11 +3,15 @@
  */
 package adn.controller;
 
+import static adn.model.entities.Account.ACTIVE_FIELD_NAME;
+import static adn.model.entities.Account.ROLE_FIELD_NAME;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.context.ContextProvider;
-import adn.dao.DatabaseInteractionResult;
+import adn.dao.generic.Result;
 import adn.helpers.StringHelper;
 import adn.helpers.Utils;
 import adn.model.entities.Account;
@@ -30,6 +34,7 @@ import adn.service.internal.AccountRoleExtractor;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Role;
 import adn.service.services.AccountService;
+import adn.service.services.DepartmentService;
 
 /**
  * @author Ngoc Huy
@@ -38,13 +43,18 @@ import adn.service.services.AccountService;
 @RestController
 @RequestMapping("/rest/account")
 public class RestAccountController extends AccountController {
+
+	private final DepartmentService departmentService;
+
 	// @formatter:off
 	@Autowired
 	public RestAccountController(
 			final AccountService accountService,
+			final DepartmentService departmentService,
 			final AccountRoleExtractor roleExtractor,
 			final ResourceService resourceService) {
 		super(accountService, roleExtractor, resourceService);
+		this.departmentService = departmentService;
 	}
 	// @formatter:on
 	@GetMapping
@@ -84,13 +94,13 @@ public class RestAccountController extends AccountController {
 			return sendNotFound(NOT_FOUND);
 		}
 
-		DatabaseInteractionResult<Account> result = accountService.deactivateAccount(username, true);
+		Result<Account> result = accountService.deactivateAccount(username, true);
 
 		if (result.isOk()) {
 			return send(String.format("Deactivated %s", username), null);
 		}
 
-		return ResponseEntity.status(HttpStatus.valueOf(result.getStatus())).body(result.getMessages());
+		return sendBadRequest(result.getMessages());
 	}
 
 	protected ResponseEntity<?> obtainPrincipal(Collection<String> requestedColumns) throws NoSuchFieldException {
@@ -110,7 +120,19 @@ public class RestAccountController extends AccountController {
 			return send(model, accountService.getClassFromRole(model.getRole()), null);
 		}
 
-		return super.<Map<String, Object>>send(crudService.find(username, Account.class, requestedColumns), NOT_FOUND);
+		requestedColumns.add(ROLE_FIELD_NAME);
+
+		Map<String, Object> cols = crudService.find(username, Account.class, requestedColumns);
+
+		if (cols == null) {
+			return sendNotFound(NOT_FOUND);
+		}
+
+		if (((Role) cols.get(ROLE_FIELD_NAME)) == Role.PERSONNEL) {
+			cols.put("departmentId", departmentService.getPersonnelDepartmentId(username));
+		}
+
+		return makeStaleWhileRevalidate(cols, 12, TimeUnit.HOURS, 24, TimeUnit.HOURS);
 	}
 
 	protected ResponseEntity<?> doObtainAccount(String username, Collection<String> requestedColumns)
@@ -141,12 +163,12 @@ public class RestAccountController extends AccountController {
 
 		List<String> columns = new ArrayList<>(requestedColumns);
 
-		if (!columns.contains(Account.ACTIVE_FIELD_NAME)) {
-			columns.add(Account.ACTIVE_FIELD_NAME);
+		if (!columns.contains(ACTIVE_FIELD_NAME)) {
+			columns.add(ACTIVE_FIELD_NAME);
 		}
 
-		if (!columns.contains(Account.ROLE_FIELD_NAME)) {
-			columns.add(Account.ROLE_FIELD_NAME);
+		if (!columns.contains(ROLE_FIELD_NAME)) {
+			columns.add(ROLE_FIELD_NAME);
 		}
 
 		Map<String, Object> fetchedRow = crudService.find(username, Account.class, columns);
@@ -159,13 +181,13 @@ public class RestAccountController extends AccountController {
 			return ResponseEntity.ok(extractRequestedColumns(requestedColumns, fetchedRow));
 		}
 
-		Boolean isActive = (Boolean) (fetchedRow.get(Account.ACTIVE_FIELD_NAME));
+		Boolean isActive = (Boolean) (fetchedRow.get(ACTIVE_FIELD_NAME));
 
 		if (!isActive) {
 			return ResponseEntity.status(HttpStatus.LOCKED).body(LOCKED);
 		}
 
-		if (!principalRole.canRead((Role) (fetchedRow.get(Account.ROLE_FIELD_NAME)))) {
+		if (!principalRole.canRead((Role) (fetchedRow.get(ROLE_FIELD_NAME)))) {
 			return unauthorize(ACCESS_DENIED);
 		}
 

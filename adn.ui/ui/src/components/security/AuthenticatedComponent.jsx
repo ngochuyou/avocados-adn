@@ -1,7 +1,7 @@
-const dev = true;
+import { profile } from '../../config/default';
 
 function AuthenticatedComponent({ principal, children }) {
-	if (principal === null && !dev) {
+	if (principal === null && profile.mode !== 'DEV') {
 		return <></>;
 	}
 

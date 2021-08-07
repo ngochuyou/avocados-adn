@@ -56,7 +56,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
 import adn.application.context.DatabaseInitializer;
-import adn.dao.BaseRepository;
+import adn.dao.generic.BaseRepository;
 import adn.dao.paging.Unpaged;
 import adn.model.entities.Account;
 import adn.model.entities.Provider;
@@ -213,7 +213,7 @@ public class ApplicationIntegrationTest {
 	}
 
 	@Test
-	public void sessionLoadTest() throws Exception {
+	private void sessionLoadTest() throws Exception {
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
 				.get(PREFIX + "/file/public/image/session-load");
 

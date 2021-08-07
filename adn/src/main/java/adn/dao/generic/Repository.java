@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.dao;
+package adn.dao.generic;
 
 import java.io.Serializable;
 import java.util.List;
@@ -9,6 +9,7 @@ import java.util.Map;
 
 import javax.persistence.criteria.CriteriaQuery;
 
+import org.hibernate.Session;
 import org.springframework.data.domain.Pageable;
 
 import adn.dao.parameter.ParamContext;
@@ -52,8 +53,12 @@ public interface Repository {
 
 	<T extends Entity> Long countById(Serializable id, Class<T> type);
 
-	<T extends Entity, E extends T> DatabaseInteractionResult<E> insert(Serializable id, E model, Class<E> type);
+	<T extends Entity, E extends T> Result<E> insert(Serializable id, E model, Class<E> type);
 
-	<T extends Entity, E extends T> DatabaseInteractionResult<E> update(Serializable id, E model, Class<E> type);
+	<T extends Entity, E extends T> Result<E> insert(Session session, Serializable id, E model, Class<E> type);
+	
+	<T extends Entity, E extends T> Result<E> update(Serializable id, E model, Class<E> type);
 
+	<T extends Entity, E extends T> Result<E> update(Session session, Serializable id, E model, Class<E> type);
+	
 }

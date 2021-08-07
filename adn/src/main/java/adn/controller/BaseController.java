@@ -23,8 +23,8 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.context.ContextProvider;
-import adn.dao.DatabaseInteractionResult;
-import adn.dao.Repository;
+import adn.dao.generic.Repository;
+import adn.dao.generic.Result;
 import adn.helpers.FunctionHelper.HandledConsumer;
 import adn.model.DomainEntity;
 import adn.model.ModelContextProvider;
@@ -69,12 +69,12 @@ public class BaseController {
 
 	public static final long MAXIMUM_FILE_SIZE = 30 * 1024 * 1024;
 
-	protected static final String HAS_ROLE_ADMIN = "hasRole('ADMIN')";
-
 	protected static final String LOCKED = "RESOURCE WAS DEACTIVATED";
 	protected static final String INVALID_MODEL = "INVALID MODEL";
-	public static final String ACCESS_DENIED = "ACCESS DENIDED";
 	protected static final String EXISTED = "RESOURCE IS ALREADY EXSITED";
+	protected static final String FAILED = "Unable to complete task";
+	public static final String ACCESS_DENIED = "ACCESS DENIDED";
+	public static final String MISSING_QUERY = "Search criteria is missing";
 
 	protected void setSessionMode() {
 		setSessionMode(FlushMode.MANUAL);
@@ -143,13 +143,8 @@ public class BaseController {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(instance);
 	}
 
-	protected <T extends Entity> ResponseEntity<?> send(DatabaseInteractionResult<T> result) {
-		return result.isOk() ? ResponseEntity.ok(produce(result.getInstance()))
-				: ResponseEntity.status(result.getStatus()).body(result.getMessages());
-	}
-
-	protected <T> ResponseEntity<?> cache(T body, long age, TimeUnit unit) {
-		return ResponseEntity.ok().cacheControl(CacheControl.maxAge(age, unit)).body(body);
+	protected <T extends Entity> ResponseEntity<?> send(Result<T> result) {
+		return result.isOk() ? ResponseEntity.ok(produce(result.getInstance())) : sendBadRequest(result.getMessages());
 	}
 
 	protected <T> ResponseEntity<?> makeStaleWhileRevalidate(T body, long maxAge, TimeUnit maxAgeDurationUnit,

@@ -6,12 +6,12 @@ package adn.model.factory.property.production.department;
 import static adn.helpers.LoggerHelper.with;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -20,16 +20,19 @@ import java.util.stream.Stream;
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.property.access.spi.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adn.application.context.ContextProvider;
 import adn.helpers.TypeHelper;
+import adn.helpers.Utils;
 import adn.helpers.Utils.Entry;
 import adn.model.DepartmentScoped;
 import adn.model.DomainEntity;
 import adn.model.ModelContextProvider;
-import adn.model.entities.metadata.EntityMetadata;
+import adn.model.entities.Entity;
+import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.property.production.DepartmentBasedModelPropertiesProducer;
 import adn.model.factory.property.production.DepartmentScopedProperty;
 import adn.model.factory.property.production.ModelPropertiesProducer;
@@ -38,25 +41,34 @@ import adn.model.factory.property.production.ModelPropertiesProducer;
  * @author Ngoc Huy
  *
  */
-public class DepartmentBasedModelPropertiesProducerImpl implements DepartmentBasedModelPropertiesProducer {
+public class DepartmentBasedModelPropertiesProducerImpl<T extends DepartmentScoped>
+		implements DepartmentBasedModelPropertiesProducer {
 
 	private static final float LOAD_FACTOR = 1.175f;
+	private static final BiFunction<Object, UUID, Object> SOURCE_PRESERVER = (source, role) -> source;
+	private static final BiFunction<Object, UUID, Object> SOURCE_TRANSLATOR = (source, role) -> Entry.entry(source,
+			role);
+
+	private Class<T> type;
+	private Map<UUID, String> departmentNames;
 
 	private final Map<UUID, Map<String, Function<Object, Object>>> functionsMap;
-
+	private final Map<UUID, Map<String, BiFunction<Object, UUID, Object>>> sourceTranslators;
+	private final Map<String, Getter> nonLazyPropertyGetters;
 	private final Set<String> registeredProperties;
 
 	@SuppressWarnings("unchecked")
-	public <T extends DepartmentScoped> DepartmentBasedModelPropertiesProducerImpl(Class<T> type,
-			Set<DepartmentScopedProperty<T>> properties) {
+	public DepartmentBasedModelPropertiesProducerImpl(Class<T> type, Set<DepartmentScopedProperty<T>> properties) {
+		this.type = type;
+
 		Map<UUID, Map<String, Function<Object, Object>>> functionsMap = new HashMap<>();
 		final Logger logger = LoggerFactory.getLogger(this.getClass());
-		EntityMetadata metadata = ContextProvider.getBean(ModelContextProvider.class)
+		DomainEntityMetadata metadata = ContextProvider.getBean(ModelContextProvider.class)
 				.getMetadata((Class<DomainEntity>) type);
 		// @formatter:off
 		properties.stream().filter(prop -> {
 			boolean isParent = TypeHelper.isParentOf(prop.getEntityType(), type);
-			boolean unknownProperty = !metadata.hasAttribute(prop.getName());
+			boolean unknownProperty = !metadata.hasProperty(prop.getName());
 			boolean nullFunction = prop.getFunction() == null;
 
 			if (!isParent || unknownProperty || nullFunction) {
@@ -114,6 +126,7 @@ public class DepartmentBasedModelPropertiesProducerImpl implements DepartmentBas
 
 		ss.clear();
 		ss.close();
+
 		departmentList.stream().forEach(cols -> {
 			UUID departmentId = (UUID) cols[0];
 
@@ -132,33 +145,40 @@ public class DepartmentBasedModelPropertiesProducerImpl implements DepartmentBas
 									.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
 		}
 
-		Map<UUID, String> departmentNames = departmentList.stream()
-				.map(cols -> Map.entry((UUID) cols[0], (String) cols[1]))
+		departmentNames = departmentList.stream().map(cols -> Map.entry((UUID) cols[0], (String) cols[1]))
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-		logger.trace(String.format("%s\n" + "\t%s", type.getName(),
-				functionsMap.entrySet().stream()
-						.map(entry -> entry.getValue().entrySet().stream()
-								.map(innerEntry -> String.format("[%s#%s] -> [%s]", departmentNames.get(entry.getKey()),
-										innerEntry.getKey(),
-										innerEntry.getValue() == ModelPropertiesProducer.MASKER ? "mask"
-												: innerEntry.getValue() == ModelPropertiesProducer.PUBLISHER ? "publish"
-														: innerEntry.getValue()))
-								.collect(Collectors.joining("\n\t")))
-						.collect(Collectors.joining("\n\t"))));
 		this.registeredProperties = metadata.getPropertyNames();
-		this.functionsMap = Collections.unmodifiableMap(functionsMap);
+		this.functionsMap = functionsMap;
+		sourceTranslators = departmentNames.keySet().stream()
+				.map(departmentId -> Map.entry(departmentId,
+						metadata.getPropertyNames().stream().map(propName -> Map.entry(propName, SOURCE_PRESERVER))
+								.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+		Set<String> nonLazyProperties = metadata.getNonLazyPropertyNames();
+
+		nonLazyPropertyGetters = metadata.getGetters().stream()
+				.filter(entry -> nonLazyProperties.contains(entry.getKey()))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
-	private Map<String, Object> produceRow(Object[] source, String[] columns,
-			Map<String, Function<Object, Object>> functions) {
+	// @formatter:off
+	private Map<String, Object> produceRow(
+			Object[] source,
+			String[] columns,
+			Map<String, Function<Object, Object>> functions,
+			Map<String, BiFunction<Object, UUID, Object>> sourceTranslators,
+			UUID departmentId) {
+	// @formatter:on
 		try {
 			int span = columns.length;
 
 			return IntStream.range(0, span).mapToObj(index -> {
 				String propName = columns[index];
 
-				return Entry.entry(propName, functions.get(propName).apply(source[index]));
+				return Entry.entry(propName, functions.get(propName)
+						.apply(sourceTranslators.get(propName).apply(source[index], departmentId)));
 			}).collect(
 			// @formatter:off
 				HashMap<String, Object>::new,
@@ -177,15 +197,17 @@ public class DepartmentBasedModelPropertiesProducerImpl implements DepartmentBas
 
 	@Override
 	public Map<String, Object> produce(Object[] source, String[] columns, UUID departmentId) {
-		return produceRow(source, columns, functionsMap.get(departmentId));
+		return produceRow(source, columns, functionsMap.get(departmentId), sourceTranslators.get(departmentId),
+				departmentId);
 	}
 
 	@Override
 	public List<Map<String, Object>> produce(List<Object[]> sources, String[] columns, UUID departmentId) {
 		Map<String, Function<Object, Object>> functions = functionsMap.get(departmentId);
+		Map<String, BiFunction<Object, UUID, Object>> translators = sourceTranslators.get(departmentId);
 		// @formatter:off
 		return sources
-				.stream().map(source -> produceRow(source, columns, functions))
+				.stream().map(source -> produceRow(source, columns, functions, translators, departmentId))
 				.collect(Collectors.toList());
 		// @formatter:on
 	}
@@ -237,22 +259,85 @@ public class DepartmentBasedModelPropertiesProducerImpl implements DepartmentBas
 		Map<String, Function<Object, Object>> functions = functionsMap.get(departmentId);
 		Map<String, Object> result = new HashMap<>();
 
-		result.put(columnName, functions.get(columnName).apply(source));
+		result.put(columnName, functions.get(columnName)
+				.apply(sourceTranslators.get(departmentId).get(columnName).apply(source, departmentId)));
 
 		return result;
 	}
 
 	@Override
 	public List<Map<String, Object>> singularProduce(List<Object> sources, String columnName, UUID departmentId) {
-		Map<String, Function<Object, Object>> functions = functionsMap.get(departmentId);
+		Function<Object, Object> function = functionsMap.get(departmentId).get(columnName);
+		BiFunction<Object, UUID, Object> sourceTranslator = sourceTranslators.get(departmentId).get(columnName);
 
 		return IntStream.range(0, sources.size()).mapToObj(index -> {
 			Map<String, Object> result = new HashMap<>();
 
-			result.put(columnName, functions.get(columnName).apply(sources.get(index)));
+			result.put(columnName, function.apply(sourceTranslator.apply(sources.get(index), departmentId)));
 
 			return result;
 		}).collect(Collectors.toList());
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void afterFactoryBuild(
+			Map<Class<? extends DepartmentScoped>, DepartmentBasedModelPropertiesProducer> producers) {
+		DomainEntityMetadata metadata = ContextProvider.getBean(ModelContextProvider.class)
+				.getMetadata((Class<DomainEntity>) type);
+		Set<String> associations = registeredProperties.stream().filter(metadata::isEntityType)
+				.collect(Collectors.toSet());
+		String propName;
+
+		for (Map.Entry<UUID, Map<String, Function<Object, Object>>> entry : functionsMap.entrySet()) {
+			for (Map.Entry<String, Function<Object, Object>> function : entry.getValue().entrySet().stream()
+					.filter(propBased -> associations.contains(propBased.getKey())).collect(Collectors.toSet())) {
+				propName = function.getKey();
+
+				if (function.getValue() == PUBLISHER) {
+					DepartmentBasedModelPropertiesProducer associationProducer = producers
+							.get(metadata.getPropertyType(propName));
+
+					if (!this.getClass().isAssignableFrom(associationProducer.getClass())) {
+						throw new IllegalArgumentException(
+								String.format("Unqualified producer of type: [%s]", associationProducer.getClass()));
+					}
+
+					DepartmentBasedModelPropertiesProducerImpl<? extends Entity> producer = (DepartmentBasedModelPropertiesProducerImpl<? extends Entity>) associationProducer;
+
+					entry.getValue().put(propName, producer::produceAssociation);
+					sourceTranslators.get(entry.getKey()).put(propName, SOURCE_TRANSLATOR);
+				}
+			}
+		}
+
+		final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+		logger.trace(String.format("%s\n" + "\t%s", type.getName(),
+				functionsMap.entrySet().stream()
+						.map(entry -> entry.getValue().entrySet().stream()
+								.map(innerEntry -> String.format("[%s#%s] -> [%s]", departmentNames.get(entry.getKey()),
+										innerEntry.getKey(),
+										innerEntry.getValue() == ModelPropertiesProducer.MASKER ? "mask"
+												: innerEntry.getValue() == ModelPropertiesProducer.PUBLISHER ? "publish"
+														: innerEntry.getValue()))
+								.collect(Collectors.joining("\n\t")))
+						.collect(Collectors.joining("\n\t"))));
+
+		type = null;
+		departmentNames = null;
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> produceAssociation(Object sourceEntry) {
+		Utils.Entry<Object, UUID> valueEntry = (Utils.Entry<Object, UUID>) sourceEntry;
+		T entity = (T) valueEntry.getKey();
+		Map<String, Object> valueMap = nonLazyPropertyGetters.entrySet().stream()
+				.map(entry -> Utils.Entry.entry(entry.getKey(), entry.getValue().get(entity)))
+				.collect(HashMap<String, Object>::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()),
+						HashMap::putAll);
+
+		return produce(valueMap.values().toArray(), valueMap.keySet().toArray(String[]::new), valueEntry.getValue());
 	}
 
 }

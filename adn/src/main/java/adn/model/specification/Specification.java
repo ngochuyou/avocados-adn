@@ -5,7 +5,9 @@ package adn.model.specification;
 
 import java.io.Serializable;
 
-import adn.dao.DatabaseInteractionResult;
+import org.hibernate.Session;
+
+import adn.dao.generic.Result;
 
 /**
  * @author Ngoc Huy
@@ -13,8 +15,8 @@ import adn.dao.DatabaseInteractionResult;
  */
 public interface Specification<T> {
 
-	DatabaseInteractionResult<T> isSatisfiedBy(T instance);
+	Result<T> isSatisfiedBy(Session session, T instance);
 
-	DatabaseInteractionResult<T> isSatisfiedBy(Serializable id, T instance);
+	Result<T> isSatisfiedBy(Session session, Serializable id, T instance);
 
 }

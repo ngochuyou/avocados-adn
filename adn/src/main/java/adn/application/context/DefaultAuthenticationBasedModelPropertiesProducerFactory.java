@@ -26,10 +26,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import adn.application.Constants;
+import adn.helpers.ArrayHelper;
 import adn.helpers.TypeHelper;
 import adn.model.DomainEntity;
 import adn.model.ModelContextProvider;
-import adn.model.entities.metadata.EntityMetadata;
+import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
 import adn.model.factory.AuthenticationBasedModelPropertiesProducer;
 import adn.model.factory.property.production.SecuredProperty;
@@ -93,17 +94,19 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 		}
 
 		producers = new HashMap<>(0, 1f);
-
 		modelContext.getEntityTree().forEach(branch -> {
 			producers.put(branch.getNode(),
-					new AuthenticationBasedModelPropertiesProducerImpl((Class<DomainEntity>) branch.getNode(),
+					new AuthenticationBasedModelPropertiesProducerImpl<>((Class<DomainEntity>) branch.getNode(),
 							builder.propertiesMap.values().stream()
 									.filter(prop -> TypeHelper.isParentOf(prop.getEntityType(), branch.getNode()))
 									.map(prop -> (SecuredProperty<DomainEntity>) prop).collect(Collectors.toSet())));
 		});
+		producers = Collections.unmodifiableMap(producers);
 
 		logger.info(String.format("%s %s", ContextBuilder.super.getLoggingPrefix(this),
 				String.format("Finished building %s", this.getClass().getSimpleName())));
+
+		producers.values().stream().forEach(producer -> producer.afterFactoryBuild(producers));
 	}
 
 	private <T extends DomainEntity> AuthenticationBasedModelPropertiesProducer getProducer(Class<T> type) {
@@ -166,60 +169,6 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 			return new WithTypes<>(this, type);
 		}
 
-		@Override
-		public <T extends DomainEntity, E extends T> WithType<E> type(Class<E>[] types) {
-			return new WithTypes<>(this, types);
-		}
-
-		private AuthenticationBasedModelPropertiesProducersBuilder apply(Function<Object, Object> func) {
-			Role[] roles = Role.values();
-
-			modelContext.getEntityTree().forEach(branch -> {
-				Stream.of(roles).forEach(role -> {
-					EntityMetadata metadata = modelContext.getMetadata(branch.getNode());
-
-					metadata.getPropertyNames().stream().forEach(prop -> {
-						propertiesMap.put(new Key<>(branch.getNode(), role, prop),
-								new SecuredPropertyImpl<>(branch.getNode(), role, prop, func));
-					});
-				});
-			});
-
-			return this;
-		}
-
-		@Override
-		public AuthenticationBasedModelPropertiesProducersBuilder mask() {
-			return apply(getMasker());
-		}
-
-		@Override
-		public AuthenticationBasedModelPropertiesProducersBuilder publish() {
-			return apply(getPublisher());
-		}
-
-		private Set<Class<? extends DomainEntity>> getUngivenTypes() {
-			Set<Class<? extends DomainEntity>> ungiven = new HashSet<>();
-
-			modelContext.getEntityTree().forEach(branch -> {
-				for (Key<? extends DomainEntity> key : propertiesMap.keySet()) {
-					if (branch.getNode().equals(key.type)) {
-						return;
-					}
-				}
-
-				ungiven.add(branch.getNode());
-			});
-
-			return ungiven;
-		}
-
-		@SuppressWarnings("unchecked")
-		@Override
-		public <T extends DomainEntity> WithType<T> anyType() {
-			return new WithTypes<T>(this, (Class<T>[]) getUngivenTypes().toArray(Class<?>[]::new));
-		}
-
 		private Function<Object, Object> getMasker() {
 			return AuthenticationBasedModelPropertiesProducer.MASKER;
 		}
@@ -250,15 +199,12 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 		public class WithTypes<T extends DomainEntity> extends AbstractOwned implements WithType<T> {
 
-			protected final Class<? extends T>[] types;
+			protected final Class<? extends T> type;
 
-			@SafeVarargs
-			public <E extends T> WithTypes(AuthenticationBasedModelPropertiesProducersBuilder owner,
-					Class<E>... types) {
+			public <E extends T> WithTypes(AuthenticationBasedModelPropertiesProducersBuilder owner, Class<E> type) {
 				super(owner);
-				this.types = types;
-				logger.trace(String.format("With types %s",
-						Stream.of(types).map(type -> type.getSimpleName()).collect(Collectors.joining(", "))));
+				this.type = type;
+				logger.trace(String.format("With type %s", type.getName()));
 			}
 
 			@Override
@@ -271,18 +217,16 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 			}
 
 			protected WithField<T> anyRoles(String... fields) {
-				return new WithRoles(owner, this, getUngivenRoles().toArray(Role[]::new)).field(fields);
+				return new WithRoles(owner, this, getUngivenRoles()).field(fields);
 			}
 
 			protected WithType<T> apply(Role[] roles, Function<Object, Object> function) {
-				Stream.of(types).forEach(type -> {
-					EntityMetadata metadata = modelContext.getMetadata(type);
+				DomainEntityMetadata metadata = modelContext.getMetadata(type);
 
-					metadata.getPropertyNames().forEach(prop -> {
-						Stream.of(roles).forEach(role -> {
-							propertiesMap.put(new Key<>(type, role, prop),
-									new SecuredPropertyImpl<>(type, role, prop, function));
-						});
+				metadata.getDeclaredPropertyNames().forEach(prop -> {
+					Stream.of(roles).forEach(role -> {
+						propertiesMap.put(new Key<>(type, role, prop),
+								new SecuredPropertyImpl<>(type, role, prop, function));
 					});
 				});
 
@@ -305,11 +249,10 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 				return apply(getPublisher());
 			}
 
-			protected Set<Role> getUngivenRoles() {
+			private Role[] getUngivenRoles() {
 				Set<Role> ungiven = new HashSet<>();
 				Set<Key<? extends DomainEntity>> keysByType = propertiesMap.keySet().stream()
-						.filter(key -> Stream.of(types).filter(type -> type.equals(key.type)).count() != 0)
-						.collect(Collectors.toSet());
+						.filter(key -> key.type.equals(type)).collect(Collectors.toSet());
 
 				Stream.of(Role.values()).forEach(role -> {
 					for (Key<? extends DomainEntity> key : keysByType) {
@@ -321,12 +264,12 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 					ungiven.add(role);
 				});
 
-				return ungiven;
+				return ungiven.toArray(Role[]::new);
 			}
 
 			@Override
 			public WithRole<T> anyRoles() {
-				return new WithRoles(owner, this, getUngivenRoles().toArray(Role[]::new));
+				return new WithRoles(owner, this, getUngivenRoles());
 			}
 
 			public class WithRoles extends AbstractOwned implements WithRole<T> {
@@ -353,64 +296,20 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 					return owningType;
 				}
 
-				protected WithRole<T> apply(String[] fields, Function<Object, Object> function) {
-					Stream.of(types).forEach(type -> {
-						Stream.of(roles).forEach(role -> {
-							Stream.of(fields).forEach(prop -> {
-								propertiesMap.put(new Key<>(type, role, prop),
-										new SecuredPropertyImpl<>(type, role, prop, function));
-							});
-						});
+				private String[] getUngivenFields(String[] existingFields) {
+					Set<String> ungiven = new HashSet<>();
+					Set<String> given = Set.of(existingFields);
+					DomainEntityMetadata metadata = modelContext.getMetadata(type);
+
+					metadata.getDeclaredPropertyNames().forEach(prop -> {
+						if (given.contains(prop)) {
+							return;
+						}
+
+						ungiven.add(prop);
 					});
 
-					return this;
-				}
-
-				protected WithRole<T> apply(Function<Object, Object> function) {
-					Stream.of(types).forEach(type -> {
-						apply(modelContext.getMetadata(type).getPropertyNames().toArray(String[]::new), function);
-					});
-
-					return this;
-				}
-
-				@Override
-				public WithRole<T> mask() {
-					logger.trace("Mask all");
-					return apply(getMasker());
-				}
-
-				@Override
-				public WithRole<T> publish() {
-					logger.trace("Publish all");
-					return apply(getPublisher());
-				}
-
-				protected Set<String> getUngivenFields() {
-					final Set<String> ungiven = new HashSet<>();
-					Set<Key<? extends DomainEntity>> keys = propertiesMap.keySet().stream()
-							.filter(key -> Stream.of(types).filter(type -> type.equals(key.type)).count() != 0
-									&& Stream.of(roles)
-											.filter(role -> (key.role == null && role == null ? true
-													: key.role != null ? key.role.equals(role) : role.equals(key.role)))
-											.count() != 0)
-							.collect(Collectors.toSet());
-
-					Stream.of(types).forEach(type -> {
-						EntityMetadata metadata = modelContext.getMetadata(type);
-
-						metadata.getPropertyNames().forEach(prop -> {
-							for (Key<? extends DomainEntity> key : keys) {
-								if (prop.equals(key.originalName)) {
-									return;
-								}
-							}
-
-							ungiven.add(prop);
-						});
-					});
-
-					return ungiven;
+					return ungiven.toArray(String[]::new);
 				}
 
 				@Override
@@ -419,8 +318,13 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 				}
 
 				@Override
+				public WithField<T> anyFields(String[] existingFields) {
+					return new WithFields(owner, this, getUngivenFields(existingFields));
+				}
+
+				@Override
 				public WithField<T> anyFields() {
-					return new WithFields(owner, this, getUngivenFields().toArray(String[]::new));
+					return new WithFields(owner, this, getUngivenFields(ArrayHelper.EMPTY_STRING_ARRAY));
 				}
 
 				private class WithFields extends AbstractOwned implements WithField<T> {
@@ -438,19 +342,16 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 					}
 
 					protected <F, R> WithField<T> apply(Function<F, R> function) {
-						Stream.of(types).forEach(type -> {
-							Stream.of(roles).forEach(role -> {
-								Stream.of(names).forEach(name -> {
-									propertiesMap.merge(new Key<>(type, role, name),
-											new SecuredPropertyImpl<>(type, role, name, function),
-											(oldProp, newProp) -> {
-												SecuredPropertyImpl<? extends DomainEntity> oldProperty = (SecuredPropertyImpl<? extends DomainEntity>) oldProp;
+						Stream.of(roles).forEach(role -> {
+							Stream.of(names).forEach(name -> {
+								propertiesMap.merge(new Key<>(type, role, name),
+										new SecuredPropertyImpl<>(type, role, name, function), (oldProp, newProp) -> {
+											SecuredPropertyImpl<? extends DomainEntity> oldProperty = (SecuredPropertyImpl<? extends DomainEntity>) oldProp;
 
-												oldProperty.setFunction(function);
+											oldProperty.setFunction(function);
 
-												return oldProp;
-											});
-								});
+											return oldProp;
+										});
 							});
 						});
 
@@ -460,21 +361,18 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 					@Override
 					public WithField<T> use(String alternativeName) {
 						logger.trace(String.format("Use alt name [%s]", alternativeName));
-						Stream.of(types).forEach(type -> {
-							Stream.of(roles).forEach(role -> {
-								Stream.of(names).forEach(name -> {
-									propertiesMap.merge(
-											new Key<>(type, role, name), new SecuredPropertyImpl<>(type, role, name,
-													alternativeName, getDefaultFunction()),
-											(oldProperty, newProperty) -> {
-												@SuppressWarnings("unchecked")
-												SecuredPropertyImpl<T> oldProp = (SecuredPropertyImpl<T>) oldProperty;
 
-												oldProp.setAlternativeName(alternativeName);
+						Stream.of(roles).forEach(role -> {
+							Stream.of(names).forEach(name -> {
+								propertiesMap.merge(new Key<>(type, role, name), new SecuredPropertyImpl<>(type, role,
+										name, alternativeName, getDefaultFunction()), (oldProperty, newProperty) -> {
+											@SuppressWarnings("unchecked")
+											SecuredPropertyImpl<T> oldProp = (SecuredPropertyImpl<T>) oldProperty;
 
-												return oldProp;
-											});
-								});
+											oldProp.setAlternativeName(alternativeName);
+
+											return oldProp;
+										});
 							});
 						});
 
@@ -500,12 +398,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 					}
 
 					@Override
-					public WithField<T> role(Role role) {
-						return owningType.anyRoles(new Role[] { role }, names);
-					}
-
-					@Override
-					public WithField<T> roles(Role... roles) {
+					public WithField<T> role(Role... role) {
 						return owningType.anyRoles(roles, names);
 					}
 
@@ -515,25 +408,22 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 					}
 
 					@Override
-					public WithField<T> field(String fieldName) {
-						return owningRole.field(fieldName);
-					}
-
-					@Override
-					public WithField<T> fields(String... fieldNames) {
+					public WithField<T> field(String... fieldNames) {
 						return owningRole.field(fieldNames);
 					}
 
 					@Override
 					public WithField<T> anyFields() {
-						return owningRole.anyFields();
+						return owningRole.anyFields(names);
 					}
 
 					@Override
 					public WithField<T> but(String... excludedFields) {
 						Set<String> excludedFieldSet = Set.of(excludedFields);
+
 						logger.trace(String.format("Excluding %s",
 								Stream.of(excludedFields).collect(Collectors.joining(", "))));
+
 						return owningRole.field(Stream.of(names).filter(name -> !excludedFieldSet.contains(name))
 								.toArray(String[]::new));
 					}

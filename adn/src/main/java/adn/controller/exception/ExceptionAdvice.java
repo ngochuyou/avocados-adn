@@ -14,6 +14,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import adn.controller.BaseController;
+import adn.service.specification.EmptyPredicateException;
 
 /**
  * @author Ngoc Huy
@@ -44,6 +45,17 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(value = { UnauthorisedDepartmentException.class })
 	public ResponseEntity<?> handleUnauthorisedDepartment(RuntimeException ex, WebRequest request) {
 		return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.UNAUTHORIZED, request);
+	}
+
+	@ExceptionHandler(value = { IllegalArgumentException.class })
+	public ResponseEntity<?> handlePossibleEmptyPredicate(Exception ex, WebRequest request) {
+		if (ex.getCause() instanceof EmptyPredicateException) {
+			return handleExceptionInternal(ex, BaseController.MISSING_QUERY, new HttpHeaders(), HttpStatus.BAD_REQUEST,
+					request);
+		}
+
+		return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR,
+				request);
 	}
 
 }

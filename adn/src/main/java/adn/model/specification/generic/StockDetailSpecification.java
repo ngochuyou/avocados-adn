@@ -8,15 +8,18 @@ import static adn.model.entities.StockDetail.MATERIAL_MAXIMUM_LENGTH;
 import static adn.model.entities.StockDetail.NAMED_COLOR_MAXIMUM_LENGTH;
 import static adn.model.entities.StockDetail.NAMED_SIZE_MAXIMUM_LENGTH;
 import static adn.model.entities.StockDetail.NUMERIC_SIZE_MAXIMUM_VALUE;
+import static adn.model.entities.StockDetail.NUMERIC_SIZE_MINIMUM_VALUE;
 import static adn.model.entities.StockDetail.STATUS_MAXIMUM_LENGTH;
 
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.regex.Pattern;
 
+import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
-import adn.dao.DatabaseInteractionResult;
+import adn.dao.generic.Result;
+import adn.helpers.EntityUtils;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.StockDetail;
@@ -36,11 +39,20 @@ public class StockDetailSpecification extends EntitySpecification<StockDetail> {
 					StringHelper.VIETNAMESE_CHARACTERS, DESCRIPTION_MAXIMUM_LENGTH));
 
 	@Override
-	public DatabaseInteractionResult<StockDetail> isSatisfiedBy(Serializable id, StockDetail instance) {
-		DatabaseInteractionResult<StockDetail> result = super.isSatisfiedBy(id, instance);
+	public Result<StockDetail> isSatisfiedBy(Session session, StockDetail instance) {
+		return isSatisfiedBy(session, EntityUtils.getIdentifier(instance), instance);
+	}
+
+	@Override
+	public Result<StockDetail> isSatisfiedBy(Session session, Serializable id, StockDetail instance) {
+		Result<StockDetail> result = super.isSatisfiedBy(session, id, instance);
 
 		if (instance.getProduct() == null) {
 			result.bad().getMessages().put("product", "Product information is missing");
+		}
+
+		if (instance.getStockedBy() == null) {
+			result.bad().getMessages().put("stockedBy", "Missing stocked-by information");
 		}
 
 		if (instance.getSize() == null && instance.getNumericSize() == null) {
@@ -53,9 +65,11 @@ public class StockDetailSpecification extends EntitySpecification<StockDetail> {
 			result.bad().getMessages().put("namedSize",
 					String.format("Size name can not be longer than", NAMED_SIZE_MAXIMUM_LENGTH));
 		}
-		if (instance.getNumericSize() > NUMERIC_SIZE_MAXIMUM_VALUE) {
-			result.bad().getMessages().put("numericSize",
-					String.format("Maximum numeric size is %d", NUMERIC_SIZE_MAXIMUM_VALUE));
+
+		if (instance.getNumericSize() != null && (instance.getNumericSize() < NUMERIC_SIZE_MINIMUM_VALUE
+				|| instance.getNumericSize() > NUMERIC_SIZE_MAXIMUM_VALUE)) {
+			result.bad().getMessages().put("numericSize", String.format("Numeric size must vary between %d and %d",
+					NUMERIC_SIZE_MINIMUM_VALUE, NUMERIC_SIZE_MAXIMUM_VALUE));
 		}
 
 		if (!COLOR_PATTERN.matcher(instance.getColor()).matches()) {
@@ -64,7 +78,7 @@ public class StockDetailSpecification extends EntitySpecification<StockDetail> {
 							NAMED_COLOR_MAXIMUM_LENGTH));
 		}
 
-		if (instance.getMaterial().length() > MATERIAL_MAXIMUM_LENGTH) {
+		if (instance.getMaterial() != null && instance.getMaterial().length() > MATERIAL_MAXIMUM_LENGTH) {
 			result.bad().getMessages().put("material", String
 					.format("Material information can not be longer than %d characters", MATERIAL_MAXIMUM_LENGTH));
 		}
@@ -79,12 +93,16 @@ public class StockDetailSpecification extends EntitySpecification<StockDetail> {
 					.format("Status can not be empty and can not be longer than %d characters", STATUS_MAXIMUM_LENGTH));
 		}
 
-		if (instance.getActive() == null) {
+		if (instance.isActive() == null) {
 			result.bad().getMessages().put("active", "Active state can bot be empty");
 		}
 
-		if (!DESCRIPTION_PATTERN.matcher(instance.getDescription()).matches()) {
+		if (instance.getDescription() != null && !DESCRIPTION_PATTERN.matcher(instance.getDescription()).matches()) {
 			result.bad().getMessages().put("description", "Invalid description");
+		}
+
+		if (instance.getProvider() == null) {
+			result.bad().getMessages().put("provider", "Provider information is missing");
 		}
 
 		return result;

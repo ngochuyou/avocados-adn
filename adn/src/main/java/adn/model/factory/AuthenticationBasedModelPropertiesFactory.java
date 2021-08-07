@@ -24,8 +24,8 @@ public interface AuthenticationBasedModelPropertiesFactory {
 	<T extends DomainEntity> Map<String, Object> singularProduce(Class<T> type, Object source, String column,
 			Role role);
 
-	<T extends DomainEntity> List<Map<String, Object>> singularProduce(Class<T> type, List<Object> sources, String column,
-			Role role);
+	<T extends DomainEntity> List<Map<String, Object>> singularProduce(Class<T> type, List<Object> sources,
+			String column, Role role);
 
 	<T extends DomainEntity> Collection<String> validateAndTranslateColumnNames(Class<T> type, Role role,
 			Collection<String> requestedColumnNames) throws NoSuchFieldException;

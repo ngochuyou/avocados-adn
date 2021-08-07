@@ -6,10 +6,9 @@ package adn.test.application;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import adn.helpers.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -40,19 +39,47 @@ public class UnitTest {
 	}
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
-			IllegalArgumentException, IllegalAccessException {
+			IllegalArgumentException, IllegalAccessException, InterruptedException, ExecutionException {
 //		Pattern p = Pattern
 //				.compile(String.format("^[\\p{L}\\p{N}\\s\\.\\,\\_\\-\\@\"'\\*%s]{%d,%d}$", VIETNAMESE_CHARACTERS, 0, 255));
 //		Matcher m = p.matcher("White LeÌ FrÃÃnt");
 //		System.out.println(VIETNAMESE_CHARACTERS.contains("Ã"));
 //		System.out.println(m.matches());
-		Pattern p = Pattern.compile(String.format("^[%s\\p{L}\\p{N}\s\n\\(\\)\\._\\-\"\'\\!@#$%%^&*]{0,255}$", StringHelper.VIETNAMESE_CHARACTERS));
-		Matcher m = p.matcher("aEnglish%@^.ti*ến#g_\"việt\"-('Q$&&uốc!'\n"
-				+ "Ngữ)子及");
-		
+//		Pattern p = Pattern.compile(String.format("^[%s\\p{L}\\p{N}\s\n\\(\\)\\._\\-\"\'\\!@#$%%^&*]{0,255}$", StringHelper.VIETNAMESE_CHARACTERS));
+//		Matcher m = p.matcher("aEnglish%@^.ti*ến#g_\"việt\"-('Q$&&uốc!'\n"
+//				+ "Ngữ)子及");
+//		
+//		System.out.println(m.matches());
+//		ThreadPoolTaskExecutor executorService = new ThreadPoolTaskExecutor();
+//		CountDownLatch latch = new CountDownLatch(5);
+//		
+//		executorService.setCorePoolSize(5);
+//		executorService.initialize();
+//		
+//		for (int i = 0; i < 5; i++) {
+//			executorService.submit(new Runnable() {
+//				@Override
+//				public void run() {
+//					System.out.println(Thread.currentThread().getName() + " start");
+//					System.out.println(Thread.currentThread().getName() + " done");
+//					latch.countDown();
+//				}
+//			});
+//		}
+//		
+//		try {
+//			latch.await();
+//		} catch (InterruptedException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		System.out.println("done....");
+//		executorService.shutdown();
+		Pattern p = Pattern.compile("^#(?:[0-9a-fA-F]{3,4}){1,2}$");
+		Matcher m = p.matcher("#afafafaf");
 		System.out.println(m.matches());
 	}
-	
+
 	public static void a(LocalDate date) {
 		if (date == null || date.isAfter(LocalDate.now())) {
 			System.out.println("asas");

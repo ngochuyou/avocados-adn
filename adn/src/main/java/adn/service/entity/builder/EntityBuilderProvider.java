@@ -40,12 +40,12 @@ public class EntityBuilderProvider implements ContextBuilder {
 	private static final EntityBuilder<Entity> DEFAULT_BUILDER = new EntityBuilder<Entity>() {
 
 		@Override
-		public <E extends Entity> E updateBuild(Serializable id, E entity, E persistence) {
+		public <E extends Entity> E buildUpdate(Serializable id, E entity, E persistence) {
 			return persistence;
 		}
 
 		@Override
-		public <E extends Entity> E insertionBuild(Serializable id, E entity) {
+		public <E extends Entity> E buildInsertion(Serializable id, E entity) {
 			return entity;
 		}
 

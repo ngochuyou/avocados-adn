@@ -29,7 +29,7 @@ public interface EntityBuilder<T extends Entity> {
 	 * @param entity
 	 * @return entity {@link Entity}
 	 */
-	<E extends T> E insertionBuild(Serializable id, E entity);
+	<E extends T> E buildInsertion(Serializable id, E entity);
 
 	/**
 	 * @see EntityBuilder#insertionBuild(Entity)
@@ -37,6 +37,6 @@ public interface EntityBuilder<T extends Entity> {
 	 * @param entity
 	 * @return persisted {@link Entity}
 	 */
-	<E extends T> E updateBuild(Serializable id, E entity, E persistence);
+	<E extends T> E buildUpdate(Serializable id, E entity, E persistence);
 
 }

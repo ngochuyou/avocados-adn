@@ -1,5 +1,8 @@
 import { createContext, useReducer, useContext, useEffect } from 'react';
 import { fetchPrincipal } from '../auth';
+import { getPersonnelDepartmentId } from '../actions/account';
+
+import Account from '../models/Account';
 
 const AuthenticationContext = createContext({});
 
@@ -12,9 +15,23 @@ export default function AuthenticationContextProvider({ children }) {
 
 	useEffect(() => {
 		const doFetchPrincipal = async () => {
-			const res = await fetchPrincipal([ "username", "role", "photo" ]);
+			let principal = await fetchPrincipal([ "username", "role" ]);
 
-			setPrincipal(res);
+			if (principal != null && principal.role === Account.Role.PERSONNEL && principal.departmentId == null) {
+				const [departmentId, err] = await getPersonnelDepartmentId({ username: principal.username });
+
+				if (err) {
+					console.error(err);
+					return;
+				}
+
+				principal = {
+					...principal,
+					"departmentId": departmentId
+				};
+			}
+
+			setPrincipal(principal);
 		};
 
 		doFetchPrincipal();

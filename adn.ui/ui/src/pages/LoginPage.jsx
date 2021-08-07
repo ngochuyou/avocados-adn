@@ -17,9 +17,9 @@ export default function LoginPage() {
 		setLoading(true);
 
 		const { value: username } = usernameProps;
-		let [ok, err] = Account.validator.username(username);
+		let [, err] = Account.validator.username(username);
 
-		if (!ok) {
+		if (err) {
 			setMessage(err);
 			setLoading(false);
 			return;
@@ -27,9 +27,9 @@ export default function LoginPage() {
 
 		const { value: password } = passwordProps;
 
-		[ok, err] = Account.validator.password(password);
+		[, err] = Account.validator.password(password);
 
-		if (!ok) {
+		if (err) {
 			setMessage(err);
 			setLoading(false);
 			return;	
@@ -42,6 +42,7 @@ export default function LoginPage() {
 
 		if (res.ok) {
 			history.push('/');
+			return;
 		}
 
 		setLoading(false);

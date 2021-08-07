@@ -29,8 +29,8 @@ public class FactorBuilder<T extends Factor> extends AbstractEntityBuilder<T> {
 	}
 
 	@Override
-	public <E extends T> E insertionBuild(Serializable id, E model) {
-		model = super.insertionBuild(id, model);
+	public <E extends T> E buildInsertion(Serializable id, E model) {
+		model = super.buildInsertion(id, model);
 
 		model.setCreatedBy(ContextProvider.getPrincipalName());
 		model.setUpdatedBy(model.getCreatedBy());
@@ -40,8 +40,8 @@ public class FactorBuilder<T extends Factor> extends AbstractEntityBuilder<T> {
 	}
 
 	@Override
-	public <E extends T> E updateBuild(Serializable id, E model, E persistence) {
-		persistence = super.updateBuild(id, model, persistence);
+	public <E extends T> E buildUpdate(Serializable id, E model, E persistence) {
+		persistence = super.buildUpdate(id, model, persistence);
 
 		persistence.setUpdatedBy(ContextProvider.getPrincipalName());
 

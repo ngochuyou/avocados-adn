@@ -52,20 +52,22 @@ public class AfterBuildMethodsInvoker implements ContextBuilder {
 
 				method = ContextProvider.getBean(type);
 			} catch (NoSuchBeanDefinitionException nsbde) {
-				if (!IdentifierGenerator.class.isAssignableFrom(type)) {
-					throw nsbde;
+				if (IdentifierGenerator.class.isAssignableFrom(type)) {
+					Generic anno;
+
+					if ((anno = type.getDeclaredAnnotation(Generic.class)) == null) {
+						throw nsbde;
+					}
+
+					Class<? extends Entity> entityClass = (Class<? extends Entity>) anno.entityGene();
+					SessionFactoryImplementor sfi = ContextProvider.getBean(SessionFactoryImplementor.class);
+
+					method = (EffectivelyFinal) sfi.getMetamodel().entityPersister(entityClass)
+							.getIdentifierGenerator();
+					break _try;
 				}
 
-				Generic anno;
-
-				if ((anno = type.getDeclaredAnnotation(Generic.class)) == null) {
-					throw nsbde;
-				}
-
-				Class<? extends Entity> entityClass = (Class<? extends Entity>) anno.entityGene();
-				SessionFactoryImplementor sfi = ContextProvider.getBean(SessionFactoryImplementor.class);
-
-				method = (EffectivelyFinal) sfi.getMetamodel().entityPersister(entityClass).getIdentifierGenerator();
+				throw nsbde;
 			} catch (Exception any) {
 				throw any;
 			}
@@ -75,7 +77,7 @@ public class AfterBuildMethodsInvoker implements ContextBuilder {
 			try {
 				method.getAccess().close();
 			} catch (IllegalAccessException iae) {
-				logger.info(String.format("Access to [%s] was closed", method.getClass().getName()));
+				logger.error(String.format("Access to [%s] was closed", method.getClass().getName()));
 			}
 		}
 

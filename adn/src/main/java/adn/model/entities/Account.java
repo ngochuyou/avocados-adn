@@ -184,6 +184,7 @@ public class Account extends adn.model.entities.Entity {
 		this.updatedDate = updatedDate;
 	}
 
+	@JsonProperty(value = "active")
 	public Boolean isActive() {
 		return active;
 	}

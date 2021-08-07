@@ -22,7 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import adn.dao.AbstractRepository;
+import adn.dao.generic.AbstractRepository;
 import adn.dao.parameter.ParamContext;
 import adn.model.entities.DepartmentChief;
 import adn.model.entities.Personnel;
@@ -94,7 +94,7 @@ public class DepartmentService implements adn.service.internal.Service {
 
 	public Map<String, Object> getDepartmentChief(UUID departmentId, Collection<String> columns, Role role)
 			throws NoSuchFieldException {
-		String[] validatedColumns = from(crudService.getDefaultColumnsOrTranslate(Personnel.class, role, columns));
+		String[] validatedColumns = from(crudService.getDefaultColumns(Personnel.class, role, columns));
 		// @formatter:off
 		String query = String.format("""
 				SELECT %s
@@ -117,7 +117,7 @@ public class DepartmentService implements adn.service.internal.Service {
 
 	public List<Map<String, Object>> getDepartmentChiefs(UUID[] departmentIds, Collection<String> columns, Role role)
 			throws NoSuchFieldException {
-		String[] validatedColumns = from(crudService.getDefaultColumnsOrTranslate(Personnel.class, role, columns));
+		String[] validatedColumns = from(crudService.getDefaultColumns(Personnel.class, role, columns));
 		// @formatter:off
 		String query = String.format("""
 				SELECT %s
@@ -153,7 +153,7 @@ public class DepartmentService implements adn.service.internal.Service {
 
 	public List<Map<String, Object>> getPersonnelListByDepartmentId(UUID departmentId, Collection<String> columns,
 			Pageable paging, Role role) throws NoSuchFieldException {
-		String[] validatedColumns = from(crudService.getDefaultColumnsOrTranslate(Personnel.class, role, columns));
+		String[] validatedColumns = from(crudService.getDefaultColumns(Personnel.class, role, columns));
 		// @formatter:off
 		String query = String.format("""
 				SELECT %s FROM Personnel p

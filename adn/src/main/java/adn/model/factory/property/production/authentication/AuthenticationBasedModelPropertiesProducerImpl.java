@@ -7,27 +7,30 @@ import static adn.helpers.LoggerHelper.with;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.hibernate.property.access.spi.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
 import adn.helpers.TypeHelper;
+import adn.helpers.Utils;
 import adn.helpers.Utils.Entry;
 import adn.model.DomainEntity;
 import adn.model.ModelContextProvider;
-import adn.model.entities.metadata.EntityMetadata;
+import adn.model.entities.Entity;
+import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.AuthenticationBasedModelPropertiesProducer;
 import adn.model.factory.property.production.SecuredProperty;
 import adn.service.internal.Role;
@@ -36,26 +39,35 @@ import adn.service.internal.Role;
  * @author Ngoc Huy
  *
  */
-public class AuthenticationBasedModelPropertiesProducerImpl implements AuthenticationBasedModelPropertiesProducer {
+public class AuthenticationBasedModelPropertiesProducerImpl<T extends DomainEntity>
+		implements AuthenticationBasedModelPropertiesProducer {
 
 	private static final float LOAD_FACTOR = 1.175f;
+	private static final BiFunction<Object, Role, Object> SOURCE_PRESERVER = (source, role) -> source;
+	private static final BiFunction<Object, Role, Object> SOURCE_TRANSLATOR = (source, role) -> Entry.entry(source,
+			role);
+
+	private Class<T> type; // only needed for afterFactoryBuild, will release once done
 
 	private final Map<Role, Map<String, Function<Object, Object>>> functionsMap;
 	private final Map<Role, Map<String, String>> alternativeNamesByOriginalNames;
 	private final Map<Role, Map<String, String>> originalNamesByAlternativeNames;
-
+	private final Map<Role, Map<String, BiFunction<Object, Role, Object>>> sourceTranslators;
+	private final Map<String, Getter> getters;
 	private final String[] properties;
 
-	public <T extends DomainEntity> AuthenticationBasedModelPropertiesProducerImpl(Class<T> entityClass,
+	public AuthenticationBasedModelPropertiesProducerImpl(Class<T> entityClass,
 			Set<SecuredProperty<T>> securedProperties) {
+		type = entityClass;
+
 		final Logger logger = LoggerFactory.getLogger(this.getClass());
-		EntityMetadata metadata = ContextProvider.getBean(ModelContextProvider.class).getMetadata(entityClass);
+		DomainEntityMetadata metadata = ContextProvider.getBean(ModelContextProvider.class).getMetadata(entityClass);
 		Map<Role, Map<String, Function<Object, Object>>> functionsMap = new HashMap<>(0, 1f);
 		Map<Role, Map<String, String>> alternativeNamesMap = new HashMap<>(0, 1f);
 		// @formatter:off
 		securedProperties.stream().filter(prop -> {
 			boolean isParent = TypeHelper.isParentOf(prop.getEntityType(), entityClass);
-			boolean unknownProperty = !metadata.hasAttribute(prop.getPropertyName());
+			boolean unknownProperty = !metadata.hasProperty(prop.getPropertyName());
 			boolean nullFunction = prop.getFunction() == null;
 			
 			if (!isParent || unknownProperty || nullFunction) {
@@ -154,29 +166,40 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 		}
 
-		this.functionsMap = Collections.unmodifiableMap(functionsMap);
-		this.alternativeNamesByOriginalNames = Collections.unmodifiableMap(alternativeNamesMap);
+		this.functionsMap = functionsMap;
+		this.alternativeNamesByOriginalNames = alternativeNamesMap;
 		properties = metadata.getPropertyNames().toArray(String[]::new);
 
-		logger.debug(String.format("\n" + "%s:\n" + "\t%s", entityClass.getName(),
-				functionsMap.entrySet().stream().map(entry -> entry.getValue().entrySet().stream()
-						.map(fEntry -> String.format("%s:\t[%s] -> [%s]", entry.getKey(),
-								this.alternativeNamesByOriginalNames.get(entry.getKey()).get(fEntry.getKey()),
-								fEntry.getValue().equals(MASKER) ? "masked"
-										: fEntry.getValue().equals(PUBLISHER) ? "published" : fEntry.getValue()))
-						.collect(Collectors.joining("\n\t"))).collect(Collectors.joining("\n\t"))));
+		Set<String> nonLazyProperties = metadata.getNonLazyPropertyNames();
+
+		this.getters = metadata.getGetters().stream().filter(entry -> nonLazyProperties.contains(entry.getKey()))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		this.sourceTranslators = Stream.of(Role.values())
+				.map(role -> Map.entry(role,
+						metadata.getPropertyNames().stream().map(propName -> Map.entry(propName, SOURCE_PRESERVER))
+								.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
-	private Map<String, Object> produceRow(String[] originalPropNames, Object[] values,
-			Map<String, Function<Object, Object>> functionsByRole, Map<String, String> alternativeNamesByRole) {
+	// @formatter:off
+	private Map<String, Object> produceRow(
+			String[] originalPropNames,
+			Object[] values,
+			Map<String, Function<Object, Object>> functionsByRole,
+			Map<String, String> alternativeNamesByRole,
+			Map<String, BiFunction<Object, Role, Object>> sourceTranslatorsByRole,
+			Role role) {
+	// @formatter:on
 		try {
 			int span = originalPropNames.length;
 
 			return IntStream.range(0, span).mapToObj(index -> {
 				String originalPropName = originalPropNames[index];
 
-				return Entry.entry(alternativeNamesByRole.get(originalPropName),
-						functionsByRole.get(originalPropName).apply(values[index]));
+				return Entry.entry(alternativeNamesByRole.get(originalPropName), // (1) the property name
+						functionsByRole.get(originalPropName).apply( // (3) produce the secured value
+								sourceTranslatorsByRole.get(originalPropName) // (2) translate the value in to itself or
+										.apply(values[index], role))); // a pair consists of itself and a role
 			}).collect(
 			// @formatter:off
 					HashMap<String, Object>::new,
@@ -202,7 +225,8 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 
 	@Override
 	public Map<String, Object> produce(Object[] source, Role role, String[] columnNames) {
-		return produceRow(columnNames, source, functionsMap.get(role), alternativeNamesByOriginalNames.get(role));
+		return produceRow(columnNames, source, functionsMap.get(role), alternativeNamesByOriginalNames.get(role),
+				sourceTranslators.get(role), role);
 	}
 
 	@Override
@@ -214,9 +238,10 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 	public List<Map<String, Object>> produce(List<Object[]> source, Role role, String[] columnNames) {
 		Map<String, Function<Object, Object>> functionsByRole = functionsMap.get(role);
 		Map<String, String> alternativeNamesByRole = alternativeNamesByOriginalNames.get(role);
+		Map<String, BiFunction<Object, Role, Object>> sourceTranslatorsByRole = sourceTranslators.get(role);
 		// @formatter:off
 		return IntStream.range(0, source.size())
-				.mapToObj(index -> produceRow(columnNames, source.get(index), functionsByRole, alternativeNamesByRole))
+				.mapToObj(index -> produceRow(columnNames, source.get(index), functionsByRole, alternativeNamesByRole, sourceTranslatorsByRole, role))
 				.collect(Collectors.toList());
 		// @formatter:on
 	}
@@ -255,24 +280,81 @@ public class AuthenticationBasedModelPropertiesProducerImpl implements Authentic
 		Map<String, String> authenticatedAlternativeNames = alternativeNamesByOriginalNames.get(role);
 		Map<String, Object> result = new HashMap<>();
 
-		result.put(authenticatedAlternativeNames.get(columnName), authenticatedFunctions.get(columnName).apply(source));
+		result.put(authenticatedAlternativeNames.get(columnName), authenticatedFunctions.get(columnName)
+				.apply(sourceTranslators.get(role).get(columnName).apply(source, role)));
 
 		return result;
 	}
 
 	@Override
 	public List<Map<String, Object>> singularProduce(List<Object> source, Role role, String columnName) {
-		Map<String, Function<Object, Object>> authenticatedFunctions = functionsMap.get(role);
-		Map<String, String> authenticatedAlternativeNames = alternativeNamesByOriginalNames.get(role);
+		Function<Object, Object> authenticatedFunction = functionsMap.get(role).get(columnName);
+		String authenticatedAlternativeName = alternativeNamesByOriginalNames.get(role).get(columnName);
+		BiFunction<Object, Role, Object> sourceTranslator = sourceTranslators.get(role).get(columnName);
 
 		return IntStream.range(0, source.size()).mapToObj(index -> {
 			Map<String, Object> result = new HashMap<>();
 
-			result.put(authenticatedAlternativeNames.get(columnName),
-					authenticatedFunctions.get(columnName).apply(source.get(index)));
+			result.put(authenticatedAlternativeName,
+					authenticatedFunction.apply(sourceTranslator.apply(source.get(index), role)));
 
 			return result;
 		}).collect(Collectors.toList());
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void afterFactoryBuild(
+			Map<Class<? extends DomainEntity>, AuthenticationBasedModelPropertiesProducer> producers) {
+		DomainEntityMetadata metadata = ContextProvider.getBean(ModelContextProvider.class).getMetadata(type);
+		Set<String> associations = Stream.of(properties).filter(metadata::isEntityType).collect(Collectors.toSet());
+		String propName;
+
+		for (Map.Entry<Role, Map<String, Function<Object, Object>>> entry : functionsMap.entrySet()) {
+			for (Map.Entry<String, Function<Object, Object>> function : entry.getValue().entrySet().stream()
+					.filter(propBased -> associations.contains(propBased.getKey())).collect(Collectors.toSet())) {
+				propName = function.getKey();
+
+				if (function.getValue() == PUBLISHER) {
+					AuthenticationBasedModelPropertiesProducer associationProducer = producers
+							.get(metadata.getPropertyType(propName));
+
+					if (!this.getClass().isAssignableFrom(associationProducer.getClass())) {
+						throw new IllegalArgumentException(
+								String.format("Unqualified producer of type: [%s]", associationProducer.getClass()));
+					}
+
+					AuthenticationBasedModelPropertiesProducerImpl<? extends Entity> producer = (AuthenticationBasedModelPropertiesProducerImpl<? extends Entity>) associationProducer;
+
+					entry.getValue().put(propName, producer::produceAssociation);
+					sourceTranslators.get(entry.getKey()).put(propName, SOURCE_TRANSLATOR);
+				}
+			}
+		}
+
+		final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+		logger.debug(String.format("\n" + "%s:\n" + "\t%s", type.getName(),
+				functionsMap.entrySet().stream().map(entry -> entry.getValue().entrySet().stream()
+						.map(fEntry -> String.format("%s:\t[%s] -> [%s]", entry.getKey(),
+								this.alternativeNamesByOriginalNames.get(entry.getKey()).get(fEntry.getKey()),
+								fEntry.getValue().equals(MASKER) ? "masked"
+										: fEntry.getValue().equals(PUBLISHER) ? "published" : fEntry.getValue()))
+						.collect(Collectors.joining("\n\t"))).collect(Collectors.joining("\n\t"))));
+
+		type = null;
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> produceAssociation(Object sourceEntry) {
+		Utils.Entry<Object, Role> valueEntry = (Utils.Entry<Object, Role>) sourceEntry;
+		T entity = (T) valueEntry.getKey();
+		Map<String, Object> valueMap = getters.entrySet().stream()
+				.map(entry -> Utils.Entry.entry(entry.getKey(), entry.getValue().get(entity)))
+				.collect(HashMap<String, Object>::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()),
+						HashMap::putAll);
+
+		return produce(valueMap.values().toArray(), valueEntry.getValue(), valueMap.keySet().toArray(String[]::new));
 	}
 
 }

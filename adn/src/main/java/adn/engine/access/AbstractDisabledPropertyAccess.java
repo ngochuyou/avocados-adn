@@ -24,7 +24,7 @@ abstract class AbstractDisabledPropertyAccess extends AbstractPropertyAccess {
 		}
 
 		if (!hasGetter() && !hasSetter()) {
-			throw new IllegalArgumentException(String.format("At least, either [%s] or [%s] must be provided",
+			throw new IllegalArgumentException(String.format("Either [%s] or [%s] must be provided",
 					Getter.class.getName(), Setter.class.getName()));
 		}
 	}

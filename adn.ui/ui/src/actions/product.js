@@ -1,4 +1,5 @@
 import { $fetch, fjson, asBlob } from '../fetch';
+import { normalize } from '../utils';
 
 export function fetchCategoryList({ page = 0, size = 10, columns = [] }) {
 	return fjson(`/rest/product/category/list?page=${page}&size=${size}&columns=${columns.join(',')}`);
@@ -166,4 +167,28 @@ export function getProductListByCategory({
 	}
 
 	return fjson(`/rest/product?category=${categoryId}&columns=${columns.join(',')}`);
+}
+
+export function searchProduct({ productId = "", productName = "", columns = [], size = 10 }) {
+	if (productId.length === 0 && productName.length === 0) {
+		return [[], null];
+	}
+	
+	return fjson(`/rest/product/search?id.like=${normalize(productId)}&name.like=${normalize(productName)}&columns=${columns.join(',')}&size=${size}`);
+}
+
+export function createStockDetails(batch = []) {
+	if (!Array.isArray(batch) || batch.length === 0) {
+		return [null, "Invalid batch"];
+	}
+
+	return fjson(`/rest/product/stockdetail`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			details: batch
+		})
+	});
 }

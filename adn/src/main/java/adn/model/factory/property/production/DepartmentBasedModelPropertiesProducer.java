@@ -7,14 +7,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import adn.model.DepartmentScoped;
 import adn.model.factory.DepartmentBasedModelProducer;
+import adn.model.factory.FactoryObserver;
 
 /**
  * @author Ngoc Huy
  *
  */
 public interface DepartmentBasedModelPropertiesProducer
-		extends DepartmentBasedModelProducer<Object[], Map<String, Object>>, ModelPropertiesProducer {
+		extends DepartmentBasedModelProducer<Object[], Map<String, Object>>, ModelPropertiesProducer,
+		FactoryObserver<DepartmentScoped, Object[], Map<String, Object>, DepartmentBasedModelPropertiesProducer> {
 
 	Map<String, Object> produce(Object[] source, String[] columns, UUID departmentId);
 

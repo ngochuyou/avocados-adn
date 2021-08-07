@@ -52,6 +52,20 @@ public final class PropertyAccessStrategyFactory {
 
 	};
 
+	public static final MethodAccessStrategy METHOD_ACCESS_STRATEGY = new MethodAccessStrategy() {
+
+		@Override
+		public MethodAccess buildPropertyAccess(Class<?> containerJavaType, String propertyName, Class<?> fieldType) {
+			return new MethodAccess(containerJavaType, propertyName, fieldType);
+		}
+
+		@Override
+		public String toString() {
+			return "METHOD_ACCESS_STRATEGY";
+		}
+
+	};
+
 	public static final PropertyAccessStrategyImplementor<DirectAccess> DIRECT_ACCESS_STRATEGY = new PropertyAccessStrategyImplementor<DirectAccess>() {
 
 		@Override
@@ -268,6 +282,17 @@ public final class PropertyAccessStrategyFactory {
 
 		PropertyAccessDelegate buildPropertyAccess(Class<?> containerJavaType, String propertyName,
 				Class<?>... parameterTypes);
+
+	}
+
+	public interface MethodAccessStrategy extends PropertyAccessStrategyImplementor<MethodAccess> {
+
+		@Override
+		default MethodAccess buildPropertyAccess(Class containerJavaType, String propertyName) {
+			return buildPropertyAccess(containerJavaType, propertyName, Object.class);
+		}
+
+		MethodAccess buildPropertyAccess(Class<?> containerJavaType, String propertyName, Class<?> fieldType);
 
 	}
 

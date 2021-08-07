@@ -1,13 +1,21 @@
 import { $fetch, fjson } from '../fetch';
 
-export const fetchAccount = async (username = null, columns = []) => {
+export const fetchAccount = (username = null, columns = []) => {
 	if (username == null) {
 		return [null, "Username was empty"];
 	}
 
-	return await fjson(`/rest/account/${username}?columns=${columns.join(',')}`, {
+	return fjson(`/rest/account/${username}?columns=${columns.join(',')}`, {
 		method: 'GET'
 	});
+}
+
+export const getPersonnelDepartmentId = ({ username = "" }) => {
+	if (username.length === 0) {
+		return [null, "Username was empty"];
+	}
+
+	return fjson(`/rest/department/id/${username}`);
 }
 
 export async function lockAccount(username = "") {

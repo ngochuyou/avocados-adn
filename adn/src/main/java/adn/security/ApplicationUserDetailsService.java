@@ -15,7 +15,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import adn.dao.Repository;
+import adn.dao.generic.Repository;
 import adn.model.entities.Account;
 import adn.service.internal.Role;
 

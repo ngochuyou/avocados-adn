@@ -29,14 +29,4 @@ public class CustomerModelProducer extends AbstractCompositeAuthenticationBasedM
 		return produceForCustomer(entity, model);
 	}
 
-	@Override
-	protected Map<String, Object> produceForEmployee(Customer entity, Map<String, Object> model) {
-		return produceForCustomer(entity, model);
-	}
-
-	@Override
-	protected Map<String, Object> produceForManager(Customer entity, Map<String, Object> model) {
-		return produceForCustomer(entity, model);
-	}
-
 }

@@ -4,8 +4,7 @@
 package adn.application.context;
 
 import static adn.service.internal.Role.ADMIN;
-import static adn.service.internal.Role.EMPLOYEE;
-import static adn.service.internal.Role.MANAGER;
+import static adn.service.internal.Role.CUSTOMER;
 import static adn.service.internal.Role.PERSONNEL;
 
 import adn.application.context.DefaultAuthenticationBasedModelPropertiesProducerFactory.AuthenticationBasedModelPropertiesProducersContributor;
@@ -31,61 +30,58 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 	@Override
 	public void contribute(AuthenticationBasedModelPropertiesProducersBuilder builder) {
 		final Role[] allRoles = Role.values();
-		final Role[] personnels = new Role[] { ADMIN, PERSONNEL, MANAGER, EMPLOYEE };
+		final Role[] personnels = new Role[] { PERSONNEL };
+		final Role[] domained = new Role[] { ADMIN, CUSTOMER, PERSONNEL };
 		// @formatter:off
 		builder
 			.type(Account.class)
 				.role(allRoles)
-					.field("password").mask()
-					.field("id").use("username").publish()
-					.fields("firstName", "lastName", "photo", "role", "gender", "active").publish()
-					.field("birthDay").use(Utils::formatLocalDate)
 					.anyFields().mask()
-					.type()
+//					.field("password").mask()
+					.field("id").use("username").publish()
+					.field("firstName", "lastName", "photo", "role", "gender", "active").publish()
+					.field("birthDate").use(Utils::formatLocalDate)
+			.type()
 				.role(personnels)
 					.field("createdDate").use(Utils::formatLocalDate)
 					.field("updatedDate").use(Utils::formatLocalDateTime)
-					.anyFields().mask()
-					.type()
-				.role(ADMIN)
-					.field("email", "phone").publish()
-					.type()
-					.anyRoles().mask()
-					.and()
+					.field("deactivatedDate").use(Utils::formatLocalDate)
+			.and()
 			.type(Admin.class)
+				.role(ADMIN).anyFields().publish()
 				.anyRoles().mask()
-				.and()
+			.and()
 			.type(Customer.class)
-				.role(allRoles)
+				.role(domained)
 					.field("email", "phone", "address", "prestigePoint").publish()
-					.anyFields().mask()
 			.and()
-				.type(Personnel.class)
-					.role(personnels)
-						.field("createdBy").publish()
-					.anyRoles().mask()
-				.type()
-					.anyRoles().anyFields().mask()
+			.type(Personnel.class)
+				.role(personnels)
+					.field("createdBy").publish()
+				.anyRoles().mask()
 		 	.and()
-				.type(Factor.class)
-					.role(ADMIN, PERSONNEL).publish()
-					.anyRoles().mask()
-			.and()
-				.type(Provider.class)
-					.role(PERSONNEL).publish()
-			.and()
-				.type(Category.class)
-					.role(allRoles).publish()
+			.type(Factor.class)
+				.role(personnels)
 					.field("deactivatedDate").use(Utils::formatLocalDateTime)
+					.anyFields().publish()
+				.anyRoles().mask()
 			.and()
-				.type(Product.class)
-					.role(ADMIN, PERSONNEL)
-						.field("createdTimestamp").use(Utils::formatLocalDateTime)
-						.field("updatedTimestamp").use(Utils::formatLocalDateTime)
-						.anyFields().publish()
-					.anyRoles().mask()
+			.type(Provider.class)
+				.role(personnels).anyFields().publish()
+				.anyRoles().mask()
 			.and()
-				.anyType().role(PERSONNEL, ADMIN).publish();
+			.type(Category.class)
+				.role(personnels).anyFields().publish()
+			.and()
+			.type(Product.class)
+				.role(allRoles)
+					.field("id", "price", "category", "images", "description", "rating").publish()
+					.anyFields().mask()
+			.type()
+				.role(personnels)
+					.field("updatedTimestamp", "createdTimestamp").use(Utils::formatLocalDateTime)
+					.anyFields().publish()
+				.anyRoles().mask();
 		// @formatter:on
 	}
 

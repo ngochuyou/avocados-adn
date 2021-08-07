@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
 
 import javax.sql.DataSource;
@@ -30,6 +31,8 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.TransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.util.ResourceUtils;
@@ -40,6 +43,7 @@ import org.springframework.web.servlet.view.JstlView;
 
 import adn.application.context.ContextBuilder;
 import adn.service.internal.Role;
+import adn.service.services.CRUDServiceImpl;
 
 /**
  * @author Ngoc Huy
@@ -50,20 +54,8 @@ import adn.service.internal.Role;
 @EnableWebMvc
 @EnableTransactionManagement
 @EnableSpringDataWebSupport
+@EnableAsync
 public class WebConfiguration implements WebMvcConfigurer {
-
-//	@Override
-//	public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
-//		Hibernate5Module h5module = new Hibernate5Module();
-//
-//		for (HttpMessageConverter<?> mc : converters) {
-//			if (mc instanceof MappingJackson2HttpMessageConverter
-//					|| mc instanceof MappingJackson2XmlHttpMessageConverter) {
-//				LoggerFactory.getLogger(this.getClass()).trace(String.format("Extending %s", mc.getClass().getName()));
-//				((AbstractJackson2HttpMessageConverter) mc).getObjectMapper().registerModule(h5module);
-//			}
-//		}
-//	}
 
 	@Bean
 	public InternalResourceViewResolver viewResolver() {
@@ -98,11 +90,18 @@ public class WebConfiguration implements WebMvcConfigurer {
 		return sessionFactory;
 	}
 
-//	@Bean
-//	@Primary
-//	public ObjectMapper objectMapper() {
-//		return new ObjectMapper();
-//	}
+	@Bean(name = CRUDServiceImpl.EXECUTOR_NAME)
+	public Executor crudServiceExecutor() {
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+
+		executor.setCorePoolSize(3);
+		executor.setMaxPoolSize(4);
+		executor.setQueueCapacity(20);
+		executor.setThreadNamePrefix("crud-batch-execution-");
+		executor.initialize();
+
+		return executor;
+	}
 
 	@Bean
 	public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter() {

@@ -18,6 +18,10 @@ export const PUSH_LIST = "PUSH_LIST";
 export const CREATE = "CREATE";
 export const EDIT = "EDIT";
 
+export const TOGGLE_MODAL_VISION = "TOGGLE_MODAL_VISION";
 export const TOGGLE_INDIVIDUAL_VIEW_VISION = "TOGGLE_INDIVIDUAL_VIEW_VISION";
 export const TOGGLE_FORM_VISION = "TOGGLE_FORM_VISION";
 export const TOGGLE_LIST_VISION = "TOGGLE_LIST_VISION";
+
+export const POP_LIST = "POP_LIST";
+export const CLEAR_LIST = "CLEAR_LIST";

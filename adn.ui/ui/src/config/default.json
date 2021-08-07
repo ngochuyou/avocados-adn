@@ -3,6 +3,18 @@
 		"url": "http://192.168.100.10:8080",
 		"auth" : {
 			"token_url": "/auth/token"
+		},
+		"images": {
+			"product": "/product/image"
 		}
+	},
+	"profile": {
+		"mode": "DEV"
+	},
+	"departmentScope": {
+		"Stock": "89d8de6c-85e0-415d-a032-398ddcaca82f",
+		"Sale": "6c0c98fa-fb50-45b4-94f3-a850be53da63",
+		"Personnel": "f086e09a-0138-434f-89cb-4d96cae0366f",
+		"Finance": "f3499c7b-721d-4fba-b680-8ebb4519ec99"
 	}
 }

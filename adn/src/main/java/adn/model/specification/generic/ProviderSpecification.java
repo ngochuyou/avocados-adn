@@ -5,9 +5,11 @@ package adn.model.specification.generic;
 
 import java.io.Serializable;
 
+import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
-import adn.dao.DatabaseInteractionResult;
+import adn.dao.generic.Result;
+import adn.helpers.EntityUtils;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Provider;
@@ -21,8 +23,13 @@ import adn.model.entities.Provider;
 public class ProviderSpecification extends FactorSpecification<Provider> {
 
 	@Override
-	public DatabaseInteractionResult<Provider> isSatisfiedBy(Serializable id, Provider instance) {
-		DatabaseInteractionResult<Provider> result = super.isSatisfiedBy(id, instance);
+	public Result<Provider> isSatisfiedBy(Session session, Provider instance) {
+		return isSatisfiedBy(session, EntityUtils.getIdentifier(instance), instance);
+	}
+
+	@Override
+	public Result<Provider> isSatisfiedBy(Session session, Serializable id, Provider instance) {
+		Result<Provider> result = super.isSatisfiedBy(session, id, instance);
 
 		if (!StringHelper.isEmail(instance.getEmail())) {
 			result.bad().getMessages().put("email", "Invalid email pattern");

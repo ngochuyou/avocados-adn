@@ -59,7 +59,7 @@ public class ConnectionImpl implements LocalStorageConnection {
 		PreparedStatement statement = new PreparedStatementImpl(this);
 
 		statement.addBatch(sql);
-		
+
 		return statement;
 	}
 
@@ -87,7 +87,7 @@ public class ConnectionImpl implements LocalStorageConnection {
 
 	@Override
 	public void commit() throws SQLException {
-		
+
 	}
 
 	@Override
@@ -193,28 +193,6 @@ public class ConnectionImpl implements LocalStorageConnection {
 	public int getHoldability() throws SQLException {
 
 		return 0;
-	}
-
-	@Override
-	public Savepoint setSavepoint() throws SQLException {
-
-		return null;
-	}
-
-	@Override
-	public Savepoint setSavepoint(String name) throws SQLException {
-
-		return null;
-	}
-
-	@Override
-	public void rollback(Savepoint savepoint) throws SQLException {
-
-	}
-
-	@Override
-	public void releaseSavepoint(Savepoint savepoint) throws SQLException {
-
 	}
 
 	@Override
@@ -347,6 +325,30 @@ public class ConnectionImpl implements LocalStorageConnection {
 	@Override
 	public Storage getStorage() {
 		return storage;
+	}
+
+	@Override
+	public Savepoint setSavepoint() throws SQLException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Savepoint setSavepoint(String name) throws SQLException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void rollback(Savepoint savepoint) throws SQLException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void releaseSavepoint(Savepoint savepoint) throws SQLException {
+		// TODO Auto-generated method stub
+
 	}
 
 }

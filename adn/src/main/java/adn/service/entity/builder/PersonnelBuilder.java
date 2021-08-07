@@ -20,8 +20,8 @@ import adn.model.entities.Personnel;
 public class PersonnelBuilder extends AccountBuilder<Personnel> {
 
 	@Override
-	public <E extends Personnel> E insertionBuild(Serializable id, E entity) {
-		entity = super.insertionBuild(id, entity);
+	public <E extends Personnel> E buildInsertion(Serializable id, E entity) {
+		entity = super.buildInsertion(id, entity);
 
 		entity.setCreatedBy(ContextProvider.getPrincipalName());
 

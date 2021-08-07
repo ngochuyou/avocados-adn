@@ -13,7 +13,7 @@ import javax.persistence.criteria.Root;
 import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
-import adn.dao.DatabaseInteractionResult;
+import adn.dao.generic.Result;
 import adn.helpers.EntityUtils;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
@@ -37,9 +37,13 @@ public class FactorSpecification<T extends Factor> extends EntitySpecification<T
 	}
 
 	@Override
-	public DatabaseInteractionResult<T> isSatisfiedBy(Serializable id, T instance) {
-		// TODO Auto-generated method stub
-		DatabaseInteractionResult<T> result = super.isSatisfiedBy(id, instance);
+	public Result<T> isSatisfiedBy(Session session, T instance) {
+		return isSatisfiedBy(session, EntityUtils.getIdentifier(instance), instance);
+	}
+
+	@Override
+	public Result<T> isSatisfiedBy(Session session, Serializable id, T instance) {
+		Result<T> result = super.isSatisfiedBy(session, id, instance);
 
 		if (instance.getName() == null || instance.getName().length() == MINIMUM_NAME_LENGTH
 				|| instance.getName().length() > MAXIMUM_NAME_LENGTH) {
@@ -52,7 +56,6 @@ public class FactorSpecification<T extends Factor> extends EntitySpecification<T
 					"Name can only contain alphabetic, numeric characters, spaces or '.', ',', '_', '-', @, \", ' and * character");
 		} else {
 			Class<? extends T> persistentClass = EntityUtils.getPersistentClass(instance);
-			Session session = getCurrentSession();
 			CriteriaBuilder builder = session.getCriteriaBuilder();
 			CriteriaQuery<Long> query = builder.createQuery(Long.class);
 			Root<? extends T> root = query.from(persistentClass);
