@@ -1,5 +1,4 @@
 export default function AccessDenied({ message = "Access to this page was denied", ...props }) {
-
 	return (
 		<div className="uk-position-relative uk-height-viewport">
 			<div className="uk-position-center uk-text-center">

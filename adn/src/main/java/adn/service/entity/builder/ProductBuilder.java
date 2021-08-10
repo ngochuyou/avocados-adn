@@ -27,6 +27,7 @@ public class ProductBuilder extends FactorBuilder<Product> {
 		target.setPrice(model.getPrice().setScale(4, RoundingMode.HALF_UP));
 		target.setDescription(StringHelper.normalizeString(model.getDescription()));
 		target.setImages(model.getImages().stream().filter(StringHelper::hasLength).collect(Collectors.toSet()));
+		target.setCategory(model.getCategory());
 
 		return target;
 	}

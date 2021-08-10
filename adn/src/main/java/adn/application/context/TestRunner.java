@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 
 import adn.dao.generic.Repository;
 import adn.service.internal.CRUDService;
-import adn.service.services.CRUDServiceImpl;
+import adn.service.services.GenericCRUDService;
 
 /**
  * @author Ngoc Huy

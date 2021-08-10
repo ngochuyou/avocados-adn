@@ -43,7 +43,7 @@ import org.springframework.web.servlet.view.JstlView;
 
 import adn.application.context.ContextBuilder;
 import adn.service.internal.Role;
-import adn.service.services.CRUDServiceImpl;
+import adn.service.services.GenericCRUDService;
 
 /**
  * @author Ngoc Huy
@@ -90,7 +90,7 @@ public class WebConfiguration implements WebMvcConfigurer {
 		return sessionFactory;
 	}
 
-	@Bean(name = CRUDServiceImpl.EXECUTOR_NAME)
+	@Bean(name = GenericCRUDService.EXECUTOR_NAME)
 	public Executor crudServiceExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 

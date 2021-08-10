@@ -39,13 +39,23 @@ public class StockDetail extends Entity {
 	public static final int NUMERIC_SIZE_MAXIMUM_VALUE = 255; // UNSIGNED
 	public static final int NUMERIC_SIZE_MINIMUM_VALUE = 1;
 
+	public static final String ID_FIELD_NAME = "id";
+	public static final String SIZE_FIELD_NAME = "size";
+	public static final String NUMERIC_SIZE_FIELD_NAME = "numericSize";
+	public static final String COLOR_FIELD_NAME = "color";
+	public static final String MATERIAL_FIELD_NAME = "material";
+	public static final String STATUS_FIELD_NAME = "status";
+	public static final String DESCRIPTION_FIELD_NAME = "description";
+	public static final String ACTIVE_FIELD_NAME = "active";
+	public static final String PRODUCT_FIELD_NAME = "product";
+
 	@Id
 	@GeneratedValue(generator = StockDetailIdGenerator.NAME)
 	@GenericGenerator(name = StockDetailIdGenerator.NAME, strategy = StockDetailIdGenerator.PATH)
 	@Column(columnDefinition = "VARCHAR(20)", updatable = false)
 	private String id;
 
-	@ManyToOne(optional = false)
+	@ManyToOne(optional = false, fetch = FetchType.LAZY)
 	private Product product;
 
 	@Enumerated
@@ -188,6 +198,10 @@ public class StockDetail extends Entity {
 
 	public void setProvider(Provider provider) {
 		this.provider = provider;
+	}
+
+	public Boolean getActive() {
+		return active;
 	}
 
 }

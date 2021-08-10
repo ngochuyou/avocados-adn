@@ -4,6 +4,10 @@
 package adn.helpers;
 
 import java.io.Serializable;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.persistence.Tuple;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.persister.entity.EntityPersister;
@@ -17,9 +21,9 @@ import adn.model.entities.Entity;
  * @author Ngoc Huy
  *
  */
-public class EntityUtils {
+public class HibernateHelper {
 
-	private EntityUtils() {}
+	private HibernateHelper() {}
 
 	private static SessionFactoryImplementor getSessionFactory() {
 		return ContextProvider.getBean(SessionFactoryImplementor.class);
@@ -62,6 +66,10 @@ public class EntityUtils {
 		return instance instanceof HibernateProxy
 				? ((HibernateProxy) instance).getHibernateLazyInitializer().getPersistentClass()
 				: (Class<T>) instance.getClass();
+	}
+
+	public static List<Object[]> toRows(List<Tuple> tuples) {
+		return tuples.stream().map(row -> row.toArray()).collect(Collectors.toList());
 	}
 
 }

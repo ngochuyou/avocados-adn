@@ -3,7 +3,10 @@
  */
 package adn.service;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.hibernate.Session;
@@ -28,6 +31,7 @@ public class DepartmentScoping implements EffectivelyFinal {
 	private static UUID SALE;
 	private static UUID PERSONNEL;
 	private static UUID FINANCE;
+	private static UUID UNKNOWN;
 
 	private static Access access = new Access() {
 
@@ -68,6 +72,12 @@ public class DepartmentScoping implements EffectivelyFinal {
 			PERSONNEL = (UUID) rows.stream().filter(row -> row[1].equals(PERSONNEL_NAME)).findFirst()
 					.orElseThrow(() -> new IllegalStateException("Unable to locate Personnel department"))[0];
 
+			Set<UUID> ids = new HashSet<>(Arrays.asList(STOCK, SALE, FINANCE, PERSONNEL));
+
+			do {
+				UNKNOWN = UUID.randomUUID();
+			} while (ids.contains(UNKNOWN));
+
 			logger.info(String.format("Configured [%s]", DepartmentScoping.class));
 		};
 
@@ -104,6 +114,10 @@ public class DepartmentScoping implements EffectivelyFinal {
 
 	public static final UUID finance() {
 		return FINANCE;
+	}
+
+	public static final UUID unknown() {
+		return UNKNOWN;
 	}
 
 }

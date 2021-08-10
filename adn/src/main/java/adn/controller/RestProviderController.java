@@ -35,16 +35,17 @@ import adn.service.services.ProviderService;
  */
 @RestController
 @RequestMapping("/rest/provider")
-public class RestProviderController extends DepartmentScopedController {
+public class RestProviderController extends BaseController {
 
 	private static final int COMMON_CACHE_MAXAGE = 1;
 
 	private final ProviderService providerService;
+	private final DepartmentService departmentService;
 
 	@Autowired
 	public RestProviderController(DepartmentService departmentService, ProviderService productService) {
-		super(departmentService);
 		this.providerService = productService;
+		this.departmentService = departmentService;
 	}
 
 	@GetMapping
@@ -52,7 +53,7 @@ public class RestProviderController extends DepartmentScopedController {
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getAllProviders(@PageableDefault(size = 10) Pageable paging,
 			@RequestParam(name = "columns", required = true) List<String> columns) throws NoSuchFieldException {
-		assertSaleDepartment();
+		departmentService.assertSaleDepartment();
 
 		List<Map<String, Object>> rows = crudService.read(Provider.class, columns, paging);
 
@@ -63,7 +64,7 @@ public class RestProviderController extends DepartmentScopedController {
 	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getProvidersCount() {
-		assertSaleDepartment();
+		departmentService.assertSaleDepartment();
 
 		return makeStaleWhileRevalidate(baseRepository.count(Provider.class), COMMON_CACHE_MAXAGE, TimeUnit.DAYS, 3,
 				TimeUnit.DAYS);
@@ -74,7 +75,7 @@ public class RestProviderController extends DepartmentScopedController {
 	public ResponseEntity<?> searchForProviders(ProviderQuery query,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
 			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException {
-		UUID departmentId = getPrincipalDepartment();
+		UUID departmentId = departmentService.getPrincipalDepartment();
 
 		assertDepartment(departmentId, stock(), sale());
 
@@ -82,7 +83,7 @@ public class RestProviderController extends DepartmentScopedController {
 			return sendBadRequest(MISSING_QUERY);
 		}
 
-		return ResponseEntity.ok(providerService.search(columns, paging, query, departmentId).getContent());
+		return ResponseEntity.ok(providerService.search(columns, paging, query, departmentId));
 	}
 
 }

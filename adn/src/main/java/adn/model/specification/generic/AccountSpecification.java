@@ -14,7 +14,7 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
 import adn.dao.generic.Result;
-import adn.helpers.EntityUtils;
+import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Account;
@@ -39,7 +39,7 @@ public class AccountSpecification<T extends Account> extends EntitySpecification
 
 	@Override
 	public Result<T> isSatisfiedBy(Session session, T instance) {
-		return isSatisfiedBy(session, EntityUtils.getIdentifier(instance), instance);
+		return isSatisfiedBy(session, HibernateHelper.getIdentifier(instance), instance);
 	}
 	
 	@Override

@@ -10,7 +10,7 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
 import adn.dao.generic.Result;
-import adn.helpers.EntityUtils;
+import adn.helpers.HibernateHelper;
 import adn.model.Generic;
 import adn.model.entities.Category;
 import adn.model.entities.Product;
@@ -27,7 +27,7 @@ public class ProductSpecification extends FactorSpecification<Product> {
 
 	@Override
 	public Result<Product> isSatisfiedBy(Session session, Product instance) {
-		return isSatisfiedBy(session, EntityUtils.getIdentifier(instance), instance);
+		return isSatisfiedBy(session, HibernateHelper.getIdentifier(instance), instance);
 	}
 
 	@Override
@@ -45,7 +45,7 @@ public class ProductSpecification extends FactorSpecification<Product> {
 		Category category = instance.getCategory();
 
 		if (category != null) {
-			if (!((CategoryIdGenerator) EntityUtils.getEntityPersister(Category.class).getIdentifierGenerator())
+			if (!((CategoryIdGenerator) HibernateHelper.getEntityPersister(Category.class).getIdentifierGenerator())
 					.hasId(category.getId())) {
 				result.bad().getMessages().put("category", String.format("Unknown category %s", category.getId()));
 			}

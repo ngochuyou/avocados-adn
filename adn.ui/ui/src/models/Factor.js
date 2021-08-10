@@ -17,6 +17,8 @@ class Factor {
 			if (name.length < MINIMUM_NAME_LENGTH || name.length > MAXIMUM_NAME_LENGTH) {
 				return [false, `Name length must vary between ${MINIMUM_NAME_LENGTH} and ${MAXIMUM_NAME_LENGTH}`];
 			}
+			// reset
+			NAME_PATTERN.lastIndex = 0;
 			// eslint-disable-next-line
 			let ok = NAME_PATTERN.test(name);
 			

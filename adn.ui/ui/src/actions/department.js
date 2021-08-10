@@ -1,7 +1,7 @@
 import { $fetch } from '../fetch';
 
 export async function fetchDepartments(columns = []) {
-	const [res, err] = await $fetch(`/list/department?columns=${columns.join(',')}`, {
+	const [res, err] = await $fetch(`/rest/department?columns=${columns.join(',')}`, {
 		method: 'GET',
 		headers: {
 			'Accept' : 'application/json'

@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
-import adn.helpers.ArrayHelper;
+import adn.helpers.CollectionHelper;
 import adn.service.resource.engine.template.ResourceTemplate;
 import adn.service.resource.engine.tuple.ResourceTuplizer;
 
@@ -94,9 +94,9 @@ public class FinderImpl implements Finder {
 		File[] allFiles = directory.listFiles();
 		ResourceTuplizer tuplizer = template.getTuplizer();
 		int span = propertyNames.length;
-		ArrayHelper.ArrayBuilder<String> builder;
+		CollectionHelper.ArrayBuilder<String> builder;
 
-		if ((builder = ArrayHelper.from(propertyNames)).contains(template.getPathColumn())) {
+		if ((builder = CollectionHelper.from(propertyNames)).contains(template.getPathColumn())) {
 			File fileByPath = find(template, (String) conditions[builder.getLastFoundIndex()]);
 
 			return fileByPath == null ? NO_RESULTS : new File[] { fileByPath };

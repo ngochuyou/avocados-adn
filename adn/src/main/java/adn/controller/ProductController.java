@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import adn.dao.generic.Result;
-import adn.helpers.ArrayHelper;
+import adn.helpers.CollectionHelper;
 import adn.model.entities.Product;
 import adn.service.internal.ResourceService;
 import adn.service.services.DepartmentService;
@@ -34,18 +34,18 @@ import adn.service.services.ProductService;
  */
 @Controller
 @RequestMapping("/product")
-public class ProductController extends DepartmentScopedController {
+public class ProductController extends BaseController {
 
 	protected final ProductService productService;
-
 	protected final ResourceService resourceService;
-
+	protected final DepartmentService departmentService;
+	
 	@Autowired
 	public ProductController(DepartmentService departmentService, ProductService productService,
 			ResourceService resourceService) {
-		super(departmentService);
 		this.productService = productService;
 		this.resourceService = resourceService;
+		this.departmentService = departmentService;
 	}
 
 	@GetMapping(path = "/image/{filename:.+}")
@@ -64,7 +64,7 @@ public class ProductController extends DepartmentScopedController {
 	@Transactional
 	public @ResponseBody ResponseEntity<?> createProduct(@RequestPart(name = "model", required = true) Product model,
 			@RequestPart(name = "images", required = false) MultipartFile[] images) {
-		assertSaleDepartment();
+		departmentService.assertSaleDepartment();
 
 		Result<Product> result = productService.createProduct(model, images, true);
 
@@ -76,7 +76,7 @@ public class ProductController extends DepartmentScopedController {
 	@Transactional
 	public @ResponseBody ResponseEntity<?> updateProduct(@RequestPart(name = "model", required = true) Product model,
 			@RequestPart(name = "images", required = false) MultipartFile[] images) {
-		assertSaleDepartment();
+		departmentService.assertSaleDepartment();
 
 		Product persistence = baseRepository.findById(model.getId(), Product.class);
 
@@ -85,7 +85,7 @@ public class ProductController extends DepartmentScopedController {
 		}
 
 		Result<Product> result = productService.updateProduct(model,
-				ArrayHelper.from(images, MultipartFile.class), true);
+				CollectionHelper.from(images, MultipartFile.class), true);
 
 		return send(result);
 	}

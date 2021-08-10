@@ -37,7 +37,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 
 	private final Map<String, DomainEntityServiceObserver<Account>> observers = new HashMap<>(0);
 
-	protected final CRUDServiceImpl crudService;
+	protected final GenericCRUDService crudService;
 	protected final ResourceService resourceService;
 	// @formatter:off
 	private final Map<Role, Class<? extends Account>> roleClassMap = Map.of(
@@ -51,7 +51,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 	@Autowired
 	public AccountService(
 			ResourceService resourceService,
-			CRUDServiceImpl crudService) {
+			GenericCRUDService crudService) {
 		this.resourceService = resourceService;
 		this.crudService = crudService;
 	}

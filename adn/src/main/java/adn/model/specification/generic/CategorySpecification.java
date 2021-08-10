@@ -9,7 +9,7 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
 import adn.dao.generic.Result;
-import adn.helpers.EntityUtils;
+import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Category;
@@ -24,7 +24,7 @@ public class CategorySpecification extends FactorSpecification<Category> {
 
 	@Override
 	public Result<Category> isSatisfiedBy(Session session, Category instance) {
-		return isSatisfiedBy(session, EntityUtils.getIdentifier(instance), instance);
+		return isSatisfiedBy(session, HibernateHelper.getIdentifier(instance), instance);
 	}
 
 	@Override

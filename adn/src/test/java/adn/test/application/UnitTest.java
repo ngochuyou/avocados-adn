@@ -75,8 +75,8 @@ public class UnitTest {
 //		}
 //		System.out.println("done....");
 //		executorService.shutdown();
-		Pattern p = Pattern.compile("^#(?:[0-9a-fA-F]{3,4}){1,2}$");
-		Matcher m = p.matcher("#afafafaf");
+		Pattern p = Pattern.compile("^[A-Z0-9-]+$");
+		Matcher m = p.matcher("20JGU-FORMA");
 		System.out.println(m.matches());
 	}
 

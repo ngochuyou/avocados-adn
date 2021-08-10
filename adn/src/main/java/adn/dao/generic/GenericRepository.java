@@ -3,9 +3,9 @@
  */
 package adn.dao.generic;
 
-import static adn.helpers.ArrayHelper.EMPTY_STRING_ARRAY;
-import static adn.helpers.EntityUtils.getEntityName;
-import static adn.helpers.EntityUtils.getIdentifierPropertyName;
+import static adn.helpers.CollectionHelper.EMPTY_STRING_ARRAY;
+import static adn.helpers.HibernateHelper.getEntityName;
+import static adn.helpers.HibernateHelper.getIdentifierPropertyName;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -15,7 +15,9 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -23,12 +25,11 @@ import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
 
-import adn.dao.parameter.ParamContext;
-import adn.dao.parameter.ParamType;
 import adn.helpers.Utils.Entry;
 import adn.model.entities.Entity;
 import adn.model.specification.Specification;
@@ -38,11 +39,13 @@ import adn.model.specification.SpecificationFactory;
  * @author Ngoc Huy
  *
  */
-public abstract class AbstractRepository implements Repository {
+@org.springframework.stereotype.Repository
+@Primary
+public class GenericRepository implements Repository {
 
-	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	protected final SessionFactory sessionFactory;
+	private final SessionFactory sessionFactory;
 	private final SpecificationFactory specificationFactory;
 	// @formatter:off
 	private static final Map<ParamType, BiConsumer<Query<?>, Entry<String, Object>>> PARAM_CONTEXT_RESOLVER = Map.of(
@@ -51,7 +54,7 @@ public abstract class AbstractRepository implements Repository {
 			ParamType.ARRAY, (hql, entry) -> hql.setParameterList(entry.getKey(), (Object[]) entry.getValue())
 			);
 	// @formatter:on
-	public AbstractRepository(final SessionFactory sessionFactory, final SpecificationFactory specificationFactory) {
+	public GenericRepository(final SessionFactory sessionFactory, final SpecificationFactory specificationFactory) {
 		this.sessionFactory = sessionFactory;
 		this.specificationFactory = specificationFactory;
 	}
@@ -76,11 +79,11 @@ public abstract class AbstractRepository implements Repository {
 	}
 
 	@Override
-	public <T extends Entity> Object[] findById(Serializable id, Class<T> clazz, String[] columns) {
+	public <T extends Entity> Object[] findById(Serializable id, Class<T> type, String[] columns) {
 		// @formatter:off
-		String query = String.format("%s WHERE %s=:id",
-				resolveSelect(clazz, columns),
-				getIdentifierPropertyName(clazz));
+		String query = String.format("%s WHERE e.%s=:id",
+				resolveSelect(type, columns),
+				getIdentifierPropertyName(type));
 		// @formatter:on
 		Query<?> hql = resolveQueryByColumns(query, columns);
 
@@ -152,8 +155,8 @@ public abstract class AbstractRepository implements Repository {
 	}
 
 	@Override
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public List<Object[]> nativelyFind(String query) {
+	@SuppressWarnings({ "rawtypes" })
+	public List<?> nativelyFind(String query) {
 		Session session = getCurrentSession();
 		NativeQuery nativeQuery = session.createSQLQuery(query);
 
@@ -217,12 +220,12 @@ public abstract class AbstractRepository implements Repository {
 	private <T extends Entity> String resolveSelect(Class<T> type, String[] columns) {
 		// @formatter:off
 		if (columns.length == 0) {
-			return String.format("FROM %s",
+			return String.format("FROM %s e",
 					getEntityName(type));
 		}
 		
-		return String.format("%s FROM %s",
-				"SELECT " + Stream.of(columns).collect(Collectors.joining(", ")),
+		return String.format("%s FROM %s e",
+				"SELECT " + Stream.of(columns).map(col -> "e." + col).collect(Collectors.joining(", ")),
 				getEntityName(type));
 		// @formatter:on
 	}
@@ -258,10 +261,13 @@ public abstract class AbstractRepository implements Repository {
 	@Override
 	public <T extends Entity> Long count(Class<T> type) {
 		Session session = getCurrentSession();
-		Query<Long> hql = session.createQuery(String.format("SELECT COUNT(*) FROM %s", getEntityName(type)),
-				Long.class);
+		CriteriaBuilder builder = session.getCriteriaBuilder();
+		CriteriaQuery<Long> criteriaQuery = builder.createQuery(Long.class);
+		Root<T> root = criteriaQuery.from(type);
 
-		return hql.getSingleResult();
+		criteriaQuery.select(builder.count(root));
+
+		return session.createQuery(criteriaQuery).getSingleResult();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -273,16 +279,14 @@ public abstract class AbstractRepository implements Repository {
 	@Override
 	public <T extends Entity> Long countById(Serializable id, Class<T> type) {
 		Session session = getCurrentSession();
-		// @formatter:off
-		Query<Long> hql = session.createQuery(String.format("SELECT COUNT(*) FROM %s WHERE %s=:id",
-				getEntityName(type),
-				getIdentifierPropertyName(type)),
-				Long.class);
-		// @formatter:on
+		CriteriaBuilder builder = session.getCriteriaBuilder();
+		CriteriaQuery<Long> criteriaQuery = builder.createQuery(Long.class);
+		Root<T> root = criteriaQuery.from(type);
 
-		hql.setParameter("id", id);
+		criteriaQuery.select(builder.count(root));
+		criteriaQuery.where(builder.equal(root.get(getIdentifierPropertyName(type)), id));
 
-		return hql.getSingleResult();
+		return session.createQuery(criteriaQuery).getSingleResult();
 	}
 
 	protected Session getCurrentSession() {
@@ -302,6 +306,49 @@ public abstract class AbstractRepository implements Repository {
 		}
 
 		return spec.isSatisfiedBy(session, id, instance);
+	}
+
+	@Override
+	public <T extends Entity, E extends T> Result<E> insert(Serializable id, E persistence, Class<E> type) {
+		return insert(getCurrentSession(), id, persistence, type);
+	}
+
+	@Override
+	public <T extends Entity, E extends T> Result<E> insert(Session session, Serializable id, E persistence,
+			Class<E> type) {
+		// validate the persisted entity
+		Result<E> result = validate(session, id, persistence, type);
+
+		if (result.isOk()) {
+			session.save(persistence);
+
+			return result;
+		}
+
+		session.evict(persistence);
+
+		return result;
+	}
+
+	@Override
+	public <T extends Entity, E extends T> Result<E> update(Serializable id, E persistence, Class<E> type) {
+		return update(getCurrentSession(), id, persistence, type);
+	}
+
+	@Override
+	public <T extends Entity, E extends T> Result<E> update(Session session, Serializable id, E persistence,
+			Class<E> type) {
+		Result<E> result = validate(session, id, persistence, type);
+
+		if (result.isOk()) {
+			session.update(persistence);
+
+			return result;
+		}
+
+		session.evict(persistence);
+
+		return result;
 	}
 
 }

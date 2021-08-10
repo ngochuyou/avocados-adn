@@ -14,9 +14,9 @@ import java.util.Set;
  * @author Ngoc Huy
  *
  */
-public class ArrayHelper {
+public class CollectionHelper {
 
-	private ArrayHelper() {}
+	private CollectionHelper() {}
 
 	public static final String[] EMPTY_STRING_ARRAY = new String[0];
 

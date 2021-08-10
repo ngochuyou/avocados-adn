@@ -12,7 +12,6 @@ import javax.persistence.criteria.CriteriaQuery;
 import org.hibernate.Session;
 import org.springframework.data.domain.Pageable;
 
-import adn.dao.parameter.ParamContext;
 import adn.model.entities.Entity;
 
 /**

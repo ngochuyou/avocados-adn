@@ -11,22 +11,28 @@ import LoginPage from './pages/LoginPage.jsx';
 import AccessDenied from './pages/AccessDenied.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import HomePage from './pages/HomePage.jsx';
+import ShoppingPage from './pages/ShoppingPage.jsx';
+import NotFound from './pages/NotFound.jsx';
 
 function App() {
 	const { principal } = useAuth();
 
 	return (
 		<div>
-			<Route path='/access_denied' render={props => <AccessDenied { ...props } /> } exact />
 			<AuthenticatedComponent principal={principal}>
 				<Route path='/dashboard' render={props => <Dashboard { ...props } /> }/>
 			</AuthenticatedComponent>
 			<UnauthenticatedComponent principal={principal}>
 				<Switch>
-					<Route path="/" render={props => <HomePage />} exact/>
 					<Route path="/login" render={(props) => <LoginPage {...props}/> } />
 				</Switch>
 			</UnauthenticatedComponent>
+			<Switch>
+				<Route path='/access_denied' render={props => <AccessDenied { ...props } /> } exact />
+				<Route path="/" render={props => <HomePage />} exact/>
+				<Route path="/shop/:categoryName?" render={(props) => <ShoppingPage {...props}/> } />
+				<Route component={NotFound} />
+			</Switch>
 		</div>
 	);
 }

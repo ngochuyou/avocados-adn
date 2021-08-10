@@ -32,7 +32,7 @@ import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Category;
 import adn.service.DomainEntityServiceObserver;
-import adn.service.services.ProductService;
+import adn.service.services.CategoryService;
 
 /**
  * @author Ngoc Huy
@@ -57,9 +57,9 @@ public class CategoryIdGenerator
 		String name;
 
 		Assert.isTrue(StringHelper.hasLength(name = String.valueOf(category.getName())), "Category name was null");
-		
+
 		name = StringHelper.removeSpaces(name);
-		
+
 		String id = name.length() >= Category.IDENTIFIER_LENGTH
 				? name.substring(0, Category.IDENTIFIER_LENGTH).toUpperCase()
 				: RandomStringUtils.randomAlphanumeric(Category.IDENTIFIER_LENGTH).toUpperCase();
@@ -112,7 +112,7 @@ public class CategoryIdGenerator
 						existingIds.stream().collect(Collectors.joining(", "))));
 			}
 
-			ContextProvider.getBean(ProductService.class).register(CategoryIdGenerator.this);
+			ContextProvider.getBean(CategoryService.class).register(CategoryIdGenerator.this);
 		}
 	};
 

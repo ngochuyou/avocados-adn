@@ -5,6 +5,7 @@ package adn.model.entities;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 import javax.persistence.Column;
@@ -14,6 +15,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -34,6 +36,9 @@ import adn.model.entities.generators.ProductIdGenerator;
 public class Product extends Factor {
 
 	public static final int IDENTIFIER_LENGTH = Category.IDENTIFIER_LENGTH + 5 + 1; // 5 + delimiter
+	public static final String ID_FIELD_NAME = "id";
+	public static final String CATEGORY_FIELD_NAME = "category";
+	public static final String STOCKDETAIL_FIELD_NAME = "stockDetails";
 
 	@Id
 	@GeneratedValue(generator = ProductIdGenerator.NAME)
@@ -65,6 +70,10 @@ public class Product extends Factor {
 
 	@Column
 	private Float rating;
+
+	@JsonIgnore
+	@OneToMany(mappedBy = "product")
+	private List<StockDetail> stockDetails;
 
 	public String getId() {
 		return id;
@@ -130,6 +139,14 @@ public class Product extends Factor {
 
 	public void setRating(Float rating) {
 		this.rating = rating;
+	}
+
+	public List<StockDetail> getStockDetails() {
+		return stockDetails;
+	}
+
+	public void setStockDetails(List<StockDetail> stockDetails) {
+		this.stockDetails = stockDetails;
 	}
 
 }

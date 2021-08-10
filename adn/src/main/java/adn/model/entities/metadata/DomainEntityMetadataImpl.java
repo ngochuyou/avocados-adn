@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adn.engine.access.StandardAccess;
-import adn.helpers.EntityUtils;
+import adn.helpers.HibernateHelper;
 import adn.model.DomainEntity;
 import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
@@ -67,7 +67,7 @@ public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 			}
 
 			Class<? extends Entity> type = (Class<? extends Entity>) entityClass;
-			EntityPersister persister = EntityUtils.getEntityPersister(type);
+			EntityPersister persister = HibernateHelper.getEntityPersister(type);
 			EntityMetamodel metamodel = persister.getEntityMetamodel();
 			EntityTuplizer tuplizer = metamodel.getTuplizer();
 

@@ -19,7 +19,7 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
 import adn.dao.generic.Result;
-import adn.helpers.EntityUtils;
+import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.StockDetail;
@@ -40,7 +40,7 @@ public class StockDetailSpecification extends EntitySpecification<StockDetail> {
 
 	@Override
 	public Result<StockDetail> isSatisfiedBy(Session session, StockDetail instance) {
-		return isSatisfiedBy(session, EntityUtils.getIdentifier(instance), instance);
+		return isSatisfiedBy(session, HibernateHelper.getIdentifier(instance), instance);
 	}
 
 	@Override

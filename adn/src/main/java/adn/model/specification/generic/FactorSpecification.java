@@ -14,7 +14,7 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
 import adn.dao.generic.Result;
-import adn.helpers.EntityUtils;
+import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Factor;
@@ -38,7 +38,7 @@ public class FactorSpecification<T extends Factor> extends EntitySpecification<T
 
 	@Override
 	public Result<T> isSatisfiedBy(Session session, T instance) {
-		return isSatisfiedBy(session, EntityUtils.getIdentifier(instance), instance);
+		return isSatisfiedBy(session, HibernateHelper.getIdentifier(instance), instance);
 	}
 
 	@Override
@@ -55,11 +55,11 @@ public class FactorSpecification<T extends Factor> extends EntitySpecification<T
 			result.bad().getMessages().put("name",
 					"Name can only contain alphabetic, numeric characters, spaces or '.', ',', '_', '-', @, \", ' and * character");
 		} else {
-			Class<? extends T> persistentClass = EntityUtils.getPersistentClass(instance);
+			Class<? extends T> persistentClass = HibernateHelper.getPersistentClass(instance);
 			CriteriaBuilder builder = session.getCriteriaBuilder();
 			CriteriaQuery<Long> query = builder.createQuery(Long.class);
 			Root<? extends T> root = query.from(persistentClass);
-			String idPropertyName = EntityUtils.getIdentifierPropertyName(persistentClass);
+			String idPropertyName = HibernateHelper.getIdentifierPropertyName(persistentClass);
 			// UUID needs a different approach to check uniqueness by id
 			// @formatter:off
 			query

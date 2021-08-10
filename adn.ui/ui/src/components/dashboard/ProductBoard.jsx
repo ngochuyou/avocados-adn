@@ -15,7 +15,7 @@ import {
 	TOGGLE_FORM_VISION, MODIFY_MODEL, SET_ERROR, PUSH_LIST,
 	CREATE, EDIT, SET_ACTION, SET_INDIVIDUAL_VIEW_TARGET,
 	TOGGLE_INDIVIDUAL_VIEW_VISION, TOGGLE_LIST_VISION,
-	SET_MODEL, MODIFY_PAGINATION_STATE, SET_LIST_ELEMENT
+	SET_MODEL, MODIFY_PAGINATION_STATE, /*SET_LIST_ELEMENT*/
 } from '../../actions/common';
 import {
 	fetchCategoryCount, fetchCategoryList,
@@ -25,7 +25,7 @@ import {
 	updateProduct
 } from '../../actions/product';
 
-import { spread } from '../../utils';
+import { spread, isEmpty } from '../../utils';
 
 const Context = createContext();
 
@@ -285,7 +285,7 @@ const productDispatchers = {
 				...list,
 				elements: {
 					...elements,
-					[categoryId]: elements[categoryId].map(product => product.id === productId ? model : product)
+					[categoryId]: [...elements[categoryId]].map(product => product.id === productId ? model : product)
 				}
 			}
 		};
@@ -1306,7 +1306,7 @@ function ProductListView() {
 
 		const [fetchRes, fetchErr] = await getProductListByCategory({
 			columns: FETCHED_PRODUCT_COLUMNS,
-			categoryId
+			identifier: categoryId
 		});
 
 		if (fetchErr) {
@@ -1486,12 +1486,12 @@ function ProductForm() {
 	const [containerClassName, setContainerClassName] = useState('fade-in');
 	const {
 		productStore: {
-			list: {
+			/*list: {
 				view: {
 					elements: viewElements,
 					subview: subviewElements
 				}
-			},
+			},*/
 			form: {
 				model, errors, categorySelect, action,
 				callbackOnClose
@@ -1589,26 +1589,14 @@ function ProductForm() {
 			}
 		});
 	};
-	const validateModel = (props) => {
-		const errorSet = {};
-		let success = true;
-
-		for (let prop of props) {
-			let [ok, err] = Product.validator[prop](model[prop]);
-
-			success = success && ok;
-			errorSet[prop] = err;
-		}
-
-		return [success, errorSet];
-	};
+	const validateModel = (props) => Object.fromEntries(props.map(prop => [prop, Product.validator[prop](model[prop])[1]]).filter(err => err[1] != null));
 	const onSubmit = async (event) => {
 		event.preventDefault();
 		event.stopPropagation();
 
-		const [success, errorSet] = validateModel(["name", "price", "description", "category", "active", "images"]);
-
-		if (!success) {
+		const errorSet = validateModel(["name", "price", "description", "category", "active", "images"]);
+		
+		if (!isEmpty(errorSet)) {
 			dispatchProductStore({
 				type: SET_ERROR,
 				payload: errorSet
@@ -1652,7 +1640,7 @@ function ProductForm() {
 				return;
 			}
 			case EDIT: {
-				const [updatedModel, err] = await updateProduct({
+				const [, err] = await updateProduct({
 					...model,
 					images: model.images.map(image => typeof image === 'string' ? image : image.file)
 				});
@@ -1669,28 +1657,31 @@ function ProductForm() {
 					console.error(err);
 					return;
 				}
+				
+				window.location.reload(false);
+				// this is too buggy, let's reload
+				// the page for now
+				// dispatchProductStore({
+				// 	type: SET_LIST_VIEW_ELEMENTS,
+				// 	payload: viewElements.map((element, index) => element.id !== updatedModel.id ? element : updatedModel)
+				// });
 
-				dispatchProductStore({
-					type: SET_LIST_VIEW_ELEMENTS,
-					payload: viewElements.map((element, index) => element.id !== updatedModel.id ? element : updatedModel)
-				});
+				// if (subviewElements != null) {
+				// 	dispatchProductStore({
+				// 		type: SET_LIST_VIEW_ELEMENTS,
+				// 		payload: subviewElements.map((element, index) => element.id !== updatedModel.id ? element : updatedModel)
+				// 	});
+				// }
 
-				if (subviewElements != null) {
-					dispatchProductStore({
-						type: SET_LIST_VIEW_ELEMENTS,
-						payload: subviewElements.map((element, index) => element.id !== updatedModel.id ? element : updatedModel)
-					});	
-				}
-
-				dispatchProductStore({
-					type: SET_LIST_ELEMENT,
-					payload: {
-						categoryId: updatedModel.category.id,
-						productId: updatedModel.id,
-						model: updatedModel
-					}
-				});
-				close();
+				// dispatchProductStore({
+				// 	type: SET_LIST_ELEMENT,
+				// 	payload: {
+				// 		categoryId: updatedModel.category.id,
+				// 		productId: updatedModel.id,
+				// 		model: updatedModel
+				// 	}
+				// });
+				// close();
 				return;
 			}
 			default: return;

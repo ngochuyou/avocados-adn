@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.dao.parameter;
+package adn.dao.generic;
 
 import java.util.Collection;
 

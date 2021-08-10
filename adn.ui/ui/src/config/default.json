@@ -9,7 +9,7 @@
 		}
 	},
 	"profile": {
-		"mode": "DEV"
+		"mode": "PROD"
 	},
 	"departmentScope": {
 		"Stock": "89d8de6c-85e0-415d-a032-398ddcaca82f",

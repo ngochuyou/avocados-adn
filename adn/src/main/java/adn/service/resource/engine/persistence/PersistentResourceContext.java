@@ -19,8 +19,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import adn.helpers.ArrayHelper;
-import adn.helpers.ArrayHelper.ArrayBuilder;
+import adn.helpers.CollectionHelper;
+import adn.helpers.CollectionHelper.ArrayBuilder;
 import adn.service.resource.engine.Finder;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.query.UpdateQuery;
@@ -184,7 +184,7 @@ public class PersistentResourceContext {
 		// use a function to produce value from the updatedValues array for columns on
 		// which data is being updated. For those otherwise, use a function to produce a
 		// value from the original File
-		ArrayBuilder<String> setStatement = ArrayHelper.from(setStatementColumnNames);
+		ArrayBuilder<String> setStatement = CollectionHelper.from(setStatementColumnNames);
 		Stream<Function<File, Object>> extractingFunctions = Stream.of(template.getColumnNames()).map(columnName -> {
 			if (setStatement.contains(columnName)) {
 				return new Function<File, Object>() {

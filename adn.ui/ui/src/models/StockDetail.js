@@ -37,9 +37,19 @@ export default class StockDetail {
 		product: (product) => [product != null, product != null ? null : "Product information is missing"],
 		provider: (provider) => [provider != null, provider != null ? null : "Provider information is missing"],
 		size: (size) => {
-			const ok = StockDetail.NamedSize.includes(size);
+			const ok = size == null || StockDetail.NamedSize.includes(size);
 
 			return [ok, ok ? null : `Invalid size ${size}`];
+		},
+		numericSize: (size) => {
+			const ok = size >= StockDetail.MINIMUM_NUMERIC_SIZE && size <= StockDetail.MAXIMUM_NUMERIC_SIZE;
+
+			return [ok, ok ? null : `Numeric size must vary between ${StockDetail.MINIMUM_NUMERIC_SIZE} and ${StockDetail.MAXIMUM_NUMERIC_SIZE}`];	
+		},
+		quantity: (qty) => {
+			const ok = qty >= 0 && qty <= StockDetail.MAXIMUM_ITEM_QUANTITY;
+
+			return [ok, ok ? null : `Quantity cannot exceed ${StockDetail.MAXIMUM_ITEM_QUANTITY}`];
 		},
 		status: (status) => {
 			const ok = StockDetail.Status.includes(status);

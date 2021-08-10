@@ -6,7 +6,6 @@ package adn.service.services;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -14,19 +13,16 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
-import org.springframework.data.domain.Page;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import adn.controller.query.ProviderQuery;
 import adn.dao.generic.Repository;
+import adn.dao.specification.GenericFactorRepository;
 import adn.helpers.StringHelper;
 import adn.model.entities.Provider;
-import adn.model.factory.AuthenticationBasedModelFactory;
-import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
-import adn.model.factory.DepartmentBasedModelPropertiesFactory;
 
 /**
  * @author Ngoc Huy
@@ -36,17 +32,15 @@ import adn.model.factory.DepartmentBasedModelPropertiesFactory;
 @Service
 public class ProviderService extends AbstractFactorService<Provider> {
 
-	public ProviderService(CRUDServiceImpl crudService, Repository repository,
-			AuthenticationBasedModelFactory modelFactory,
-			AuthenticationBasedModelPropertiesFactory authenticationBasedPropertiesFactory,
-			DepartmentBasedModelPropertiesFactory departmentBasedPropertiesFactory) {
-		super(crudService, repository, modelFactory, authenticationBasedPropertiesFactory,
-				departmentBasedPropertiesFactory);
+	@Autowired
+	public ProviderService(GenericCRUDService crudService, Repository repository,
+			GenericFactorRepository factorRepository) {
+		super(crudService, repository, factorRepository);
 	}
 
-	public Page<Map<String, Object>> search(Collection<String> requestedColumns, Pageable pageable,
+	public List<Map<String, Object>> search(Collection<String> requestedColumns, Pageable pageable,
 			ProviderQuery restQuery, UUID departmentId) throws NoSuchFieldException {
-		return findAll(Provider.class, requestedColumns, hasId(restQuery).or(hasNameLike(restQuery)), pageable,
+		return crudService.read(Provider.class, requestedColumns, hasId(restQuery).or(hasNameLike(restQuery)), pageable,
 				departmentId);
 	}
 
@@ -74,31 +68,6 @@ public class ProviderService extends AbstractFactorService<Provider> {
 				return builder.like(root.get("name"), restQuery.getName().getLike());
 			}
 		};
-	}
-
-	@Override
-	public Optional<Provider> findOne(Specification<Provider> spec) {
-		return findOne(Provider.class, spec);
-	}
-
-	@Override
-	public List<Provider> findAll(Specification<Provider> spec) {
-		return findAll(Provider.class, spec);
-	}
-
-	@Override
-	public Page<Provider> findAll(Specification<Provider> spec, Pageable pageable) {
-		return findAll(Provider.class, spec, pageable);
-	}
-
-	@Override
-	public List<Provider> findAll(Specification<Provider> spec, Sort sort) {
-		return findAll(Provider.class, spec);
-	}
-
-	@Override
-	public long count(Specification<Provider> spec) {
-		return count(Provider.class, spec);
 	}
 
 }

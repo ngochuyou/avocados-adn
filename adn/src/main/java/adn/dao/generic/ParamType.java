@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.dao.parameter;
+package adn.dao.generic;
 
 /**
  * @author Ngoc Huy

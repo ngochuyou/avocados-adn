@@ -32,6 +32,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import adn.application.Constants;
 import adn.helpers.StringHelper;
+import adn.model.entities.Product;
 import adn.security.context.OnMemoryUserContext;
 import adn.security.jwt.JwtRequestFilter;
 import adn.security.jwt.JwtUsernamePasswordAuthenticationFilter;
@@ -71,7 +72,9 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	private static final String[] PUBLIC_ENDPOINTS = {
 			"/account/photo\\GET",
 			"/product/image/**\\GET",
-			"public/**"
+			"/rest/product/category/all\\GET",
+			"/rest/product\\GET",
+			String.format("/rest/product/{productId:^[A-Z0-9-]{%d}$}\\GET", Product.IDENTIFIER_LENGTH)
 	};
 	// @formatter:on
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());

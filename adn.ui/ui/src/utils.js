@@ -1,3 +1,7 @@
+// acowiemz Stock
+// aaldredkq Sale
+// grosiello8i Personnel
+// abisson5m Finance
 export const range = (max = 0) => [...Array(max)];
 
 export const intRange = ({ min = undefined, max = 0 }) => {

@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import adn.application.Constants;
-import adn.helpers.ArrayHelper;
+import adn.helpers.CollectionHelper;
 import adn.helpers.TypeHelper;
 import adn.model.DomainEntity;
 import adn.model.ModelContextProvider;
@@ -324,7 +324,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 				@Override
 				public WithField<T> anyFields() {
-					return new WithFields(owner, this, getUngivenFields(ArrayHelper.EMPTY_STRING_ARRAY));
+					return new WithFields(owner, this, getUngivenFields(CollectionHelper.EMPTY_STRING_ARRAY));
 				}
 
 				private class WithFields extends AbstractOwned implements WithField<T> {

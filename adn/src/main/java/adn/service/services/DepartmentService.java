@@ -3,7 +3,12 @@
  */
 package adn.service.services;
 
-import static adn.helpers.ArrayHelper.from;
+import static adn.helpers.CollectionHelper.from;
+import static adn.service.DepartmentScoping.assertDepartment;
+import static adn.service.DepartmentScoping.personnel;
+import static adn.service.DepartmentScoping.sale;
+import static adn.service.DepartmentScoping.stock;
+import static adn.service.DepartmentScoping.unknown;
 
 import java.util.Collection;
 import java.util.List;
@@ -22,12 +27,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import adn.dao.generic.AbstractRepository;
-import adn.dao.parameter.ParamContext;
+import adn.application.context.ContextProvider;
+import adn.dao.generic.GenericRepository;
+import adn.dao.generic.ParamContext;
 import adn.model.entities.DepartmentChief;
 import adn.model.entities.Personnel;
 import adn.model.factory.AuthenticationBasedModelFactory;
 import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
+import adn.security.ApplicationUserDetails;
+import adn.security.PersonnelDetails;
 import adn.service.internal.Role;
 
 /**
@@ -38,8 +46,8 @@ import adn.service.internal.Role;
 public class DepartmentService implements adn.service.internal.Service {
 
 	private final SessionFactory sessionFactory;
-	private final CRUDServiceImpl crudService;
-	private final AbstractRepository repository;
+	private final GenericCRUDService crudService;
+	private final GenericRepository repository;
 
 	private final AuthenticationBasedModelFactory modelFactory;
 	private final AuthenticationBasedModelPropertiesFactory modelPropertiesFactory;
@@ -48,8 +56,8 @@ public class DepartmentService implements adn.service.internal.Service {
 	public DepartmentService(
 	// @formatter:off
 			SessionFactory sessionFactory,
-			CRUDServiceImpl crudService,
-			AbstractRepository repository,
+			GenericCRUDService crudService,
+			GenericRepository repository,
 			AuthenticationBasedModelFactory modelFactory,
 			AuthenticationBasedModelPropertiesFactory modelPropertiesFactory) {
 		// @formatter:on
@@ -58,6 +66,36 @@ public class DepartmentService implements adn.service.internal.Service {
 		this.repository = repository;
 		this.modelFactory = modelFactory;
 		this.modelPropertiesFactory = modelPropertiesFactory;
+	}
+
+	public UUID getPrincipalDepartment() {
+		ApplicationUserDetails userDetails = ContextProvider.getPrincipal();
+
+		if (!(userDetails instanceof PersonnelDetails)) {
+			return unknown();
+		}
+
+		return ((PersonnelDetails) userDetails).getDepartmentId();
+	}
+
+	public void assertSaleDepartment() {
+		assertDepartment(getPrincipalDepartment(), sale());
+	}
+
+	public void assertStockDepartment() {
+		assertDepartment(getPrincipalDepartment(), stock());
+	}
+
+	public void assertPersonnelDepartment() {
+		assertDepartment(getPrincipalDepartment(), personnel());
+	}
+
+	public boolean isPersonnelDepartment() {
+		return getPrincipalDepartment().equals(personnel());
+	}
+
+	public boolean isPersonnelDepartment(UUID requestedDepartmentId) {
+		return requestedDepartmentId == personnel();
 	}
 
 	public Personnel getDepartmentChief(UUID departmentId) {
@@ -131,7 +169,7 @@ public class DepartmentService implements adn.service.internal.Service {
 		// @formatter:on
 		List<?> rows = repository.findWithContext(query, Map.of("ids", ParamContext.array(departmentIds)));
 
-		return crudService.resolveReadResult(Personnel.class, rows, validatedColumns, role);
+		return crudService.resolveReadResults(Personnel.class, rows, validatedColumns, role);
 	}
 
 	public Long[] countPersonnel(UUID[] departmentIds) {
@@ -166,7 +204,7 @@ public class DepartmentService implements adn.service.internal.Service {
 
 		List<?> rows = repository.find(query, paging, Map.of("id", departmentId));
 
-		return crudService.resolveReadResult(Personnel.class, rows, validatedColumns, role);
+		return crudService.resolveReadResults(Personnel.class, rows, validatedColumns, role);
 	}
 
 	public UUID getPersonnelDepartmentId(String personnelId) {

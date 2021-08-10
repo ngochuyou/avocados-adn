@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.context.ContextProvider;
+import adn.model.entities.Department;
 import adn.service.services.DepartmentService;
 
 /**
@@ -29,20 +30,30 @@ import adn.service.services.DepartmentService;
  */
 @RestController
 @RequestMapping("/rest/department")
-public class DepartmentController extends BaseController {
+public class RestDepartmentController extends BaseController {
 
 	protected static final String CHIEF_NOT_FOUND = "Unable to find department chief";
 
 	private final DepartmentService departmentService;
 
 	@Autowired
-	public DepartmentController(DepartmentService departmentService) {
-		this.departmentService = departmentService;
+	public RestDepartmentController(DepartmentService departmentService, DepartmentService departmentService2) {
+		this.departmentService = departmentService2;
+	}
+
+	@GetMapping
+	@Transactional(readOnly = true)
+	@Secured("ROLE_PERSONNEL")
+	public ResponseEntity<?> getDepartments(@PageableDefault(size = 10) Pageable paging,
+			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws NoSuchFieldException {
+		return makeStaleWhileRevalidate(
+				crudService.read(Department.class, columns, paging, departmentService.getPrincipalDepartment()), 4,
+				TimeUnit.DAYS, 7, TimeUnit.DAYS);
 	}
 
 	@Transactional(readOnly = true)
 	@GetMapping("/chief/{departmentId}")
-	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
+	@Secured("ROLE_PERSONNEL")
 	public ResponseEntity<?> getDepartmentChief(@PathVariable(name = "id", required = true) UUID departmentId,
 			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws NoSuchFieldException {
 		if (columns.isEmpty()) {
@@ -60,7 +71,7 @@ public class DepartmentController extends BaseController {
 
 	@Transactional(readOnly = true)
 	@GetMapping("/chiefs")
-	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
+	@Secured("ROLE_PERSONNEL")
 	public ResponseEntity<?> getDepartmentChiefs(@RequestParam(name = "ids", required = true) List<UUID> ids,
 			@RequestParam(name = "columns", required = true) List<String> columns) throws NoSuchFieldException {
 		List<Map<String, Object>> chiefs = departmentService.getDepartmentChiefs(ids.toArray(new UUID[ids.size()]),
@@ -71,6 +82,7 @@ public class DepartmentController extends BaseController {
 
 	@Transactional(readOnly = true)
 	@GetMapping("/id/{username:.+}")
+	@Secured("ROLE_PERSONNEL")
 	public ResponseEntity<?> getPersonnelDepartmentId(@PathVariable(name = "username", required = true) String username)
 			throws NoSuchFieldException {
 		return makeStaleWhileRevalidate(departmentService.getPersonnelDepartmentId(username), 12, TimeUnit.HOURS, 24,
@@ -79,7 +91,7 @@ public class DepartmentController extends BaseController {
 
 	@Transactional(readOnly = true)
 	@GetMapping("/count")
-	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
+	@Secured("ROLE_PERSONNEL")
 	public ResponseEntity<?> getPersonnelCounts(@RequestParam(name = "ids", required = true) List<UUID> ids) {
 		// @formatter:off
 		return makeStaleWhileRevalidate(
@@ -91,7 +103,7 @@ public class DepartmentController extends BaseController {
 
 	@Transactional(readOnly = true)
 	@GetMapping("/personnel-list/{departmentId}")
-	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
+	@Secured("ROLE_PERSONNEL")
 	public ResponseEntity<?> getPersonnelList(@PathVariable(name = "departmentId", required = true) UUID departmentId,
 			@PageableDefault(size = 5) Pageable paging,
 			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws NoSuchFieldException {

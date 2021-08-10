@@ -159,14 +159,14 @@ export async function updateProduct(model = null) {
 }
 
 export function getProductListByCategory({
-	columns = [], categoryId = null,
+	columns = [], identifier = null, identifierName = "",
 	page = 0, size = 18
 }) {
-	if (categoryId == null || categoryId.length === 0) {
+	if (identifier == null || identifier.length === 0) {
 		return [null, "Category id was empty"];
 	}
 
-	return fjson(`/rest/product?category=${categoryId}&columns=${columns.join(',')}`);
+	return fjson(`/rest/product?category=${identifier}&by=${identifierName}&columns=${columns.join(',')}`);
 }
 
 export function searchProduct({ productId = "", productName = "", columns = [], size = 10 }) {
@@ -191,4 +191,12 @@ export function createStockDetails(batch = []) {
 			details: batch
 		})
 	});
+}
+
+export function obtainProduct({ id = null, columns = [] }) {
+	if (id == null || id.length === 0) {
+		return [null, "Product ID was null"];
+	}
+
+	return fjson(`/rest/product/${id}?columns=${columns.join(',')}`);
 }

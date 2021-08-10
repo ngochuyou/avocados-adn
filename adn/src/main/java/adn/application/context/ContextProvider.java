@@ -50,6 +50,16 @@ public class ContextProvider implements ApplicationContextAware {
 		return applicationContext;
 	}
 
+	public static ApplicationUserDetails getPrincipal() {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+		if (auth instanceof AnonymousAuthenticationToken) {
+			return null;
+		}
+
+		return (ApplicationUserDetails) auth.getPrincipal();
+	}
+
 	public static Role getPrincipalRole() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 

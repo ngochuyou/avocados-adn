@@ -56,8 +56,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
 import adn.application.context.DatabaseInitializer;
-import adn.dao.generic.BaseRepository;
-import adn.dao.paging.Unpaged;
+import adn.dao.generic.GenericRepository;
+import adn.dao.generic.Unpaged;
 import adn.model.entities.Account;
 import adn.model.entities.Provider;
 import adn.security.SecurityConfiguration;
@@ -249,7 +249,7 @@ public class ApplicationIntegrationTest {
 	}
 
 	@Autowired
-	private BaseRepository repo;
+	private GenericRepository repo;
 
 	@Test
 	@Transactional

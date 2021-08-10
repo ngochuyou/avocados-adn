@@ -338,10 +338,13 @@ function ImportBoard() {
 	const clearBatch = () => {
 		dispatchImportStore({ type: CLEAR_LIST });
 	};
+	const submitNoti = (message) => {
+		setNoti(message);
+		setTimeout(() => setNoti(null), 1500);
+	};
 	const saveBatch = () => {
 		localStorage[FORM_ELEMENTS_STORAGE_NAME] = JSON.stringify(formElements);
-		setNoti("Batch saved");
-		setTimeout(() => setNoti(null), 1500);
+		submitNoti("Batch saved");
 	};
 	const validateBatch = (columns) => formElements.map((item, index) => [index, columns.map(col => StockDetail.validator[col](item[col])[1]).filter(err => err != null)]).filter(set => set[1].length !== 0);
 	const submitBatch = () => {
@@ -392,14 +395,15 @@ function ImportBoard() {
 	};
 	const doSubmitBatch = async () => {
 		const elements = formElements.flatMap(element => spread(element.quantity, element));
-		const [res, err] = await createStockDetails(elements);
+		const [, err] = await createStockDetails(elements);
 
 		if (err) {
 			console.error(err);
 			return;
 		}
 
-		console.log(res);
+		setConfirmModalVision(false);
+		submitNoti("Batch created successfully");
 	};
 
 	return (
@@ -648,7 +652,7 @@ const SEARCHED_PROVIDER_COLUMNS = ["id", "name", "email", "representatorName", "
 const SEARCHED_PROVIDER_AMOUNT = 100;
 const SET_PICKER_VIEW = "SET_PICKER_VIEW";
 const PUSH_PICKER_ELEMENTS = "PUSH_PICKER_ELEMENTS";
-const VALIDATED_STOCKDETAIL_COLUMNS = ["product", "provider", "size", "status"];
+const VALIDATED_STOCKDETAIL_COLUMNS = ["product", "provider", "size", "status", "numericSize", "quantity"];
 const FORM_ELEMENTS_STORAGE_NAME = "importBatchElements";
 const STOCKDETAIL_ITEM_ANCHOR_PREFIX = "stockdetail-item-";
 

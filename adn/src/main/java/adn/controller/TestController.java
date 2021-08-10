@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import adn.security.SecurityConfiguration;
 import adn.service.resource.ResourceManager;
 import adn.service.resource.model.models.ProductImage;
-import adn.service.services.CRUDServiceImpl;
+import adn.service.services.GenericCRUDService;
 
 /**
  * @author Ngoc Huy
@@ -242,7 +242,7 @@ public class TestController extends BaseController {
 
 	@Component
 	public class A {
-		@Async(CRUDServiceImpl.EXECUTOR_NAME)
+		@Async(GenericCRUDService.EXECUTOR_NAME)
 		public Future<String> get() {
 			try {
 				System.out.println("starting " + Thread.currentThread().getName());

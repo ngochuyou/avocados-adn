@@ -9,7 +9,7 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
 import adn.dao.generic.Result;
-import adn.helpers.EntityUtils;
+import adn.helpers.HibernateHelper;
 import adn.model.Generic;
 import adn.model.entities.Customer;
 
@@ -23,7 +23,7 @@ public class CustomerSpecification extends AccountSpecification<Customer> {
 	
 	@Override
 	public Result<Customer> isSatisfiedBy(Session session, Customer instance) {
-		return isSatisfiedBy(session, EntityUtils.getIdentifier(instance), instance);
+		return isSatisfiedBy(session, HibernateHelper.getIdentifier(instance), instance);
 	}
 	
 	@Override

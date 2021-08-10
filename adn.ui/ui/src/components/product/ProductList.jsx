@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 
 import { DomainImage } from '../utils/Gallery.jsx';
+import Rating from '../utils/Rating.jsx';
 
 export default function ProductList({
 	list = [],
@@ -19,13 +20,13 @@ export default function ProductList({
 			</h5>
 		);
 	}
-
+	
 	return (
 		<Fragment>
 			<h5 className="uk-heading-line">
 				<span>
-					<label>{ header }</label>
-					<label className="uk-margin-small-left uk-label backgrounds">{`${list.length} result(s)`}</label>
+					{header}
+					<label className="uk-margin-small-left uk-label backgrounds">{`${list.length} item(s)`}</label>
 				</span>
 			</h5>
 			<div
@@ -59,15 +60,7 @@ export default function ProductList({
 											<p className="uk-card-title">{model.name}</p>
 										</div>
 										<div className="uk-width-1-5 uk-position-relative">
-										{
-											model.rating == null ?
-											<label className="uk-label backgrounds uk-position-center">
-												NR
-											</label> :
-											<label className="uk-label backgroundf uk-position-center">
-												{model.rating}
-											</label>
-										}
+										<Rating value={model.rating} />
 										</div>
 									</div>
 									<p className="colors uk-text-bold">

@@ -80,6 +80,7 @@ function Gallery({
 			onDragOver={stopEvent}
 			onDragLeave={stopEvent}
 			onDrop={onDrop}
+			className="uk-height-1-1"
 		>
 			<div className="uk-grid-small" uk-grid="">
 				<div className="uk-width-auto">

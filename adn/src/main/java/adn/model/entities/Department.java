@@ -13,13 +13,17 @@ import javax.persistence.Table;
 
 import org.hibernate.annotations.GenericGenerator;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import adn.model.DepartmentScoped;
+
 /**
  * @author Ngoc Huy
  *
  */
 @Entity
 @Table(name = "departments")
-public class Department extends adn.model.entities.Entity {
+public class Department extends adn.model.entities.Entity implements DepartmentScoped {
 
 	@Id
 	@GeneratedValue(generator = "uuid")
@@ -49,7 +53,8 @@ public class Department extends adn.model.entities.Entity {
 		this.name = name;
 	}
 
-	public Boolean getActive() {
+	@JsonProperty("active")
+	public Boolean isActive() {
 		return active;
 	}
 

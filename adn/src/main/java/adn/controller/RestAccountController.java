@@ -87,9 +87,11 @@ public class RestAccountController extends AccountController {
 	}
 
 	@PatchMapping("/deactivate/{username}")
-	@Secured("ROLE_ADMIN")
+	@Secured("ROLE_PERSONNEL")
 	@Transactional
 	public ResponseEntity<?> deactivateAccount(@PathVariable(name = "username", required = true) String username) {
+		departmentService.assertPersonnelDepartment();
+
 		if (baseRepository.countById(username, Account.class) == 0) {
 			return sendNotFound(NOT_FOUND);
 		}
@@ -129,10 +131,10 @@ public class RestAccountController extends AccountController {
 		}
 
 		if (((Role) cols.get(ROLE_FIELD_NAME)) == Role.PERSONNEL) {
-			cols.put("departmentId", departmentService.getPersonnelDepartmentId(username));
+			cols.put("departmentId", departmentService.getPrincipalDepartment());
 		}
 
-		return makeStaleWhileRevalidate(cols, 12, TimeUnit.HOURS, 24, TimeUnit.HOURS);
+		return makeStaleWhileRevalidate(cols, 6, TimeUnit.HOURS, 24, TimeUnit.HOURS);
 	}
 
 	protected ResponseEntity<?> doObtainAccount(String username, Collection<String> requestedColumns)
@@ -146,7 +148,7 @@ public class RestAccountController extends AccountController {
 				return sendNotFound(NOT_FOUND);
 			}
 
-			if (principalRole.equals(Role.ADMIN)) {
+			if (principalRole.equals(Role.PERSONNEL) && departmentService.isPersonnelDepartment()) {
 				return send(model, accountService.getClassFromRole(model.getRole()), null);
 			}
 
@@ -177,7 +179,7 @@ public class RestAccountController extends AccountController {
 			return sendNotFound(NOT_FOUND);
 		}
 
-		if (principalRole.equals(Role.ADMIN)) {
+		if (principalRole.equals(Role.PERSONNEL) && departmentService.isPersonnelDepartment()) {
 			return ResponseEntity.ok(extractRequestedColumns(requestedColumns, fetchedRow));
 		}
 
