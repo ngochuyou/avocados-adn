@@ -103,7 +103,7 @@ function Main() {
 	return (
 		<div>
 			{/*<div uk-slideshow="autoplay: false; autoplay-interval: 2000; pause-on-hover: false">*/}
-			<div uk-slideshow="autoplay: true; autoplay-interval: 2000; pause-on-hover: false">
+			<div uk-slideshow="animation: scale; autoplay: true; autoplay-interval: 2000; pause-on-hover: false">
 				<ul className="uk-slideshow-items" uk-height-viewport="min-height: 300">
 				{
 					PRODUCT_STORE.elements.map(model => (

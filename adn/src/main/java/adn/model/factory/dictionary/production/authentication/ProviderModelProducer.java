@@ -25,7 +25,8 @@ public class ProviderModelProducer extends AbstractCompositeAuthenticationBasedM
 		model.put("address", entity.getAddress());
 		model.put("phoneNumbers", entity.getPhoneNumbers());
 		model.put("representatorName", entity.getRepresentatorName());
-
+		model.put("website", entity.getWebsite());
+		
 		return model;
 	}
 

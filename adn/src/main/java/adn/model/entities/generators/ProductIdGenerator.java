@@ -48,7 +48,7 @@ public class ProductIdGenerator implements IdentifierGenerator, Configurable {
 
 		Assert.isTrue(StringHelper.hasLength(name), "Product name was empty");
 
-		int remainingSize = Product.IDENTIFIER_LENGTH - idBuilder.length();
+		int remainingSize = Product.ID_LENGTH - idBuilder.length();
 		
 		name = StringHelper.removeSpaces(name);
 		idBuilder.append(name.length() >= remainingSize ? name.substring(0, remainingSize).toUpperCase()

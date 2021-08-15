@@ -8,7 +8,6 @@ import java.time.LocalDate;
 import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapsId;
@@ -29,13 +28,13 @@ public class DepartmentChief extends adn.model.entities.Entity {
 	@EmbeddedId
 	private DepartmentChiefId id;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(optional = false)
 	@JoinColumn(name = "personnel_id", updatable = false)
 	@MapsId("personnelId")
 	@JsonIgnore
 	private Personnel personnel;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(optional = false)
 	@JoinColumn(name = "department_id", updatable = false, columnDefinition = "BINARY(16)")
 	@MapsId("departmentId")
 	@JsonIgnore

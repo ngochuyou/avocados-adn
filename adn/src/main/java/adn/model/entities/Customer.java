@@ -13,18 +13,8 @@ import javax.persistence.Entity;
 @Entity
 public class Customer extends Account {
 
-	protected String address;
-
 	@Column(name = "prestige_point")
-	protected float prestigePoint;
-
-	public String getAddress() {
-		return address;
-	}
-
-	public void setAddress(String address) {
-		this.address = address;
-	}
+	private float prestigePoint;
 
 	public float getPrestigePoint() {
 		return prestigePoint;

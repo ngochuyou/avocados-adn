@@ -6,10 +6,13 @@ package adn.service.services;
 import static adn.dao.generic.Result.bad;
 import static adn.helpers.CollectionHelper.from;
 import static adn.helpers.HibernateHelper.toRows;
+import static adn.model.entities.Product.STOCKDETAIL_FIELD_NAME;
 import static adn.service.internal.Role.PERSONNEL;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -95,8 +98,7 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 					}
 				});
 
-		return crudService.resolveReadResults(Product.class, toRows(rows), from(validatedColumns),
-				role);
+		return crudService.resolveReadResults(Product.class, toRows(rows), from(validatedColumns), role);
 	}
 
 	public Result<Product> createProduct(Product product, MultipartFile[] images, boolean flushOnFinish) {
@@ -181,44 +183,28 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 	}
 
 	@Override
-	public Map<String, Object> findWithActiveCheck(Serializable id, Class<Product> type, Collection<String> columns,
-			Role principalRole) throws NoSuchFieldException {
-		// TODO Auto-generated method stub
-		return super.findWithActiveCheck(id, type, columns, principalRole);
-	}
-//	public Map<String, Object> findWithActiveCheck(Serializable id, Class<T> type,
-//			Collection<String> requestedColumns, Role principalRole) throws NoSuchFieldException {
-//		if (principalRole == PERSONNEL) {
-//			return super.findWithActiveCheck(id, type, requestedColumns, principalRole);
-//		}
-//
-//		Map.Entry<Set<String>, Boolean> excludingResult = excludeStockDetailsColumn(requestedColumns);
-//		Map<String, Object> result = super.findWithActiveCheck(id, type, excludingResult.getKey(), principalRole);
-//
-//		if (!excludingResult.getValue()) {
-//			return result;
-//		}
-//
-//		List<Map<String, Object>> details = stockDetailService.readActiveOnly(id, Collections.emptyList(),
-//				principalRole);
-//
-//		result.put(STOCKDETAIL_FIELD_NAME, details);
-//
-//		return result;
-//		return null;
-//	}
+	public Map<String, Object> findWithActiveCheck(Serializable id, Class<Product> type,
+			Collection<String> requestedColumns, Role principalRole) throws NoSuchFieldException {
+		boolean stockDetailsRequired = false;
+		Set<String> columns = new HashSet<>(requestedColumns);
 
-//	private Map.Entry<Set<String>, Boolean> excludeStockDetailsColumn(Collection<String> requestedColumns) {
-//		HashSet<String> columns = new HashSet<>(requestedColumns);
-//
-//		if (columns.contains(STOCKDETAIL_FIELD_NAME)) {
-//			columns.remove(STOCKDETAIL_FIELD_NAME);
-//
-//			return Map.entry(columns, Boolean.TRUE);
-//		}
-//
-//		return Map.entry(columns, Boolean.FALSE);
-//	}
+		if (stockDetailsRequired = requestedColumns.contains(STOCKDETAIL_FIELD_NAME)) {
+			columns.remove(STOCKDETAIL_FIELD_NAME);
+		}
+
+		Map<String, Object> product = super.findWithActiveCheck(id, type, columns, principalRole);
+
+		if (!stockDetailsRequired || product == null) {
+			return product;
+		}
+
+		List<Map<String, Object>> stockDetails = stockDetailService.readActiveOnly(id, Collections.emptyList(),
+				principalRole);
+
+		product.put(STOCKDETAIL_FIELD_NAME, stockDetails);
+
+		return product;
+	}
 
 	private static Specification<Product> hasNameLike(ProductQuery restQuery) {
 		return new Specification<Product>() {

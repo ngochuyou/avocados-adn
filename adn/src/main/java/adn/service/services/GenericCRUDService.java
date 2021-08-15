@@ -90,7 +90,6 @@ public final class GenericCRUDService implements CRUDService {
 	private final AuthenticationBasedModelPropertiesFactory authenticationBasedPropertiesFactory;
 	private final DepartmentBasedModelPropertiesFactory departmentBasedPropertiesFactory;
 
-	private static final String GENERIC_ALIAS = "e";
 	public static final String EXECUTOR_NAME = "CRUDServiceBatchExecutor";
 	private static final int MAXIMUM_BATCHSIZE_IN_SINGULAR_PROCESS = 100;
 	private static final int MAXIMUM_ELEMENTS_PER_PARALLEL_PROCESS = 50;
@@ -158,7 +157,7 @@ public final class GenericCRUDService implements CRUDService {
 			Pageable pageable, UUID departmentId) throws NoSuchFieldException {
 		String[] validatedColumns = from(getDefaultColumns(type, departmentId, columns));
 		List<Object[]> rows = repository.fetch(type, validatedColumns, pageable);
-		
+
 		if (rows.isEmpty()) {
 			return new ArrayList<Map<String, Object>>();
 		}
@@ -171,7 +170,7 @@ public final class GenericCRUDService implements CRUDService {
 	}
 
 	private String prependAlias(String columnName) {
-		return GENERIC_ALIAS + "." + columnName;
+		return "e." + columnName;
 	}
 
 	/**

@@ -6,7 +6,8 @@ import adn.helpers.TypeHelper;
 public interface Service {
 
 	final TypeHelper reflector = ContextProvider.getApplicationContext().getBean(TypeHelper.class);
-	static final String UPLOAD_FAILURE = "Unable to upload file(s)";
+	
+	final String UPLOAD_FAILURE = "Unable to upload file(s)";
 	
 	public enum Status {
 

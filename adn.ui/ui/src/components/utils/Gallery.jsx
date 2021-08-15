@@ -197,26 +197,26 @@ function ClientImageCard({
 	);
 }
 
-export function SourcedImage({ src = null, name = "udef" }) {
+export function SourcedImage({ src = null, name = "udef", fit = "cover" }) {
 	return <img
 		className="uk-width-1-1 uk-height-1-1"
 		src={src}
 		alt={name}
 		style={{
-			objectFit: "cover",
+			objectFit: fit,
 			maxHeight: "100%",
 			maxWidth: "100%"
 		}}
 	/>;
 }
 
-export function DomainImage({ url = "", name = "", className = "" }) {
+export function DomainImage({ url = "", name = "", className = "", fit = "cover" }) {
 	return <img
 		className={`uk-width-1-1 uk-height-1-1 ${className}`}
 		src={`${server.url}${url}`}
 		alt={name}
 		style={{
-			objectFit: "cover",
+			objectFit: fit,
 			maxHeight: "100%",
 			maxWidth: "100%"
 		}}

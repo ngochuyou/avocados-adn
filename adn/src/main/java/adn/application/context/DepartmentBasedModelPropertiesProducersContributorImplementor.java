@@ -3,6 +3,10 @@
  */
 package adn.application.context;
 
+import static adn.service.DepartmentScoping.PERSONNEL_NAME;
+import static adn.service.DepartmentScoping.SALE_NAME;
+import static adn.service.DepartmentScoping.STOCK_NAME;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -35,16 +39,15 @@ public class DepartmentBasedModelPropertiesProducersContributorImplementor
 		Query<Object[]> hql = ss.createQuery("SELECT d.id, d.name FROM Department d WHERE d.name IN (:names)",
 				Object[].class);
 
-//		hql.setParameterList("names", new String[] { "Stock", "Sale", "Personnel", "Finance" });
-		hql.setParameterList("names", new String[] { "Stock", "Sale", "Personnel" });
+		hql.setParameterList("names", new String[] { STOCK_NAME, SALE_NAME, PERSONNEL_NAME });
 		List<Object[]> departmentList = hql.getResultList();
 
 		ss.clear();
 		ss.close();
 
-		UUID stock = getDepartmentId("Stock", departmentList);
-		UUID sale = getDepartmentId("Sale", departmentList);
-		UUID personnel = getDepartmentId("Personnel", departmentList);
+		UUID stock = getDepartmentId(STOCK_NAME, departmentList);
+		UUID sale = getDepartmentId(SALE_NAME, departmentList);
+		UUID personnel = getDepartmentId(PERSONNEL_NAME, departmentList);
 		// @formatter:off
 		builder
 			.type(Provider.class)

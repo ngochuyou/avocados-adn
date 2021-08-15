@@ -38,18 +38,16 @@ public class AccountModelProducer<T extends Account>
 
 		model.put("createdDate", Utils.formatLocalDate(account.getCreatedDate()));
 		model.put("updatedDate", Utils.formatLocalDateTime(account.getUpdatedDate()));
-
+		model.put("address", account.getAddress());
+		model.put("email", account.getEmail());
+		model.put("phone", account.getPhone());
+		
 		return model;
 	}
 
 	@Override
 	protected Map<String, Object> produceForAdmin(T account, Map<String, Object> model) {
-		model = produceForPersonnel(account, model);
-
-		model.put("email", account.getEmail());
-		model.put("phone", account.getPhone());
-
-		return model;
+		return produceForAnonymous(account, model);
 	}
 
 }

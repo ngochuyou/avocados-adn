@@ -3,12 +3,15 @@
  */
 package adn.service.services;
 
+import static adn.helpers.CollectionHelper.from;
+import static adn.helpers.HibernateHelper.selectColumns;
+import static adn.helpers.HibernateHelper.toRows;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import javax.persistence.Tuple;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -16,6 +19,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
 import org.hibernate.Session;
+import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import adn.model.entities.Product;
@@ -43,20 +47,20 @@ public class StockDetailService implements Service {
 
 	public List<Map<String, Object>> readActiveOnly(Serializable productId, Collection<String> requestedColumns,
 			Role principalRole) throws NoSuchFieldException {
-		Collection<String> validatedColumns = requestedColumns.isEmpty() ? FETCHED_COLUMNS : requestedColumns;
+		Collection<String> validatedColumns = requestedColumns.isEmpty() ? FETCHED_COLUMNS
+				: crudService.getDefaultColumns(StockDetail.class, principalRole, requestedColumns);
 		Session session = crudService.getCurrentSession();
 		CriteriaBuilder builder = session.getCriteriaBuilder();
 		CriteriaQuery<Tuple> criteriaQuery = builder.createQuery(Tuple.class);
 		Root<StockDetail> root = criteriaQuery.from(StockDetail.class);
 
-		criteriaQuery.multiselect(requestedColumns.stream().map(col -> root.get(col)).collect(Collectors.toList()));
-		criteriaQuery.where(builder.and(builder.equal(root.get(StockDetail.ACTIVE_FIELD_NAME), Boolean.TRUE),
-				builder.equal(root.get(StockDetail.PRODUCT_FIELD_NAME).get(Product.ID_FIELD_NAME), productId)));
+		criteriaQuery = selectColumns(criteriaQuery, root, validatedColumns)
+				.where(builder.and(builder.equal(root.get(StockDetail.ACTIVE_FIELD_NAME), Boolean.TRUE),
+						builder.equal(root.get(StockDetail.PRODUCT_FIELD_NAME).get(Product.ID_FIELD_NAME), productId)));
 
-		List<Object[]> results = session.createQuery(criteriaQuery).list().stream().map(row -> row.toArray())
-				.collect(Collectors.toList());
+		Query<Tuple> jpql = session.createQuery(criteriaQuery);
 
-		return crudService.resolveReadResults(StockDetail.class, results, validatedColumns.toArray(String[]::new),
+		return crudService.resolveReadResults(StockDetail.class, toRows(jpql.list()), from(validatedColumns),
 				principalRole);
 	}
 

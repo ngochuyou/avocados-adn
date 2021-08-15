@@ -11,7 +11,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -134,7 +133,7 @@ public class RestAccountController extends AccountController {
 			cols.put("departmentId", departmentService.getPrincipalDepartment());
 		}
 
-		return makeStaleWhileRevalidate(cols, 6, TimeUnit.HOURS, 24, TimeUnit.HOURS);
+		return ResponseEntity.ok(cols);
 	}
 
 	protected ResponseEntity<?> doObtainAccount(String username, Collection<String> requestedColumns)

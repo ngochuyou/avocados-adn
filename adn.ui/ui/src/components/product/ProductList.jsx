@@ -8,7 +8,7 @@ export default function ProductList({
 	messageIfEmpty = "Nothing found in this list",
 	onItemClick = () => null,
 	header = null
-}) {
+} = {}) {
 	if (list.length === 0) {
 		return (
 			<h5 className="uk-position-center uk-text-center">

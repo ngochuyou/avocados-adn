@@ -14,7 +14,6 @@ import javax.persistence.Id;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.Table;
-import javax.persistence.Transient;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -35,16 +34,9 @@ import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
 @Table(name = "accounts")
 public class Account extends adn.model.entities.Entity {
 
-	@Transient
 	public static transient final String ACTIVE_FIELD_NAME = "active";
-
-	@Transient
 	public static transient final String ROLE_FIELD_NAME = "role";
-
-	@Transient
 	public static transient final String VERSION_FIELD_NAME = "updatedDate";
-
-	@Transient
 	public static transient final String ID_FIELD_NAME = "id";
 
 	@Id
@@ -92,6 +84,8 @@ public class Account extends adn.model.entities.Entity {
 	@UpdateTimestamp
 	@Column(name = "updated_date", nullable = false)
 	private LocalDateTime updatedDate;
+
+	private String address;
 
 	public String getId() {
 		return id;
@@ -208,6 +202,14 @@ public class Account extends adn.model.entities.Entity {
 
 	public void setBirthDate(LocalDate birthDate) {
 		this.birthDate = birthDate;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
 	}
 
 }

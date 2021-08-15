@@ -3,10 +3,11 @@
  */
 package adn.dao.specification;
 
+import static adn.helpers.HibernateHelper.selectColumns;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.persistence.Tuple;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -33,8 +34,6 @@ public class GenericFactorRepository {
 
 	private final SessionFactory sessionFactory;
 
-	private static final String UNKNOWN_COLUMNS = "Unknown columns found";
-
 	public GenericFactorRepository(SessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
 	}
@@ -56,17 +55,6 @@ public class GenericFactorRepository {
 		query.select(builder.count(root)).where(isActive(builder, root));
 
 		return session.createQuery(query).getSingleResult();
-	}
-
-	protected <E, R> CriteriaQuery<R> selectColumns(CriteriaQuery<R> query, Root<E> root, Collection<String> columns)
-			throws NoSuchFieldException {
-		try {
-			query.multiselect(columns.stream().map(col -> root.get(col)).collect(Collectors.toList()));
-		} catch (IllegalArgumentException iae) {
-			throw new NoSuchFieldException(UNKNOWN_COLUMNS);
-		}
-
-		return query;
 	}
 
 	public <T extends Factor, E extends T> Tuple findActive(Class<E> type, Serializable id, Collection<String> columns)

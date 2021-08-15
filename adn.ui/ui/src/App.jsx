@@ -1,4 +1,4 @@
-import { withRouter, Route, Switch } from 'react-router-dom';
+import { withRouter, Route } from 'react-router-dom';
 
 import './App.css';
 
@@ -12,7 +12,12 @@ import AccessDenied from './pages/AccessDenied.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import HomePage from './pages/HomePage.jsx';
 import ShoppingPage from './pages/ShoppingPage.jsx';
+import ProductPage from './pages/ProductPage.jsx';
 import NotFound from './pages/NotFound.jsx';
+
+import { routes } from './config/default';
+
+import ShoppingContextProvider from './hooks/shopping-hooks';
 
 function App() {
 	const { principal } = useAuth();
@@ -23,16 +28,15 @@ function App() {
 				<Route path='/dashboard' render={props => <Dashboard { ...props } /> }/>
 			</AuthenticatedComponent>
 			<UnauthenticatedComponent principal={principal}>
-				<Switch>
-					<Route path="/login" render={(props) => <LoginPage {...props}/> } />
-				</Switch>
+				<Route path="/login" render={(props) => <LoginPage {...props}/> } />
 			</UnauthenticatedComponent>
-			<Switch>
-				<Route path='/access_denied' render={props => <AccessDenied { ...props } /> } exact />
+			<ShoppingContextProvider>
 				<Route path="/" render={props => <HomePage />} exact/>
-				<Route path="/shop/:categoryName?" render={(props) => <ShoppingPage {...props}/> } />
-				<Route component={NotFound} />
-			</Switch>
+				<Route path='/access_denied' render={props => <AccessDenied { ...props } /> } exact />
+				<Route path={`${routes.shopping.mapping}`} render={(props) => <ShoppingPage {...props}/> } />
+				<Route path={`${routes.productView.mapping}`} render={(props) => <ProductPage {...props}/> } />
+			</ShoppingContextProvider>
+			<Route path="/notfound" component={NotFound} />
 		</div>
 	);
 }

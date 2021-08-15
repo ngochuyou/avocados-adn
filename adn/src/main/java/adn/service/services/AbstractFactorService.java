@@ -58,6 +58,10 @@ public abstract class AbstractFactorService<T extends Factor> {
 
 		Tuple row = genericFactorRepository.findActive(type, id, validatedColumns);
 
+		if (row == null) {
+			return null;
+		}
+
 		return crudService.resolveReadResult(type, row.toArray(), from(validatedColumns), principalRole);
 	}
 

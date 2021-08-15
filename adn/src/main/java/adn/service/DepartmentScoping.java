@@ -30,9 +30,14 @@ public class DepartmentScoping implements EffectivelyFinal {
 	private static UUID STOCK;
 	private static UUID SALE;
 	private static UUID PERSONNEL;
-	private static UUID FINANCE;
+	private static UUID CUSTOMER_SERVICE;
 	private static UUID UNKNOWN;
 
+	public static final String STOCK_NAME = "Stock";
+	public static final String SALE_NAME = "Sale";
+	public static final String PERSONNEL_NAME = "Personnel";
+	public static final String CUSTOMERSERVICE_NAME = "Customer Service";
+	
 	private static Access access = new Access() {
 
 		@Override
@@ -43,17 +48,12 @@ public class DepartmentScoping implements EffectivelyFinal {
 		public void execute() throws Exception {
 			final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-			final String STOCK_NAME = "Stock";
-			final String SALE_NAME = "Sale";
-			final String PERSONNEL_NAME = "Personnel";
-			final String FINANCE_NAME = "Finance";
-
 			SessionFactory sf = ContextProvider.getBean(SessionFactory.class);
 			Session ss = sf.openSession();
 			Query<Object[]> hql = ss.createQuery("SELECT d.id, d.name FROM Department d WHERE d.name IN (:names)",
 					Object[].class);
 			ss.setDefaultReadOnly(true);
-			hql.setParameterList("names", new String[] { STOCK_NAME, SALE_NAME, PERSONNEL_NAME, FINANCE_NAME });
+			hql.setParameterList("names", new String[] { STOCK_NAME, SALE_NAME, PERSONNEL_NAME, CUSTOMERSERVICE_NAME });
 
 			List<Object[]> rows = hql.getResultList();
 
@@ -66,13 +66,13 @@ public class DepartmentScoping implements EffectivelyFinal {
 			SALE = (UUID) rows.stream().filter(row -> row[1].equals(SALE_NAME)).findFirst()
 					.orElseThrow(() -> new IllegalStateException("Unable to locate Sale department"))[0];
 
-			FINANCE = (UUID) rows.stream().filter(row -> row[1].equals(FINANCE_NAME)).findFirst()
+			CUSTOMER_SERVICE = (UUID) rows.stream().filter(row -> row[1].equals(CUSTOMERSERVICE_NAME)).findFirst()
 					.orElseThrow(() -> new IllegalStateException("Unable to locate Finance department"))[0];
 
 			PERSONNEL = (UUID) rows.stream().filter(row -> row[1].equals(PERSONNEL_NAME)).findFirst()
 					.orElseThrow(() -> new IllegalStateException("Unable to locate Personnel department"))[0];
 
-			Set<UUID> ids = new HashSet<>(Arrays.asList(STOCK, SALE, FINANCE, PERSONNEL));
+			Set<UUID> ids = new HashSet<>(Arrays.asList(STOCK, SALE, CUSTOMER_SERVICE, PERSONNEL));
 
 			do {
 				UNKNOWN = UUID.randomUUID();
@@ -112,8 +112,8 @@ public class DepartmentScoping implements EffectivelyFinal {
 		return PERSONNEL;
 	}
 
-	public static final UUID finance() {
-		return FINANCE;
+	public static final UUID customerService() {
+		return CUSTOMER_SERVICE;
 	}
 
 	public static final UUID unknown() {

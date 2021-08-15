@@ -13,7 +13,6 @@ public class CustomerModelProducer extends AbstractCompositeAuthenticationBasedM
 
 	@Override
 	protected Map<String, Object> produceForCustomer(Customer account, Map<String, Object> model) {
-		model.put("address", account.getAddress());
 		model.put("prestigePoint", account.getPrestigePoint());
 
 		return model;

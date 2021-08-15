@@ -163,7 +163,7 @@ export function getProductListByCategory({
 	page = 0, size = 18
 }) {
 	if (identifier == null || identifier.length === 0) {
-		return [null, "Category id was empty"];
+		return [null, "Category identifier was empty"];
 	}
 
 	return fjson(`/rest/product?category=${identifier}&by=${identifierName}&columns=${columns.join(',')}`);

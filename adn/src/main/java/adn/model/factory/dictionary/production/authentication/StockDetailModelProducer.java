@@ -59,13 +59,8 @@ public class StockDetailModelProducer
 	protected Map<String, Object> produceForPersonnel(StockDetail entity, Map<String, Object> model) {
 		model = produceForAnonymous(entity, model);
 
-		model.put("stockedDate", Utils.formatLocalDate(entity.getStockedDate()));
+		model.put("stockedDate", Utils.formatLocalDateTime(entity.getStockedTimestamp()));
 		model.put("stockedBy", factory.produce(Personnel.class, entity.getStockedBy()));
-
-		if (entity.getSoldBy() != null) {
-			model.put("soldBy", factory.produce(Personnel.class, entity.getSoldBy()));
-		}
-
 		model.put("provider", factory.produce(Provider.class, entity.getProvider()));
 
 		return model;

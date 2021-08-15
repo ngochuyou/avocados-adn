@@ -17,6 +17,7 @@ import adn.model.entities.Factor;
 import adn.model.entities.Personnel;
 import adn.model.entities.Product;
 import adn.model.entities.Provider;
+import adn.model.entities.StockDetail;
 import adn.model.factory.property.production.authentication.AuthenticationBasedModelPropertiesProducersBuilder;
 import adn.service.internal.Role;
 
@@ -37,15 +38,13 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 			.type(Account.class)
 				.role(allRoles)
 					.anyFields().mask()
-//					.field("password").mask()
 					.field("id").use("username").publish()
 					.field("firstName", "lastName", "photo", "role", "gender", "active").publish()
-					.field("birthDate").use(Utils::formatLocalDate)
 			.type()
 				.role(personnels)
-					.field("createdDate").use(Utils::formatLocalDate)
+					.field("address", "email", "phone").publish()
+					.field("createdDate", "deactivatedDate", "birthDate").use(Utils::formatLocalDate)
 					.field("updatedDate").use(Utils::formatLocalDateTime)
-					.field("deactivatedDate").use(Utils::formatLocalDate)
 			.and()
 			.type(Admin.class)
 				.role(ADMIN).anyFields().publish()
@@ -53,11 +52,11 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 			.and()
 			.type(Customer.class)
 				.role(domained)
-					.field("email", "phone", "address", "prestigePoint").publish()
+					.field("prestigePoint").publish()
 			.and()
 			.type(Personnel.class)
 				.role(personnels)
-					.field("createdBy").publish()
+					.field("createdBy", "department").publish()
 				.anyRoles().mask()
 		 	.and()
 			.type(Factor.class)
@@ -83,7 +82,16 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 				.role(personnels)
 					.field("updatedTimestamp", "createdTimestamp").use(Utils::formatLocalDateTime)
 					.anyFields().publish()
-				.anyRoles().mask();
+				.anyRoles().mask()
+			.and()
+			.type(StockDetail.class)
+				.role(allRoles)
+					.field("id", "product", "size", "numericSize", "color", "material", "status", "active", "description").publish()
+					.anyFields().mask()
+			.type()
+				.role(personnels)
+					.field("stockedBy", "soldBy", "provider").publish()
+					.field("stockedTimestamp", "updatedTimestamp").use(Utils::formatLocalDateTime);
 		// @formatter:on
 	}
 

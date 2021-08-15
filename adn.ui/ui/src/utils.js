@@ -76,10 +76,35 @@ export const hex3tohex6 = (hex3) => {
 }
 
 export const normalize = (string) => string.trim().replaceAll(/\s+/g, ' ');
+
 export const negateNegative = (event) => {
 	const { value } = event.target;
 
 	if (value < 0) {
 		event.target.value = value * -1;
+	}
+}
+
+export const isObj = (payload) => payload != null && typeof payload === 'object';
+
+export const isString = (payload) => typeof payload === 'string';
+
+export const hasLength = (payload = null) => payload != null && payload.length !== 0;
+
+export const asIf = (predicate = false) => new AsIf(predicate);
+
+class AsIf {
+	#predicate;
+
+	constructor(predicate) {
+		this.predicate = predicate;
+	}
+
+	then(callback) {
+		if (this.predicate) {
+			callback(this.predicate);
+		}
+
+		return this;
 	}
 }

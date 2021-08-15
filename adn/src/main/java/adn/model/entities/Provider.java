@@ -24,7 +24,9 @@ import adn.model.entities.converters.StringSetConverter;
 @javax.persistence.Entity
 @Table(name = "providers")
 public class Provider extends Factor implements DepartmentScoped {
-
+	
+	public static transient final int WEBSITE_MAX_LENGTH = 2000;
+	
 	@Id
 	@GeneratedValue(generator = "uuid")
 	@GenericGenerator(name = "uuid", strategy = "uuid2")
@@ -43,6 +45,9 @@ public class Provider extends Factor implements DepartmentScoped {
 
 	@Column(name = "representator_name")
 	private String representatorName;
+
+	@Column(length = WEBSITE_MAX_LENGTH)
+	private String website;
 
 	public UUID getId() {
 		return id;
@@ -82,6 +87,14 @@ public class Provider extends Factor implements DepartmentScoped {
 
 	public void setRepresentatorName(String representatorName) {
 		this.representatorName = representatorName;
+	}
+
+	public String getWebsite() {
+		return website;
+	}
+
+	public void setWebsite(String website) {
+		this.website = website;
 	}
 
 }

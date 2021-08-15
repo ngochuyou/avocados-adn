@@ -3,7 +3,7 @@
  */
 package adn.model.entities;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Enumerated;
@@ -14,7 +14,9 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -30,24 +32,24 @@ import adn.model.entities.generators.StockDetailIdGenerator;
 @Table(name = "stock_details")
 public class StockDetail extends Entity {
 
-	public static final int IDENTIFIER_LENGTH = Product.IDENTIFIER_LENGTH + 8 + 1; // 8 + delimiter
-	public static final int NAMED_SIZE_MAXIMUM_LENGTH = 4;
-	public static final int NAMED_COLOR_MAXIMUM_LENGTH = 50;
-	public static final int MATERIAL_MAXIMUM_LENGTH = 50;
-	public static final int STATUS_MAXIMUM_LENGTH = 50;
-	public static final int DESCRIPTION_MAXIMUM_LENGTH = 255;
-	public static final int NUMERIC_SIZE_MAXIMUM_VALUE = 255; // UNSIGNED
-	public static final int NUMERIC_SIZE_MINIMUM_VALUE = 1;
+	public static transient final int IDENTIFIER_LENGTH = Product.ID_LENGTH + 8 + 1; // 8 + delimiter
+	public static transient final int NAMED_SIZE_MAXIMUM_LENGTH = 4;
+	public static transient final int NAMED_COLOR_MAXIMUM_LENGTH = 50;
+	public static transient final int MATERIAL_MAXIMUM_LENGTH = 50;
+	public static transient final int STATUS_MAXIMUM_LENGTH = 50;
+	public static transient final int DESCRIPTION_MAXIMUM_LENGTH = 255;
+	public static transient final int NUMERIC_SIZE_MAXIMUM_VALUE = 255; // UNSIGNED
+	public static transient final int NUMERIC_SIZE_MINIMUM_VALUE = 1;
 
-	public static final String ID_FIELD_NAME = "id";
-	public static final String SIZE_FIELD_NAME = "size";
-	public static final String NUMERIC_SIZE_FIELD_NAME = "numericSize";
-	public static final String COLOR_FIELD_NAME = "color";
-	public static final String MATERIAL_FIELD_NAME = "material";
-	public static final String STATUS_FIELD_NAME = "status";
-	public static final String DESCRIPTION_FIELD_NAME = "description";
-	public static final String ACTIVE_FIELD_NAME = "active";
-	public static final String PRODUCT_FIELD_NAME = "product";
+	public static transient final String ID_FIELD_NAME = "id";
+	public static transient final String SIZE_FIELD_NAME = "size";
+	public static transient final String NUMERIC_SIZE_FIELD_NAME = "numericSize";
+	public static transient final String COLOR_FIELD_NAME = "color";
+	public static transient final String MATERIAL_FIELD_NAME = "material";
+	public static transient final String STATUS_FIELD_NAME = "status";
+	public static transient final String DESCRIPTION_FIELD_NAME = "description";
+	public static transient final String ACTIVE_FIELD_NAME = "active";
+	public static transient final String PRODUCT_FIELD_NAME = "product";
 
 	@Id
 	@GeneratedValue(generator = StockDetailIdGenerator.NAME)
@@ -71,16 +73,13 @@ public class StockDetail extends Entity {
 	@Column(columnDefinition = "VARCHAR(50)")
 	private String material;
 
-	@Column(name = "stocked_date", nullable = false)
-	private LocalDate stockedDate;
+	@CreationTimestamp
+	@Column(name = "stocked_timestamp", nullable = false, updatable = false)
+	private LocalDateTime stockedTimestamp;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(referencedColumnName = "id", name = "stocked_by")
 	private Personnel stockedBy;
-
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(referencedColumnName = "id", name = "sold_by")
-	private Personnel soldBy;
 
 	@ManyToOne(optional = false)
 	@JoinColumn(referencedColumnName = "id")
@@ -94,6 +93,13 @@ public class StockDetail extends Entity {
 	private Boolean active;
 
 	private String description;
+
+	@Column(nullable = false)
+	private String updatedBy;
+
+	@UpdateTimestamp
+	@Column(nullable = false)
+	private LocalDateTime updatedTimeStamp;
 
 	public String getId() {
 		return id;
@@ -127,12 +133,20 @@ public class StockDetail extends Entity {
 		this.numericSize = numericSize;
 	}
 
-	public LocalDate getStockedDate() {
-		return stockedDate;
+	public String getUpdatedBy() {
+		return updatedBy;
 	}
 
-	public void setStockedDate(LocalDate stockedDate) {
-		this.stockedDate = stockedDate;
+	public void setUpdatedBy(String updatedBy) {
+		this.updatedBy = updatedBy;
+	}
+
+	public LocalDateTime getUpdatedTimeStamp() {
+		return updatedTimeStamp;
+	}
+
+	public void setUpdatedTimeStamp(LocalDateTime updatedTimeStamp) {
+		this.updatedTimeStamp = updatedTimeStamp;
 	}
 
 	public Personnel getStockedBy() {
@@ -168,14 +182,6 @@ public class StockDetail extends Entity {
 		this.color = color;
 	}
 
-	public Personnel getSoldBy() {
-		return soldBy;
-	}
-
-	public void setSoldBy(Personnel soldBy) {
-		this.soldBy = soldBy;
-	}
-
 	public String getDescription() {
 		return description;
 	}
@@ -202,6 +208,14 @@ public class StockDetail extends Entity {
 
 	public Boolean getActive() {
 		return active;
+	}
+
+	public LocalDateTime getStockedTimestamp() {
+		return stockedTimestamp;
+	}
+
+	public void setStockedTimestamp(LocalDateTime stockedTimestamp) {
+		this.stockedTimestamp = stockedTimestamp;
 	}
 
 }

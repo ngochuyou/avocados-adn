@@ -8,6 +8,6 @@ export function fetchProviderCount() {
 	return fjson(`/rest/provider/count`);
 }
 
-export function searchProvider({ name = "", columns = [], size = 10 }) {
+export function searchProvider({ name = "", columns = [], size = 500 }) {
 	return fjson(`/rest/provider/search?name.like=${name}&columns=${columns.join(',')}&size=${size}`);
 }

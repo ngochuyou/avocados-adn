@@ -29,10 +29,11 @@ public class DepartmentChiefId implements Serializable {
 
 	public DepartmentChiefId() {}
 
-	public DepartmentChiefId(String employeeId, UUID departmentId) {
+	public DepartmentChiefId(String personnelId, UUID departmentId, LocalDate startDate) {
 		super();
-		this.personnelId = employeeId;
+		this.personnelId = personnelId;
 		this.departmentId = departmentId;
+		this.startDate = startDate;
 	}
 
 	public String getPersonnelId() {

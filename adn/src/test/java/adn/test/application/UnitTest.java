@@ -75,9 +75,9 @@ public class UnitTest {
 //		}
 //		System.out.println("done....");
 //		executorService.shutdown();
-		Pattern p = Pattern.compile("^[A-Z0-9-]+$");
-		Matcher m = p.matcher("20JGU-FORMA");
-		System.out.println(m.matches());
+//		Pattern p = Pattern.compile("^[A-Z0-9-]+$");
+//		Matcher m = p.matcher("20JGU-FORMA");
+//		System.out.println(m.matches());
 	}
 
 	public static void a(LocalDate date) {

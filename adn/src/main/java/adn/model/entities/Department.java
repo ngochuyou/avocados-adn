@@ -3,16 +3,19 @@
  */
 package adn.model.entities;
 
+import java.util.List;
 import java.util.UUID;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.GenericGenerator;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import adn.model.DepartmentScoped;
@@ -37,6 +40,10 @@ public class Department extends adn.model.entities.Entity implements DepartmentS
 	@Column(nullable = false)
 	protected Boolean active;
 
+	@JsonIgnore
+	@OneToMany(mappedBy = "department")
+	private List<Personnel> personnels;
+
 	public UUID getId() {
 		return id;
 	}
@@ -60,6 +67,14 @@ public class Department extends adn.model.entities.Entity implements DepartmentS
 
 	public void setActive(Boolean active) {
 		this.active = active;
+	}
+
+	public List<Personnel> getPersonnels() {
+		return personnels;
+	}
+
+	public void setPersonnels(List<Personnel> personnels) {
+		this.personnels = personnels;
 	}
 
 }

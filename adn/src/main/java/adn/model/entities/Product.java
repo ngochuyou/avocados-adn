@@ -35,15 +35,17 @@ import adn.model.entities.generators.ProductIdGenerator;
 @Table(name = "products")
 public class Product extends Factor {
 
-	public static final int IDENTIFIER_LENGTH = Category.IDENTIFIER_LENGTH + 5 + 1; // 5 + delimiter
-	public static final String ID_FIELD_NAME = "id";
-	public static final String CATEGORY_FIELD_NAME = "category";
-	public static final String STOCKDETAIL_FIELD_NAME = "stockDetails";
+	public static transient final int ID_LENGTH = Category.IDENTIFIER_LENGTH + 5 + 1; // 5 + delimiter
+
+	public static transient final String ID_COLUMN_DEFINITION = "VARCHAR(11)";
+	public static transient final String ID_FIELD_NAME = "id";
+	public static transient final String CATEGORY_FIELD_NAME = "category";
+	public static transient final String STOCKDETAIL_FIELD_NAME = "stockDetails";
 
 	@Id
 	@GeneratedValue(generator = ProductIdGenerator.NAME)
 	@GenericGenerator(name = ProductIdGenerator.NAME, strategy = ProductIdGenerator.PATH)
-	@Column(updatable = false, length = IDENTIFIER_LENGTH, columnDefinition = "VARCHAR(11)")
+	@Column(updatable = false, length = ID_LENGTH)
 	private String id;
 
 	@Column(columnDefinition = "DECIMAL(13,4)", nullable = false)

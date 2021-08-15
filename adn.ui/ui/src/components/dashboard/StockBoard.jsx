@@ -649,7 +649,7 @@ function ImportBoard() {
 const SEARCHED_PRODUCT_COLUMNS = ["id", "name", "images", "active"];
 const SEARCHED_PRODUCT_AMOUNT = 100;
 const SEARCHED_PROVIDER_COLUMNS = ["id", "name", "email", "representatorName", "active"];
-const SEARCHED_PROVIDER_AMOUNT = 100;
+const SEARCHED_PROVIDER_AMOUNT = 500;
 const SET_PICKER_VIEW = "SET_PICKER_VIEW";
 const PUSH_PICKER_ELEMENTS = "PUSH_PICKER_ELEMENTS";
 const VALIDATED_STOCKDETAIL_COLUMNS = ["product", "provider", "size", "status", "numericSize", "quantity"];

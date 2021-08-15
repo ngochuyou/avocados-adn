@@ -3,14 +3,13 @@
  */
 package adn.service.entity.builder;
 
+import static adn.application.context.ContextProvider.getPrincipalName;
 import static adn.helpers.StringHelper.normalizeString;
 
 import java.io.Serializable;
-import java.time.LocalDate;
 
 import org.springframework.stereotype.Component;
 
-import adn.application.context.ContextProvider;
 import adn.model.Generic;
 import adn.model.entities.Personnel;
 import adn.model.entities.StockDetail;
@@ -40,11 +39,19 @@ public class StockDetailBuilder extends AbstractEntityBuilder<StockDetail> {
 	public <E extends StockDetail> E buildInsertion(Serializable id, E model) {
 		model = super.buildInsertion(id, model);
 
-		model.setStockedBy(new Personnel(ContextProvider.getPrincipalName()));
-		model.setStockedDate(LocalDate.now());
-		model.setSoldBy(null);
-
+		model.setStockedBy(new Personnel(getPrincipalName()));
+		model.setUpdatedBy(getPrincipalName());
+		
 		return model;
+	}
+
+	@Override
+	public <E extends StockDetail> E buildUpdate(Serializable id, E model, E persistence) {
+		model = super.buildInsertion(id, model);
+
+		model.setUpdatedBy(getPrincipalName());
+
+		return super.buildUpdate(id, model, persistence);
 	}
 
 }
