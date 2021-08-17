@@ -74,7 +74,7 @@ public class BaseController {
 	protected static final String EXISTED = "RESOURCE IS ALREADY EXSITED";
 	protected static final String FAILED = "Unable to complete task";
 	public static final String ACCESS_DENIED = "ACCESS DENIDED";
-	public static final String MISSING_QUERY = "Search criteria is missing";
+	public static final String INVALID_SEARCH_CRITERIA = "Invalid search criteria";
 
 	protected void setSessionMode() {
 		setSessionMode(FlushMode.MANUAL);

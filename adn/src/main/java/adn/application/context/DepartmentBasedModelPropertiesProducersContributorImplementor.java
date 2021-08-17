@@ -18,6 +18,7 @@ import org.hibernate.query.Query;
 import adn.application.context.DefaultDepartmentBasedModelPropertiesFactory.DepartmentBasedModelPropertiesProducersBuilderContributor;
 import adn.helpers.Utils;
 import adn.model.entities.Department;
+import adn.model.entities.ProductProviderDetail;
 import adn.model.entities.Provider;
 import adn.model.factory.property.production.department.DepartmentBasedModelPropertiesProducersBuilder;
 
@@ -55,7 +56,11 @@ public class DepartmentBasedModelPropertiesProducersContributorImplementor
 				.fields("deactivatedDate").use(Utils::formatLocalDateTime)
 		.and()
 			.type(Department.class)
-				.department("Personnel", personnel).publish();
+				.department("Personnel", personnel).publish()
+		.and()
+			.type(ProductProviderDetail.class)
+				.department(SALE_NAME, sale).publish()
+				.fields("appliedTimestamp", "droppedTimestamp").use(Utils::formatLocalDateTime);
 		// @formatter:on
 	}
 

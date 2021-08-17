@@ -67,17 +67,6 @@ public interface CRUDService extends Service {
 	<T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> columns, Pageable pageable,
 			UUID departmentId) throws NoSuchFieldException;
 
-	<T extends Entity> List<Map<String, Object>> readByAssociation(Class<T> type,
-			Class<? extends Entity> associatingType, String associatingAttribute, String associationProperty,
-			Serializable associationIdentifier, Collection<String> columns, Pageable pageable, Role role)
-			throws NoSuchFieldException;
-
-	<T extends Entity> List<String> getDefaultColumns(Class<T> type, Role role, Collection<String> columns)
-			throws NoSuchFieldException;
-
-	<T extends Entity> List<String> getDefaultColumns(Class<T> type, UUID departmentId, Collection<String> columns)
-			throws NoSuchFieldException;
-
 	<T extends Entity, E extends T> Map<String, Object> find(Class<E> type, Collection<String> requestedColumns,
 			Specification<E> spec, Role role) throws NoSuchFieldException;
 
@@ -102,4 +91,14 @@ public interface CRUDService extends Service {
 	<T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type, Collection<String> requestedColumns,
 			Specification<E> spec, Sort sort, UUID departmentId) throws NoSuchFieldException;
 
+	<T extends Entity> List<Map<String, Object>> readByAssociation(Class<T> type,
+			Class<? extends Entity> associatingType, String associatingAttribute, String associationProperty,
+			Serializable associationIdentifier, Collection<String> columns, Pageable pageable, Role role)
+			throws NoSuchFieldException;
+
+	<T extends Entity> List<String> getDefaultColumns(Class<T> type, Role role, Collection<String> columns)
+			throws NoSuchFieldException;
+
+	<T extends Entity> List<String> getDefaultColumns(Class<T> type, UUID departmentId, Collection<String> columns)
+			throws NoSuchFieldException;
 }

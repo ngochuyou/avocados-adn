@@ -6,9 +6,11 @@ package adn.model.entities.metadata;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -26,6 +28,7 @@ import org.hibernate.property.access.spi.Getter;
 import org.hibernate.tuple.IdentifierProperty;
 import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.tuple.entity.EntityTuplizer;
+import org.hibernate.type.ComponentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,6 +77,7 @@ public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 			getters = Stream.of(metamodel.getPropertyNames())
 					.map(name -> Map.entry(name, tuplizer.getGetter(metamodel.getPropertyIndex(name))))
 					.collect(Collectors.toSet());
+
 			properties = Stream.of(metamodel.getPropertyNames()).collect(Collectors.toSet());
 			// notice-start: do following before adding identifier
 			boolean[] laziness = metamodel.getPropertyLaziness();
@@ -124,10 +128,24 @@ public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 
 			if (!identifier.isVirtual()) {
 				String identifierName = metamodel.getIdentifierProperty().getName();
+
 				getters.add(Map.entry(identifierName, tuplizer.getIdentifierGetter()));
 				properties.add(identifierName);
 				nonLazyProperties.add(identifierName);
 				propertyTypes.put(identifierName, identifier.getType().getReturnedClass());
+
+				if (identifier.getType() instanceof ComponentType) {
+					ComponentType component = (ComponentType) identifier.getType();
+					List<String> componentProperties = Arrays.asList(component.getPropertyNames());
+
+					for (String componentProperty : componentProperties) {
+						properties.add(componentProperty);
+						nonLazyProperties.add(componentProperty);
+						propertyTypes.put(componentProperty,
+								component.getSubtypes()[component.getPropertyIndex(componentProperty)]
+										.getReturnedClass());
+					}
+				}
 			}
 
 			if (persister instanceof SingleTableEntityPersister) {

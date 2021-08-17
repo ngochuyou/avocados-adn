@@ -297,6 +297,10 @@ public class DepartmentBasedModelPropertiesProducerImpl<T extends DepartmentScop
 				if (function.getValue() == PUBLISHER) {
 					DepartmentBasedModelPropertiesProducer associationProducer = producers
 							.get(metadata.getPropertyType(propName));
+					// not associated
+					if (associationProducer == null) {
+						continue;
+					}
 
 					if (!this.getClass().isAssignableFrom(associationProducer.getClass())) {
 						throw new IllegalArgumentException(

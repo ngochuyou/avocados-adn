@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.controller.query;
+package adn.controller.query.specification;
 
 import adn.controller.query.filter.UUIDFilter;
 

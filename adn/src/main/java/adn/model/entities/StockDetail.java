@@ -94,11 +94,11 @@ public class StockDetail extends Entity {
 
 	private String description;
 
-	@Column(nullable = false)
+	@Column(nullable = false, name = "updated_by")
 	private String updatedBy;
 
 	@UpdateTimestamp
-	@Column(nullable = false)
+	@Column(nullable = false, name = "updated_timestamp")
 	private LocalDateTime updatedTimeStamp;
 
 	public String getId() {

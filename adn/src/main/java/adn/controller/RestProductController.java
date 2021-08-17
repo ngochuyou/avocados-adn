@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.context.ContextProvider;
-import adn.controller.query.ProductQuery;
+import adn.controller.query.specification.ProductQuery;
 import adn.dao.generic.ResultBatch;
 import adn.helpers.StringHelper;
 import adn.model.entities.Category;
@@ -101,7 +101,7 @@ public class RestProductController extends ProductController {
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
 			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException {
 		if (query.isEmpty()) {
-			return sendBadRequest(MISSING_QUERY);
+			return sendBadRequest(INVALID_SEARCH_CRITERIA);
 		}
 
 		return ResponseEntity.ok(productService.searchProduct(columns, paging, query, getPrincipalRole()));

@@ -3,6 +3,7 @@
  */
 package adn.model.entities;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -10,9 +11,12 @@ import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.GenericGenerator;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import adn.model.DepartmentScoped;
 import adn.model.entities.converters.StringSetConverter;
@@ -24,8 +28,9 @@ import adn.model.entities.converters.StringSetConverter;
 @javax.persistence.Entity
 @Table(name = "providers")
 public class Provider extends Factor implements DepartmentScoped {
-	
+
 	public static transient final int WEBSITE_MAX_LENGTH = 2000;
+	public static transient final String PRODUCT_DETAILS_FIELD = "productDetails";
 	
 	@Id
 	@GeneratedValue(generator = "uuid")
@@ -48,6 +53,10 @@ public class Provider extends Factor implements DepartmentScoped {
 
 	@Column(length = WEBSITE_MAX_LENGTH)
 	private String website;
+
+	@JsonIgnore
+	@OneToMany(mappedBy = "provider")
+	private List<ProductProviderDetail> productDetails;
 
 	public UUID getId() {
 		return id;
@@ -95,6 +104,14 @@ public class Provider extends Factor implements DepartmentScoped {
 
 	public void setWebsite(String website) {
 		this.website = website;
+	}
+
+	public List<ProductProviderDetail> getProductDetails() {
+		return productDetails;
+	}
+
+	public void setProductDetails(List<ProductProviderDetail> productDetails) {
+		this.productDetails = productDetails;
 	}
 
 }

@@ -30,10 +30,13 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javax.persistence.Tuple;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
 
 import org.hibernate.FlushMode;
 import org.hibernate.QueryException;
@@ -57,6 +60,7 @@ import adn.application.context.ContextProvider;
 import adn.dao.generic.GenericRepository;
 import adn.dao.generic.Result;
 import adn.dao.generic.ResultBatch;
+import adn.dao.specification.Selections;
 import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
 import adn.model.DepartmentScoped;
@@ -222,7 +226,8 @@ public final class GenericCRUDService implements CRUDService {
 	public <T extends Entity> List<String> getDefaultColumns(Class<T> type, UUID departmentId,
 			Collection<String> columns) throws NoSuchFieldException {
 		if (!DepartmentScoped.class.isAssignableFrom(type)) {
-			throw new IllegalArgumentException(String.format("Unknown entity type [%s]", type.getName()));
+			throw new IllegalArgumentException(String.format("Type [%s] is not of type %a", type.getName(),
+					DepartmentScoped.class.getSimpleName()));
 		}
 
 		if (columns.isEmpty()) {
@@ -564,11 +569,20 @@ public final class GenericCRUDService implements CRUDService {
 
 	}
 
+	private <T extends Entity, E extends T> Selections<E> getSelections(Collection<String> validatedColumns) {
+		return new Selections<E>() {
+			@Override
+			public List<Selection<?>> toSelections(Root<E> root) {
+				return validatedColumns.stream().map(column -> root.get(column)).collect(Collectors.toList());
+			}
+		};
+	}
+
 	@Override
 	public <T extends Entity, E extends T> Map<String, Object> find(Class<E> type, Collection<String> requestedColumns,
 			Specification<E> spec, Role role) throws NoSuchFieldException {
 		Collection<String> validatedColumns = getDefaultColumns(type, role, requestedColumns);
-		Optional<Tuple> optionalRow = genericSpecificationExecutor.findOne(type, requestedColumns, spec);
+		Optional<Tuple> optionalRow = genericSpecificationExecutor.findOne(type, getSelections(validatedColumns), spec);
 		Tuple row = optionalRow.get();
 
 		if (row == null) {
@@ -582,7 +596,7 @@ public final class GenericCRUDService implements CRUDService {
 	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type,
 			Collection<String> requestedColumns, Specification<E> spec, Role role) throws NoSuchFieldException {
 		Collection<String> validatedColumns = getDefaultColumns(type, role, requestedColumns);
-		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, requestedColumns, spec);
+		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec);
 
 		return resolveReadResults(type, toRows(tuples), from(validatedColumns), role);
 	}
@@ -592,7 +606,7 @@ public final class GenericCRUDService implements CRUDService {
 			Collection<String> requestedColumns, Specification<E> spec, Pageable pageable, Role role)
 			throws NoSuchFieldException {
 		Collection<String> validatedColumns = getDefaultColumns(type, role, requestedColumns);
-		Page<Tuple> page = genericSpecificationExecutor.findAll(type, requestedColumns, spec, pageable);
+		Page<Tuple> page = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec, pageable);
 
 		return resolveReadResults(type, toRows(page.getContent()), from(validatedColumns), role);
 	}
@@ -602,7 +616,7 @@ public final class GenericCRUDService implements CRUDService {
 			Collection<String> requestedColumns, Specification<E> spec, Sort sort, Role role)
 			throws NoSuchFieldException {
 		Collection<String> validatedColumns = getDefaultColumns(type, role, requestedColumns);
-		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, requestedColumns, spec, sort);
+		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec, sort);
 
 		return resolveReadResults(type, toRows(tuples), from(validatedColumns), role);
 	}
@@ -611,7 +625,7 @@ public final class GenericCRUDService implements CRUDService {
 	public <T extends Entity, E extends T> Map<String, Object> find(Class<E> type, Collection<String> requestedColumns,
 			Specification<E> spec, UUID departmentId) throws NoSuchFieldException {
 		Collection<String> validatedColumns = getDefaultColumns(type, departmentId, requestedColumns);
-		Optional<Tuple> optionalRow = genericSpecificationExecutor.findOne(type, requestedColumns, spec);
+		Optional<Tuple> optionalRow = genericSpecificationExecutor.findOne(type, getSelections(validatedColumns), spec);
 		Tuple row = optionalRow.get();
 
 		if (row == null) {
@@ -625,7 +639,21 @@ public final class GenericCRUDService implements CRUDService {
 	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type,
 			Collection<String> requestedColumns, Specification<E> spec, UUID departmentId) throws NoSuchFieldException {
 		Collection<String> validatedColumns = getDefaultColumns(type, departmentId, requestedColumns);
-		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, requestedColumns, spec);
+		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec);
+
+		return resolveReadResults(type, toRows(tuples), from(validatedColumns), departmentId);
+	}
+
+	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type,
+			Collection<String> requestedColumns, Specification<E> spec, UUID departmentId,
+			Function<Collection<String>, Selections<E>> selectionResolver) throws NoSuchFieldException {
+		if (selectionResolver == null) {
+			return read(type, requestedColumns, spec, departmentId);
+		}
+
+		Collection<String> validatedColumns = getDefaultColumns(type, departmentId, requestedColumns);
+		Selections<E> selections = selectionResolver.apply(validatedColumns);
+		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, selections, spec);
 
 		return resolveReadResults(type, toRows(tuples), from(validatedColumns), departmentId);
 	}
@@ -635,7 +663,7 @@ public final class GenericCRUDService implements CRUDService {
 			Collection<String> requestedColumns, Specification<E> spec, Pageable pageable, UUID departmentId)
 			throws NoSuchFieldException {
 		Collection<String> validatedColumns = getDefaultColumns(type, departmentId, requestedColumns);
-		Page<Tuple> page = genericSpecificationExecutor.findAll(type, requestedColumns, spec, pageable);
+		Page<Tuple> page = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec, pageable);
 
 		return resolveReadResults(type, toRows(page.getContent()), from(validatedColumns), departmentId);
 	}
@@ -645,7 +673,7 @@ public final class GenericCRUDService implements CRUDService {
 			Collection<String> requestedColumns, Specification<E> spec, Sort sort, UUID departmentId)
 			throws NoSuchFieldException {
 		Collection<String> validatedColumns = getDefaultColumns(type, departmentId, requestedColumns);
-		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, requestedColumns, spec, sort);
+		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec, sort);
 
 		return resolveReadResults(type, toRows(tuples), from(validatedColumns), departmentId);
 	}

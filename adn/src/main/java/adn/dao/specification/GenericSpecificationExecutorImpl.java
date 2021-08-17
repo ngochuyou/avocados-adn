@@ -4,7 +4,6 @@
 package adn.dao.specification;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -14,6 +13,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -26,8 +26,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import adn.model.entities.Entity;
-import adn.service.specification.EmptyPredicateException;
 import adn.service.specification.GenericJpaSpecificationExecutor;
+import adn.service.specification.InvalidCriteriaException;
+import io.jsonwebtoken.lang.Collections;
 
 /**
  * @author Ngoc Huy
@@ -111,94 +112,49 @@ public class GenericSpecificationExecutorImpl implements GenericJpaSpecification
 		return session.createQuery(criteriaQuery).getSingleResult();
 	}
 
-	@Override
-	public <E extends Entity> Optional<Tuple> findOne(Class<E> type, Collection<String> requestedColumns,
-			Specification<E> spec) throws NoSuchFieldException {
-		return Optional.ofNullable(doFindOne(getCurrentSession(), type, requestedColumns, spec));
-	}
-
-	@Override
-	public <E extends Entity> List<Tuple> findAll(Class<E> type, Collection<String> requestedColumns,
-			Specification<E> spec) throws NoSuchFieldException {
-		List<Tuple> tuples = doFindAll(getCurrentSession(), type, requestedColumns, spec);
-
-		if (tuples.isEmpty()) {
-			return new ArrayList<>();
-		}
-
-		return tuples;
-	}
-
-	@Override
-	public <E extends Entity> Page<Tuple> findAll(Class<E> type, Collection<String> requestedColumns,
-			Specification<E> spec, Pageable pageable) throws NoSuchFieldException {
-		List<Tuple> tuples = doFindAll(getCurrentSession(), type, requestedColumns, spec, pageable);
-
-		if (tuples.isEmpty()) {
-			return Page.empty();
-		}
-
-		return new PageImpl<>(tuples, pageable, tuples.size());
-	}
-
-	@Override
-	public <E extends Entity> List<Tuple> findAll(Class<E> type, Collection<String> requestedColumns,
-			Specification<E> spec, Sort sort) throws NoSuchFieldException {
-		List<Tuple> tuples = doFindAll(getCurrentSession(), type, requestedColumns, spec, sort);
-
-		if (tuples.isEmpty()) {
-			return new ArrayList<>();
-		}
-
-		return tuples;
-	}
-
-	private <E> Tuple doFindOne(Session session, Class<E> type, Collection<String> validatedColumns,
+	private <E extends Entity> Tuple doFindOne(Session session, Class<E> type, Selections<E> selections,
 			Specification<E> spec) {
 		CriteriaBuilder builder = session.getCriteriaBuilder();
 		CriteriaQuery<Tuple> query = builder.createQuery(Tuple.class);
 		Root<E> root = query.from(type);
 
-		query.multiselect(validatedColumns.stream().map(column -> root.get(column)).collect(Collectors.toList()));
+		query.multiselect(resolveSelections(root, selections));
 		query = resolvePredicate(root, query, builder, spec);
 
 		return session.createQuery(query).getResultStream().findFirst().orElse(null);
 	}
 
-	private <E> List<Tuple> doFindAll(Session session, Class<E> type, Collection<String> validatedColumns,
+	private <E extends Entity> List<Tuple> doFindAll(Session session, Class<E> type, Selections<E> selections,
 			Specification<E> spec) {
 		CriteriaBuilder builder = session.getCriteriaBuilder();
 		CriteriaQuery<Tuple> criteriaQuery = builder.createQuery(Tuple.class);
 		Root<E> root = criteriaQuery.from(type);
 
-		criteriaQuery
-				.multiselect(validatedColumns.stream().map(column -> root.get(column)).collect(Collectors.toList()));
+		criteriaQuery.multiselect(resolveSelections(root, selections));
 		criteriaQuery = resolvePredicate(root, criteriaQuery, builder, spec);
 
 		return session.createQuery(criteriaQuery).list();
 	}
 
-	private <E extends Entity> List<Tuple> doFindAll(Session session, Class<E> type,
-			Collection<String> validatedColumns, Specification<E> spec, Pageable pageable) {
+	private <E extends Entity> List<Tuple> doFindAll(Session session, Class<E> type, Selections<E> selections,
+			Specification<E> spec, Pageable pageable) {
 		CriteriaBuilder builder = session.getCriteriaBuilder();
 		CriteriaQuery<Tuple> criteriaQuery = builder.createQuery(Tuple.class);
 		Root<E> root = criteriaQuery.from(type);
 
-		criteriaQuery
-				.multiselect(validatedColumns.stream().map(column -> root.get(column)).collect(Collectors.toList()));
+		criteriaQuery.multiselect(resolveSelections(root, selections));
 		criteriaQuery = resolvePredicate(root, criteriaQuery, builder, spec);
 
 		return resolvePagedQuery(session, criteriaQuery, pageable).list();
 	}
 
-	private <E extends Entity> List<Tuple> doFindAll(Session session, Class<E> type,
-			Collection<String> validatedColumns, Specification<E> spec, Sort sort) {
+	private <E extends Entity> List<Tuple> doFindAll(Session session, Class<E> type, Selections<E> selections,
+			Specification<E> spec, Sort sort) {
 		CriteriaBuilder builder = session.getCriteriaBuilder();
 		CriteriaQuery<Tuple> criteriaQuery = builder.createQuery(Tuple.class);
 		Root<E> root = criteriaQuery.from(type);
 
-		criteriaQuery
-				.multiselect(validatedColumns.stream().map(column -> root.get(column)).collect(Collectors.toList()));
+		criteriaQuery.multiselect(resolveSelections(root, selections));
 		criteriaQuery = resolvePredicate(root, criteriaQuery, builder, spec);
 		criteriaQuery = resolveSort(root, criteriaQuery, builder, sort);
 
@@ -228,10 +184,62 @@ public class GenericSpecificationExecutorImpl implements GenericJpaSpecification
 		Predicate predicate = specification.toPredicate(root, criteriaQuery, builder);
 
 		if (predicate == null) {
-			throw new IllegalArgumentException(EmptyPredicateException.INSTANCE);
+			throw new IllegalArgumentException(InvalidCriteriaException.INSTANCE);
 		}
 
 		return criteriaQuery.where(predicate);
+	}
+
+	private <E extends Entity> List<Selection<?>> resolveSelections(Root<E> root, Selections<E> selections) {
+		List<Selection<?>> selectionsList = selections.toSelections(root);
+
+		if (Collections.isEmpty(selectionsList)) {
+			throw new IllegalArgumentException(InvalidCriteriaException.INSTANCE);
+		}
+
+		return selectionsList;
+	}
+
+	@Override
+	public <E extends Entity> Optional<Tuple> findOne(Class<E> type, Selections<E> selections, Specification<E> spec)
+			throws NoSuchFieldException {
+		return Optional.ofNullable(doFindOne(getCurrentSession(), type, selections, spec));
+	}
+
+	@Override
+	public <E extends Entity> List<Tuple> findAll(Class<E> type, Selections<E> selections, Specification<E> spec)
+			throws NoSuchFieldException {
+		List<Tuple> tuples = doFindAll(getCurrentSession(), type, selections, spec);
+
+		if (tuples.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		return tuples;
+	}
+
+	@Override
+	public <E extends Entity> Page<Tuple> findAll(Class<E> type, Selections<E> selections, Specification<E> spec,
+			Pageable pageable) throws NoSuchFieldException {
+		List<Tuple> tuples = doFindAll(getCurrentSession(), type, selections, spec, pageable);
+
+		if (tuples.isEmpty()) {
+			return Page.empty();
+		}
+
+		return new PageImpl<>(tuples, pageable, tuples.size());
+	}
+
+	@Override
+	public <E extends Entity> List<Tuple> findAll(Class<E> type, Selections<E> selections, Specification<E> spec,
+			Sort sort) throws NoSuchFieldException {
+		List<Tuple> tuples = doFindAll(getCurrentSession(), type, selections, spec, sort);
+
+		if (tuples.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		return tuples;
 	}
 
 }

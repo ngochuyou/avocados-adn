@@ -24,8 +24,8 @@ export const isEmpty = (obj = {}) => {
 	return true;
 }
 
-export const toMap = (array = [], map = {}, idName) => {
-	array.forEach(ele => map[ele[idName]] = ele);
+export const toMap = ({ array = [], map = {}, key = null, value = null }) => {
+	array.forEach(ele => map[ele[key]] = (value == null ? ele : value));
 
 	return map;
 };
@@ -88,6 +88,8 @@ export const negateNegative = (event) => {
 export const isObj = (payload) => payload != null && typeof payload === 'object';
 
 export const isString = (payload) => typeof payload === 'string';
+
+export const isBool = (payload) => typeof payload === 'boolean';
 
 export const hasLength = (payload = null) => payload != null && payload.length !== 0;
 

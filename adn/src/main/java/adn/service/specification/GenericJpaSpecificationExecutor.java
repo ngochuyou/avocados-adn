@@ -3,7 +3,6 @@
  */
 package adn.service.specification;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
+import adn.dao.specification.Selections;
 import adn.model.entities.Entity;
 
 /**
@@ -32,16 +32,16 @@ public interface GenericJpaSpecificationExecutor {
 
 	<E extends Entity> long count(Class<E> type, Specification<E> spec);
 
-	<E extends Entity> Optional<Tuple> findOne(Class<E> type, Collection<String> requestedColumns,
-			Specification<E> spec) throws NoSuchFieldException;
-
-	<E extends Entity> List<Tuple> findAll(Class<E> type, Collection<String> requestedColumns, Specification<E> spec)
+	<E extends Entity> Optional<Tuple> findOne(Class<E> type, Selections<E> selections, Specification<E> spec)
 			throws NoSuchFieldException;
 
-	<E extends Entity> Page<Tuple> findAll(Class<E> type, Collection<String> requestedColumns, Specification<E> spec,
+	<E extends Entity> List<Tuple> findAll(Class<E> type, Selections<E> selections, Specification<E> spec)
+			throws NoSuchFieldException;
+
+	<E extends Entity> Page<Tuple> findAll(Class<E> type, Selections<E> selections, Specification<E> spec,
 			Pageable pageable) throws NoSuchFieldException;
 
-	<E extends Entity> List<Tuple> findAll(Class<E> type, Collection<String> requestedColumns, Specification<E> spec,
-			Sort sort) throws NoSuchFieldException;
+	<E extends Entity> List<Tuple> findAll(Class<E> type, Selections<E> selections, Specification<E> spec, Sort sort)
+			throws NoSuchFieldException;
 
 }

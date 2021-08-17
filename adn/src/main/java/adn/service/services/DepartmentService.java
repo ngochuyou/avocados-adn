@@ -78,8 +78,12 @@ public class DepartmentService implements adn.service.internal.Service {
 		return ((PersonnelDetails) userDetails).getDepartmentId();
 	}
 
-	public void assertSaleDepartment() {
-		assertDepartment(getPrincipalDepartment(), sale());
+	public UUID assertSaleDepartment() {
+		UUID principalDepartment = getPrincipalDepartment();
+		
+		assertDepartment(principalDepartment, sale());
+		
+		return principalDepartment;
 	}
 
 	public void assertStockDepartment() {
@@ -164,7 +168,7 @@ public class DepartmentService implements adn.service.internal.Service {
 					ON dc.personnel.id = p.id
 				WHERE dc.department.id IN (:ids) AND dc.endDate IS NULL
 				""", Stream.of(validatedColumns)
-						.map(col -> "p.".concat(col))
+						.map(col -> "p." + col)
 						.collect(Collectors.joining(",")));
 		// @formatter:on
 		List<?> rows = repository.findWithContext(query, Map.of("ids", ParamContext.array(departmentIds)));

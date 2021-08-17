@@ -1,15 +1,16 @@
 /**
  * 
  */
-package adn.controller.query;
+package adn.controller.query.specification;
 
+import adn.controller.query.RestQuery;
 import adn.controller.query.filter.StringFilter;
 
 /**
  * @author Ngoc Huy
  *
  */
-public class FactorQuery extends AbstractRestQuery {
+public class FactorQuery implements RestQuery {
 
 	private StringFilter name;
 

@@ -20,11 +20,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import adn.controller.query.ProviderQuery;
+import adn.controller.query.request.ProviderRequest;
+import adn.controller.query.specification.ProviderQuery;
 import adn.model.entities.Provider;
 import adn.service.services.DepartmentService;
 import adn.service.services.ProviderService;
@@ -49,7 +51,7 @@ public class RestProviderController extends BaseController {
 	}
 
 	@GetMapping
-	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
+	@Secured("ROLE_PERSONNEL")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getAllProviders(@PageableDefault(size = 10) Pageable paging,
 			@RequestParam(name = "columns", required = true) List<String> columns) throws NoSuchFieldException {
@@ -57,11 +59,23 @@ public class RestProviderController extends BaseController {
 
 		List<Map<String, Object>> rows = crudService.read(Provider.class, columns, paging);
 
-		return send(rows, null);
+		return ResponseEntity.ok(rows);
+	}
+
+	@GetMapping("/{providerId}")
+	@Secured("ROLE_PERSONNEL")
+	@Transactional(readOnly = true)
+	public ResponseEntity<?> obtainProvider(@PathVariable(name = "providerId", required = true) UUID providerId,
+			ProviderRequest columnsRequest) throws NoSuchFieldException {
+		UUID principalDepartment = departmentService.assertSaleDepartment();
+
+		Map<String, Object> provider = providerService.find(providerId, columnsRequest, principalDepartment);
+
+		return send(provider, String.format("Provider %s not found", providerId));
 	}
 
 	@GetMapping("/count")
-	@Secured({ "ROLE_ADMIN", "ROLE_PERSONNEL" })
+	@Secured("ROLE_PERSONNEL")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getProvidersCount() {
 		departmentService.assertSaleDepartment();
@@ -72,6 +86,7 @@ public class RestProviderController extends BaseController {
 
 	@GetMapping(path = "/search", produces = APPLICATION_JSON_VALUE)
 	@Transactional(readOnly = true)
+	@Secured("ROLE_PERSONNEL")
 	public ResponseEntity<?> searchForProviders(ProviderQuery query,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
 			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException {
@@ -80,7 +95,7 @@ public class RestProviderController extends BaseController {
 		assertDepartment(departmentId, stock(), sale());
 
 		if (query.isEmpty()) {
-			return sendBadRequest(MISSING_QUERY);
+			return sendBadRequest(INVALID_SEARCH_CRITERIA);
 		}
 
 		return ResponseEntity.ok(providerService.search(columns, paging, query, departmentId));

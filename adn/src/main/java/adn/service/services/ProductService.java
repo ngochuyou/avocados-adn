@@ -33,7 +33,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.multipart.MultipartFile;
 
 import adn.application.context.EffectivelyFinal;
-import adn.controller.query.ProductQuery;
+import adn.controller.query.specification.ProductQuery;
 import adn.dao.generic.Repository;
 import adn.dao.generic.Result;
 import adn.dao.specification.GenericFactorRepository;

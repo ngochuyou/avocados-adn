@@ -15,6 +15,7 @@ import javax.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import adn.model.DepartmentScoped;
 import adn.model.entities.id.ProductProviderDetailId;
 
 /**
@@ -23,7 +24,14 @@ import adn.model.entities.id.ProductProviderDetailId;
  */
 @javax.persistence.Entity
 @Table(name = "product_provider_details")
-public class ProductProviderDetail extends Entity {
+public class ProductProviderDetail extends Entity implements DepartmentScoped {
+
+	public static transient final String ID_FIELD = "id";
+	public static transient final String ID_PROVIDER_FIELD = "providerId";
+	public static transient final String ID_PRODUCT_FIELD = "productId";
+	public static transient final String ID_APPLIED_TIMESTAMP_FIELD = "appliedTimestamp";
+	public static transient final String PRICE_FIELD = "price";
+	public static transient final String DROPPED_TIMESTAMP_FIELD = "droppedTimestamp";
 
 	@EmbeddedId
 	private ProductProviderDetailId id;
@@ -46,10 +54,10 @@ public class ProductProviderDetail extends Entity {
 	@Column(columnDefinition = "DECIMAL(13,4)", nullable = false)
 	private BigDecimal price;
 
-	@Column(nullable = false)
+	@Column(nullable = false, name = "created_by")
 	private String createdBy;
 
-	@Column
+	@Column(name = "dropped_by")
 	private String droppedBy;
 
 	public ProductProviderDetailId getId() {

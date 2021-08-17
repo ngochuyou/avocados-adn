@@ -1,7 +1,12 @@
-import { useReducer, useEffect } from 'react';
+import { useReducer, useEffect, useState } from 'react';
 
-import { fetchProviderList, fetchProviderCount } from '../../actions/provider';
-import { spread, toMap } from '../../utils';
+import {
+	fetchProviderList, fetchProviderCount,
+	obtainProvider
+} from '../../actions/provider';
+import { TOGGLE_MODAL_VISION, SET_MODEL } from '../../actions/common';
+
+import { spread, toMap, isBool, isString } from '../../utils';
 
 import Paging from '../utils/Paging.jsx';
 import Navbar from './Navbar.jsx';
@@ -9,12 +14,17 @@ import Navbar from './Navbar.jsx';
 const STORE = {
 	providers: {},
 	providerCount: 0,
+	fetchStatus: {},
 	pagination: {
 		page: 0,
 		totalPages: 0,
 		size: 10,
 		fetchStatus: [],
 		pageMap: {}
+	},
+	view: {
+		visible: false,
+		model: null
 	}
 };
 
@@ -43,6 +53,10 @@ const FETCHED_COLUMNS = [
 	"id", "name", "email",
 	"phoneNumbers", "representatorName"
 ];
+const OBTAINED_COLUMNS = [
+	"website", "address",
+	"productDetails"
+]
 
 const SET_PROVIDER_LIST = "SET_PROVIDER_LIST";
 const SET_PROVIDER_COUNT = "SET_PROVIDER_COUNT";
@@ -95,7 +109,11 @@ export default function ProviderBoard({
 
 					return {
 						...oldState,
-						providers: toMap(list, { ...providers }, "id"),
+						providers: toMap({
+							array: list,
+							map: { ...providers },
+							key: "id"
+						}),
 						pagination: {
 							...pagination,
 							page,
@@ -129,8 +147,42 @@ export default function ProviderBoard({
 
 					return {
 						...oldState,
-						providers: toMap(payload, {}, "id"),
-						pagination: { ...pagination, pageMap }
+						providers: toMap({
+							array: payload,
+							map: {},
+							key: "id"
+						}),
+						pagination: { ...pagination, pageMap },
+						fetchStatus: toMap({
+							array: payload,
+							map: {},
+							key: "id",
+							value: false
+						})
+					};
+				}
+				case SET_MODEL: {
+					if (!isString(payload)) {
+						return oldState;
+					}
+
+					const { view } = oldState;
+
+					return {
+						...oldState,
+						view: { ...view, model: payload }
+					};
+				}
+				case TOGGLE_MODAL_VISION: {
+					if (!isBool(payload)) {
+						return oldState;
+					}
+
+					const { view } = oldState;
+
+					return {
+						...oldState,
+						view: { ...view, visible: payload }
 					};
 				}
 				case SET_PROVIDER_COUNT: {
@@ -272,7 +324,42 @@ export default function ProviderBoard({
 			payload: { page, list: providerList }
 		});
 	};
-	const { providerCount, pagination: { page, pageMap, totalPages } } = store;
+	const toggleView = (id, visible) => {
+		dispatchStore({
+			type: SET_MODEL,
+			payload: id
+		});
+		dispatchStore({
+			type: TOGGLE_MODAL_VISION,
+			payload: visible
+		});
+	}
+	const selectProvider = async (id) => {
+		if (fetchStatus[id] == true) {
+			toggleView(id, true);
+			return;
+		}
+
+		const [provider, err] = await obtainProvider({ providerId: id, columns: OBTAINED_COLUMNS });
+
+		if (err) {
+			console.error(err);
+			return;
+		}
+
+		console.log(provider);
+		toggleView(id, true);
+	};
+	const {
+		providers,
+		providerCount,
+		pagination: { page, pageMap, totalPages },
+		fetchStatus,
+		view: {
+			visible: isViewVisible,
+			model: viewedModelId
+		}
+	} = store;
 	const {
 		searchInput: {
 			disabled: navbarSearchInputDisabled
@@ -295,19 +382,30 @@ export default function ProviderBoard({
 			/>
 			<div className="uk-padding uk-padding-remove-top">
 			{
-				!isSearching ? 
-					<ProviderList
-						list={pageMap[page]}
-						totalAmount={providerCount}
-						currentPage={page + 1}
-						requestPage={requestProviderListPage}
-						totalPages={totalPages}
-					/> :
-					<ProviderList
-						list={searchResults}
-						totalAmount={totalResults}
-						currentPage={1}
-						totalPages={1}
+				!isViewVisible ?
+					!isSearching ? 
+						<ProviderList
+							list={pageMap[page]}
+							totalAmount={providerCount}
+							currentPage={page + 1}
+							requestPage={requestProviderListPage}
+							totalPages={totalPages}
+							onSelect={selectProvider}
+						/> :
+						<ProviderList
+							list={searchResults}
+							totalAmount={totalResults}
+							currentPage={1}
+							totalPages={1}
+							onSelect={selectProvider}
+						/> :
+					<ProviderView
+						providers={providers}
+						providerId={viewedModelId}
+						close={() => dispatchStore({
+							type: TOGGLE_MODAL_VISION,
+							payload: false
+						})}
 					/>
 			}	
 			</div>
@@ -318,7 +416,7 @@ export default function ProviderBoard({
 function ProviderList({
 	list = [], totalAmount = 0,
 	currentPage = 0, requestPage = () => null,
-	totalPages = 0
+	totalPages = 0, onSelect = () => null
 }) {
 	return (
 		<div>
@@ -329,11 +427,12 @@ function ProviderList({
 						<th>Email</th>
 						<th>Phone</th>
 						<th>Representator</th>
+						<th></th>
 					</tr>
 				</thead>
 				<tbody>
 				{
-					list.map(provider => (
+					list.map((provider, index) => (
 						<tr key={provider.id}>
 							<td>
 								<span className="uk-text-bold colors">
@@ -354,6 +453,13 @@ function ProviderList({
 							</td>
 							<td>
 							{ provider.representatorName }
+							</td>
+							<td>
+								<div
+									className="pointer uk-icon-button"
+									uk-icon="info"
+									onClick={() => onSelect(provider.id)}
+								></div>
 							</td>
 						</tr>
 					))
@@ -380,6 +486,75 @@ function ProviderList({
 						<label
 							className="uk-position-center backgroundf uk-label"
 						>{`${list.length}/${totalAmount} result(s)`}</label>	
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function ProviderView({
+	providers = [], providerId = null,
+	close = () => null
+}) {
+	const [containerClassName, setContainerClassName] = useState('fade-in');
+	const model = providers[providerId];
+
+	if (model == null) {
+		return null;
+	}
+
+	const onClose = () => {
+		setContainerClassName('fade-out uk-modal');
+		setTimeout(() => close(), 180);
+	}
+
+	return (
+		<div className={`uk-modal-full uk-open uk-display-block ${containerClassName}`} uk-modal="">
+			<div className="uk-modal-dialog uk-height-1-1 uk-padding">
+				<button
+					className="uk-position-top-right uk-close-large"
+					type="button" uk-close="" style={{top: "25px", right: "25px"}}
+					onClick={onClose}
+				></button>
+				<div className="uk-grid-small uk-height-1-1" uk-grid="">
+					<div className="uk-width-1-3">
+						<h1 className="uk-heading">{model.name}</h1>
+						<div className="uk-margin">
+							<label
+								className="uk-label backgroundf"
+							>Representator Name</label>
+							<div
+								className="uk-text-large uk-padding-small uk-padding-remove-top uk-padding-remove-right uk-padding-remove-bottom"
+							>{model.representatorName}</div>
+						</div>
+						<div className="uk-margin">
+							<label
+								className="uk-label backgroundf"
+							>Email</label>
+							<div
+								className="uk-text-large uk-padding-small uk-padding-remove-top uk-padding-remove-right uk-padding-remove-bottom"
+							>{model.email}</div>
+						</div>
+						<div className="uk-margin">
+							<label
+								className="uk-label backgroundf"
+							>Phone Numbers</label>
+							<div
+								className="uk-text-large uk-padding-small uk-padding-remove-top uk-padding-remove-right uk-padding-remove-bottom"
+							>
+								<ul class="uk-list uk-list-decimal uk-list-divider">
+								{
+									model.phoneNumbers.map((phoneNumber, index) => (
+										<li key={index}>{phoneNumber}</li>
+									))
+								}
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div className="uk-width-2-3 uk-height-1-1 uk-overflow-auto">
+						
 					</div>
 				</div>
 			</div>
