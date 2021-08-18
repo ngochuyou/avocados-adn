@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.WebUtils;
 
-import adn.application.context.ConfigurationContext;
+import adn.application.context.builders.ConfigurationContext;
 import adn.security.ApplicationUserDetails;
 import adn.security.ApplicationUserDetailsService;
 import adn.security.context.OnMemoryUserContext;

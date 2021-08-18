@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource;
+package adn.application.context.builders;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -57,21 +57,21 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import adn.application.Constants;
-import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
+import adn.application.context.internal.ContextBuilder;
+import adn.service.resource.ResourceSession;
 import adn.service.resource.annotation.LocalResource;
 import adn.service.resource.engine.Storage;
 import adn.service.resource.factory.BootstrapContextImpl;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
 import adn.service.resource.factory.EntityManagerFactoryImplementor;
-import adn.service.resource.factory.ResourceManagerFactory;
 import adn.service.resource.factory.MetadataBuildingOptionsImpl;
+import adn.service.resource.factory.ResourceManagerFactory;
 
 /**
  * Build an SessionFactory using default configurations which were hard-coded
@@ -81,10 +81,9 @@ import adn.service.resource.factory.MetadataBuildingOptionsImpl;
  */
 @SuppressWarnings("serial")
 @Component
-@Order(6)
 public class ResourceManagerFactoryBuilder implements ContextBuilder {
 
-	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	public static final String MODEL_PACKAGE = Constants.ROOT_PACKAGE;
 
@@ -100,7 +99,7 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 	// @formatter:off
 	// TODO: Clone all of these so that we have completely different instances.
 	// If so, we can destroy the ManagerFactory by hooking it's destruction into Spring's container and not the Hibernate's SessionFactory
-	private static List<Class<? extends Service>> STANDARD_SERVICE_CLASSES = Collections.unmodifiableList(Arrays.asList(
+	private static List<Class<? extends Service>> STANDARD_SERVICE_CLASSES= Collections.unmodifiableList(Arrays.asList(
 			MutableIdentifierGeneratorFactory.class,
 			JdbcServices.class,
 			JdbcEnvironment.class,
@@ -172,9 +171,9 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 	// @formatter:on
 	@Override
 	public void buildAfterStartUp() throws Exception {
-		logger.info(getLoggingPrefix(this) + "Building " + this.getClass());
+		logger.info("Building " + this.getClass());
 		// @formatter:off
-		logger.trace("\n\n"
+		logger.info("\n\n"
 				+ "\t\t\t\t\t\t========================================================\n"
 				+ "\t\t\t\t\t\t=          BUILDING LOCAL RESOURCE MANAGEMENT          =\n"
 				+ "\t\t\t\t\t\t========================================================\n");
@@ -198,10 +197,11 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 		((MetadataBuildingOptionsImpl) metadataBuildingOptions).makeReflectionManager(bootstrapContext);
 
 		assertSessionFactoryAndInject(build(sfi, sfi.getFastSessionServices()));
-		logger.info(getLoggingPrefix(this) + "Finished building " + this.getClass());
+		logger.info("Finished building " + this.getClass());
 	}
 
 	private void assertSessionFactoryAndInject(SessionFactory sf) throws IllegalAccessException {
+		logger.debug("Injecting Factory");
 		Assert.notNull(sf, String.format("[%s] is NULL after building process", EntityManagerFactoryImplementor.class));
 		ContextProvider.getAccess().setLocalResourceSessionFactory(sf.unwrap(SessionFactoryImpl.class));
 		defaultServiceGetter = null;
@@ -386,6 +386,11 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 				SpringApplication.exit(ContextProvider.getApplicationContext());
 			}
 		});
+	}
+
+	@Override
+	public void afterBuild() {
+		this.logger = null;
 	}
 
 }

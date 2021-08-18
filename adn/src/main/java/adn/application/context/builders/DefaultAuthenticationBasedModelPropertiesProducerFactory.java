@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.application.context;
+package adn.application.context.builders;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -20,16 +20,16 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.context.annotation.Primary;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import adn.application.Constants;
+import adn.application.context.ContextProvider;
+import adn.application.context.internal.ContextBuilder;
 import adn.helpers.CollectionHelper;
 import adn.helpers.TypeHelper;
 import adn.model.DomainEntity;
-import adn.model.ModelContextProvider;
 import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
 import adn.model.factory.AuthenticationBasedModelPropertiesProducer;
@@ -44,7 +44,6 @@ import adn.service.internal.Role;
  */
 @Component(DefaultAuthenticationBasedModelPropertiesProducerFactory.NAME)
 @Primary
-@Order(7)
 public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 		implements AuthenticationBasedModelPropertiesFactory, ContextBuilder {
 
@@ -57,8 +56,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 	public void buildAfterStartUp() throws Exception {
 		final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-		logger.info(String.format("%s %s", ContextBuilder.super.getLoggingPrefix(this),
-				String.format("Building %s", this.getClass().getSimpleName())));
+		logger.info("Building " + this.getClass());
 
 		ModelContextProvider modelContext;
 		final AuthenticationBasedModelPropertiesProducersBuilderImpl builder = new AuthenticationBasedModelPropertiesProducersBuilderImpl(
@@ -103,8 +101,7 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 		});
 		producers = Collections.unmodifiableMap(producers);
 
-		logger.info(String.format("%s %s", ContextBuilder.super.getLoggingPrefix(this),
-				String.format("Finished building %s", this.getClass().getSimpleName())));
+		logger.info("Finished building " + this.getClass());
 
 		producers.values().stream().forEach(producer -> producer.afterFactoryBuild(producers));
 	}

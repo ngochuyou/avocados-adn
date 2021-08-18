@@ -1,4 +1,4 @@
-package adn.model.factory.pojo.extraction;
+package adn.application.context.builders;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +10,6 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.context.annotation.Primary;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
@@ -18,15 +17,13 @@ import adn.application.context.ContextProvider;
 import adn.helpers.TypeHelper;
 import adn.model.DomainEntity;
 import adn.model.Generic;
-import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
+import adn.model.factory.pojo.extraction.EntityExtractorProvider;
+import adn.model.factory.pojo.extraction.PojoEntityExtractor;
 
 @Component(DefaultEntityExtractorProvider.NAME)
 @Primary
-@Order(value = 4)
 public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
-
-	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	public static final String NAME = "defaultEntityExtractorProvider";
 	private static final String ENTITY_EXTRACTOR_PACKAGE = "adn.model.factory.pojo.extraction";
@@ -50,8 +47,9 @@ public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public void buildAfterStartUp() throws Exception {
-		// TODO Auto-generated method stub
-		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
+		Logger logger = LoggerFactory.getLogger(this.getClass());
+
+		logger.info("Building " + this.getClass().getName());
 		this.extractorMap = new HashMap<>();
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
@@ -89,9 +87,9 @@ public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 						parentExtractor != null ? parentExtractor : DEFAULT_EXTRACTOR);
 			}
 		});
-		extractorMap.forEach((k, v) -> logger.info(String.format("Register one %s of type [%s] for [%s]",
+		extractorMap.forEach((k, v) -> logger.debug(String.format("Register one %s of type [%s] for [%s]",
 				PojoEntityExtractor.class.getName(), v.getClass().getName(), k.getName())));
-		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
+		logger.info("Finished building " + this.getClass());
 	}
 
 	@SuppressWarnings("unchecked")

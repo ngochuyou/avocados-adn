@@ -1,18 +1,18 @@
 /**
  * 
  */
-package adn.application.context;
+package adn.application.context.builders;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import adn.application.context.internal.ContextBuilder;
 import adn.model.entities.Admin;
 import adn.model.entities.constants.Gender;
 import adn.service.internal.Role;
@@ -23,7 +23,6 @@ import adn.service.services.AccountService;
  *
  */
 @Component
-@Order(1)
 public class DatabaseInitializer implements ContextBuilder {
 
 	@Autowired
@@ -38,11 +37,9 @@ public class DatabaseInitializer implements ContextBuilder {
 	@Override
 	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
-		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
-
+		logger.info("Building " + this.getClass().getName());
 		insertAdmin();
-
-		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
+		logger.info("Finished initializing " + this.getClass().getName());
 	}
 
 //	@SuppressWarnings("unused")

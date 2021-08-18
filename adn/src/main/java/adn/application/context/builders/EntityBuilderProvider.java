@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.entity.builder;
+package adn.application.context.builders;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -14,27 +14,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
-import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
+import adn.application.context.internal.ContextBuilder;
 import adn.helpers.TypeHelper;
 import adn.model.Generic;
-import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
+import adn.service.entity.builder.EntityBuilder;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Component
-@Order(3)
 public class EntityBuilderProvider implements ContextBuilder {
-
-	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private Map<Class<? extends Entity>, EntityBuilder<? extends Entity>> builderMap;
 	private static final EntityBuilder<Entity> DEFAULT_BUILDER = new EntityBuilder<Entity>() {
@@ -57,8 +53,9 @@ public class EntityBuilderProvider implements ContextBuilder {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void buildAfterStartUp() {
-		// TODO Auto-generated method stub
-		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
+		Logger logger = LoggerFactory.getLogger(this.getClass());
+
+		logger.info("Building " + this.getClass().getName());
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
@@ -100,7 +97,7 @@ public class EntityBuilderProvider implements ContextBuilder {
 			});
 
 			modelDescriptor.getEntityTree().forEach(node -> {
-				logger.info(String.format("[%s] -> [%s]", builderMap.get(node.getNode()).getClass(),
+				logger.debug(String.format("[%s] -> [%s]", builderMap.get(node.getNode()).getClass(),
 						node.getNode().getName()));
 			});
 		} catch (Exception e) {
@@ -108,7 +105,7 @@ public class EntityBuilderProvider implements ContextBuilder {
 			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
 
-		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
+		logger.info("Finished building " + this.getClass());
 	}
 
 	@SuppressWarnings("unchecked")

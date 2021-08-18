@@ -32,10 +32,10 @@ import org.hibernate.type.ComponentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import adn.application.context.builders.ModelContextProvider;
 import adn.engine.access.StandardAccess;
 import adn.helpers.HibernateHelper;
 import adn.model.DomainEntity;
-import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
 
 /**

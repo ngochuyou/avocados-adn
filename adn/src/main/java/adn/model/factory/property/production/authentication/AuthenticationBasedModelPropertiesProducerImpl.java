@@ -23,12 +23,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adn.application.context.ContextProvider;
+import adn.application.context.builders.ModelContextProvider;
 import adn.helpers.StringHelper;
 import adn.helpers.TypeHelper;
 import adn.helpers.Utils;
 import adn.helpers.Utils.Entry;
 import adn.model.DomainEntity;
-import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
 import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.AuthenticationBasedModelPropertiesProducer;
@@ -44,8 +44,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl<T extends DomainEnti
 
 	private static final float LOAD_FACTOR = 1.175f;
 	private static final BiFunction<Object, Role, Object> SOURCE_PRESERVER = (source, role) -> source;
-	private static final BiFunction<Object, Role, Object> SOURCE_TRANSLATOR = (source, role) -> Entry.entry(source,
-			role);
+	private static final BiFunction<Object, Role, Object> SOURCE_TRANSLATOR = (source, role) -> Entry.entry(source, role);
 
 	private Class<T> type; // only needed for afterFactoryBuild, will release once done
 

@@ -1,10 +1,9 @@
 /**
  * 
  */
-package adn.application.context;
+package adn.application.context.builders;
 
 import java.util.Arrays;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import javax.transaction.Transactional;
@@ -17,17 +16,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import adn.application.context.ContextProvider;
+import adn.application.context.internal.ContextBuilder;
 import adn.dao.generic.Repository;
 import adn.service.internal.CRUDService;
-import adn.service.services.GenericCRUDService;
 
 /**
  * @author Ngoc Huy
@@ -35,10 +33,7 @@ import adn.service.services.GenericCRUDService;
  */
 @Component
 @SuppressWarnings("all")
-@Order(value = Ordered.LOWEST_PRECEDENCE)
 public class TestRunner implements ContextBuilder {
-
-	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private final int loopT = 10000;
 
@@ -54,8 +49,10 @@ public class TestRunner implements ContextBuilder {
 	@Override
 	@Transactional
 	public void buildAfterStartUp() throws Exception {
-		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
-		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
+		Logger logger = LoggerFactory.getLogger(this.getClass());
+
+		logger.info("Initializing " + this.getClass().getName());
+		logger.info("Finished initializing " + this.getClass().getName());
 	}
 
 	@Override

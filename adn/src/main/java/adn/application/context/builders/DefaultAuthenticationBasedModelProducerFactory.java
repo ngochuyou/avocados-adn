@@ -1,4 +1,4 @@
-package adn.application.context;
+package adn.application.context.builders;
 
 import java.util.HashMap;
 import java.util.List;
@@ -12,13 +12,13 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.context.annotation.Primary;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
+import adn.application.context.ContextProvider;
+import adn.application.context.internal.ContextBuilder;
 import adn.model.DomainEntity;
 import adn.model.Generic;
-import adn.model.ModelContextProvider;
 import adn.model.ModelInheritanceTree;
 import adn.model.factory.AuthenticationBasedModelFactory;
 import adn.model.factory.dictionary.production.CompositeDictionaryAuthenticationBasedModelProducer;
@@ -27,10 +27,7 @@ import adn.service.internal.Role;
 
 @Component(DefaultAuthenticationBasedModelProducerFactory.NAME)
 @Primary
-@Order(value = 5)
 public class DefaultAuthenticationBasedModelProducerFactory implements AuthenticationBasedModelFactory, ContextBuilder {
-
-	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	public static final String NAME = "authenticationBasedProducerProvider";
 	private static final String MODEL_PRODUCER_PACKAGE = "adn.model.factory.dictionary.production.authentication";
@@ -40,7 +37,9 @@ public class DefaultAuthenticationBasedModelProducerFactory implements Authentic
 	@SuppressWarnings("unchecked")
 	@Override
 	public void buildAfterStartUp() throws Exception {
-		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass());
+		Logger logger = LoggerFactory.getLogger(this.getClass());
+
+		logger.info("Building " + this.getClass());
 		this.producerMap = new HashMap<>();
 		// @formatter:off
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
@@ -95,14 +94,14 @@ public class DefaultAuthenticationBasedModelProducerFactory implements Authentic
 				producerMap.put(branch.getNode(), combine(this.<DomainEntity>from(producerMap.get(parent.getNode())), producerMap.get(branch.getNode())));
 			});
 			producerMap.forEach((k, v) -> {
-				logger.info(String.format("Registered one %s for type [%s]: %s", CompositeDictionaryAuthenticationBasedModelProducer.class.getSimpleName(), k.getName(), v.getName()));
+				logger.debug(String.format("Registered one %s for type [%s]: %s", CompositeDictionaryAuthenticationBasedModelProducer.class.getSimpleName(), k.getName(), v.getName()));
 			});
 		} catch (Exception e) {
 			e.printStackTrace();
 			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
 		// @formatter:on
-		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass());
+		logger.info("Finished building " + this.getClass());
 	}
 
 	@SuppressWarnings("unchecked")

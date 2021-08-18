@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.GenericFilterBean;
 import org.springframework.web.util.WebUtils;
 
-import adn.application.context.ConfigurationContext;
+import adn.application.context.builders.ConfigurationContext;
 
 /**
  * @author Ngoc Huy

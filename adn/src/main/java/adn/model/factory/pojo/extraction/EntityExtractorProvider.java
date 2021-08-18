@@ -1,6 +1,6 @@
 package adn.model.factory.pojo.extraction;
 
-import adn.application.context.ContextBuilder;
+import adn.application.context.internal.ContextBuilder;
 import adn.model.DomainEntity;
 
 public interface EntityExtractorProvider extends ContextBuilder {

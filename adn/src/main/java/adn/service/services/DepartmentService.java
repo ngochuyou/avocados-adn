@@ -4,11 +4,6 @@
 package adn.service.services;
 
 import static adn.helpers.CollectionHelper.from;
-import static adn.service.DepartmentScoping.assertDepartment;
-import static adn.service.DepartmentScoping.personnel;
-import static adn.service.DepartmentScoping.sale;
-import static adn.service.DepartmentScoping.stock;
-import static adn.service.DepartmentScoping.unknown;
 
 import java.util.Collection;
 import java.util.List;
@@ -28,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import adn.application.context.ContextProvider;
+import adn.application.context.builders.DepartmentScopeContext;
 import adn.dao.generic.GenericRepository;
 import adn.dao.generic.ParamContext;
 import adn.model.entities.DepartmentChief;
@@ -72,7 +68,7 @@ public class DepartmentService implements adn.service.internal.Service {
 		ApplicationUserDetails userDetails = ContextProvider.getPrincipal();
 
 		if (!(userDetails instanceof PersonnelDetails)) {
-			return unknown();
+			return DepartmentScopeContext.unknown();
 		}
 
 		return ((PersonnelDetails) userDetails).getDepartmentId();
@@ -81,25 +77,25 @@ public class DepartmentService implements adn.service.internal.Service {
 	public UUID assertSaleDepartment() {
 		UUID principalDepartment = getPrincipalDepartment();
 		
-		assertDepartment(principalDepartment, sale());
+		DepartmentScopeContext.assertDepartment(principalDepartment, DepartmentScopeContext.sale());
 		
 		return principalDepartment;
 	}
 
 	public void assertStockDepartment() {
-		assertDepartment(getPrincipalDepartment(), stock());
+		DepartmentScopeContext.assertDepartment(getPrincipalDepartment(), DepartmentScopeContext.stock());
 	}
 
 	public void assertPersonnelDepartment() {
-		assertDepartment(getPrincipalDepartment(), personnel());
+		DepartmentScopeContext.assertDepartment(getPrincipalDepartment(), DepartmentScopeContext.personnel());
 	}
 
 	public boolean isPersonnelDepartment() {
-		return getPrincipalDepartment().equals(personnel());
+		return getPrincipalDepartment().equals(DepartmentScopeContext.personnel());
 	}
 
 	public boolean isPersonnelDepartment(UUID requestedDepartmentId) {
-		return requestedDepartmentId == personnel();
+		return requestedDepartmentId == DepartmentScopeContext.personnel();
 	}
 
 	public Personnel getDepartmentChief(UUID departmentId) {

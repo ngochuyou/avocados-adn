@@ -3,9 +3,6 @@
  */
 package adn.controller;
 
-import static adn.service.DepartmentScoping.assertDepartment;
-import static adn.service.DepartmentScoping.sale;
-import static adn.service.DepartmentScoping.stock;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.util.List;
@@ -25,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import adn.application.context.builders.DepartmentScopeContext;
 import adn.controller.query.request.ProviderRequest;
 import adn.controller.query.specification.ProviderQuery;
 import adn.model.entities.Provider;
@@ -92,7 +90,7 @@ public class RestProviderController extends BaseController {
 			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException {
 		UUID departmentId = departmentService.getPrincipalDepartment();
 
-		assertDepartment(departmentId, stock(), sale());
+		DepartmentScopeContext.assertDepartment(departmentId, DepartmentScopeContext.stock(), DepartmentScopeContext.sale());
 
 		if (query.isEmpty()) {
 			return sendBadRequest(INVALID_SEARCH_CRITERIA);

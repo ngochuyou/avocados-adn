@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.application.context;
+package adn.application.context.builders;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -18,16 +18,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import adn.application.Constants;
+import adn.application.context.ContextProvider;
+import adn.application.context.internal.ContextBuilder;
 import adn.helpers.TypeHelper;
 import adn.model.DepartmentScoped;
 import adn.model.DomainEntity;
-import adn.model.ModelContextProvider;
 import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.DepartmentBasedModelPropertiesFactory;
 import adn.model.factory.property.production.DepartmentBasedModelPropertiesProducer;
@@ -41,7 +41,6 @@ import adn.model.factory.property.production.department.DepartmentBasedModelProp
  *
  */
 @Component
-@Order(9)
 public class DefaultDepartmentBasedModelPropertiesFactory
 		implements DepartmentBasedModelPropertiesFactory, ContextBuilder {
 
@@ -52,8 +51,7 @@ public class DefaultDepartmentBasedModelPropertiesFactory
 	public void buildAfterStartUp() throws Exception {
 		final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-		logger.info(String.format("%s %s", ContextBuilder.super.getLoggingPrefix(this),
-				String.format("Building %s", this.getClass().getSimpleName())));
+		logger.info("Building " + this.getClass());
 
 		ModelContextProvider modelContext;
 		final DepartmentBasedModelPropertiesProducersBuilderImpl builder = new DepartmentBasedModelPropertiesProducersBuilderImpl(
@@ -107,8 +105,7 @@ public class DefaultDepartmentBasedModelPropertiesFactory
 
 		producersMap.values().stream().forEach(producer -> producer.afterFactoryBuild(producersMap));
 
-		logger.info(String.format("%s %s", ContextBuilder.super.getLoggingPrefix(this),
-				String.format("Finished building %s", this.getClass().getSimpleName())));
+		logger.info("Finished building " + this.getClass());
 	}
 
 	private <T extends DepartmentScoped> DepartmentBasedModelPropertiesProducer getProducer(Class<T> type) {
@@ -417,7 +414,7 @@ public class DefaultDepartmentBasedModelPropertiesFactory
 
 	}
 
-	interface DepartmentBasedModelPropertiesProducersBuilderContributor {
+	public interface DepartmentBasedModelPropertiesProducersBuilderContributor {
 
 		void contribute(DepartmentBasedModelPropertiesProducersBuilder builder);
 

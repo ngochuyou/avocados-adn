@@ -27,7 +27,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.util.Assert;
 
 import adn.application.context.ContextProvider;
-import adn.application.context.EffectivelyFinal;
+import adn.application.context.internal.EffectivelyFinal;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Category;

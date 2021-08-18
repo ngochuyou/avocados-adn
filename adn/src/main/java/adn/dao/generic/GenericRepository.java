@@ -30,10 +30,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
 
+import adn.application.context.builders.SpecificationFactory;
 import adn.helpers.Utils.Entry;
 import adn.model.entities.Entity;
 import adn.model.specification.Specification;
-import adn.model.specification.SpecificationFactory;
 
 /**
  * @author Ngoc Huy

@@ -6,11 +6,14 @@ package adn.service.internal;
 import java.util.Map;
 import java.util.Set;
 
+import adn.application.context.builders.CredentialFactory;
+import adn.model.factory.authentication.EnumeratedCredential;
+
 /**
  * @author Ngoc Huy
  *
  */
-public enum Role implements RoleDefinition {
+public enum Role implements RoleDefinition, EnumeratedCredential {
 
 	ANONYMOUS, ADMIN, CUSTOMER, PERSONNEL;
 
@@ -59,6 +62,21 @@ public enum Role implements RoleDefinition {
 	@Override
 	public boolean canBeUpdatedTo(Role requested) {
 		return UPDATABLE_ROLE_MAP.get(this).contains(requested);
+	}
+
+	@Override
+	public String evaluate() {
+		return this.toString();
+	}
+
+	@Override
+	public int getPosition() {
+		return CredentialFactory.ROLE_CREDENTIAL_POSITION;
+	}
+
+	@Override
+	public Class<? extends Enum<?>> getEnumtype() {
+		return Role.class;
 	}
 
 }

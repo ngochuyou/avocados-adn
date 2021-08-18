@@ -3,9 +3,9 @@
  */
 package adn.application.context;
 
-import static adn.service.DepartmentScoping.PERSONNEL_NAME;
-import static adn.service.DepartmentScoping.SALE_NAME;
-import static adn.service.DepartmentScoping.STOCK_NAME;
+import static adn.application.context.builders.DepartmentScopeContext.PERSONNEL_NAME;
+import static adn.application.context.builders.DepartmentScopeContext.SALE_NAME;
+import static adn.application.context.builders.DepartmentScopeContext.STOCK_NAME;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,7 +15,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
 
-import adn.application.context.DefaultDepartmentBasedModelPropertiesFactory.DepartmentBasedModelPropertiesProducersBuilderContributor;
+import adn.application.context.builders.DefaultDepartmentBasedModelPropertiesFactory.DepartmentBasedModelPropertiesProducersBuilderContributor;
 import adn.helpers.Utils;
 import adn.model.entities.Department;
 import adn.model.entities.ProductProviderDetail;

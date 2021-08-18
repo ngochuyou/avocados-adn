@@ -23,11 +23,11 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.context.ContextProvider;
+import adn.application.context.builders.ModelContextProvider;
 import adn.dao.generic.Repository;
 import adn.dao.generic.Result;
 import adn.helpers.FunctionHelper.HandledConsumer;
 import adn.model.DomainEntity;
-import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
 import adn.model.factory.AuthenticationBasedModelFactory;
 import adn.model.factory.AuthenticationBasedModelPropertiesFactory;

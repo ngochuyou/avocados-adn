@@ -11,7 +11,7 @@ import java.util.function.Function;
 
 import javax.servlet.http.Cookie;
 
-import adn.application.context.ConfigurationContext;
+import adn.application.context.builders.ConfigurationContext;
 import adn.security.ApplicationUserDetails;
 import adn.security.ApplicationUserDetailsService;
 import adn.service.internal.Service;

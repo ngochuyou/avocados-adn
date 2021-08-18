@@ -7,7 +7,7 @@ import static adn.service.internal.Role.ADMIN;
 import static adn.service.internal.Role.CUSTOMER;
 import static adn.service.internal.Role.PERSONNEL;
 
-import adn.application.context.DefaultAuthenticationBasedModelPropertiesProducerFactory.AuthenticationBasedModelPropertiesProducersContributor;
+import adn.application.context.builders.DefaultAuthenticationBasedModelPropertiesProducerFactory.AuthenticationBasedModelPropertiesProducersContributor;
 import adn.helpers.Utils;
 import adn.model.entities.Account;
 import adn.model.entities.Admin;

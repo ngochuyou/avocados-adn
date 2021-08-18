@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.model.specification;
+package adn.application.context.builders;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -14,31 +14,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
-import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
+import adn.application.context.internal.ContextBuilder;
 import adn.dao.generic.Result;
 import adn.helpers.TypeHelper;
 import adn.model.Generic;
-import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
+import adn.model.specification.Specification;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Component
-@Order(2)
 public class SpecificationFactory implements ContextBuilder {
 
 	private Map<Class<? extends Entity>, Specification<?>> specificationMap;
-
-	private Logger logger = LoggerFactory.getLogger(SpecificationFactory.class);
-
 	private Specification<Entity> defaultSpecification = new Specification<>() {
 
 		@Override
@@ -59,8 +54,9 @@ public class SpecificationFactory implements ContextBuilder {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void buildAfterStartUp() {
-		// TODO Auto-generated method stub
-		logger.info(getLoggingPrefix(this) + "Initializing " + this.getClass().getName());
+		Logger logger = LoggerFactory.getLogger(SpecificationFactory.class);
+
+		logger.info("Building " + this.getClass().getName());
 		this.specificationMap = new HashMap<>();
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
@@ -98,9 +94,9 @@ public class SpecificationFactory implements ContextBuilder {
 					specificationMap.put((Class<? extends Entity>) branch.getNode(), parentSpec != null ? parentSpec : defaultSpecification);
 				}
 			});
-		specificationMap.forEach((k, v) -> logger.info(String.format("Registered one %s of type [%s] for [%s] ", Specification.class.getSimpleName(), v.getClass().getName(), k.getName())));
+		specificationMap.forEach((k, v) -> logger.debug(String.format("Registered one %s of type [%s] for [%s] ", Specification.class.getSimpleName(), v.getClass().getName(), k.getName())));
 		// @formatter:on
-		logger.info(getLoggingPrefix(this) + "Finished initializing " + this.getClass().getName());
+		logger.info("Finished building" + this.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")

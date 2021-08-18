@@ -29,7 +29,7 @@ import adn.dao.generic.Result;
 import adn.helpers.StringHelper;
 import adn.helpers.Utils;
 import adn.model.entities.Account;
-import adn.service.internal.AccountRoleExtractor;
+import adn.service.AccountRoleExtractor;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Role;
 import adn.service.services.AccountService;

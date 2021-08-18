@@ -1,12 +1,14 @@
 /**
  * 
  */
-package adn.service.internal;
+package adn.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import adn.service.internal.Role;
 
 /**
  * @author Ngoc Huy

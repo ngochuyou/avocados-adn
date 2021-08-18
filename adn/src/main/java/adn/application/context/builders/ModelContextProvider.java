@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.model;
+package adn.application.context.builders;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -25,9 +25,12 @@ import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
-import adn.application.context.ContextBuilder;
 import adn.application.context.ContextProvider;
+import adn.application.context.internal.ContextBuilder;
 import adn.helpers.TypeHelper;
+import adn.model.DomainEntity;
+import adn.model.Generic;
+import adn.model.ModelInheritanceTree;
 import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.entities.metadata.DomainEntityMetadataImpl;
 import adn.model.models.Model;
@@ -37,10 +40,9 @@ import adn.model.models.Model;
  *
  */
 @Component
-@Order(0)
 public class ModelContextProvider implements ContextBuilder {
 
-	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private ModelInheritanceTree<DomainEntity> entityTree;
 	private ModelInheritanceTree<Model> modelTree;
@@ -52,6 +54,7 @@ public class ModelContextProvider implements ContextBuilder {
 
 	@Override
 	public void buildAfterStartUp() {
+		logger.info("Building " + this.getClass());
 		initializeEntityTree();
 		logger.debug("---------------------------------------");
 		initializeModelTree();
@@ -61,11 +64,13 @@ public class ModelContextProvider implements ContextBuilder {
 		initializeDefaultModelMap();
 		logger.debug("---------------------------------------");
 		initializeMetadataMap();
+		logger.info("Finished building " + this.getClass());
 	}
 
 	private void initializeMetadataMap() {
 		metadataMap = new HashMap<>();
-		entityTree.forEach(branch -> metadataMap.put(branch.getNode(), new DomainEntityMetadataImpl(this, branch.getNode())));		
+		entityTree.forEach(
+				branch -> metadataMap.put(branch.getNode(), new DomainEntityMetadataImpl(this, branch.getNode())));
 		entityTree.forEach(branch -> logger.debug(
 				String.format("%s -> %s", branch.getNode().getName(), metadataMap.get(branch.getNode()).toString())));
 	}
@@ -247,10 +252,6 @@ public class ModelContextProvider implements ContextBuilder {
 		this.entityTree = entityTree;
 	}
 
-	public Logger getLogger() {
-		return logger;
-	}
-
 	public ModelInheritanceTree<Model> getModelTree() {
 		return modelTree;
 	}
@@ -280,6 +281,11 @@ public class ModelContextProvider implements ContextBuilder {
 
 	public <T extends DomainEntity> DomainEntityMetadata getMetadata(Class<T> entityType) {
 		return metadataMap.get(entityType);
+	}
+
+	@Override
+	public void afterBuild() {
+		this.logger = null;
 	}
 
 }

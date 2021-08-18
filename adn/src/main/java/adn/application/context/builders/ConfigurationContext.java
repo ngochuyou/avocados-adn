@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.application.context;
+package adn.application.context.builders;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,27 +12,25 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.util.ResourceUtils;
+
+import adn.application.context.ContextProvider;
+import adn.application.context.internal.ContextBuilder;
 
 /**
  * @author Ngoc Huy
  *
  */
-@Order(value = Ordered.HIGHEST_PRECEDENCE)
 public class ConfigurationContext implements ContextBuilder {
 
 	private static transient $$$$$$$$$$$$$$$$$$$$$$$$$$$$ $$$;
 
-	private final Logger logger = LoggerFactory.getLogger(this.getClass());
-
 	@Override
 	public void buildAfterStartUp() {
-		// TODO Auto-generated method stub
-		logger.info(getLoggingPrefix(this) + "Building " + this.getClass().getName());
+		Logger logger = LoggerFactory.getLogger(this.getClass());
+		logger.info("Building " + this.getClass().getName());
 		this.____();
-		logger.info(getLoggingPrefix(this) + "Finished building " + this.getClass().getName());
+		logger.info("Finished building " + this.getClass().getName());
 	}
 
 	private void ____() {

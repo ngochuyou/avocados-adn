@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.application.context;
+package adn.application.context.builders;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.id.IdentifierGenerator;
@@ -11,10 +11,12 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.context.properties.ConstructorBinding;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 
 import adn.application.Constants;
+import adn.application.context.ContextProvider;
+import adn.application.context.internal.ContextBuilder;
+import adn.application.context.internal.EffectivelyFinal;
 import adn.model.Generic;
 import adn.model.entities.Entity;
 
@@ -22,15 +24,12 @@ import adn.model.entities.Entity;
  * @author Ngoc Huy
  *
  */
-@Order(8)
 public class AfterBuildMethodsInvoker implements ContextBuilder {
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public void buildAfterStartUp() throws Exception {
 		final Logger logger = LoggerFactory.getLogger(AfterBuildMethodsInvoker.class);
-
-		logger.info(getLoggingPrefix(this) + String.format("Building %s", this.getClass().getName()));
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
@@ -80,8 +79,6 @@ public class AfterBuildMethodsInvoker implements ContextBuilder {
 				logger.error(String.format("Access to [%s] was closed", method.getClass().getName()));
 			}
 		}
-
-		logger.info(getLoggingPrefix(this) + String.format("Finished building %s", this.getClass().getName()));
 	}
 
 }

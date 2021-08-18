@@ -25,12 +25,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adn.application.context.ContextProvider;
+import adn.application.context.builders.ModelContextProvider;
 import adn.helpers.TypeHelper;
 import adn.helpers.Utils;
 import adn.helpers.Utils.Entry;
 import adn.model.DepartmentScoped;
 import adn.model.DomainEntity;
-import adn.model.ModelContextProvider;
 import adn.model.entities.Entity;
 import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.property.production.DepartmentBasedModelPropertiesProducer;

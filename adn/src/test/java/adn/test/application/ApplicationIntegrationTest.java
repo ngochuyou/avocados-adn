@@ -55,7 +55,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
-import adn.application.context.DatabaseInitializer;
+import adn.application.context.builders.DatabaseInitializer;
 import adn.dao.generic.GenericRepository;
 import adn.dao.generic.Unpaged;
 import adn.model.entities.Account;
