@@ -3,11 +3,14 @@
  */
 package adn.model.specification.generic;
 
-import org.springframework.http.HttpStatus;
+import java.io.Serializable;
+
+import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
-import adn.model.Genetized;
-import adn.model.Result;
+import adn.dao.generic.Result;
+import adn.helpers.HibernateHelper;
+import adn.model.Generic;
 import adn.model.entities.Customer;
 
 /**
@@ -15,17 +18,20 @@ import adn.model.entities.Customer;
  *
  */
 @Component
-@Genetized(entityGene = Customer.class)
+@Generic(entityGene = Customer.class)
 public class CustomerSpecification extends AccountSpecification<Customer> {
-
+	
 	@Override
-	public Result<Customer> isSatisfiedBy(Customer instance) {
-		// TODO Auto-generated method stub
-		Result<Customer> result = super.isSatisfiedBy(instance);
+	public Result<Customer> isSatisfiedBy(Session session, Customer instance) {
+		return isSatisfiedBy(session, HibernateHelper.getIdentifier(instance), instance);
+	}
+	
+	@Override
+	public Result<Customer> isSatisfiedBy(Session session, Serializable id, Customer instance) {
+		Result<Customer> result = super.isSatisfiedBy(session, id, instance);
 
 		if (instance.getPrestigePoint() < 0) {
-			result.getMessageSet().put("prestigePoint", "Prestige point can not be negative");
-			result.setStatus(HttpStatus.BAD_REQUEST.value());
+			result.bad().getMessages().put("prestigePoint", "Prestige point can not be negative");
 		}
 
 		return result;

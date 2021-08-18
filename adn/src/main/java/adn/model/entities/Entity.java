@@ -3,16 +3,12 @@
  */
 package adn.model.entities;
 
-import java.io.Serializable;
-
-import adn.model.AbstractModel;
+import adn.model.DomainEntity;
 
 /**
  * @author Ngoc Huy
  *
  */
-public abstract class Entity extends AbstractModel {
-
-	public abstract void setId(Serializable id);
+public abstract class Entity extends DomainEntity {
 
 }

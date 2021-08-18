@@ -5,38 +5,58 @@ package adn.service.resource.model.models;
 
 import java.util.Date;
 
+import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.MappedSuperclass;
 import javax.persistence.Version;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.TypeDefs;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.AccessType;
 
-import adn.service.resource.local.LocalResource;
-import adn.service.resource.metamodel.DefaultResourceIdentifierGenerator;
-import adn.service.resource.metamodel.Extension;
+import adn.service.resource.annotation.Extension;
+import adn.service.resource.annotation.LocalResource;
+import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
+import adn.service.resource.model.type.FileCreationTimeStampType;
 
 /**
  * @author Ngoc Huy
  *
  */
+// @formatter:off
 @LocalResource
-public class FileResource implements Resource {
+@MappedSuperclass
+@TypeDefs(value = {
+	@TypeDef(name = FileCreationTimeStampType.NAME, typeClass = FileCreationTimeStampType.class),
+})
+// @formatter:on
+public abstract class FileResource implements Resource {
+
+	public static final String ID_NAME = "name";
 
 	@Id
-	@GeneratedValue
-	@GenericGenerator(strategy = DefaultResourceIdentifierGenerator.NAME, name = DefaultResourceIdentifierGenerator.NAME)
+	@GeneratedValue(generator = DefaultResourceIdentifierGenerator.NAME)
+	@GenericGenerator(strategy = DefaultResourceIdentifierGenerator.PATH, name = DefaultResourceIdentifierGenerator.NAME)
 	private String name;
 
 	@CreationTimestamp
+	@Type(type = FileCreationTimeStampType.NAME)
+	@Column(updatable = false, nullable = false)
 	private Date createdDate;
 
 	@Version
 	@UpdateTimestamp
+	@AccessType(value = AccessType.Type.PROPERTY)
+	@Column(nullable = false)
 	private Date lastModified;
 
 	@Extension
+	@Column(nullable = false)
 	private String extension;
 
 	public FileResource() {}
@@ -45,7 +65,7 @@ public class FileResource implements Resource {
 		super();
 		this.name = pathname;
 		this.createdDate = timestamp;
-		this.extension = "." + extension;
+		this.extension = extension;
 	}
 
 	public String getName() {
@@ -74,10 +94,6 @@ public class FileResource implements Resource {
 
 	public Date getLastModified() {
 		return lastModified;
-	}
-
-	public void setLastModified(Date lastModified) {
-		this.lastModified = lastModified;
 	}
 
 }

@@ -3,43 +3,57 @@
  */
 package adn.model.entities;
 
-import java.io.Serializable;
+import java.time.LocalDateTime;
 
 import javax.persistence.Column;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
+import javax.persistence.Transient;
 
-import org.hibernate.annotations.GenericGenerator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author Ngoc Huy
  *
  */
 @MappedSuperclass
-public class Factor extends Entity {
+public abstract class Factor extends Entity {
 
-	@Id
-	@GeneratedValue(generator = "uuid")
-	@GenericGenerator(name = "uuid", strategy = "uuid2")
-	protected String id;
+	@Transient
+	public static transient final String ACTIVE_FIELD_NAME = "active";
 
-	@Column(nullable = false)
-	protected String name;
+	@Column(nullable = false, unique = true)
+	private String name;
 
-	@Column(name = "created_by")
-	protected String createdBy;
+	@Column(name = "created_by", nullable = false)
+	private String createdBy;
 
-	@Column(name = "updated_by")
-	protected String updatedBy;
+	@Column(name = "updated_by", nullable = false)
+	private String updatedBy;
 
-	@Override
-	public String getId() {
-		return id;
+	@JsonProperty
+	@Column(name = "active", nullable = false)
+	private Boolean active;
+
+	@Column(name = "deactivated_date")
+	private LocalDateTime deactivatedDate;
+
+	@JsonProperty(value = "active")
+	public Boolean isActive() {
+		return active;
 	}
 
-	public void setId(String id) {
-		this.id = id;
+	public void setActive(Boolean isActive) {
+		this.active = isActive;
+	}
+
+	@JsonIgnore
+	public LocalDateTime getDeactivatedDate() {
+		return deactivatedDate;
+	}
+
+	public void setDeactivatedDate(LocalDateTime deactivatedDate) {
+		this.deactivatedDate = deactivatedDate;
 	}
 
 	public String getName() {
@@ -64,12 +78,6 @@ public class Factor extends Entity {
 
 	public void setUpdatedBy(String updatedBy) {
 		this.updatedBy = updatedBy;
-	}
-
-	@Override
-	public void setId(Serializable id) {
-		// TODO Auto-generated method stub
-		this.id = (String) id;
 	}
 
 }

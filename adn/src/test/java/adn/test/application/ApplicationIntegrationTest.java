@@ -9,18 +9,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.transaction.Transactional;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 
 import org.hibernate.FlushMode;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.EntityState;
 import org.hibernate.internal.SessionImpl;
+import org.hibernate.tuple.entity.EntityMetamodel;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -29,6 +35,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -40,17 +49,19 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
-import adn.application.context.DatabaseInitializer;
-import adn.model.ModelManager;
+import adn.application.context.builders.DatabaseInitializer;
+import adn.dao.generic.GenericRepository;
+import adn.dao.generic.Unpaged;
 import adn.model.entities.Account;
-import adn.model.entities.Admin;
+import adn.model.entities.Provider;
 import adn.security.SecurityConfiguration;
-import adn.service.resource.storage.LocalResourceStorage;
+import adn.service.resource.model.models.UserPhoto;
 
 /**
  * @author Ngoc Huy
@@ -86,7 +97,7 @@ public class ApplicationIntegrationTest {
 
 	@Test
 	private void testGetImageBytes() throws Exception {
-		File directory = new File(LocalResourceStorage.IMAGE_FILE_DIRECTORY);
+		File directory = new File(UserPhoto.DIRECTORY);
 		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
 				.get(MULTITHREADING_ENDPOINT + "/file/public/image/bytes");
 		int amount = directory.listFiles().length;
@@ -126,19 +137,7 @@ public class ApplicationIntegrationTest {
 	}
 
 	@Autowired
-	private ModelManager modelManager;
-
-	@Test
-	private void testInstantiateEntity() {
-		String id = "ngochuy.ou";
-		Admin instance = modelManager.instantiate(Admin.class, id);
-
-		assertThat(instance != null).isTrue();
-		assertThat(instance.getId()).isEqualTo(id);
-	}
-
-	@Autowired
-	private SessionFactory factory;
+	private SessionFactory sessionFactory;
 
 	@Autowired
 	private DatabaseInitializer dbInit;
@@ -146,7 +145,7 @@ public class ApplicationIntegrationTest {
 	@Test
 	@Transactional
 	private void entityEntryTest() {
-		SessionImpl session = (SessionImpl) factory.getCurrentSession();
+		SessionImpl session = (SessionImpl) sessionFactory.getCurrentSession();
 
 		session.setHibernateFlushMode(FlushMode.MANUAL);
 
@@ -214,12 +213,101 @@ public class ApplicationIntegrationTest {
 	}
 
 	@Test
-	public void sessionLoadTest() throws Exception {
-		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get(PREFIX + "/file/public/image/session-load");
+	private void sessionLoadTest() throws Exception {
+		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
+				.get(PREFIX + "/file/public/image/session-load");
 
-		mock.perform(reqBuilder).andExpect(status().isOk()).andDo(result -> {
-			logger.debug(result.getResponse().getContentAsString());
+		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
+
+		assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+	}
+
+	@Test
+	private void transactionalTest() throws Exception {
+		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get(PREFIX + "/transaction");
+
+		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
+
+		assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+	}
+
+	@Test
+	@Transactional
+	private void testSpec() {
+		Session session = sessionFactory.getCurrentSession();
+		CriteriaBuilder builder = session.getCriteriaBuilder();
+		CriteriaQuery<Long> query = builder.createQuery(Long.class);
+		Root<Provider> root = query.from(Provider.class);
+		String idPropertyName = "id";
+		Serializable id = null;
+		String name = "VinGroup$$$$$$$nbvvnv$$$0998798798797989";
+		query.select(builder.count(root))
+				.where(builder.and(builder.equal(root.get("name"), name),
+						id == null ? builder.isNotNull(root.get(idPropertyName))
+								: builder.notEqual(root.get(idPropertyName), id)));
+		System.out.println(session.createQuery(query).getResultStream().findFirst().orElseThrow());
+	}
+
+	@Autowired
+	private GenericRepository repo;
+
+	@Test
+	@Transactional
+	private void testPaging() {
+		repo.fetch(Account.class, Unpaged.INSTANCE).forEach(account -> {
+			System.out.println(account.getId());
+			System.out.println(account.getFirstName());
+			System.out.println(account.getLastName());
 		});
+	}
+
+	@Test
+	@Transactional
+	private void testPagingWithSort() {
+		repo.fetch(Account.class, PageRequest.of(0, 1000, Sort.by(Order.asc("createdDate")))).forEach(account -> {
+			System.out.println(account.getId());
+			System.out.println(account.getCreatedDate());
+		});
+	}
+
+	@Test
+	@Transactional
+	private void testPagingWithColumns() {
+		repo.fetch(Account.class, new String[] { "id", "firstName", "lastName" }, Unpaged.INSTANCE).forEach(columns -> {
+			System.out.println(columns[0]);
+			System.out.println(columns[1]);
+			System.out.println(columns[2]);
+		});
+	}
+
+	@Test
+	@Transactional
+	private void testPagingWithColumnsAndSort() {
+		repo.fetch(Account.class, new String[] { "id", "updatedDate" },
+				PageRequest.of(0, 1000, Sort.by(Order.asc("updatedDate")))).forEach(columns -> {
+					System.out.println(columns[0]);
+					System.out.println(columns[1]);
+				});
+	}
+
+	@Test
+	private void testPageableDefault() throws Exception {
+		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get(PREFIX + "/list");
+		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
+
+		assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+	}
+
+	@Test
+	private void testEntityMetamodel() {
+		EntityMetamodel emm = sessionFactory.unwrap(SessionFactoryImplementor.class).getMetamodel()
+				.entityPersister(Account.class).getEntityMetamodel();
+
+		System.out.println(join(emm.getPropertyNames()));
+	}
+
+	private String join(String[] elements) {
+		return Stream.of(elements).collect(Collectors.joining(", "));
 	}
 
 }

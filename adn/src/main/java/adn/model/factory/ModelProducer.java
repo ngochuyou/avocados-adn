@@ -1,15 +1,18 @@
+/**
+ * 
+ */
 package adn.model.factory;
 
-import adn.model.entities.Entity;
-import adn.model.models.Model;
+import java.util.List;
 
-public interface ModelProducer<T extends Entity, M extends Model> {
+/**
+ * @author Ngoc Huy
+ *
+ */
+public interface ModelProducer<S, P> {
 
-	M produce(T entity, M model);
+	P produce(S source);
 
-	default String getName() {
-
-		return this.getClass().getName();
-	}
+	List<P> produce(List<S> sources);
 
 }

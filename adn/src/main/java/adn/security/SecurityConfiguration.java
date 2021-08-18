@@ -16,6 +16,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -31,6 +32,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import adn.application.Constants;
 import adn.helpers.StringHelper;
+import adn.model.entities.Product;
+import adn.security.context.OnMemoryUserContext;
+import adn.security.jwt.JwtRequestFilter;
+import adn.security.jwt.JwtUsernamePasswordAuthenticationFilter;
 import adn.service.services.AuthenticationService;
 
 /**
@@ -40,6 +45,7 @@ import adn.service.services.AuthenticationService;
 @ComponentScan(basePackages = { Constants.ROOT_PACKAGE })
 @Configuration
 @EnableWebSecurity
+@EnableGlobalMethodSecurity(securedEnabled = true)
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
 	@Autowired
@@ -58,13 +64,17 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private SimpleJwtLogoutFilter jwtLogoutFilter;
 
-	public static final String CONFIG_PATH = "C:\\Users\\Ngoc Huy\\Documents\\workspace\\avocados-adn\\config\\";
+	@Autowired
+	private OnMemoryUserContext onMemUserContext;
 
 	public static final String TESTUNIT_PREFIX = "/testunit";
 	// @formatter:off
 	private static final String[] PUBLIC_ENDPOINTS = {
 			"/account/photo\\GET",
-			"public/**"
+			"/product/image/**\\GET",
+			"/rest/product/category/all\\GET",
+			"/rest/product\\GET",
+			String.format("/rest/product/{productId:^[A-Z0-9-]{%d}$}\\GET", Product.ID_LENGTH)
 	};
 	// @formatter:on
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -114,7 +124,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 			http.authorizeRequests().antMatchers(TESTUNIT_PREFIX + "/**").permitAll();
 			logger.debug("Publishing " + TESTUNIT_PREFIX + " endpoints");
 		}
-		
+
 		http
 			.authorizeRequests()
 			.antMatchers(HttpMethod.POST, "/auth/token").permitAll()
@@ -133,13 +143,11 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	@Bean
 	@Override
 	protected AuthenticationManager authenticationManager() throws Exception {
-		// TODO Auto-generated method stub
 		return super.authenticationManager();
 	}
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
-
 		return new BCryptPasswordEncoder();
 	}
 
@@ -148,7 +156,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 		CorsConfiguration configuration = new CorsConfiguration();
 
 		configuration.setAllowCredentials(true);
-		configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+		configuration.setAllowedOrigins(Arrays.asList("http://192.168.100.10:3000"));
 		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(
 				Arrays.asList("authorization", "content-type", "x-auth-token", "Access-Control-Allow-Credentials"));
@@ -162,7 +170,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
 	@Bean
 	public AbstractAuthenticationProcessingFilter jwtUsernamePasswordAuthenticationFilter() throws Exception {
-		AbstractAuthenticationProcessingFilter jwtAuthFilter = new JwtUsernamePasswordAuthenticationFilter(authService);
+		AbstractAuthenticationProcessingFilter jwtAuthFilter = new JwtUsernamePasswordAuthenticationFilter(authService,
+				onMemUserContext);
 
 		jwtAuthFilter.setAuthenticationManager(authenticationManager());
 

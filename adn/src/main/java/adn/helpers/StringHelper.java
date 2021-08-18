@@ -7,11 +7,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Optional;
 
-import org.springframework.boot.SpringApplication;
 import org.springframework.util.StringUtils;
-
-import adn.application.context.ContextProvider;
 
 /**
  * @author Ngoc Huy
@@ -20,10 +18,10 @@ import adn.application.context.ContextProvider;
 public class StringHelper extends StringUtils {
 
 	// stolen from stackoverflow below
-	public static final String EMAIL_REGEX = "(?p:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])";
+	public static final String EMAIL_REGEX = "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])";
 
 	public static final String BCRYPT_REGEX = "^\\$2[ayb]\\$.{56}$";
-
+	public static final String VIETNAMESE_CHARACTERS = "ÁáÀàẢảÃãẠạĂăẮắẰằẲẳẴẵẶặÂâẤấẦầẨẩẪẫẬậĐđÉéÈèẺẻẼẽẸẹÊêỂểẾếỀềỄễỆệÍíÌìỊịỈỉĨĩỊịÓóÒòỎỏÕõỌọÔôỐốỒồỔổỖỗỘộƠơỚớỜờỞởỠỡỢợÚùÙùỦủŨũỤụƯưỨứỪừỬửỮữỰựÝýỲỳỶỷỸỹỴỵ";
 	public static final String WHITESPACE_CHARS = "" /* dummy empty string for homogeneity */
 			+ "\\u0009" // CHARACTER TABULATION
 			+ "\\u000A" // LINE FEED (LF)
@@ -52,65 +50,71 @@ public class StringHelper extends StringUtils {
 			+ "\\u205F" // MEDIUM MATHEMATICAL SPACE
 			+ "\\u3000"; // IDEOGRAPHIC SPACE
 
-	public static final String MULTIPLE_MATCHES_WHITESPACE_CHARS = "[" + WHITESPACE_CHARS + "]";
+	public static final String ONE_OF_WHITESPACE_CHARS = "[" + WHITESPACE_CHARS + "]";
 
-	private static MessageDigest SHA_256_MD = null;
-	
-	private static SecureRandom random = new SecureRandom();
-	
+	private static final MessageDigest SHA_256_MD;
+
+	private static final SecureRandom RANDOM = new SecureRandom();
+
 	static {
+		MessageDigest digest;
+
 		try {
-			SHA_256_MD = MessageDigest.getInstance("SHA-256");
-			
+			digest = MessageDigest.getInstance("SHA-256");
+
 			byte[] salt = new byte[16];
-			
-			random.nextBytes(salt);
-			SHA_256_MD.update(salt);
+
+			RANDOM.nextBytes(salt);
+			digest.update(salt);
 		} catch (NoSuchAlgorithmException nsae) {
+			digest = null;
 			nsae.printStackTrace();
-			SpringApplication.exit(ContextProvider.getApplicationContext());
+			System.exit(-1);
 		}
+
+		SHA_256_MD = digest;
 	}
 
 	public static String hash(String input) {
-		byte[] hashedPassword = SHA_256_MD.digest(input.getBytes(StandardCharsets.UTF_8));
-		
+		byte[] hashed = SHA_256_MD.digest(input.getBytes(StandardCharsets.UTF_8));
+
 		StringBuilder sb = new StringBuilder();
 
-		for (byte b : hashedPassword)
+		for (byte b : hashed)
 			sb.append(String.format("%02x", b));
 
 		return sb.toString();
 	}
 
-	public static boolean isEmail(String email) {
-
-		return email == null ? false : email.matches(StringHelper.EMAIL_REGEX);
+	public static boolean isLetters(String string) {
+		return hasLength(string) && string.matches("^[\\p{L}]+$");
 	}
 
-	public static boolean isDigits(String string) {
+	public static boolean isEmail(String email) {
+		return email.matches(StringHelper.EMAIL_REGEX);
+	}
 
-		return string == null ? false : string.matches("\\d+");
+	public static boolean isAcceptablePhoneNumber(String string) {
+		return string.matches("^[\\w\\d\\._\\(\\)\\+\\s\\-]{4,}$");
 	}
 
 	public static boolean isBCrypt(String string) {
-
-		return string == null ? false : string.matches(StringHelper.BCRYPT_REGEX);
+		return string.matches(StringHelper.BCRYPT_REGEX);
 	}
 
 	public static String normalizeString(String string) {
-
-		return string != null ? string.trim().replaceAll("[" + StringHelper.WHITESPACE_CHARS + "]+", " ") : null;
+		return hasLength(string) ? string.trim().replaceAll(ONE_OF_WHITESPACE_CHARS + "+", " ") : string;
 	}
 
 	public static String removeSpaces(String string) {
-
-		return string != null ? string.trim().replaceAll("[" + StringHelper.WHITESPACE_CHARS + "]+", "") : null;
+		return hasLength(string) ? string.trim().replaceAll(ONE_OF_WHITESPACE_CHARS + "+", "") : string;
 	}
 
 	public static String toCamel(String s, CharSequence seperator) {
+		String input = s.trim();
+
 		if (seperator != null) {
-			String[] parts = s.split(seperator + "+");
+			String[] parts = input.split(seperator.toString());
 
 			if (parts.length > 1) {
 				StringBuilder builder = new StringBuilder(
@@ -124,7 +128,21 @@ public class StringHelper extends StringUtils {
 			}
 		}
 
-		return ("" + s.charAt(0)).toLowerCase() + s.substring(1);
+		return ("" + input.charAt(0)).toLowerCase() + input.substring(1);
+	}
+
+	public static String getFirstWord(String str) {
+		for (int i = 0; i < str.length(); i++) {
+			if (("" + str.charAt(i)).matches(ONE_OF_WHITESPACE_CHARS)) {
+				return str.substring(0, i);
+			}
+		}
+
+		return str;
+	}
+
+	public static Optional<String> get(String in) {
+		return Optional.ofNullable(hasLength(in) ? in : null);
 	}
 
 }

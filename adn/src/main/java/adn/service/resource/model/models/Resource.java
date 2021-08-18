@@ -13,4 +13,8 @@ public interface Resource {
 
 	String getExtension();
 
+	String RESOURCE_IDENTIFIER_ATTRIBUTE_NAME = "name";
+
+	String RESOURCE_CONTENT_ATTRIBUTE_NAME = "content";
+
 }

@@ -3,7 +3,10 @@
  */
 package adn.security;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Set;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -13,8 +16,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import adn.dao.BaseDAO;
+import adn.dao.generic.Repository;
 import adn.model.entities.Account;
+import adn.service.internal.Role;
+import adn.service.services.DepartmentService;
 
 /**
  * @author Ngoc Huy
@@ -26,16 +31,37 @@ public class ApplicationUserDetailsService implements UserDetailsService {
 	public static final String NAME = "applicationUserDetailsService";
 
 	@Autowired
-	private BaseDAO dao;
+	private Repository repo;
+
+	@Autowired
+	private DepartmentService departmentService;
+
+	private static final String[] ATTRIBUTES = new String[] { Account.ID_FIELD_NAME, "password",
+			Account.ROLE_FIELD_NAME, Account.VERSION_FIELD_NAME, Account.ACTIVE_FIELD_NAME };
+	public static final ZoneId ZONE = ZoneId.systemDefault();
 
 	@Transactional(readOnly = true)
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		// TODO Auto-generated method stub
-		Account account = dao.findById(username, Account.class);
+		Object[] account = (Object[]) repo.findById(username, Account.class, ATTRIBUTES);
 
-		return new ApplicationUserDetails(username, account.getPassword(),
-				Set.of(new SimpleGrantedAuthority("ROLE_" + account.getRole())), account.getRole());
+		if (account == null) {
+			throw new UsernameNotFoundException(String.format("%s not found", username));
+		}
+
+		Role role = (Role) account[2];
+
+		if (role == Role.PERSONNEL) {
+			UUID departmentId = departmentService.getPersonnelDepartmentId(username);
+
+			return new PersonnelDetails((String) account[0], (String) account[1], (boolean) account[4],
+					Set.of(new SimpleGrantedAuthority("ROLE_" + role)), role,
+					((LocalDateTime) account[3]).atZone(ZONE).toEpochSecond(), departmentId);
+		}
+
+		return new ApplicationUserDetails((String) account[0], (String) account[1], (boolean) account[4],
+				Set.of(new SimpleGrantedAuthority("ROLE_" + role)), role,
+				((LocalDateTime) account[3]).atZone(ZONE).toEpochSecond());
 	}
 
 }

@@ -3,7 +3,8 @@
  */
 package adn.model.entities;
 
-import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -14,8 +15,15 @@ import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.Table;
 
-import adn.helpers.Gender;
-import adn.helpers.Role;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import adn.model.entities.constants.Gender;
+import adn.service.internal.Role;
+import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
 
 /**
  * @author Ngoc Huy
@@ -26,32 +34,59 @@ import adn.helpers.Role;
 @Table(name = "accounts")
 public class Account extends adn.model.entities.Entity {
 
+	public static transient final String ACTIVE_FIELD_NAME = "active";
+	public static transient final String ROLE_FIELD_NAME = "role";
+	public static transient final String VERSION_FIELD_NAME = "updatedDate";
+	public static transient final String ID_FIELD_NAME = "id";
+
 	@Id
-	protected String id;
+	@JsonProperty("username")
+	private String id;
 
 	@Column(nullable = false)
-	protected String email;
+	private String email;
 
-	protected String phone;
+	private String phone;
 
 	@Column(name = "first_name")
-	protected String firstName;
+	private String firstName;
 
 	@Column(name = "last_name")
-	protected String lastName;
+	private String lastName;
 
-	protected String photo;
+	@Column(updatable = false, length = DefaultResourceIdentifierGenerator.IDENTIFIER_LENGTH)
+	private String photo;
 
 	@Column(nullable = false)
-	protected String password;
+	private String password;
 
 	@Enumerated(EnumType.STRING)
-	protected Role role;
+	@Column(length = 20, columnDefinition = "VARCHAR(20)")
+	private Role role;
 
 	@Enumerated(EnumType.STRING)
-	protected Gender gender;
+	@Column(length = 20, columnDefinition = "VARCHAR(20)")
+	private Gender gender;
 
-	@Override
+	@Column(name = "birth_date")
+	private LocalDate birthDate;
+
+	@Column(name = "active", nullable = false)
+	private Boolean active;
+
+	@Column(name = "deactivated_date")
+	private LocalDate deactivatedDate;
+
+	@CreationTimestamp
+	@Column(name = "created_date", nullable = false, updatable = false)
+	private LocalDate createdDate;
+
+	@UpdateTimestamp
+	@Column(name = "updated_date", nullable = false)
+	private LocalDateTime updatedDate;
+
+	private String address;
+
 	public String getId() {
 		return id;
 	}
@@ -92,6 +127,7 @@ public class Account extends adn.model.entities.Entity {
 		this.lastName = lastName;
 	}
 
+	@JsonIgnore
 	public String getPhoto() {
 		return photo;
 	}
@@ -124,10 +160,56 @@ public class Account extends adn.model.entities.Entity {
 		this.gender = gender;
 	}
 
-	@Override
-	public void setId(Serializable id) {
-		// TODO Auto-generated method stub
-		this.id = (String) id;
+	@JsonIgnore
+	public LocalDate getCreatedDate() {
+		return createdDate;
+	}
+
+	public void setCreatedDate(LocalDate createdDate) {
+		this.createdDate = createdDate;
+	}
+
+	@JsonIgnore
+	public LocalDateTime getUpdatedDate() {
+		return updatedDate;
+	}
+
+	public void setUpdatedDate(LocalDateTime updatedDate) {
+		this.updatedDate = updatedDate;
+	}
+
+	@JsonProperty(value = "active")
+	public Boolean isActive() {
+		return active;
+	}
+
+	public void setActive(Boolean active) {
+		this.active = active;
+	}
+
+	@JsonIgnore
+	public LocalDate getDeactivatedDate() {
+		return deactivatedDate;
+	}
+
+	public void setDeactivatedDate(LocalDate deactivatedDate) {
+		this.deactivatedDate = deactivatedDate;
+	}
+
+	public LocalDate getBirthDate() {
+		return birthDate;
+	}
+
+	public void setBirthDate(LocalDate birthDate) {
+		this.birthDate = birthDate;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
 	}
 
 }

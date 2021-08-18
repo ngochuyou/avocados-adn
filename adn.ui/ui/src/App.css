@@ -1,0 +1,104 @@
+:root {
+	--first-color: #1a2942;
+	--second-color: #edf0f0;
+}
+
+.backgroundf {
+	background-color: var(--first-color);
+	color: var(--second-color);
+}
+
+.backgrounds {
+	background-color: var(--second-color);
+	color: var(--first-color);
+}
+
+.colorf {
+	color: var(--second-color);
+}
+
+.colors {
+	color: var(--first-color);
+}
+
+.max-height-view {
+	max-height: 100vh;
+}
+
+.icon-size-small {
+	width: 50px;
+	height: 50px;
+	cursor: pointer;
+}
+
+.iconf {
+	color: var(--first--color);
+}
+
+.transition-maxwidth-fast {
+	overflow: hidden;
+	transition: max-width .15s linear;
+}
+
+.transition-maxheight-fast {
+	overflow: hidden;
+	transition: max-height .15s linear;	
+}
+
+.photo-small {
+	width: 50px;
+	height: 50px;
+}
+
+.pointer {
+	cursor: pointer;
+}
+
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+}
+
+.fade-in {
+	opacity: 0;
+	animation: _fade-in .25s;
+}
+
+.overflow-auto {
+	max-height: 100%;
+	overflow: auto;
+}
+
+@keyframes _fade-in {
+	0% {
+		opacity: 0;
+	}
+
+	100% {
+		opacity: 1;
+	}
+}
+
+.fade-out {
+	opacity: 1;
+	animation: _fade-out .2s;
+}
+
+@keyframes _fade-out {
+	0% {
+		opacity: 1;
+	}
+
+	100% {
+		opacity: 0;
+	}
+}
+
+.color-inherit {
+	color: inherit !important;
+}
