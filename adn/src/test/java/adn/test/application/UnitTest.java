@@ -3,12 +3,10 @@
  */
 package adn.test.application;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.util.concurrent.ExecutionException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Ngoc Huy
@@ -16,98 +14,45 @@ import java.util.regex.Pattern;
  */
 public class UnitTest {
 
-	public static final String mark;
-	public static final String letter;
-	public static final String ops;
-
-	public static Pattern SAVE_PATTERN;
-
-	static {
-		mark = "\\?,\\.''\"\\s\\t\\n><\\=\\(\\)";
-		letter = "\\w\\d_";
-		ops = "(\\=|like|LIKE|is|IS|>|<)";
+	public static void main(String[] args) {
 		// @formatter:off
-		String regex = String.format(""
-				+ "(insert|INSERT)\\s+(into|INTO)\\s+(?<templatename>[%s]+)\\s+"
-				+ "\\((?<columns>[%s]+)\\)\\s+"
-				+ "(values|VALUES)\\s+\\((?<values>[%s]+)\\)\\s?",
-				letter,
-				letter + mark,
-				letter + mark);
-		// @formatter:on
-		SAVE_PATTERN = Pattern.compile(regex);
-	}
+		List<List<String>> lists = Arrays.asList(
+				List.of("ADMIN", "PERSONNEL", "CUSTOMER"),
+				List.of("123", "456", "789")
+		);
+		List<String> results = new ArrayList<>();
 
-	public static void main(String[] args) throws NoSuchMethodException, SecurityException, NoSuchFieldException,
-			IllegalArgumentException, IllegalAccessException, InterruptedException, ExecutionException {
-//		Pattern p = Pattern
-//				.compile(String.format("^[\\p{L}\\p{N}\\s\\.\\,\\_\\-\\@\"'\\*%s]{%d,%d}$", VIETNAMESE_CHARACTERS, 0, 255));
-//		Matcher m = p.matcher("White LeÌ FrÃÃnt");
-//		System.out.println(VIETNAMESE_CHARACTERS.contains("Ã"));
-//		System.out.println(m.matches());
-//		Pattern p = Pattern.compile(String.format("^[%s\\p{L}\\p{N}\s\n\\(\\)\\._\\-\"\'\\!@#$%%^&*]{0,255}$", StringHelper.VIETNAMESE_CHARACTERS));
-//		Matcher m = p.matcher("aEnglish%@^.ti*ến#g_\"việt\"-('Q$&&uốc!'\n"
-//				+ "Ngữ)子及");
-//		
-//		System.out.println(m.matches());
-//		ThreadPoolTaskExecutor executorService = new ThreadPoolTaskExecutor();
-//		CountDownLatch latch = new CountDownLatch(5);
-//		
-//		executorService.setCorePoolSize(5);
-//		executorService.initialize();
-//		
-//		for (int i = 0; i < 5; i++) {
-//			executorService.submit(new Runnable() {
-//				@Override
-//				public void run() {
-//					System.out.println(Thread.currentThread().getName() + " start");
-//					System.out.println(Thread.currentThread().getName() + " done");
-//					latch.countDown();
-//				}
-//			});
-//		}
-//		
-//		try {
-//			latch.await();
-//		} catch (InterruptedException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		System.out.println("done....");
-//		executorService.shutdown();
-//		Pattern p = Pattern.compile("^[A-Z0-9-]+$");
-//		Matcher m = p.matcher("20JGU-FORMA");
-//		System.out.println(m.matches());
-		
-	}
+		for (int compound = 2; compound <= lists.size(); compound++) {
+			System.out.println("Compound = " + compound);
+			for (int start = 0; start + compound <= lists.size(); start++) {
+				List<String> currentList = lists.get(start);
+				List<List<String>> subList = lists.subList(start + 1, start + compound);
 
-	public static void a(LocalDate date) {
-		if (date == null || date.isAfter(LocalDate.now())) {
-			System.out.println("asas");
+				for (int distributionIndex = 0; distributionIndex < currentList.size(); distributionIndex++) {
+					results.addAll(multiDistribute(currentList.get(distributionIndex), subList, 0));
+				}
+			}
+			System.out.println("Done");
 		}
+
+		for (String result : results) {
+			System.out.println(result);
+		}
+		// @formatter:on
 	}
 
-	public static void x2() {
-		double a = 1.0000000000000001;
-		double b = a + 0.0000000000000009;
+	public static List<String> multiDistribute(String distribution, List<List<String>> target, int index) {
+		if (index == target.size() - 1) {
+			return distribute(distribution, target.get(index));
+		}
 
-		System.out.println(b);
-		System.out.println(Math.ceil(b));
+		return distribute(distribution, target.get(index)).stream()
+				.map(result -> multiDistribute(result, target, index + 1)).flatMap(list -> list.stream())
+				.collect(Collectors.toList());
 	}
 
-	public static void bd() {
-		BigDecimal a = new BigDecimal("1.0000000000000001");
-		BigDecimal b = a.add(new BigDecimal("0.0000000000000009"));
-
-		System.out.println(b.toString());
-		System.out.println(b.setScale(2, RoundingMode.HALF_UP));
-	}
-
-	public static void testUnicodePattern() {
-		Pattern p = Pattern.compile("^[_\\p{L}\\p{N}\\.]{8,}$", Pattern.UNICODE_CHARACTER_CLASS);
-		Matcher m = p.matcher("孔子及其弟asdads子故事集_真.实性有争议_");
-
-		System.out.println(m.matches());
+	public static List<String> distribute(String distributed, List<String> target) {
+		return target.stream().map(string -> distributed + "\\" + string).collect(Collectors.toList());
 	}
 
 }

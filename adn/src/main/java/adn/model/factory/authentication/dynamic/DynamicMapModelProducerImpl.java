@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import adn.application.context.builders.CredentialFactory;
 import adn.helpers.StringHelper;
 import adn.helpers.TypeHelper;
 import adn.model.DomainEntity;
@@ -42,7 +43,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 	 * 
 	 */
 	public DynamicMapModelProducerImpl(Class<T> entityType, Set<SecuredProperty<T>> properties,
-			DomainEntityMetadata metadata) {
+			DomainEntityMetadata metadata, CredentialFactory credentialFactory) {
 		Logger logger = LoggerFactory.getLogger(this.getClass());
 		Map<String, Map<String, BiFunction<Object, Credential, Object>>> producingFunctions = new HashMap<>(0);
 		Map<String, Map<String, String>> aliasMap = new HashMap<>(0);
@@ -129,6 +130,20 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 						entry.getValue().entrySet().stream()
 								.collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey))))
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+		credentialFactory.getCredentials().stream().forEach(credential -> {
+			String credentialString = credential.evaluate();
+
+			if (producingFunctions.containsKey(credentialString)) {
+				return;
+			}
+
+			logger.debug(String.format("Masking every properties against Credential [%s]", credentialString));
+
+			producingFunctions.put(credentialString,
+					metadata.getPropertyNames().stream().map(propName -> Map.entry(propName, MASKER))
+							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+		});
 
 		this.producingFunctions = producingFunctions;
 		this.aliasMap = Collections.unmodifiableMap(aliasMap);
