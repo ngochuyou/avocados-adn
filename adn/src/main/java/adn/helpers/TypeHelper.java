@@ -157,7 +157,6 @@ public class TypeHelper {
 	}
 
 	public static Type getGenericType(Class<?> clazz) {
-
 		return ((ParameterizedType) clazz.getGenericSuperclass()).getActualTypeArguments()[0];
 	}
 

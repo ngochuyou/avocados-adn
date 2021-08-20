@@ -58,9 +58,9 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 
 		logger.info("Building " + this.getClass());
 
-		ModelContextProvider modelContext;
+		ModelContextProvider modelContext = ContextProvider.getBean(ModelContextProvider.class);
 		final AuthenticationBasedModelPropertiesProducersBuilderImpl builder = new AuthenticationBasedModelPropertiesProducersBuilderImpl(
-				modelContext = ContextProvider.getBean(ModelContextProvider.class));
+				modelContext);
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 
 		scanner.addIncludeFilter(

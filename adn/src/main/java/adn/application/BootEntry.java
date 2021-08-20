@@ -36,6 +36,7 @@ import adn.application.context.builders.DefaultAuthenticationBasedModelPropertie
 import adn.application.context.builders.DefaultDepartmentBasedModelPropertiesFactory;
 import adn.application.context.builders.DefaultEntityExtractorProvider;
 import adn.application.context.builders.DepartmentScopeContext;
+import adn.application.context.builders.DynamicMapModelProducerFactoryImpl;
 import adn.application.context.builders.EntityBuilderProvider;
 import adn.application.context.builders.ModelContextProvider;
 import adn.application.context.builders.ResourceManagerFactoryBuilder;
@@ -74,6 +75,7 @@ public class BootEntry {
 			SpecificationFactory.class,
 			ResourceManagerFactoryBuilder.class,
 			DefaultEntityExtractorProvider.class,
+			DynamicMapModelProducerFactoryImpl.class,
 			DefaultAuthenticationBasedModelProducerFactory.class,
 			DefaultAuthenticationBasedModelPropertiesProducerFactory.class,
 			DefaultDepartmentBasedModelPropertiesFactory.class,
@@ -93,6 +95,13 @@ public class BootEntry {
 		Queue<Class<? extends ContextBuilder>> finalBuilderClassess = new ArrayDeque<>();
 
 		for (Class<? extends ContextBuilder> builderClass : orderedBuilderClasses) {
+			if (builderClass.equals(DefaultAuthenticationBasedModelProducerFactory.class)
+					|| builderClass.equals(DefaultAuthenticationBasedModelPropertiesProducerFactory.class)
+					|| builderClass.equals(DefaultDepartmentBasedModelPropertiesFactory.class)) {
+				scannedBuilderClasses.remove(builderClass);
+				continue;
+			}
+
 			finalBuilderClassess.add(invokeBuilder(builderClass));
 			scannedBuilderClasses.remove(builderClass);
 		}

@@ -19,31 +19,33 @@ public interface ModelProducerFactoryBuilder {
 
 	interface WithType<T extends DomainEntity> {
 
-		WithCredential<T> role(Role role);
+		WithCredential<T> roles(Role... role);
 
-		WithCredential<T> department(UUID departmentId);
-		
-		WithCredential<T> with(Role role, UUID departmentId);
+		WithCredential<T> departments(UUID... departmentId);
 
-		WithCredential<T> credential(Credential id);
+		WithCredential<T> with(Role[] role, UUID[] departmentId);
+
+		WithCredential<T> credentials(Credential... id);
 
 	}
 
 	interface WithCredential<T extends DomainEntity> {
 
-		WithCredential<T> role(Role role);
-
-		WithCredential<T> department(UUID departmentId);
-		
-		WithCredential<T> with(Role role, UUID departmentId);
-
-		WithCredential<T> credential(Credential credential);
-
 		WithField<T> fields(String... fields);
+
+		WithCredential<T> roles(Role... role);
+
+		WithCredential<T> departments(UUID... departmentId);
+
+		WithCredential<T> with(Role[] role, UUID[] departmentId);
+
+		WithCredential<T> credentials(Credential... credential);
 
 		WithCredential<T> mask();
 
 		WithCredential<T> publish();
+
+		WithType<T> type();
 
 	}
 
@@ -51,13 +53,25 @@ public interface ModelProducerFactoryBuilder {
 
 		WithField<T> use(String... alias);
 
-		WithField<T> use(BiFunction<Object, Credential, Object>[] fncs);
+		WithField<T> use(BiFunction<Arguments<?>, Credential, ?>[] fncs);
 
 		WithField<T> publish();
 
 		WithField<T> mask();
 
 		WithField<T> anyFields();
+
+		WithField<T> fields(String... fields);
+
+		WithCredential<T> roles(Role... roles);
+
+		WithCredential<T> departments(UUID... departments);
+
+		WithCredential<T> with(Role[] roles, UUID[] departments);
+
+		WithCredential<T> credentials(Credential... credentials);
+
+		WithType<T> type(Class<T> type);
 
 	}
 

@@ -69,8 +69,6 @@ public class CredentialFactory implements ContextBuilder {
 		boolean shouldThrow;
 
 		for (BeanDefinition def : beanDefs) {
-			shouldThrow = true;
-
 			Class<? extends Credential> credentialType = (Class<? extends Credential>) Class
 					.forName(def.getBeanClassName());
 
@@ -90,26 +88,30 @@ public class CredentialFactory implements ContextBuilder {
 				continue;
 			}
 
-			for (Field field : credentialType.getDeclaredFields()) {
-				if (Modifier.isStatic(field.getModifiers()) && field.isAnnotationPresent(Credentials.class)) {
-					Collection<Credential> credentials = Map.class.isAssignableFrom(field.getType())
-							? ((Map<?, Credential>) field.get(null)).values()
-							: (Collection<Credential>) field.get(null);
+			if (OnMemoryCredential.class.isAssignableFrom(credentialType)) {
+				shouldThrow = true;
 
-					credentialsSets.add(new HashSet<>(credentials));
-					logger.debug(String.format("\nAdded\n\t%s\nto Credential list",
-							credentials.stream().map(val -> val.evaluate()).collect(Collectors.joining("\n\t"))));
-					shouldThrow = false;
-					break;
+				for (Field field : credentialType.getDeclaredFields()) {
+					if (Modifier.isStatic(field.getModifiers()) && field.isAnnotationPresent(Credentials.class)) {
+						Collection<Credential> credentials = Map.class.isAssignableFrom(field.getType())
+								? ((Map<?, Credential>) field.get(null)).values()
+								: (Collection<Credential>) field.get(null);
+
+						credentialsSets.add(new HashSet<>(credentials));
+						logger.debug(String.format("\nAdded\n\t%s\nto Credential list",
+								credentials.stream().map(val -> val.evaluate()).collect(Collectors.joining("\n\t"))));
+						shouldThrow = false;
+						break;
+					}
 				}
-			}
 
-			if (!shouldThrow) {
-				continue;
-			}
+				if (!shouldThrow) {
+					continue;
+				}
 
-			throw new IllegalArgumentException(String.format("Unable to find any credentials in %s of type %s",
-					OnMemoryCredential.class.getName(), def.getBeanClassName()));
+				throw new IllegalArgumentException(String.format("Unable to find any credentials in %s of type %s",
+						OnMemoryCredential.class.getName(), def.getBeanClassName()));
+			}
 		}
 
 		credentials = Collections.unmodifiableList(resolveCredentialComponents(credentialsSets));

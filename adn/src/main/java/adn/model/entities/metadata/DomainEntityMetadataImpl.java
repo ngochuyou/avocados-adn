@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import adn.application.context.builders.ModelContextProvider;
 import adn.engine.access.StandardAccess;
 import adn.helpers.HibernateHelper;
+import adn.helpers.TypeHelper;
 import adn.model.DomainEntity;
 import adn.model.entities.Entity;
 
@@ -51,7 +52,8 @@ public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 	private final int propertiesSpan;
 	private final Set<Map.Entry<String, Getter>> getters;
 	private final String discriminatorColumnName;
-	private final Map<String, Class<? extends DomainEntity>> propertyTypes;
+	private final Map<String, Class<?>> propertyTypes;
+	private final Map<String, Class<? extends DomainEntity>> associationTypes;
 
 	@SuppressWarnings("unchecked")
 	public <T extends DomainEntity> DomainEntityMetadataImpl(final ModelContextProvider modelContext,
@@ -62,7 +64,7 @@ public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 		Set<String> nonLazyProperties;
 		String discriminatorColumnName = null;
 		Set<String> declaredProperties;
-		Map<String, Class<? extends DomainEntity>> propertyTypes;
+		Map<String, Class<?>> propertyTypes;
 
 		try {
 			if (!Entity.class.isAssignableFrom(entityClass)) {
@@ -221,9 +223,22 @@ public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 		nonLazyPropertiesSpan = this.nonLazyProperties.size();
 		propertiesSpan = this.properties.size();
 		this.discriminatorColumnName = discriminatorColumnName;
+		this.associationTypes = propertyTypes.entrySet().stream().filter(entry -> {
+			if (entry.getValue().isAssignableFrom(DomainEntity.class)) {
+				return true;
+			}
+
+			if (!Collection.class.isAssignableFrom(entry.getValue())) {
+				return false;
+			}
+
+			return ((Class<?>) TypeHelper.getGenericType(entry.getValue())).isAssignableFrom(DomainEntity.class);
+		}).map(filteredEntry -> Map.entry(filteredEntry.getKey(),
+				(Class<? extends DomainEntity>) filteredEntry.getValue()))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
-	private Map<String, Class<? extends DomainEntity>> getPropertyTypes() {
+	private Map<String, Class<?>> getPropertyTypes() {
 		return propertyTypes;
 	}
 
@@ -286,12 +301,22 @@ public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 
 	@Override
 	public boolean isEntityType(String attributeName) {
-		return hasProperty(attributeName) && Entity.class.isAssignableFrom(propertyTypes.get(attributeName));
+		return hasProperty(attributeName) && DomainEntity.class.isAssignableFrom(propertyTypes.get(attributeName));
+	}
+
+	@Override
+	public boolean isAssociation(String attributeName) {
+		return hasProperty(attributeName) && associationTypes.containsKey(attributeName);
 	}
 
 	@Override
 	public Class<?> getPropertyType(String propertyName) {
 		return propertyTypes.get(propertyName);
+	}
+
+	@Override
+	public Class<? extends DomainEntity> getAssociationType(String associationName) {
+		return associationTypes.get(associationName);
 	}
 
 }

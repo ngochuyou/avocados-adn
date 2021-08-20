@@ -43,8 +43,8 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 			.type()
 				.role(personnels)
 					.field("address", "email", "phone").publish()
-					.field("createdDate", "deactivatedDate", "birthDate").use(Utils::formatLocalDate)
-					.field("updatedDate").use(Utils::formatLocalDateTime)
+					.field("createdDate", "deactivatedDate", "birthDate").use(Utils::ld)
+					.field("updatedDate").use(Utils::ldt)
 			.and()
 			.type(Admin.class)
 				.role(ADMIN).anyFields().publish()
@@ -61,7 +61,7 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 		 	.and()
 			.type(Factor.class)
 				.role(personnels)
-					.field("deactivatedDate").use(Utils::formatLocalDateTime)
+					.field("deactivatedDate").use(Utils::ldt)
 					.anyFields().publish()
 				.anyRoles().mask()
 			.and()
@@ -80,7 +80,7 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 					.anyFields().mask()
 			.type()
 				.role(personnels)
-					.field("updatedTimestamp", "createdTimestamp").use(Utils::formatLocalDateTime)
+					.field("updatedTimestamp", "createdTimestamp").use(Utils::ldt)
 					.anyFields().publish()
 				.anyRoles().mask()
 			.and()
@@ -91,7 +91,7 @@ public class AuthenticationBasedModelPropertiesProducersContributorImplementor
 			.type()
 				.role(personnels)
 					.field("stockedBy", "soldBy", "provider").publish()
-					.field("stockedTimestamp", "updatedTimestamp").use(Utils::formatLocalDateTime);
+					.field("stockedTimestamp", "updatedTimestamp").use(Utils::ldt);
 		// @formatter:on
 	}
 

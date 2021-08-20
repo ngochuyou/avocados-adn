@@ -53,14 +53,14 @@ public class DepartmentBasedModelPropertiesProducersContributorImplementor
 		builder
 			.type(Provider.class)
 				.department("Stock, Sale", stock, sale).publish()
-				.fields("deactivatedDate").use(Utils::formatLocalDateTime)
+				.fields("deactivatedDate").use(Utils::ldt)
 		.and()
 			.type(Department.class)
 				.department("Personnel", personnel).publish()
 		.and()
 			.type(ProductProviderDetail.class)
 				.department(SALE_NAME, sale).publish()
-				.fields("appliedTimestamp", "droppedTimestamp").use(Utils::formatLocalDateTime);
+				.fields("appliedTimestamp", "droppedTimestamp").use(Utils::ldt);
 		// @formatter:on
 	}
 

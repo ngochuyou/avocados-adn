@@ -8,18 +8,24 @@ import java.util.Set;
 
 import org.hibernate.property.access.spi.Getter;
 
+import adn.model.DomainEntity;
+
 /**
  * @author Ngoc Huy
  *
  */
 public interface DomainEntityMetadata {
 
-	boolean hasProperty(String propertyName);
-	
-	boolean isEntityType(String propertyName);
+	boolean hasProperty(String attributeName);
 
-	Class<?> getPropertyType(String propertyName);
-	
+	boolean isEntityType(String attributeName);
+
+	boolean isAssociation(String attributeName);
+
+	Class<?> getPropertyType(String attributeName);
+
+	Class<? extends DomainEntity> getAssociationType(String associationName);
+
 	Set<String> getPropertyNames();
 
 	Set<String> getNonLazyPropertyNames();

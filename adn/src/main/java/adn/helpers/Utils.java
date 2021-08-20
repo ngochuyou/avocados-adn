@@ -15,12 +15,20 @@ import java.util.Objects;
  */
 public class Utils {
 
-	public static String formatLocalDateTime(LocalDateTime ldt) {
+	public static String ldt(LocalDateTime ldt) {
 		return ldt != null ? ldt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null;
 	}
 
-	public static String formatLocalDate(LocalDate ld) {
+	public static String ld(LocalDate ld) {
 		return ld != null ? ld.format(DateTimeFormatter.ISO_LOCAL_DATE) : null;
+	}
+
+	public static String localDateTime(LocalDateTime ldt) {
+		return ldt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+	}
+
+	public static String localDate(LocalDate ld) {
+		return ld.format(DateTimeFormatter.ISO_LOCAL_DATE);
 	}
 
 	public static class Entry<K, V> implements Map.Entry<K, V> {

@@ -12,8 +12,8 @@ import java.util.function.BiFunction;
  */
 public interface ModelProducer<S, P> {
 
-	static final BiFunction<Object, Credential, Object> MASKER = (any, credential) -> null;
-	static final BiFunction<Object, Credential, Object> PUBLISHER = (any, credential) -> any;
+	static final BiFunction<Arguments<?>, Credential, Object> MASKER = (any, credential) -> null;
+	static final BiFunction<Arguments<?>, Credential, Object> PUBLISHER = (any, credential) -> any;
 
 	P produce(S source, Credential credential);
 

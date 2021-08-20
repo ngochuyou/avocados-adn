@@ -14,13 +14,13 @@ import adn.model.DomainEntity;
 public interface SecuredProperty<T extends DomainEntity> {
 
 	Class<T> getOwningType();
-	
+
 	Credential getCredential();
-	
+
 	String getName();
-	
+
 	String getAlias();
-	
-	BiFunction<Object, Credential, Object> getFunction();
-	
+
+	BiFunction<Arguments<?>, Credential, ?> getFunction();
+
 }

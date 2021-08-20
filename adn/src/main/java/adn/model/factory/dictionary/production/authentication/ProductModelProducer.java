@@ -3,7 +3,7 @@
  */
 package adn.model.factory.dictionary.production.authentication;
 
-import static adn.helpers.Utils.formatLocalDateTime;
+import static adn.helpers.Utils.ldt;
 
 import java.util.Map;
 
@@ -43,8 +43,8 @@ public class ProductModelProducer extends AbstractCompositeAuthenticationBasedMo
 	protected Map<String, Object> produceForPersonnel(Product entity, Map<String, Object> model) {
 		model = produceForAnonymous(entity, model);
 
-		model.put("createdTimestamp", formatLocalDateTime(entity.getCreatedTimestamp()));
-		model.put("updatedTimestamp", formatLocalDateTime(entity.getUpdatedTimestamp()));
+		model.put("createdTimestamp", ldt(entity.getCreatedTimestamp()));
+		model.put("updatedTimestamp", ldt(entity.getUpdatedTimestamp()));
 
 		return model;
 	}

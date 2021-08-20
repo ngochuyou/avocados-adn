@@ -20,10 +20,18 @@ import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
+import adn.application.Constants;
+import adn.application.context.ContextProvider;
+import adn.application.context.internal.ContextBuilder;
 import adn.helpers.LoggerHelper;
 import adn.model.DomainEntity;
+import adn.model.factory.authentication.Arguments;
 import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.DynamicMapModelProducerFactory;
 import adn.model.factory.authentication.ModelProducerFactoryBuilder;
@@ -36,11 +44,49 @@ import adn.service.internal.Role;
  *
  */
 @Component
-public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProducerFactory {
+public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProducerFactory, ContextBuilder {
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void buildAfterStartUp() throws Exception {
+		Logger logger = LoggerFactory.getLogger(this.getClass());
+
+		logger.info(String.format("Building %s", this.getClass()));
+
+		ModelContextProvider modelContext = ContextProvider.getBean(ModelContextProvider.class);
+		ModelProducerFactoryBuilderImpl builder = new ModelProducerFactoryBuilderImpl(modelContext);
+		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+
+		scanner.addIncludeFilter(new AssignableTypeFilter(ModelProducerFactoryContributor.class));
+
+		ModelProducerFactoryContributor contributor;
+
+		for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.ROOT_PACKAGE)) {
+			try {
+				Class<? extends ModelProducerFactoryContributor> contributorClass = (Class<? extends ModelProducerFactoryContributor>) Class
+						.forName(beanDef.getBeanClassName());
+
+				logger.debug(String.format("Found one %s of type [%s]",
+						ModelProducerFactoryContributor.class.getSimpleName(), beanDef.getBeanClassName()));
+
+				contributor = contributorClass.getConstructor().newInstance();
+				contributor.contribute(builder);
+			} catch (NoSuchMethodException nsm) {
+				SpringApplication.exit(ContextProvider.getApplicationContext());
+				throw new IllegalArgumentException(
+						String.format("A non-arg constructor is required on a(n) %s instance, unable to find one in [%s]",
+								ModelProducerFactoryContributor.class.getSimpleName(), beanDef.getBeanClassName()));
+			} catch (Exception any) {
+				any.printStackTrace();
+				SpringApplication.exit(ContextProvider.getApplicationContext());
+			}
+		}
+
+		logger.info(String.format("Finished building %s", this.getClass()));
+	}
 
 	@Override
 	public <T extends DomainEntity> DynamicMapModelProducer<T> getProducers(Class<T> entityType) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
@@ -113,13 +159,13 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 			putProperty(key, new SecuredPropertyImpl<>(type, name, key.credential).setAlias(alias));
 		}
 
-		private void modifyFunction(SecuredPropertyImpl<?> property, BiFunction<Object, Credential, Object> newFnc) {
+		private void modifyFunction(SecuredPropertyImpl<?> property, BiFunction<Arguments<?>, Credential, ?> newFnc) {
 			logger.debug(String.format("Overring function [%s] with [%s]", property.getFunction(), newFnc));
 			property.setFunction(newFnc);
 		}
 
 		private <T extends DomainEntity> void setProperty(Class<T> type, Role role, UUID departmentId,
-				Credential credential, String name, BiFunction<Object, Credential, Object> fnc) {
+				Credential credential, String name, BiFunction<Arguments<?>, Credential, ?> fnc) {
 			Key<T> key = resolveKey(type, role, departmentId, credential, name);
 			SecuredPropertyImpl<T> property = locateProperty(key);
 
@@ -138,104 +184,161 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 			public WithTypeImpl(Class<T> type) {
 				super();
 				this.type = type;
+				logger.debug(String.format("With type %s", type.getSimpleName()));
 			}
 
 			@Override
-			public WithCredential<T> role(Role role) {
-				return new WithCredentialImpl(role);
+			public WithCredential<T> roles(Role... role) {
+				return new WithCredentialImpl(this, role);
 			}
 
 			@Override
-			public WithCredential<T> department(UUID departmentId) {
-				return new WithCredentialImpl(departmentId);
+			public WithCredential<T> departments(UUID... departmentId) {
+				return new WithCredentialImpl(this, departmentId);
 			}
 
 			@Override
-			public WithCredential<T> with(Role role, UUID departmentId) {
-				return new WithCredentialImpl(role, departmentId);
+			public WithCredential<T> with(Role[] role, UUID[] departmentId) {
+				return new WithCredentialImpl(this, role, departmentId);
 			}
 
 			@Override
-			public WithCredential<T> credential(Credential credential) {
-				return new WithCredentialImpl(credential);
+			public WithCredential<T> credentials(Credential... credential) {
+				return new WithCredentialImpl(this, credential);
 			}
 
 			private class WithCredentialImpl implements WithCredential<T> {
 
 				private final Set<String> remainingFields = modelContext.getMetadata(type).getPropertyNames();
+				private final WithType<T> owningType;
 
-				private Role role;
-				private UUID departmentId;
-				private Credential credential;
+				private Role[] roles;
+				private UUID[] departmentIds;
+				private Credential[] credentials;
 
-				public WithCredentialImpl(Role role) {
+				public WithCredentialImpl(WithType<T> owningType, Role... roles) {
 					super();
-					this.role = role;
-					log(role);
+					this.roles = roles;
+					this.owningType = owningType;
+					log(roles);
 				}
 
-				public WithCredentialImpl(UUID departmentId) {
+				public WithCredentialImpl(WithType<T> owningType, UUID... departmentIds) {
 					super();
-					this.departmentId = departmentId;
-					log(departmentId);
+					this.departmentIds = departmentIds;
+					this.owningType = owningType;
+					log(departmentIds);
 				}
 
-				public WithCredentialImpl(Role role, UUID departmentId) {
+				public WithCredentialImpl(WithType<T> owningType, Role[] roles, UUID[] departmentIds) {
 					super();
-					this.role = role;
-					this.departmentId = departmentId;
-					log(role, departmentId);
+					this.roles = roles;
+					this.departmentIds = departmentIds;
+					this.owningType = owningType;
+					log(roles, departmentIds);
 				}
 
-				public WithCredentialImpl(Credential credential) {
+				public WithCredentialImpl(WithType<T> owningType, Credential... credentials) {
 					super();
-					this.credential = credential;
-					log(credential);
+					this.credentials = credentials;
+					this.owningType = owningType;
+					log(credentials);
 				}
 
 				@Override
-				public WithCredential<T> role(Role role) {
-					this.role = role;
-					log(role);
+				public WithType<T> type() {
+					return owningType;
+				}
+
+				private void setRoles(Role... roles) {
+					this.roles = roles;
+					log(roles);
+				}
+
+				@Override
+				public WithCredential<T> roles(Role... roles) {
+					if (departmentIds == null) {
+						setRoles(roles);
+						return this;
+					}
+
+					if (requireNonNull(roles).length != departmentIds.length) {
+						throw new IllegalArgumentException(
+								String.format("Roles length and Department IDs length must match. Roles[%d]><IDs[%d]",
+										roles.length, departmentIds.length));
+					}
+
+					setRoles(roles);
+					return this;
+				}
+
+				private void setDepartmentIds(UUID... departmentIds) {
+					this.departmentIds = departmentIds;
+					log(departmentIds);
+				}
+
+				@Override
+				public WithCredential<T> departments(UUID... departmentIds) {
+					if (roles == null) {
+						setDepartmentIds(departmentIds);
+						return this;
+					}
+
+					if (requireNonNull(departmentIds).length != roles.length) {
+						throw new IllegalArgumentException(
+								String.format("Roles length and Department IDs length must match. Roles[%d]><IDs[%d]",
+										roles.length, departmentIds.length));
+					}
+
+					setDepartmentIds(departmentIds);
 					return this;
 				}
 
 				@Override
-				public WithCredential<T> department(UUID departmentId) {
-					this.departmentId = departmentId;
-					log(departmentId);
+				public WithCredential<T> with(Role[] roles, UUID[] departmentIds) {
+					if (requireNonNull(roles).length != requireNonNull(departmentIds).length) {
+						throw new IllegalArgumentException(
+								String.format("Roles length and Department IDs length must match. Roles[%d]><IDs[%d]",
+										roles.length, departmentIds.length));
+					}
+
+					this.roles = roles;
+					this.departmentIds = departmentIds;
+					log(roles, departmentIds);
+
 					return this;
 				}
 
 				@Override
-				public WithCredential<T> with(Role role, UUID departmentId) {
-					this.role = role;
-					this.departmentId = departmentId;
-					log(role, departmentId);
+				public WithCredential<T> credentials(Credential... credentials) {
+					this.roles = null;
+					this.departmentIds = null;
+					this.credentials = credentials;
+					log(credentials);
+
 					return this;
 				}
 
-				@Override
-				public WithCredential<T> credential(Credential credential) {
-					this.credential = credential;
-					log(credential);
-					return this;
+//				private void log(Role roles) {
+//					logger.debug(String.format("With role[%s]",
+//							Stream.of(roles).map(role -> role.toString()).collect(Collectors.joining(","))));
+//				}
+
+				private void log(UUID... departmentIds) {
+					logger.debug(String.format("With Department IDs[%s]", Stream.of(departmentIds)
+							.map(departmentId -> departmentId.toString()).collect(Collectors.joining(","))));
 				}
 
-				private void log(Role role) {
-					logger.debug(String.format("With role[%s]", role));
+				private void log(Role[] roles, UUID[] departmentIds) {
+					logger.debug(String.format("With roles[%s] and Department IDs[%s]",
+							Stream.of(roles).map(role -> role.toString()).collect(Collectors.joining(",")),
+							Stream.of(departmentIds).map(departmentId -> departmentId.toString())
+									.collect(Collectors.joining(","))));
 				}
 
-				private void log(UUID departmentId) {
-					logger.debug(String.format("With departmentId[%s]", departmentId));
-				}
-
-				private void log(Role role, UUID departmentId) {
-					logger.debug(String.format("With role[%s] and departmentId[%s]", role, departmentId));
-				}
-
-				private void log(Credential credential) {
-					logger.debug(String.format("With credential[%s]", credential.evaluate()));
+				private void log(Credential... credentials) {
+					logger.debug(String.format("With Credentials[%s]", Stream.of(credentials)
+							.map(credential -> credential.evaluate()).collect(Collectors.joining(","))));
 				}
 
 				private void removeRemainingFields(String... fields) {
@@ -258,18 +361,36 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 					return new WithFieldImpl(this, fields);
 				}
 
+				private int getCredentialsAmount() {
+					if (credentials != null) {
+						return credentials.length;
+					}
+
+					return roles.length;
+				}
+
 				@Override
 				public WithCredential<T> mask() {
-					modelContext.getMetadata(type).getPropertyNames()
-							.forEach(propName -> setProperty(type, role, departmentId, credential, propName, MASKER));
+					int n = getCredentialsAmount();
+
+					IntStream.range(0, n)
+							.forEach(index -> modelContext.getMetadata(type).getPropertyNames()
+									.forEach(propName -> setProperty(type, roles[index], departmentIds[index],
+											credentials[index], propName, MASKER)));
+
 					logger.debug("Mask all");
 					return this;
 				}
 
 				@Override
 				public WithCredential<T> publish() {
-					modelContext.getMetadata(type).getPropertyNames().forEach(
-							propName -> setProperty(type, role, departmentId, credential, propName, PUBLISHER));
+					int n = getCredentialsAmount();
+
+					IntStream.range(0, n)
+							.forEach(index -> modelContext.getMetadata(type).getPropertyNames()
+									.forEach(propName -> setProperty(type, roles[index], departmentIds[index],
+											credentials[index], propName, PUBLISHER)));
+
 					logger.debug("Publish all");
 					return this;
 				}
@@ -295,6 +416,23 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 					}
 
 					@Override
+					public WithField<T> fields(String... fields) {
+						return owningCredentials.fields(fields);
+					}
+
+					private Role getRole(int index) {
+						return roles == null ? null : roles[index];
+					}
+
+					private UUID getDepartmentId(int index) {
+						return departmentIds == null ? null : departmentIds[index];
+					}
+
+					private Credential getCredential(int index) {
+						return credentials == null ? null : credentials[index];
+					}
+
+					@Override
 					public WithField<T> use(String... alias) {
 						if (requireNonNull(alias).length != fields.length) {
 							throw new IllegalArgumentException(String.format(
@@ -302,8 +440,13 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 									alias.length, fields.length));
 						}
 
-						IntStream.range(0, fields.length).forEach(index -> setProperty(type, role, departmentId,
-								credential, fields[index], alias[index]));
+						int n = getCredentialsAmount();
+
+						IntStream.range(0, n)
+								.forEach(index -> IntStream.range(0, fields.length)
+										.forEach(i -> setProperty(type, getRole(index), getDepartmentId(index),
+												getCredential(index), fields[i], alias[i])));
+
 						logger.debug(
 								String.format("Using alias %s", Stream.of(alias).collect(Collectors.joining(","))));
 
@@ -311,15 +454,20 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 					}
 
 					@Override
-					public WithField<T> use(BiFunction<Object, Credential, Object>[] fncs) {
-						if (requireNonNull(fncs).length != fields.length) {
+					public WithField<T> use(BiFunction<Arguments<?>, Credential, ?>[] fncs) {
+						if (fncs.length != 1 && requireNonNull(fncs).length != fields.length) {
 							throw new IllegalArgumentException(String.format(
 									"Functions length and field lengths must match. Functions[%d]><[%d]Fields",
 									fncs.length, fields.length));
 						}
 
-						IntStream.range(0, fields.length).forEach(
-								index -> setProperty(type, role, departmentId, credential, fields[index], fncs[index]));
+						int n = getCredentialsAmount();
+
+						IntStream.range(0, n)
+								.forEach(index -> IntStream.range(0, fields.length)
+										.forEach(i -> setProperty(type, getRole(index), getDepartmentId(index),
+												getCredential(index), fields[i],
+												fncs.length == 1 ? fncs[0] : fncs[i])));
 
 						if (logger.isDebugEnabled()) {
 							logger.debug(String.format("Use functions %s",
@@ -331,16 +479,22 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 
 					@Override
 					public WithField<T> publish() {
-						Stream.of(fields)
-								.forEach(field -> setProperty(type, role, departmentId, credential, field, PUBLISHER));
+						int n = getCredentialsAmount();
+
+						IntStream.range(0, n).forEach(index -> Stream.of(fields).forEach(field -> setProperty(type,
+								getRole(index), getDepartmentId(index), getCredential(index), field, PUBLISHER)));
+
 						logger.debug("Publish");
 						return this;
 					}
 
 					@Override
 					public WithField<T> mask() {
-						Stream.of(fields)
-								.forEach(field -> setProperty(type, role, departmentId, credential, field, MASKER));
+						int n = getCredentialsAmount();
+
+						IntStream.range(0, n).forEach(index -> Stream.of(fields).forEach(field -> setProperty(type,
+								getRole(index), getDepartmentId(index), getCredential(index), field, MASKER)));
+
 						logger.debug("Mask");
 						return this;
 					}
@@ -348,6 +502,31 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 					@Override
 					public WithField<T> anyFields() {
 						return owningCredentials.fields(remainingFields.toArray(String[]::new));
+					}
+
+					@Override
+					public WithCredential<T> roles(Role... roles) {
+						return owningType.roles(roles);
+					}
+
+					@Override
+					public WithCredential<T> departments(UUID... departmentIds) {
+						return owningType.departments(departmentIds);
+					}
+
+					@Override
+					public WithCredential<T> with(Role[] roles, UUID[] departmentIds) {
+						return owningType.with(roles, departmentIds);
+					}
+
+					@Override
+					public WithCredential<T> credentials(Credential... credentials) {
+						return owningType.credentials(credentials);
+					}
+
+					@Override
+					public WithType<T> type(Class<T> type) {
+						return owningType;
 					}
 
 				}
@@ -364,7 +543,7 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 		private final String name;
 		private final Credential credential;
 		private String alias;
-		private BiFunction<Object, Credential, Object> function;
+		private BiFunction<Arguments<?>, Credential, ?> function;
 
 		public SecuredPropertyImpl(Class<T> owningType, String name, Credential credential) {
 			super();
@@ -394,7 +573,7 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 		}
 
 		@Override
-		public BiFunction<Object, Credential, Object> getFunction() {
+		public BiFunction<Arguments<?>, Credential, ?> getFunction() {
 			return function;
 		}
 
@@ -403,7 +582,7 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 			return this;
 		}
 
-		public SecuredPropertyImpl<T> setFunction(BiFunction<Object, Credential, Object> function) {
+		public SecuredPropertyImpl<T> setFunction(BiFunction<Arguments<?>, Credential, ?> function) {
 			this.function = function;
 			return this;
 		}
