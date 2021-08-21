@@ -7,8 +7,8 @@ package adn.model.factory.authentication;
  * @author Ngoc Huy
  *
  */
-public interface SourceArguments<T> extends Arguments<T> {
+public enum SourceType {
 
-	SourceMetadata getMetadata();
+	COLLECTION, OBJECT_ARRAY, POJO
 
 }

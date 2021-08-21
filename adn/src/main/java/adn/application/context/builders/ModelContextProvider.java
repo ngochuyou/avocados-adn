@@ -5,7 +5,6 @@ package adn.application.context.builders;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,7 +49,7 @@ public class ModelContextProvider implements ContextBuilder {
 	private Map<Class<? extends DomainEntity>, Set<Class<? extends DomainEntity>>> relationMap;
 	private Map<Class<? extends DomainEntity>, Class<? extends DomainEntity>> defaultModelMap;
 
-	private Map<Class<? extends DomainEntity>, DomainEntityMetadata> metadataMap;
+	private Map<Class<? extends DomainEntity>, DomainEntityMetadata<? extends DomainEntity>> metadataMap;
 
 	@Override
 	public void buildAfterStartUp() {
@@ -70,7 +69,7 @@ public class ModelContextProvider implements ContextBuilder {
 	private void initializeMetadataMap() {
 		metadataMap = new HashMap<>();
 		entityTree.forEach(
-				branch -> metadataMap.put(branch.getNode(), new DomainEntityMetadataImpl(this, branch.getNode())));
+				branch -> metadataMap.put(branch.getNode(), new DomainEntityMetadataImpl<>(this, branch.getNode())));
 		entityTree.forEach(branch -> logger.debug(
 				String.format("%s -> %s", branch.getNode().getName(), metadataMap.get(branch.getNode()).toString())));
 	}
@@ -170,8 +169,7 @@ public class ModelContextProvider implements ContextBuilder {
 					}
 
 					if (TypeHelper.isImplementedFrom(f.getType(), Collection.class)) {
-						ParameterizedType type = (ParameterizedType) f.getGenericType();
-						Class<?> clz = (Class<?>) type.getActualTypeArguments()[0];
+						Class<?> clz = (Class<?>) TypeHelper.getGenericType(f);
 
 						if (TypeHelper.isExtendedFrom(clz, Model.class) && models.contains(clazz)
 								&& this.entityTree.contains((Class<? extends Model>) clz)) {
@@ -279,8 +277,9 @@ public class ModelContextProvider implements ContextBuilder {
 		}
 	}
 
-	public <T extends DomainEntity> DomainEntityMetadata getMetadata(Class<T> entityType) {
-		return metadataMap.get(entityType);
+	@SuppressWarnings("unchecked")
+	public <T extends DomainEntity> DomainEntityMetadata<T> getMetadata(Class<T> entityType) {
+		return (DomainEntityMetadata<T>) metadataMap.get(entityType);
 	}
 
 	@Override

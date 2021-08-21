@@ -4,8 +4,8 @@
 package adn.model.factory.authentication;
 
 import java.util.UUID;
-import java.util.function.BiFunction;
 
+import adn.helpers.FunctionHelper.HandledBiFunction;
 import adn.model.DomainEntity;
 import adn.service.internal.Role;
 
@@ -45,7 +45,7 @@ public interface ModelProducerFactoryBuilder {
 
 		WithCredential<T> publish();
 
-		WithType<T> type();
+		<E extends DomainEntity> WithType<E> type(Class<E> type);
 
 	}
 
@@ -53,7 +53,7 @@ public interface ModelProducerFactoryBuilder {
 
 		WithField<T> use(String... alias);
 
-		WithField<T> use(BiFunction<Arguments<?>, Credential, ?>[] fncs);
+		WithField<T> use(HandledBiFunction<Arguments<?>, Credential, ?, Exception>[] fncs);
 
 		WithField<T> publish();
 
@@ -71,7 +71,7 @@ public interface ModelProducerFactoryBuilder {
 
 		WithCredential<T> credentials(Credential... credentials);
 
-		WithType<T> type(Class<T> type);
+		<E extends DomainEntity> WithType<E> type(Class<E> type);
 
 	}
 

@@ -8,6 +8,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,7 +44,9 @@ import adn.model.entities.Entity;
  * @author Ngoc Huy
  *
  */
-public class DomainEntityMetadataImpl implements DomainEntityMetadata {
+public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainEntityMetadata<T> {
+
+	private final Class<T> entityType;
 
 	private final Set<String> properties;
 	private final Set<String> declaredProperties;
@@ -56,8 +59,7 @@ public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 	private final Map<String, Class<? extends DomainEntity>> associationTypes;
 
 	@SuppressWarnings("unchecked")
-	public <T extends DomainEntity> DomainEntityMetadataImpl(final ModelContextProvider modelContext,
-			Class<T> entityClass) {
+	public DomainEntityMetadataImpl(final ModelContextProvider modelContext, Class<T> entityClass) {
 		final Logger logger = LoggerFactory.getLogger(this.getClass());
 		Set<Map.Entry<String, Getter>> getters;
 		Set<String> properties;
@@ -172,10 +174,10 @@ public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 			}
 
 			Class<?> superClass = entityClass.getSuperclass();
-			DomainEntityMetadataImpl superMetadata = null;
+			DomainEntityMetadataImpl<?> superMetadata = null;
 
 			while (superClass != null && superClass != Object.class
-					&& ((superMetadata) = (DomainEntityMetadataImpl) modelContext
+					&& ((superMetadata) = (DomainEntityMetadataImpl<?>) modelContext
 							.getMetadata((Class<DomainEntity>) superClass)) == null) {
 				superClass = superClass.getSuperclass();
 			}
@@ -215,16 +217,17 @@ public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 			nonLazyProperties = properties;
 		}
 
-		this.getters = getters;
-		this.properties = properties;
-		this.propertyTypes = propertyTypes;
-		this.declaredProperties = declaredProperties;
-		this.nonLazyProperties = nonLazyProperties;
+		this.entityType = entityClass;
+		this.getters = Collections.unmodifiableSet(getters);
+		this.properties = Collections.unmodifiableSet(properties);
+		this.propertyTypes = Collections.unmodifiableMap(propertyTypes);
+		this.declaredProperties = Collections.unmodifiableSet(declaredProperties);
+		this.nonLazyProperties = Collections.unmodifiableSet(nonLazyProperties);
 		nonLazyPropertiesSpan = this.nonLazyProperties.size();
 		propertiesSpan = this.properties.size();
 		this.discriminatorColumnName = discriminatorColumnName;
-		this.associationTypes = propertyTypes.entrySet().stream().filter(entry -> {
-			if (entry.getValue().isAssignableFrom(DomainEntity.class)) {
+		this.associationTypes = Collections.unmodifiableMap(propertyTypes.entrySet().stream().filter(entry -> {
+			if (DomainEntity.class.isAssignableFrom(entry.getValue())) {
 				return true;
 			}
 
@@ -232,14 +235,25 @@ public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 				return false;
 			}
 
-			return ((Class<?>) TypeHelper.getGenericType(entry.getValue())).isAssignableFrom(DomainEntity.class);
+			try {
+				return DomainEntity.class.isAssignableFrom(
+						((Class<?>) TypeHelper.getGenericType(entityClass.getDeclaredField(entry.getKey()))));
+			} catch (NoSuchFieldException | SecurityException e) {
+				e.printStackTrace();
+				return false;
+			}
 		}).map(filteredEntry -> Map.entry(filteredEntry.getKey(),
 				(Class<? extends DomainEntity>) filteredEntry.getValue()))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 	}
 
 	private Map<String, Class<?>> getPropertyTypes() {
 		return propertyTypes;
+	}
+
+	@Override
+	public Class<T> getType() {
+		return entityType;
 	}
 
 	@Override
@@ -264,6 +278,9 @@ public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 
 	@Override
 	public String toString() {
+		if (properties.isEmpty()) {
+			return String.format("This %s is empty", this.getClass().getSimpleName());
+		}
 		// @formatter:off
 		return String.format("%s(\n"
 				+ "\tproperties=[\n"
@@ -272,10 +289,15 @@ public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 				+ "\tnonLazyProperties=[\n"
 				+ "\t\t%s\n"
 				+ "\t]\n"
+				+ "\tassociationTypes=[\n"
+				+ "\t\t%s\n"
+				+ "\t]\n"
 				+ ")",
 				this.getClass().getSimpleName(),
 				properties.stream().collect(Collectors.joining(", ")),
-				nonLazyProperties.stream().collect(Collectors.joining(", ")));
+				nonLazyProperties.stream().collect(Collectors.joining(", ")),
+				associationTypes.entrySet().stream()
+					.map(entry -> String.format("%s|%s", entry.getKey(), entry.getValue().getSimpleName())).collect(Collectors.joining(", ")));
 		// @formatter:on
 	}
 
@@ -301,12 +323,12 @@ public class DomainEntityMetadataImpl implements DomainEntityMetadata {
 
 	@Override
 	public boolean isEntityType(String attributeName) {
-		return hasProperty(attributeName) && DomainEntity.class.isAssignableFrom(propertyTypes.get(attributeName));
+		return DomainEntity.class.isAssignableFrom(propertyTypes.get(attributeName));
 	}
 
 	@Override
 	public boolean isAssociation(String attributeName) {
-		return hasProperty(attributeName) && associationTypes.containsKey(attributeName);
+		return associationTypes.containsKey(attributeName);
 	}
 
 	@Override

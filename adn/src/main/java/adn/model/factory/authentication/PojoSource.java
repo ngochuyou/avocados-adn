@@ -11,6 +11,4 @@ import adn.model.DomainEntity;
  */
 public interface PojoSource<T extends DomainEntity, E> extends SourceArguments<E> {
 
-	Class<T> getType();
-
 }

@@ -8,12 +8,13 @@ import static adn.model.factory.authentication.ModelProducer.PUBLISHER;
 import static java.util.Objects.requireNonNull;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -29,14 +30,17 @@ import org.springframework.stereotype.Component;
 import adn.application.Constants;
 import adn.application.context.ContextProvider;
 import adn.application.context.internal.ContextBuilder;
+import adn.helpers.FunctionHelper.HandledBiFunction;
 import adn.helpers.LoggerHelper;
+import adn.helpers.TypeHelper;
 import adn.model.DomainEntity;
 import adn.model.factory.authentication.Arguments;
 import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.DynamicMapModelProducerFactory;
 import adn.model.factory.authentication.ModelProducerFactoryBuilder;
 import adn.model.factory.authentication.SecuredProperty;
-import adn.model.factory.authentication.dynamic.DynamicMapModelProducer;
+import adn.model.factory.authentication.dynamicmap.DynamicMapModelProducer;
+import adn.model.factory.authentication.dynamicmap.DynamicMapModelProducerImpl;
 import adn.service.internal.Role;
 
 /**
@@ -45,6 +49,8 @@ import adn.service.internal.Role;
  */
 @Component
 public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProducerFactory, ContextBuilder {
+
+	private Map<Class<? extends DomainEntity>, DynamicMapModelProducer<? extends DomainEntity>> producersMap;
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -73,21 +79,38 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 				contributor.contribute(builder);
 			} catch (NoSuchMethodException nsm) {
 				SpringApplication.exit(ContextProvider.getApplicationContext());
-				throw new IllegalArgumentException(
-						String.format("A non-arg constructor is required on a(n) %s instance, unable to find one in [%s]",
-								ModelProducerFactoryContributor.class.getSimpleName(), beanDef.getBeanClassName()));
+				throw new IllegalArgumentException(String.format(
+						"A non-arg constructor is required on a(n) %s instance, unable to find one in [%s]",
+						ModelProducerFactoryContributor.class.getSimpleName(), beanDef.getBeanClassName()));
 			} catch (Exception any) {
 				any.printStackTrace();
 				SpringApplication.exit(ContextProvider.getApplicationContext());
 			}
 		}
 
+		Map<Class<? extends DomainEntity>, DynamicMapModelProducer<? extends DomainEntity>> producersMap = new HashMap<>(
+				16, 1.175f);
+
+		modelContext.getEntityTree().forEach(branch -> {
+			Class<DomainEntity> type = (Class<DomainEntity>) branch.getNode();
+
+			producersMap.put(branch.getNode(),
+					new DynamicMapModelProducerImpl<>(type,
+							builder.properties.values().stream()
+									.filter(prop -> TypeHelper.isParentOf(prop.getOwningType(), branch.getNode()))
+									.map(prop -> (SecuredProperty<DomainEntity>) prop).collect(Collectors.toSet()),
+							modelContext.getMetadata(type), this));
+		});
+
+		this.producersMap = Collections.unmodifiableMap(producersMap);
+
 		logger.info(String.format("Finished building %s", this.getClass()));
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends DomainEntity> DynamicMapModelProducer<T> getProducers(Class<T> entityType) {
-		return null;
+		return (DynamicMapModelProducer<T>) producersMap.get(entityType);
 	}
 
 	public interface ModelProducerFactoryContributor {
@@ -159,13 +182,14 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 			putProperty(key, new SecuredPropertyImpl<>(type, name, key.credential).setAlias(alias));
 		}
 
-		private void modifyFunction(SecuredPropertyImpl<?> property, BiFunction<Arguments<?>, Credential, ?> newFnc) {
+		private void modifyFunction(SecuredPropertyImpl<?> property,
+				HandledBiFunction<Arguments<?>, Credential, ?, Exception> newFnc) {
 			logger.debug(String.format("Overring function [%s] with [%s]", property.getFunction(), newFnc));
 			property.setFunction(newFnc);
 		}
 
 		private <T extends DomainEntity> void setProperty(Class<T> type, Role role, UUID departmentId,
-				Credential credential, String name, BiFunction<Arguments<?>, Credential, ?> fnc) {
+				Credential credential, String name, HandledBiFunction<Arguments<?>, Credential, ?, Exception> fnc) {
 			Key<T> key = resolveKey(type, role, departmentId, credential, name);
 			SecuredPropertyImpl<T> property = locateProperty(key);
 
@@ -209,7 +233,8 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 
 			private class WithCredentialImpl implements WithCredential<T> {
 
-				private final Set<String> remainingFields = modelContext.getMetadata(type).getPropertyNames();
+				private final Set<String> remainingFields = new HashSet<>(
+						modelContext.getMetadata(type).getPropertyNames());
 				private final WithType<T> owningType;
 
 				private Role[] roles;
@@ -246,8 +271,8 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 				}
 
 				@Override
-				public WithType<T> type() {
-					return owningType;
+				public <E extends DomainEntity> WithType<E> type(Class<E> type) {
+					return new WithTypeImpl<>(type);
 				}
 
 				private void setRoles(Role... roles) {
@@ -341,6 +366,18 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 							.map(credential -> credential.evaluate()).collect(Collectors.joining(","))));
 				}
 
+				private Role getRole(int index) {
+					return roles == null ? null : roles[index];
+				}
+
+				private UUID getDepartmentId(int index) {
+					return departmentIds == null ? null : departmentIds[index];
+				}
+
+				private Credential getCredential(int index) {
+					return credentials == null ? null : credentials[index];
+				}
+
 				private void removeRemainingFields(String... fields) {
 					if (logger.isTraceEnabled()) {
 						remainingFields
@@ -375,8 +412,8 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 
 					IntStream.range(0, n)
 							.forEach(index -> modelContext.getMetadata(type).getPropertyNames()
-									.forEach(propName -> setProperty(type, roles[index], departmentIds[index],
-											credentials[index], propName, MASKER)));
+									.forEach(propName -> setProperty(type, getRole(index), getDepartmentId(index),
+											getCredential(index), propName, MASKER)));
 
 					logger.debug("Mask all");
 					return this;
@@ -388,8 +425,8 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 
 					IntStream.range(0, n)
 							.forEach(index -> modelContext.getMetadata(type).getPropertyNames()
-									.forEach(propName -> setProperty(type, roles[index], departmentIds[index],
-											credentials[index], propName, PUBLISHER)));
+									.forEach(propName -> setProperty(type, getRole(index), getDepartmentId(index),
+											getCredential(index), propName, PUBLISHER)));
 
 					logger.debug("Publish all");
 					return this;
@@ -420,18 +457,6 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 						return owningCredentials.fields(fields);
 					}
 
-					private Role getRole(int index) {
-						return roles == null ? null : roles[index];
-					}
-
-					private UUID getDepartmentId(int index) {
-						return departmentIds == null ? null : departmentIds[index];
-					}
-
-					private Credential getCredential(int index) {
-						return credentials == null ? null : credentials[index];
-					}
-
 					@Override
 					public WithField<T> use(String... alias) {
 						if (requireNonNull(alias).length != fields.length) {
@@ -454,7 +479,7 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 					}
 
 					@Override
-					public WithField<T> use(BiFunction<Arguments<?>, Credential, ?>[] fncs) {
+					public WithField<T> use(HandledBiFunction<Arguments<?>, Credential, ?, Exception>[] fncs) {
 						if (fncs.length != 1 && requireNonNull(fncs).length != fields.length) {
 							throw new IllegalArgumentException(String.format(
 									"Functions length and field lengths must match. Functions[%d]><[%d]Fields",
@@ -525,8 +550,8 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 					}
 
 					@Override
-					public WithType<T> type(Class<T> type) {
-						return owningType;
+					public <E extends DomainEntity> WithType<E> type(Class<E> type) {
+						return new WithTypeImpl<>(type);
 					}
 
 				}
@@ -543,7 +568,7 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 		private final String name;
 		private final Credential credential;
 		private String alias;
-		private BiFunction<Arguments<?>, Credential, ?> function;
+		private HandledBiFunction<Arguments<?>, Credential, ?, Exception> function;
 
 		public SecuredPropertyImpl(Class<T> owningType, String name, Credential credential) {
 			super();
@@ -573,7 +598,7 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 		}
 
 		@Override
-		public BiFunction<Arguments<?>, Credential, ?> getFunction() {
+		public HandledBiFunction<Arguments<?>, Credential, ?, Exception> getFunction() {
 			return function;
 		}
 
@@ -582,7 +607,7 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 			return this;
 		}
 
-		public SecuredPropertyImpl<T> setFunction(BiFunction<Arguments<?>, Credential, ?> function) {
+		public SecuredPropertyImpl<T> setFunction(HandledBiFunction<Arguments<?>, Credential, ?, Exception> function) {
 			this.function = function;
 			return this;
 		}

@@ -64,7 +64,7 @@ public class ModelInheritanceTree<T extends DomainEntity> {
 		return false;
 	}
 
-	public void forEach(Consumer<ModelInheritanceTree<?>> consumer) {
+	public void forEach(Consumer<ModelInheritanceTree<? extends DomainEntity>> consumer) {
 		consumer.accept(this);
 
 		this.childrens.forEach(tree -> tree.forEach(consumer));

@@ -164,8 +164,8 @@ public class DefaultDepartmentBasedModelPropertiesFactory
 		}
 
 		@SuppressWarnings("unchecked")
-		private <T extends DepartmentScoped> DomainEntityMetadata getMetadata(Class<T> type) {
-			return modelContext.getMetadata((Class<DomainEntity>) type);
+		private <T extends DepartmentScoped> DomainEntityMetadata<T> getMetadata(Class<T> type) {
+			return (DomainEntityMetadata<T>) modelContext.getMetadata((Class<DomainEntity>) type);
 		}
 
 		@Override

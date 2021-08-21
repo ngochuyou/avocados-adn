@@ -63,7 +63,7 @@ public class DepartmentBasedModelPropertiesProducerImpl<T extends DepartmentScop
 
 		Map<UUID, Map<String, Function<Object, Object>>> functionsMap = new HashMap<>();
 		final Logger logger = LoggerFactory.getLogger(this.getClass());
-		DomainEntityMetadata metadata = ContextProvider.getBean(ModelContextProvider.class)
+		DomainEntityMetadata<T> metadata = (DomainEntityMetadata<T>) ContextProvider.getBean(ModelContextProvider.class)
 				.getMetadata((Class<DomainEntity>) type);
 		// @formatter:off
 		properties.stream().filter(prop -> {
@@ -283,7 +283,7 @@ public class DepartmentBasedModelPropertiesProducerImpl<T extends DepartmentScop
 	@Override
 	public void afterFactoryBuild(
 			Map<Class<? extends DepartmentScoped>, DepartmentBasedModelPropertiesProducer> producers) {
-		DomainEntityMetadata metadata = ContextProvider.getBean(ModelContextProvider.class)
+		DomainEntityMetadata<T> metadata = (DomainEntityMetadata<T>) ContextProvider.getBean(ModelContextProvider.class)
 				.getMetadata((Class<DomainEntity>) type);
 		Set<String> associations = registeredProperties.stream().filter(metadata::isEntityType)
 				.collect(Collectors.toSet());

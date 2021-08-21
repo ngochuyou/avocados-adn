@@ -1,10 +1,10 @@
 /**
  * 
  */
-package adn.model.factory.authentication.dynamic;
+package adn.model.factory.authentication.dynamicmap;
 
-import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.authentication.SingleSource;
+import adn.model.factory.authentication.SourceMetadata;
 
 /**
  * @author Ngoc Huy
@@ -14,8 +14,8 @@ public class SingleSourceImpl extends AbstractSourceArgument<Object[]> implement
 
 	private final Object[] source;
 
-	public SingleSourceImpl(String[] columns, DomainEntityMetadata metadata, Object[] source) {
-		super(columns, metadata);
+	public SingleSourceImpl(SourceMetadata metadata, Object[] source) {
+		super(metadata);
 		this.source = source;
 	}
 

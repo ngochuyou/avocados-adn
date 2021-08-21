@@ -3,8 +3,7 @@
  */
 package adn.model.factory.authentication;
 
-import java.util.function.BiFunction;
-
+import adn.helpers.FunctionHelper.HandledBiFunction;
 import adn.model.DomainEntity;
 
 /**
@@ -21,6 +20,6 @@ public interface SecuredProperty<T extends DomainEntity> {
 
 	String getAlias();
 
-	BiFunction<Arguments<?>, Credential, ?> getFunction();
+	HandledBiFunction<Arguments<?>, Credential, ?, Exception> getFunction();
 
 }

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.model.factory.authentication.dynamic;
+package adn.model.factory.authentication.dynamicmap;
 
 import java.util.Collection;
 import java.util.List;

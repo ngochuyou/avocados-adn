@@ -60,7 +60,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl<T extends DomainEnti
 		type = entityClass;
 
 		final Logger logger = LoggerFactory.getLogger(this.getClass());
-		DomainEntityMetadata metadata = ContextProvider.getBean(ModelContextProvider.class).getMetadata(entityClass);
+		DomainEntityMetadata<T> metadata = ContextProvider.getBean(ModelContextProvider.class).getMetadata(entityClass);
 		Map<Role, Map<String, Function<Object, Object>>> functionsMap = new HashMap<>(0, 1f);
 		Map<Role, Map<String, String>> alternativeNamesMap = new HashMap<>(0, 1f);
 		// @formatter:off
@@ -305,7 +305,7 @@ public class AuthenticationBasedModelPropertiesProducerImpl<T extends DomainEnti
 	@Override
 	public void afterFactoryBuild(
 			Map<Class<? extends DomainEntity>, AuthenticationBasedModelPropertiesProducer> producers) {
-		DomainEntityMetadata metadata = ContextProvider.getBean(ModelContextProvider.class).getMetadata(type);
+		DomainEntityMetadata<T> metadata = ContextProvider.getBean(ModelContextProvider.class).getMetadata(type);
 		Set<String> associations = Stream.of(properties).filter(metadata::isEntityType).collect(Collectors.toSet());
 		String propName;
 

@@ -212,7 +212,7 @@ public final class GenericCRUDService implements CRUDService {
 	public <T extends Entity> List<String> getDefaultColumns(Class<T> type, Role role, Collection<String> columns)
 			throws NoSuchFieldException {
 		if (columns.isEmpty()) {
-			DomainEntityMetadata metadata = modelContext.getMetadata(type);
+			DomainEntityMetadata<T> metadata = modelContext.getMetadata(type);
 
 			return new ArrayList<>(metadata.getNonLazyPropertyNames());
 		}
@@ -231,7 +231,7 @@ public final class GenericCRUDService implements CRUDService {
 		}
 
 		if (columns.isEmpty()) {
-			DomainEntityMetadata metadata = modelContext.getMetadata(type);
+			DomainEntityMetadata<T> metadata = modelContext.getMetadata(type);
 
 			return new ArrayList<>(metadata.getNonLazyPropertyNames());
 		}

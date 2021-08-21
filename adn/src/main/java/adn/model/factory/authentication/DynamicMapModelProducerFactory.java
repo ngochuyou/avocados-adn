@@ -4,7 +4,7 @@
 package adn.model.factory.authentication;
 
 import adn.model.DomainEntity;
-import adn.model.factory.authentication.dynamic.DynamicMapModelProducer;
+import adn.model.factory.authentication.dynamicmap.DynamicMapModelProducer;
 
 /**
  * @author Ngoc Huy

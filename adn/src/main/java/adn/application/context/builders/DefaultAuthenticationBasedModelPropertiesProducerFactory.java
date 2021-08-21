@@ -217,8 +217,9 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 				return new WithRoles(owner, this, getUngivenRoles()).field(fields);
 			}
 
+			@SuppressWarnings("unchecked")
 			protected WithType<T> apply(Role[] roles, Function<Object, Object> function) {
-				DomainEntityMetadata metadata = modelContext.getMetadata(type);
+				DomainEntityMetadata<T> metadata = (DomainEntityMetadata<T>) modelContext.getMetadata(type);
 
 				metadata.getDeclaredPropertyNames().forEach(prop -> {
 					Stream.of(roles).forEach(role -> {
@@ -293,10 +294,11 @@ public class DefaultAuthenticationBasedModelPropertiesProducerFactory
 					return owningType;
 				}
 
+				@SuppressWarnings("unchecked")
 				private String[] getUngivenFields(String[] existingFields) {
 					Set<String> ungiven = new HashSet<>();
 					Set<String> given = Set.of(existingFields);
-					DomainEntityMetadata metadata = modelContext.getMetadata(type);
+					DomainEntityMetadata<T> metadata = (DomainEntityMetadata<T>) modelContext.getMetadata(type);
 
 					metadata.getDeclaredPropertyNames().forEach(prop -> {
 						if (given.contains(prop)) {

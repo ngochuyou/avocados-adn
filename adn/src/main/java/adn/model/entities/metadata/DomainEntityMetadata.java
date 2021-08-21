@@ -14,8 +14,10 @@ import adn.model.DomainEntity;
  * @author Ngoc Huy
  *
  */
-public interface DomainEntityMetadata {
+public interface DomainEntityMetadata<T> {
 
+	Class<T> getType();
+	
 	boolean hasProperty(String attributeName);
 
 	boolean isEntityType(String attributeName);
