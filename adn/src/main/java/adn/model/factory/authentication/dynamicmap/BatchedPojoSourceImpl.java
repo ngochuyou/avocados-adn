@@ -13,12 +13,12 @@ import adn.model.factory.authentication.SourceMetadata;
  * @author Ngoc Huy
  *
  */
-public class BatchedPojoSourceImpl<T extends DomainEntity> extends AbstractSourceArgument<List<T>>
+public class BatchedPojoSourceImpl<T extends DomainEntity> extends AbstractSourceArgument<T, List<T>>
 		implements BatchedPojoSource<T> {
 
 	private final List<T> source;
 
-	public BatchedPojoSourceImpl(SourceMetadata metadata, List<T> source) {
+	public BatchedPojoSourceImpl(SourceMetadata<T> metadata, List<T> source) {
 		super(metadata);
 		this.source = source;
 	}

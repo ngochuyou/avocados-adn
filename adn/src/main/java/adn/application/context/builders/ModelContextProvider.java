@@ -6,6 +6,7 @@ package adn.application.context.builders;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -67,11 +68,14 @@ public class ModelContextProvider implements ContextBuilder {
 	}
 
 	private void initializeMetadataMap() {
-		metadataMap = new HashMap<>();
+		this.metadataMap = new HashMap<>();
+
 		entityTree.forEach(
 				branch -> metadataMap.put(branch.getNode(), new DomainEntityMetadataImpl<>(this, branch.getNode())));
 		entityTree.forEach(branch -> logger.debug(
 				String.format("%s -> %s", branch.getNode().getName(), metadataMap.get(branch.getNode()).toString())));
+
+		this.metadataMap = Collections.unmodifiableMap(metadataMap);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -133,7 +137,7 @@ public class ModelContextProvider implements ContextBuilder {
 
 	@SuppressWarnings("unchecked")
 	private void initializeRelationMap() {
-		this.relationMap = new HashMap<>();
+		Map<Class<? extends DomainEntity>, Set<Class<? extends DomainEntity>>> relationMap = new HashMap<>();
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		HashSet<Class<? extends Model>> models = new HashSet<>();
@@ -189,14 +193,14 @@ public class ModelContextProvider implements ContextBuilder {
 
 			Class<? extends adn.model.entities.Entity> relatedClass = (Class<? extends adn.model.entities.Entity>) annotation.entityGene();
 
-			if (this.relationMap.get(relatedClass) == null) {
-				this.relationMap.put(relatedClass, Set.of(clazz));
+			if (relationMap.get(relatedClass) == null) {
+				relationMap.put(relatedClass, Set.of(clazz));
 			} else {
-				Set<Class<? extends DomainEntity>> set = this.relationMap.get(relatedClass).stream()
+				Set<Class<? extends DomainEntity>> set = relationMap.get(relatedClass).stream()
 						.collect(Collectors.toSet());
 
 				set.add(clazz);
-				this.relationMap.put(relatedClass, set);
+				relationMap.put(relatedClass, set);
 			}
 		});
 		entityTree.forEach(branch -> {
@@ -205,13 +209,15 @@ public class ModelContextProvider implements ContextBuilder {
 			}
 		});
 		// @formatter:on
-		this.relationMap.forEach((key, val) -> val.forEach(clazz -> logger.debug(
+		relationMap.forEach((key, val) -> val.forEach(clazz -> logger.debug(
 				String.format("[%s] related to [%s]", key.getName(), key.equals(clazz) ? "itself" : clazz.getName()))));
+
+		this.relationMap = Collections.unmodifiableMap(relationMap);
 	}
 
 	@SuppressWarnings("unchecked")
 	private void initializeDefaultModelMap() {
-		this.defaultModelMap = new HashMap<>();
+		Map<Class<? extends DomainEntity>, Class<? extends DomainEntity>> defaultModelMap = new HashMap<>();
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
@@ -226,7 +232,7 @@ public class ModelContextProvider implements ContextBuilder {
 						return;
 					}
 	
-					this.defaultModelMap.put((Class<? extends adn.model.entities.Entity>) clazz.getDeclaredAnnotation(Generic.class).entityGene(), clazz);
+					defaultModelMap.put((Class<? extends adn.model.entities.Entity>) clazz.getDeclaredAnnotation(Generic.class).entityGene(), clazz);
 				} catch (Exception e) {
 					e.printStackTrace();
 					SpringApplication.exit(ContextProvider.getApplicationContext());
@@ -238,8 +244,10 @@ public class ModelContextProvider implements ContextBuilder {
 			}
 		});
 		// @formatter:on
-		this.defaultModelMap.forEach((k, v) -> logger
+		defaultModelMap.forEach((k, v) -> logger
 				.debug(String.format("[%s] is default for [%s]", v.getName(), k.equals(v) ? "itself" : k.getName())));
+
+		this.defaultModelMap = defaultModelMap;
 	}
 
 	public ModelInheritanceTree<DomainEntity> getEntityTree() {

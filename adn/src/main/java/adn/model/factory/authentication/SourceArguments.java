@@ -3,12 +3,14 @@
  */
 package adn.model.factory.authentication;
 
+import adn.model.DomainEntity;
+
 /**
  * @author Ngoc Huy
  *
  */
-public interface SourceArguments<T> extends Arguments<T> {
+public interface SourceArguments<E extends DomainEntity, T> extends Arguments<T> {
 
-	SourceMetadata getMetadata();
+	SourceMetadata<E> getMetadata();
 
 }

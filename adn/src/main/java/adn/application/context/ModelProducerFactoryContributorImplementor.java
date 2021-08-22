@@ -3,7 +3,9 @@
  */
 package adn.application.context;
 
+import static adn.application.context.builders.DepartmentScopeContext.personnel;
 import static adn.application.context.builders.DepartmentScopeContext.sale;
+import static adn.application.context.builders.DepartmentScopeContext.stock;
 import static adn.service.internal.Role.ADMIN;
 import static adn.service.internal.Role.CUSTOMER;
 import static adn.service.internal.Role.PERSONNEL;
@@ -19,9 +21,11 @@ import adn.model.entities.Account;
 import adn.model.entities.Admin;
 import adn.model.entities.Category;
 import adn.model.entities.Customer;
+import adn.model.entities.Department;
 import adn.model.entities.Factor;
 import adn.model.entities.Personnel;
 import adn.model.entities.Product;
+import adn.model.entities.ProductProviderDetail;
 import adn.model.entities.Provider;
 import adn.model.entities.StockDetail;
 import adn.model.factory.authentication.Arguments;
@@ -79,7 +83,6 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 						.use(localDateFormatter)
 					.fields("updatedDate")
 						.use(localDateTimeFormatter)
-					.anyFields().mask()
 			.type(Admin.class)
 				.roles(ADMIN).publish()
 			.type(Customer.class)
@@ -111,7 +114,15 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 					.anyFields().mask()
 				.roles(personnels).departments(sale())
 					.fields("stockedBy", "soldBy", "provider").publish()
-					.fields("stockedTimestamp", "updatedTimestamp").use(localDateTimeFormatter);
+					.fields("stockedTimestamp", "updatedTimestamp").use(localDateTimeFormatter)
+			.type(Provider.class)
+				.roles(personnels).departments(stock(), sale()).publish()
+				.fields("deactivatedDate").use(localDateTimeFormatter)
+			.type(Department.class)
+				.roles(personnels).departments(personnel()).publish()
+			.type(ProductProviderDetail.class)
+				.roles(personnels).departments(sale()).publish()
+				.fields("appliedTimestamp", "droppedTimestamp").use(localDateTimeFormatter);
 		// @formatter:on
 	}
 

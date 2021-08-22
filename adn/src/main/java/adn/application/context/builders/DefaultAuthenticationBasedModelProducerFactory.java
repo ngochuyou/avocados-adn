@@ -20,6 +20,7 @@ import adn.application.context.internal.ContextBuilder;
 import adn.model.DomainEntity;
 import adn.model.Generic;
 import adn.model.ModelInheritanceTree;
+import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.AuthenticationBasedModelFactory;
 import adn.model.factory.dictionary.production.CompositeDictionaryAuthenticationBasedModelProducer;
 import adn.model.factory.dictionary.production.authentication.DefaultModelProducer;
@@ -68,7 +69,7 @@ public class DefaultAuthenticationBasedModelProducerFactory implements Authentic
 			
 			modelContextProvider.getEntityTree().forEach(branch -> {
 				if (DefaultModelProducer.shouldUse(branch.getNode())) {
-					producerMap.putIfAbsent(branch.getNode(), new DefaultModelProducer<>(branch.getNode(), modelContextProvider.getMetadata(branch.getNode())));
+					producerMap.putIfAbsent(branch.getNode(), new DefaultModelProducer<>((Class<DomainEntity>) branch.getNode(), (DomainEntityMetadata<DomainEntity>) modelContextProvider.getMetadata(branch.getNode())));
 				}
 			});
 			modelContextProvider.getEntityTree().forEach(branch -> {

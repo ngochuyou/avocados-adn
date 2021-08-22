@@ -5,12 +5,19 @@ package adn.model.factory.authentication;
 
 import java.util.Set;
 
+import adn.model.DomainEntity;
+
 /**
  * @author Ngoc Huy
  *
  */
-public interface SourceMetadata {
+public interface SourceMetadata<T extends DomainEntity> {
 
+	/**
+	 * @return the entity type of this source
+	 */
+	Class<T> getEntityType();
+	
 	/**
 	 * Get the representation class of this source
 	 * If this source is a POJO then it's the POJO class</br>
@@ -19,7 +26,7 @@ public interface SourceMetadata {
 	 * 
 	 * @return the type of this source
 	 */
-	Class<?> getType();
+	Class<?> getRepresentation();
 	
 	/**
 	 * @return the representation of this source
@@ -47,6 +54,6 @@ public interface SourceMetadata {
 	 * @param index index of the association regarding to this source
 	 * @return the {@code SourceMetadata} of the association
 	 */
-	SourceMetadata getAssociationMetadata(int index);
+	SourceMetadata<? extends DomainEntity> getAssociationMetadata(int index);
 	
 }

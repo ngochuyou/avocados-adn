@@ -35,7 +35,7 @@ public class DefaultModelProducer<T extends DomainEntity>
 		return type.getDeclaredFields().length > 0;
 	}
 
-	public DefaultModelProducer(Class<T> type, DomainEntityMetadata metadata) {
+	public DefaultModelProducer(Class<T> type, DomainEntityMetadata<T> metadata) {
 		getters = metadata.getGetters();
 		name = String.format("%s<%s>", this.getClass().getSimpleName(), type.getName());
 	}

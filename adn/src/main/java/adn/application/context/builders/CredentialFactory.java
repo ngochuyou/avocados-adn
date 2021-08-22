@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -49,7 +50,7 @@ public class CredentialFactory implements ContextBuilder {
 
 	public static final int ROLE_CREDENTIAL_POSITION = 0;
 	public static final int DEPARTMENT_ID_CREDENTIAL_POSITION = 1;
-	public static final int CREDENTIAL_COMPONENT_POSITION = 1;
+	public static final int COMPOUND_CREDENTIAL_POSITION = 2;
 
 	private List<Credential> credentials;
 
@@ -135,8 +136,8 @@ public class CredentialFactory implements ContextBuilder {
 		List<Credential> currentCredentials;
 		List<List<Credential>> subCredentials;
 		int n;
-		// start building compound credential starting from a credential
-		// combined from 2 other Credentials, up to n (collectionSize)
+		// start building compound credentials starting from a credential
+		// combined by 2 other Credentials, up to n (collectionSize)
 		// ex:
 		// Credential collections A: "A", "B"
 		// Credential collections B: "1"
@@ -150,7 +151,7 @@ public class CredentialFactory implements ContextBuilder {
 				n = currentCredentials.size();
 
 				for (int colIndex = 0; colIndex < n; colIndex++) {
-					finalCredentials.addAll(multiDistribute(CREDENTIAL_COMPONENT_POSITION,
+					finalCredentials.addAll(multiDistribute(COMPOUND_CREDENTIAL_POSITION,
 							currentCredentials.get(colIndex), subCredentials, 0));
 				}
 			}
@@ -236,17 +237,9 @@ public class CredentialFactory implements ContextBuilder {
 
 	}
 
-	/**
-	 * @return the credentials
-	 */
-	public List<Credential> getCredentials() {
-		return Collections.unmodifiableList(credentials);
-	}
-
 	private static DepartmentCredential resolveDepartmentCredential(UUID departmentId) {
-		DepartmentCredential credential = CREDENTIALS.get(departmentId);
-
-		return credential != null ? credential : CREDENTIALS.get(DepartmentScopeContext.unknown());
+		return Optional.ofNullable(CREDENTIALS.get(departmentId))
+				.orElse(CREDENTIALS.get(DepartmentScopeContext.unknown()));
 	}
 
 	public static Credential from(Role role, UUID departmentId) {
@@ -255,7 +248,7 @@ public class CredentialFactory implements ContextBuilder {
 		}
 
 		if (role != null && departmentId != null) {
-			return new CompoundCredential(CREDENTIAL_COMPONENT_POSITION, role,
+			return new CompoundCredential(COMPOUND_CREDENTIAL_POSITION, role,
 					resolveDepartmentCredential(departmentId));
 		}
 

@@ -12,8 +12,6 @@ import static adn.application.context.builders.DepartmentScopeContext.unknown;
 import java.util.Map;
 import java.util.UUID;
 
-import org.springframework.boot.context.properties.ConstructorBinding;
-
 import adn.application.context.builders.CredentialFactory;
 import adn.model.factory.authentication.OnMemoryCredential;
 
@@ -21,7 +19,6 @@ import adn.model.factory.authentication.OnMemoryCredential;
  * @author Ngoc Huy
  *
  */
-@ConstructorBinding
 public class DepartmentCredential implements OnMemoryCredential {
 
 	private final String departmentId;

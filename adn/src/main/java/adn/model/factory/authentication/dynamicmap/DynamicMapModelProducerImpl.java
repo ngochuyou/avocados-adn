@@ -4,7 +4,7 @@
 package adn.model.factory.authentication.dynamicmap;
 
 import static adn.helpers.LoggerHelper.with;
-import static java.util.Map.entry;
+import static adn.helpers.Utils.Entry.entry;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -218,11 +218,9 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 				try {
 					return entry(alias.get(column), functions.get(column).apply(argument(values[index]), credential));
 				} catch (Exception e) {
-					if (e instanceof UnauthorizedCredential) {
-						logger.debug(e.getMessage());
-					}
+					logger.debug(e.getMessage());
 
-					return entry(alias.get(column), null);
+					return entry(alias.get(column), e.getMessage());
 				}
 			})
 			// @formatter:off
@@ -254,9 +252,9 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 	}
 
 	@Override
-	public Map<String, Object> produceSingleSource(SingleSource source, Credential credential)
+	public <E extends T> Map<String, Object> produceSingleSource(SingleSource<E> source, Credential credential)
 			throws UnauthorizedCredential {
-		SourceMetadata metadata = source.getMetadata();
+		SourceMetadata<E> metadata = source.getMetadata();
 		String evaluation = credential.evaluate();
 		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = getFunctions(evaluation);
 		Map<String, String> alias = aliasMap.get(evaluation);
@@ -270,9 +268,9 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 	}
 
 	@Override
-	public List<Map<String, Object>> produceBatchedSource(BatchedSource source, Credential credential)
+	public <E extends T> List<Map<String, Object>> produceBatchedSource(BatchedSource<E> source, Credential credential)
 			throws UnauthorizedCredential {
-		SourceMetadata metadata = source.getMetadata();
+		SourceMetadata<E> metadata = source.getMetadata();
 		String evaluation = credential.evaluate();
 		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = getFunctions(evaluation);
 		Map<String, String> alias = aliasMap.get(evaluation);
@@ -299,24 +297,24 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 	@Override
 	public <E extends T> Map<String, Object> produceSinglePojo(SinglePojoSource<E> source, Credential credential)
 			throws UnauthorizedCredential {
-		SourceMetadata metadata = source.getMetadata();
+		SourceMetadata<E> metadata = source.getMetadata();
 		String[] columns = metadata.getColumns();
 		E entity = source.getSource();
 		Object[] values = Stream.of(columns).map(column -> getters.get(column).get(entity)).toArray();
 
-		return produceSingleSource(new SingleSourceImpl(metadata, values), credential);
+		return produceSingleSource(new SingleSourceImpl<>(metadata, values), credential);
 	}
 
 	@Override
 	public <E extends T> List<Map<String, Object>> produceBatchedPojo(BatchedPojoSource<E> source,
 			Credential credential) throws UnauthorizedCredential {
-		SourceMetadata metadata = source.getMetadata();
+		SourceMetadata<E> metadata = source.getMetadata();
 		String[] columns = metadata.getColumns();
 		List<Object[]> batch = source.getSource().stream()
 				.map(entity -> Stream.of(columns).map(column -> getters.get(column).get(entity)).toArray())
 				.collect(Collectors.toList());
 
-		return produceBatchedSource(new BatchedSourceImpl(metadata, batch), credential);
+		return produceBatchedSource(new BatchedSourceImpl<>(metadata, batch), credential);
 	}
 
 	@Override
@@ -349,15 +347,16 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 
 	// @formatter:off
 	@SuppressWarnings("unchecked")
-	private Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> prepareAssociationProducing(
-			SourceMetadata metadata,
+	private <E extends T> Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> prepareAssociationProducing(
+			SourceMetadata<E> metadata,
 			Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> configuredFunctions) {
 		// @formatter:on
 		String[] columns = metadata.getColumns();
 		Set<Integer> associationIndices = metadata.getAssociationIndices();
 		int span = columns.length;
-		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> copiedFunctions = Map
-				.copyOf(configuredFunctions);
+		// we need this to be modifiable
+		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> copiedFunctions = new HashMap<>(
+				configuredFunctions);
 
 		IntStream.range(0, span).forEach(index -> {
 			String column = columns[index];
@@ -366,52 +365,54 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 				return;
 			}
 
-			SourceMetadata associationMetadata = metadata.getAssociationMetadata(index);
-			SourceType representation = associationMetadata.getSourceType();
+			SourceMetadata<DomainEntity> associationMetadata = (SourceMetadata<DomainEntity>) metadata
+					.getAssociationMetadata(index);
+			SourceType sourceType = associationMetadata.getSourceType();
 			Class<DomainEntity> associationType = (Class<DomainEntity>) entityMetadata.getAssociationType(column);
 			DynamicMapModelProducer<DomainEntity> associationProducer;
 
-			if (representation == SourceType.OBJECT_ARRAY) {
-				associationProducer = factory.getProducers(associationType);
+			if (sourceType == SourceType.OBJECT_ARRAY) {
+				associationProducer = factory.getProducer(associationType);
 				copiedFunctions.put(column,
-						(arg, credential) -> associationProducer
-								.produceSingleSource(new SingleSourceImpl(metadata.getAssociationMetadata(index),
-										optional(arg.getSource(), Object[].class)), credential));
-				return;
-			}
-
-			if (representation == SourceType.POJO) {
-				associationProducer = factory.getProducers(associationType);
-				copiedFunctions.put(column,
-						(arg, credential) -> associationProducer.produceSinglePojo(
-								new SinglePojoSourceImpl<DomainEntity>(metadata.getAssociationMetadata(index),
-										optional(arg.getSource(), associationType)),
+						(arg, credential) -> associationProducer.produceSingleSource(
+								new SingleSourceImpl<>(associationMetadata, optional(arg.getSource(), Object[].class)),
 								credential));
 				return;
 			}
 
-			if (representation == SourceType.COLLECTION) {
-				associationProducer = factory.getProducers(associationType);
+			if (sourceType == SourceType.POJO) {
+				associationProducer = factory.getProducer(associationType);
+				copiedFunctions.put(column, (arg, credential) -> associationProducer.produceSinglePojo(
+						new SinglePojoSourceImpl<>(associationMetadata, optional(arg.getSource(), associationType)),
+						credential));
+				return;
+			}
 
-				Class<?> genericType = metadata.getClass();
+			if (sourceType == SourceType.COLLECTION) {
+				associationProducer = factory.getProducer(associationType);
+
+				Class<?> genericType = metadata.getRepresentation();
 				// Object[]
 				if (genericType.isArray()) {
-					copiedFunctions.put(column, (arg, credential) -> associationProducer.produceBatchedSource(
-							new BatchedSourceImpl(metadata, optional(arg.getSource())), credential));
+					copiedFunctions.put(column,
+							(arg, credential) -> associationProducer.produceBatchedSource(
+									new BatchedSourceImpl<>(associationMetadata, optional(arg.getSource())),
+									credential));
 					return;
 				}
 				// POJO
 				if (DomainEntity.class.isAssignableFrom(genericType)) {
-					copiedFunctions.put(column, (arg, credential) -> associationProducer.produceBatchedPojo(
-							new BatchedPojoSourceImpl<>(metadata, optional(arg.getSource())), credential));
+					copiedFunctions.put(column,
+							(arg, credential) -> associationProducer.produceBatchedPojo(
+									new BatchedPojoSourceImpl<>(associationMetadata, optional(arg.getSource())),
+									credential));
 					return;
 				}
 
 				throw new IllegalArgumentException(String.format("Unknown association type %s", genericType));
 			}
 
-			throw new IllegalArgumentException(
-					String.format("Unsupported association representation %s", representation));
+			throw new IllegalArgumentException(String.format("Unsupported association representation %s", sourceType));
 		});
 
 		return copiedFunctions;

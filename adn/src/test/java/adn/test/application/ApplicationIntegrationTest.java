@@ -9,24 +9,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.File;
-import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-
-import org.hibernate.FlushMode;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.Status;
-import org.hibernate.event.internal.EntityState;
-import org.hibernate.internal.SessionImpl;
-import org.hibernate.tuple.entity.EntityMetamodel;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -35,9 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -49,18 +35,18 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
-import adn.application.context.builders.DatabaseInitializer;
-import adn.dao.generic.GenericRepository;
-import adn.dao.generic.Unpaged;
-import adn.model.entities.Account;
-import adn.model.entities.Provider;
+import adn.model.entities.Department;
+import adn.model.entities.Personnel;
+import adn.model.factory.authentication.DynamicMapModelProducerFactory;
+import adn.model.factory.authentication.dynamicmap.SourceMetadataFactory;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.security.SecurityConfiguration;
+import adn.service.internal.Role;
 import adn.service.resource.model.models.UserPhoto;
 
 /**
@@ -137,177 +123,38 @@ public class ApplicationIntegrationTest {
 	}
 
 	@Autowired
-	private SessionFactory sessionFactory;
-
-	@Autowired
-	private DatabaseInitializer dbInit;
+	private DynamicMapModelProducerFactory factory;
 
 	@Test
-	@Transactional
-	private void entityEntryTest() {
-		SessionImpl session = (SessionImpl) sessionFactory.getCurrentSession();
+	public void testModelFactory() throws UnauthorizedCredential {
+		Department dep = new Department();
 
-		session.setHibernateFlushMode(FlushMode.MANUAL);
+		dep.setId(UUID.randomUUID());
+		dep.setName("Personnel");
+		dep.setActive(Boolean.FALSE);
 
-//		Account account = session.find(Account.class, "adn.personnel.manager.0");
+		Object[] values = new Object[] { "ngochuyou", "Vu Ngoc Huy", "Tran", "ngochuy.ou@gmail.com",
+				LocalDateTime.now(), dep };
+		Map<String, Object> map = factory.produce(values,
+				SourceMetadataFactory.associatedArray(Personnel.class,
+						Arrays.asList("id", "lastName", "firstName", "email", "updatedDate", "department"),
+						SourceMetadataFactory.basic(Department.class, Arrays.asList("id", "name", "active"))),
+				Role.CUSTOMER);
 
-		Account account = dbInit.getAdmin();
-		session.persist(account);
+		System.out
+				.println(map.entrySet().stream().map(entry -> String.format("%s\t%s", entry.getKey(), entry.getValue()))
+						.collect(Collectors.joining("\n")));
 
-		EntityEntry entry = session.getPersistenceContext().getEntry(account);
-		EntityState state = EntityState.getEntityState(account, entry.getEntityName(), entry, session, null);
+		map = factory.produce(values,
+				SourceMetadataFactory.associatedArray(Personnel.class,
+						Arrays.asList("id", "lastName", "firstName", "email", "updatedDate", "department"),
+						SourceMetadataFactory.basic(Department.class, Arrays.asList("id", "name", "active"))),
+				Role.PERSONNEL);
 
-		assertThat(state == EntityState.PERSISTENT);
-		logger.debug("Status: " + entry.getStatus().toString());
-		logger.debug("State: " + state.toString());
-		inspectState(entry);
-		logger.debug("Version: " + entry.getVersion());
-		logger.debug("Exists: " + entry.isExistsInDatabase());
-		session.delete(account);
-		state = EntityState.getEntityState(account, entry.getEntityName(), entry, session, null);
+		System.out
+				.println(map.entrySet().stream().map(entry -> String.format("%s\t%s", entry.getKey(), entry.getValue()))
+						.collect(Collectors.joining("\n")));
 
-		assertThat(entry.getStatus() == Status.DELETED && state == EntityState.DELETED);
-		logger.debug("Status: " + entry.getStatus().toString());
-		logger.debug("State: " + state.toString());
-//		inspectState(entry);
-		logger.debug("Version: " + entry.getVersion());
-		logger.debug("Exists: " + entry.isExistsInDatabase());
-
-		session.flush();
-
-		assertThat(entry.getStatus() == Status.GONE);
-		assertThat(state == EntityState.TRANSIENT);
-		logger.debug("Status: " + entry.getStatus().toString());
-		logger.debug("State: " + state.toString());
-//		inspectState(entry);
-		logger.debug("Version: " + entry.getVersion());
-		logger.debug("Exists: " + entry.isExistsInDatabase());
-	}
-
-	private void inspectState(EntityEntry entry) {
-		if (entry.getLoadedState() != null) {
-			logger.debug("Loaded state");
-
-			for (Object val : entry.getLoadedState()) {
-				if (val == null) {
-					logger.debug("NULL");
-					continue;
-				}
-
-				logger.debug(val.toString());
-			}
-		}
-
-		if (entry.getDeletedState() != null) {
-			logger.debug("Deleted state");
-
-			for (Object val : entry.getDeletedState()) {
-				if (val == null) {
-					logger.debug("NULL");
-					continue;
-				}
-
-				logger.debug(val.toString());
-			}
-		}
-	}
-
-	@Test
-	private void sessionLoadTest() throws Exception {
-		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
-				.get(PREFIX + "/file/public/image/session-load");
-
-		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
-
-		assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-	}
-
-	@Test
-	private void transactionalTest() throws Exception {
-		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get(PREFIX + "/transaction");
-
-		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
-
-		assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-	}
-
-	@Test
-	@Transactional
-	private void testSpec() {
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<Long> query = builder.createQuery(Long.class);
-		Root<Provider> root = query.from(Provider.class);
-		String idPropertyName = "id";
-		Serializable id = null;
-		String name = "VinGroup$$$$$$$nbvvnv$$$0998798798797989";
-		query.select(builder.count(root))
-				.where(builder.and(builder.equal(root.get("name"), name),
-						id == null ? builder.isNotNull(root.get(idPropertyName))
-								: builder.notEqual(root.get(idPropertyName), id)));
-		System.out.println(session.createQuery(query).getResultStream().findFirst().orElseThrow());
-	}
-
-	@Autowired
-	private GenericRepository repo;
-
-	@Test
-	@Transactional
-	private void testPaging() {
-		repo.fetch(Account.class, Unpaged.INSTANCE).forEach(account -> {
-			System.out.println(account.getId());
-			System.out.println(account.getFirstName());
-			System.out.println(account.getLastName());
-		});
-	}
-
-	@Test
-	@Transactional
-	private void testPagingWithSort() {
-		repo.fetch(Account.class, PageRequest.of(0, 1000, Sort.by(Order.asc("createdDate")))).forEach(account -> {
-			System.out.println(account.getId());
-			System.out.println(account.getCreatedDate());
-		});
-	}
-
-	@Test
-	@Transactional
-	private void testPagingWithColumns() {
-		repo.fetch(Account.class, new String[] { "id", "firstName", "lastName" }, Unpaged.INSTANCE).forEach(columns -> {
-			System.out.println(columns[0]);
-			System.out.println(columns[1]);
-			System.out.println(columns[2]);
-		});
-	}
-
-	@Test
-	@Transactional
-	private void testPagingWithColumnsAndSort() {
-		repo.fetch(Account.class, new String[] { "id", "updatedDate" },
-				PageRequest.of(0, 1000, Sort.by(Order.asc("updatedDate")))).forEach(columns -> {
-					System.out.println(columns[0]);
-					System.out.println(columns[1]);
-				});
-	}
-
-	@Test
-	private void testPageableDefault() throws Exception {
-		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get(PREFIX + "/list");
-		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
-
-		assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-	}
-
-	@Test
-	private void testEntityMetamodel() {
-		EntityMetamodel emm = sessionFactory.unwrap(SessionFactoryImplementor.class).getMetamodel()
-				.entityPersister(Account.class).getEntityMetamodel();
-
-		System.out.println(join(emm.getPropertyNames()));
-	}
-
-	private String join(String[] elements) {
-		return Stream.of(elements).collect(Collectors.joining(", "));
 	}
 
 }

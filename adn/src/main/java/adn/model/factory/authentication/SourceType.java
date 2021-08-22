@@ -9,6 +9,6 @@ package adn.model.factory.authentication;
  */
 public enum SourceType {
 
-	COLLECTION, OBJECT_ARRAY, POJO
+	COLLECTION, OBJECT_ARRAY, POJO;
 
 }

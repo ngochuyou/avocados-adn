@@ -8,9 +8,11 @@ import static adn.model.factory.authentication.ModelProducer.PUBLISHER;
 import static java.util.Objects.requireNonNull;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -39,8 +41,14 @@ import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.DynamicMapModelProducerFactory;
 import adn.model.factory.authentication.ModelProducerFactoryBuilder;
 import adn.model.factory.authentication.SecuredProperty;
+import adn.model.factory.authentication.SourceMetadata;
+import adn.model.factory.authentication.dynamicmap.BatchedPojoSourceImpl;
+import adn.model.factory.authentication.dynamicmap.BatchedSourceImpl;
 import adn.model.factory.authentication.dynamicmap.DynamicMapModelProducer;
 import adn.model.factory.authentication.dynamicmap.DynamicMapModelProducerImpl;
+import adn.model.factory.authentication.dynamicmap.SinglePojoSourceImpl;
+import adn.model.factory.authentication.dynamicmap.SingleSourceImpl;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.internal.Role;
 
 /**
@@ -72,8 +80,9 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 				Class<? extends ModelProducerFactoryContributor> contributorClass = (Class<? extends ModelProducerFactoryContributor>) Class
 						.forName(beanDef.getBeanClassName());
 
-				logger.debug(String.format("Found one %s of type [%s]",
-						ModelProducerFactoryContributor.class.getSimpleName(), beanDef.getBeanClassName()));
+				logger.debug(String.format("Found one %s of type [%s] in [%s]",
+						ModelProducerFactoryContributor.class.getSimpleName(), contributorClass.getName(),
+						contributorClass.getPackageName()));
 
 				contributor = contributorClass.getConstructor().newInstance();
 				contributor.contribute(builder);
@@ -107,9 +116,47 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 		logger.info(String.format("Finished building %s", this.getClass()));
 	}
 
+	@Override
+	public <T extends DomainEntity, E extends T> Map<String, Object> produce(Object[] source,
+			SourceMetadata<E> metadata, Credential credential) throws UnauthorizedCredential {
+		DynamicMapModelProducer<E> producer = getProducer(metadata.getEntityType());
+
+		return producer.produceSingleSource(new SingleSourceImpl<>(metadata, source), credential);
+	}
+
+	@Override
+	public <T extends DomainEntity, E extends T> List<Map<String, Object>> produce(List<Object[]> source,
+			SourceMetadata<E> metadata, Credential credential) throws UnauthorizedCredential {
+		DynamicMapModelProducer<E> producer = getProducer(metadata.getEntityType());
+
+		return producer.produceBatchedSource(new BatchedSourceImpl<>(metadata, source), credential);
+	}
+
+	@Override
+	public <T extends DomainEntity, E extends T> Map<String, Object> producePojo(E entity, SourceMetadata<E> metadata,
+			Credential credential) throws UnauthorizedCredential {
+		DynamicMapModelProducer<E> producer = getProducer(metadata.getEntityType());
+
+		return producer.produceSinglePojo(new SinglePojoSourceImpl<E>(metadata, entity), credential);
+	}
+
+	@Override
+	public <T extends DomainEntity, E extends T> List<Map<String, Object>> producePojo(List<E> source,
+			SourceMetadata<E> metadata, Credential credential) throws UnauthorizedCredential {
+		DynamicMapModelProducer<E> producer = getProducer(metadata.getEntityType());
+
+		return producer.produceBatchedPojo(new BatchedPojoSourceImpl<>(metadata, source), credential);
+	}
+
+	@Override
+	public <T extends DomainEntity> Collection<String> validateColumns(Class<T> entityType,
+			Collection<String> requestedColumnNames, Credential credential) throws NoSuchFieldException {
+		return getProducer(entityType).validateColumns(credential, requestedColumnNames);
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends DomainEntity> DynamicMapModelProducer<T> getProducers(Class<T> entityType) {
+	public <T extends DomainEntity> DynamicMapModelProducer<T> getProducer(Class<T> entityType) {
 		return (DynamicMapModelProducer<T>) producersMap.get(entityType);
 	}
 

@@ -22,9 +22,10 @@ import adn.model.factory.authentication.SingleSource;
  */
 public interface DynamicMapModelProducer<T extends DomainEntity> extends ModelProducer<Object[], Map<String, Object>> {
 
-	Map<String, Object> produceSingleSource(SingleSource source, Credential credential) throws UnauthorizedCredential;
+	<E extends T> Map<String, Object> produceSingleSource(SingleSource<E> source, Credential credential)
+			throws UnauthorizedCredential;
 
-	List<Map<String, Object>> produceBatchedSource(BatchedSource sourceBatch, Credential credential)
+	<E extends T> List<Map<String, Object>> produceBatchedSource(BatchedSource<E> sourceBatch, Credential credential)
 			throws UnauthorizedCredential;
 
 	<E extends T> Map<String, Object> produceSinglePojo(SinglePojoSource<E> source, Credential credential)

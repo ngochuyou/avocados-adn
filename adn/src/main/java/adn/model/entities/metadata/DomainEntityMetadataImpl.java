@@ -3,6 +3,8 @@
  */
 package adn.model.entities.metadata;
 
+import static java.util.Map.entry;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
@@ -226,25 +228,26 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 		nonLazyPropertiesSpan = this.nonLazyProperties.size();
 		propertiesSpan = this.properties.size();
 		this.discriminatorColumnName = discriminatorColumnName;
-		this.associationTypes = Collections.unmodifiableMap(propertyTypes.entrySet().stream().filter(entry -> {
-			if (DomainEntity.class.isAssignableFrom(entry.getValue())) {
-				return true;
-			}
-
-			if (!Collection.class.isAssignableFrom(entry.getValue())) {
-				return false;
-			}
-
-			try {
-				return DomainEntity.class.isAssignableFrom(
-						((Class<?>) TypeHelper.getGenericType(entityClass.getDeclaredField(entry.getKey()))));
-			} catch (NoSuchFieldException | SecurityException e) {
-				e.printStackTrace();
-				return false;
-			}
-		}).map(filteredEntry -> Map.entry(filteredEntry.getKey(),
+		// @formatter:off
+		this.associationTypes = Collections.unmodifiableMap(propertyTypes.entrySet().stream()
+			.map(entry -> {
+				Class<?> type = entry.getValue();
+				
+				if (Collection.class.isAssignableFrom(type)) {
+					try {
+						return entry(entry.getKey(), ((Class<?>) TypeHelper.getGenericType(entityClass.getDeclaredField(entry.getKey()))));
+					} catch (NoSuchFieldException | SecurityException e) {
+						return entry;
+					}
+				}
+				
+				return entry;
+			})
+			.filter(entry -> DomainEntity.class.isAssignableFrom(entry.getValue()))
+			.map(filteredEntry -> Map.entry(filteredEntry.getKey(),
 				(Class<? extends DomainEntity>) filteredEntry.getValue()))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+		// @formatter:on
 	}
 
 	private Map<String, Class<?>> getPropertyTypes() {

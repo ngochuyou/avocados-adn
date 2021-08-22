@@ -14,7 +14,7 @@ import adn.helpers.FunctionHelper.HandledBiFunction;
 public interface ModelProducer<S, P> {
 
 	static final HandledBiFunction<Arguments<?>, Credential, Object, Exception> MASKER = (any, credential) -> null;
-	static final HandledBiFunction<Arguments<?>, Credential, Object, Exception> PUBLISHER = (any, credential) -> any;
+	static final HandledBiFunction<Arguments<?>, Credential, Object, Exception> PUBLISHER = (any, credential) -> any.getSource();
 
 	P produce(S source, Credential credential);
 
