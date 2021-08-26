@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import adn.model.entities.Account;
-import adn.security.ApplicationUserDetails;
+import adn.security.UserDetailsImpl;
 import adn.service.DomainEntityServiceObserver;
 import adn.service.services.AccountService;
 
@@ -33,7 +33,7 @@ public class OnMemoryUserContext implements DomainEntityServiceObserver<Account>
 		service.register(this);
 	}
 
-	public ApplicationUserDetails getUser(String username) {
+	public UserDetailsImpl getUser(String username) {
 		Mutex mutex;
 
 		if ((mutex = context.get(username)) == null) {
@@ -43,7 +43,7 @@ public class OnMemoryUserContext implements DomainEntityServiceObserver<Account>
 		return mutex.getUserInfo();
 	}
 
-	public void put(ApplicationUserDetails userInfo) {
+	public void put(UserDetailsImpl userInfo) {
 		Mutex mutex;
 
 		if ((mutex = context.get(userInfo.getUsername())) != null) {

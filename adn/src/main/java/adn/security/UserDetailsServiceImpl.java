@@ -25,8 +25,8 @@ import adn.service.services.DepartmentService;
  * @author Ngoc Huy
  *
  */
-@Service(ApplicationUserDetailsService.NAME)
-public class ApplicationUserDetailsService implements UserDetailsService {
+@Service(UserDetailsServiceImpl.NAME)
+public class UserDetailsServiceImpl implements UserDetailsService {
 
 	public static final String NAME = "applicationUserDetailsService";
 
@@ -59,7 +59,7 @@ public class ApplicationUserDetailsService implements UserDetailsService {
 					((LocalDateTime) account[3]).atZone(ZONE).toEpochSecond(), departmentId);
 		}
 
-		return new ApplicationUserDetails((String) account[0], (String) account[1], (boolean) account[4],
+		return new UserDetailsImpl((String) account[0], (String) account[1], (boolean) account[4],
 				Set.of(new SimpleGrantedAuthority("ROLE_" + role)), role,
 				((LocalDateTime) account[3]).atZone(ZONE).toEpochSecond());
 	}

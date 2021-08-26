@@ -22,8 +22,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.WebUtils;
 
 import adn.application.context.builders.ConfigurationContext;
-import adn.security.ApplicationUserDetails;
-import adn.security.ApplicationUserDetailsService;
+import adn.security.UserDetailsImpl;
+import adn.security.UserDetailsServiceImpl;
 import adn.security.context.OnMemoryUserContext;
 import adn.service.services.AuthenticationService;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -40,7 +40,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 	private AuthenticationService authService;
 
 	@Autowired
-	private ApplicationUserDetailsService userDetailsService;
+	private UserDetailsServiceImpl userDetailsService;
 
 	@Autowired
 	private OnMemoryUserContext onMemUserContext;
@@ -65,12 +65,12 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 				}
 
 				if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-					ApplicationUserDetails userDetails = onMemUserContext.getUser(username);
+					UserDetailsImpl userDetails = onMemUserContext.getUser(username);
 					boolean isOnMemory = true;
 
 					if (userDetails == null) {
 						isOnMemory = false;
-						userDetails = (ApplicationUserDetails) userDetailsService.loadUserByUsername(username);
+						userDetails = (UserDetailsImpl) userDetailsService.loadUserByUsername(username);
 					}
 
 					if (authService.validateToken(jwt, userDetails.getUsername(), userDetails.getVersion())) {

@@ -6,7 +6,7 @@ package adn.application.context;
 import static adn.application.context.builders.DepartmentScopeContext.personnel;
 import static adn.application.context.builders.DepartmentScopeContext.sale;
 import static adn.application.context.builders.DepartmentScopeContext.stock;
-import static adn.service.internal.Role.ADMIN;
+import static adn.service.internal.Role.HEAD;
 import static adn.service.internal.Role.CUSTOMER;
 import static adn.service.internal.Role.PERSONNEL;
 
@@ -59,7 +59,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 	public void contribute(ModelProducerFactoryBuilder builder) {
 		final Role[] allRoles = Role.values();
 		final Role[] personnels = new Role[] { PERSONNEL };
-		final Role[] domained = new Role[] { ADMIN, CUSTOMER, PERSONNEL };
+		final Role[] domained = new Role[] { HEAD, CUSTOMER, PERSONNEL };
 		HandledBiFunction<Arguments<?>, Credential, ?, Exception>[] localDateFormatter = (HandledBiFunction<Arguments<?>, Credential, ?, Exception>[]) Array
 				.newInstance(HandledBiFunction.class, 1);
 
@@ -84,7 +84,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 					.fields("updatedDate")
 						.use(localDateTimeFormatter)
 			.type(Admin.class)
-				.roles(ADMIN).publish()
+				.roles(HEAD).publish()
 			.type(Customer.class)
 				.roles(domained)
 					.fields("prestigePoint").publish()

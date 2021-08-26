@@ -12,8 +12,8 @@ import java.util.function.Function;
 import javax.servlet.http.Cookie;
 
 import adn.application.context.builders.ConfigurationContext;
-import adn.security.ApplicationUserDetails;
-import adn.security.ApplicationUserDetailsService;
+import adn.security.UserDetailsImpl;
+import adn.security.UserDetailsServiceImpl;
 import adn.service.internal.Service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -54,7 +54,7 @@ public class AuthenticationService implements Service {
 		return extractExpiration(token).before(new Date());
 	}
 
-	public String generateToken(ApplicationUserDetails userDetails) {
+	public String generateToken(UserDetailsImpl userDetails) {
 		Map<String, Object> claims = new HashMap<>();
 
 		claims.put(VERSION_KEY, userDetails.getVersion());
@@ -65,7 +65,7 @@ public class AuthenticationService implements Service {
 	private String createToken(Map<String, Object> claims, String subject) {
 		return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
 				.setExpiration(Date.from(LocalDate.now().plusDays(EXPIRE_DAYS)
-						.atStartOfDay(ApplicationUserDetailsService.ZONE).toInstant()))
+						.atStartOfDay(UserDetailsServiceImpl.ZONE).toInstant()))
 				.signWith(SignatureAlgorithm.HS256, ConfigurationContext.getJwtSecretKey()).compact();
 	}
 

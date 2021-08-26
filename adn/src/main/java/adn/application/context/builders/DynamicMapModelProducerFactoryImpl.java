@@ -133,6 +133,19 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 	}
 
 	@Override
+	public <T extends DomainEntity, E extends T> Map<String, Object> produceSingular(Object source,
+			SourceMetadata<E> metadata, Credential credential) throws UnauthorizedCredential {
+		return produce(new Object[] { source }, metadata, credential);
+	}
+
+	@Override
+	public <T extends DomainEntity, E extends T> List<Map<String, Object>> produceSingular(List<Object> source,
+			SourceMetadata<E> metadata, Credential credential) throws UnauthorizedCredential {
+		return produce(source.stream().map(col -> new Object[] { col }).collect(Collectors.toList()), metadata,
+				credential);
+	}
+
+	@Override
 	public <T extends DomainEntity, E extends T> Map<String, Object> producePojo(E entity, SourceMetadata<E> metadata,
 			Credential credential) throws UnauthorizedCredential {
 		DynamicMapModelProducer<E> producer = getProducer(metadata.getEntityType());

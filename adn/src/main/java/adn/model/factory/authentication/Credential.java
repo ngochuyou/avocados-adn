@@ -21,5 +21,9 @@ public interface Credential {
 	 * @return the position of the credential in a compound credential
 	 */
 	int getPosition();
+	
+	default boolean equal(Credential other) {
+		return this.evaluate().equals(other.evaluate());
+	}
 
 }

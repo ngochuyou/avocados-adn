@@ -54,6 +54,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 
 	private final DynamicMapModelProducerFactory factory;
 	private final DomainEntityMetadata<T> entityMetadata;
+	private final String[] nonLazyProperties;
 
 	/**
 	 * 
@@ -154,6 +155,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 		this.namesMap = Collections.unmodifiableMap(originalNamesMap);
 		this.getters = entityMetadata.getGetters().stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		this.nonLazyProperties = entityMetadata.getNonLazyPropertyNames().toArray(String[]::new);
 
 		if (producingFunctions.isEmpty()) {
 			logger.debug(String.format("%s -> This %s is empty", entityType.getSimpleName(),
@@ -258,13 +260,14 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 		String evaluation = credential.evaluate();
 		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = getFunctions(evaluation);
 		Map<String, String> alias = aliasMap.get(evaluation);
+		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
 
 		if (!metadata.hasAssociation()) {
-			return produceRow(metadata.getColumns(), source.getSource(), credential, functions, alias);
+			return produceRow(columns, source.getSource(), credential, functions, alias);
 		}
 
-		return produceRow(metadata.getColumns(), source.getSource(), credential,
-				prepareAssociationProducing(metadata, functions), alias);
+		return produceRow(columns, source.getSource(), credential, prepareAssociationProducing(metadata, functions),
+				alias);
 	}
 
 	@Override
@@ -275,7 +278,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = getFunctions(evaluation);
 		Map<String, String> alias = aliasMap.get(evaluation);
 		List<Object[]> batch = source.getSource();
-		String[] columns = metadata.getColumns();
+		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
 
 		if (!metadata.hasAssociation()) {
 			// @formatter:off
@@ -294,27 +297,50 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 		// @formatter:on;
 	}
 
+	private String[] hasLengthOrNonLazy(String[] possibleEmpty) {
+		return possibleEmpty == null || possibleEmpty.length == 0 ? nonLazyProperties : possibleEmpty;
+	}
+
 	@Override
 	public <E extends T> Map<String, Object> produceSinglePojo(SinglePojoSource<E> source, Credential credential)
 			throws UnauthorizedCredential {
 		SourceMetadata<E> metadata = source.getMetadata();
-		String[] columns = metadata.getColumns();
+		String evaluation = credential.evaluate();
+		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = getFunctions(evaluation);
+		Map<String, String> alias = aliasMap.get(evaluation);
+		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
 		E entity = source.getSource();
-		Object[] values = Stream.of(columns).map(column -> getters.get(column).get(entity)).toArray();
 
-		return produceSingleSource(new SingleSourceImpl<>(metadata, values), credential);
+		return produceRow(columns, Stream.of(columns).map(column -> getters.get(column).get(entity)).toArray(),
+				credential, functions, alias);
 	}
 
 	@Override
 	public <E extends T> List<Map<String, Object>> produceBatchedPojo(BatchedPojoSource<E> source,
 			Credential credential) throws UnauthorizedCredential {
 		SourceMetadata<E> metadata = source.getMetadata();
-		String[] columns = metadata.getColumns();
-		List<Object[]> batch = source.getSource().stream()
-				.map(entity -> Stream.of(columns).map(column -> getters.get(column).get(entity)).toArray())
-				.collect(Collectors.toList());
+		String evaluation = credential.evaluate();
+		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = getFunctions(evaluation);
+		Map<String, String> alias = aliasMap.get(evaluation);
+		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
+		List<E> batch = source.getSource();
 
-		return produceBatchedSource(new BatchedSourceImpl<>(metadata, batch), credential);
+		if (!metadata.hasAssociation()) {
+			return IntStream.range(0, batch.size())
+					.mapToObj(index -> produceRow(columns,
+							Stream.of(columns).map(column -> getters.get(column).get(batch.get(index))).toArray(),
+							credential, functions, alias))
+					.collect(Collectors.toList());
+		}
+
+		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> preparedFunctions = prepareAssociationProducing(
+				metadata, functions);
+
+		return IntStream.range(0, batch.size())
+				.mapToObj(index -> produceRow(columns,
+						Stream.of(columns).map(column -> getters.get(column).get(batch.get(index))).toArray(),
+						credential, preparedFunctions, alias))
+				.collect(Collectors.toList());
 	}
 
 	@Override

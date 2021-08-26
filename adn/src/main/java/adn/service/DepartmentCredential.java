@@ -8,11 +8,13 @@ import static adn.application.context.builders.DepartmentScopeContext.personnel;
 import static adn.application.context.builders.DepartmentScopeContext.sale;
 import static adn.application.context.builders.DepartmentScopeContext.stock;
 import static adn.application.context.builders.DepartmentScopeContext.unknown;
+import static adn.service.internal.Role.PERSONNEL;
 
 import java.util.Map;
 import java.util.UUID;
 
 import adn.application.context.builders.CredentialFactory;
+import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.OnMemoryCredential;
 
 /**
@@ -79,4 +81,10 @@ public class DepartmentCredential implements OnMemoryCredential {
 			customerService(), new DepartmentCredential(customerService()),
 			unknown(), new DepartmentCredential(unknown()));
 	// @formatter:on
+
+	public static final Credential STOCK_CREDENTIAL = CredentialFactory.from(PERSONNEL, stock());
+	public static final Credential SALE_CREDENTIAL = CredentialFactory.from(PERSONNEL, sale());
+	public static final Credential PERSONNEL_CREDENTIAL = CredentialFactory.from(PERSONNEL, personnel());
+	public static final Credential CUSTOMER_SERVICE_CREDENTIAL = CredentialFactory.from(PERSONNEL, customerService());
+
 }

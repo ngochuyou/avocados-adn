@@ -20,7 +20,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import adn.security.ApplicationUserDetails;
+import adn.security.UserDetailsImpl;
 import adn.security.context.OnMemoryUserContext;
 import adn.service.services.AuthenticationService;
 import io.jsonwebtoken.lang.Assert;
@@ -68,7 +68,7 @@ public class JwtUsernamePasswordAuthenticationFilter extends AbstractAuthenticat
 	protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
 			Authentication authResult) throws IOException, ServletException {
 		// TODO Auto-generated method stub
-		ApplicationUserDetails userDetails = (ApplicationUserDetails) authResult.getPrincipal();
+		UserDetailsImpl userDetails = (UserDetailsImpl) authResult.getPrincipal();
 
 		onMemUserContext.put(userDetails);
 

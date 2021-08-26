@@ -3,6 +3,7 @@
  */
 package adn.controller;
 
+import static adn.application.context.ContextProvider.getPrincipalCredential;
 import static adn.model.entities.Account.ACTIVE_FIELD_NAME;
 import static adn.model.entities.Account.ROLE_FIELD_NAME;
 
@@ -29,6 +30,7 @@ import adn.dao.generic.Result;
 import adn.helpers.StringHelper;
 import adn.helpers.Utils;
 import adn.model.entities.Account;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.AccountRoleExtractor;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Role;
@@ -60,7 +62,7 @@ public class RestAccountController extends AccountController {
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> obtainAccountOrPrincipal(
 			@RequestParam(name = "username", required = false, defaultValue = "") String username,
-			@RequestParam(name = "columns", defaultValue = "") List<String> columns) {
+			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws UnauthorizedCredential {
 		try {
 			String principalName = ContextProvider.getPrincipalName();
 
@@ -77,7 +79,7 @@ public class RestAccountController extends AccountController {
 	@GetMapping("/{username}")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> obtainAccount(@PathVariable(name = "username", required = true) String username,
-			@RequestParam(name = "columns", defaultValue = "") List<String> columns) {
+			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws UnauthorizedCredential {
 		try {
 			return doObtainAccount(username, columns);
 		} catch (NoSuchFieldException ssee) {
@@ -104,7 +106,8 @@ public class RestAccountController extends AccountController {
 		return sendBadRequest(result.getMessages());
 	}
 
-	protected ResponseEntity<?> obtainPrincipal(Collection<String> requestedColumns) throws NoSuchFieldException {
+	protected ResponseEntity<?> obtainPrincipal(Collection<String> requestedColumns)
+			throws NoSuchFieldException, UnauthorizedCredential {
 		String username = ContextProvider.getPrincipalName();
 
 		if (requestedColumns.size() == 0) {
@@ -123,7 +126,8 @@ public class RestAccountController extends AccountController {
 
 		requestedColumns.add(ROLE_FIELD_NAME);
 
-		Map<String, Object> cols = crudService.find(username, Account.class, requestedColumns);
+		Map<String, Object> cols = crudService.find(username, Account.class, requestedColumns,
+				getPrincipalCredential());
 
 		if (cols == null) {
 			return sendNotFound(NOT_FOUND);
@@ -137,7 +141,7 @@ public class RestAccountController extends AccountController {
 	}
 
 	protected ResponseEntity<?> doObtainAccount(String username, Collection<String> requestedColumns)
-			throws NoSuchFieldException {
+			throws NoSuchFieldException, UnauthorizedCredential {
 		Role principalRole = ContextProvider.getPrincipalRole();
 
 		if (requestedColumns.size() == 0) {
@@ -172,7 +176,7 @@ public class RestAccountController extends AccountController {
 			columns.add(ROLE_FIELD_NAME);
 		}
 
-		Map<String, Object> fetchedRow = crudService.find(username, Account.class, columns);
+		Map<String, Object> fetchedRow = crudService.find(username, Account.class, columns, getPrincipalCredential());
 
 		if (fetchedRow == null) {
 			return sendNotFound(NOT_FOUND);

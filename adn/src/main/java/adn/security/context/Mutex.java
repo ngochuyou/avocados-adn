@@ -3,7 +3,7 @@
  */
 package adn.security.context;
 
-import adn.security.ApplicationUserDetails;
+import adn.security.UserDetailsImpl;
 
 /**
  * @author Ngoc Huy
@@ -11,18 +11,18 @@ import adn.security.ApplicationUserDetails;
  */
 public class Mutex {
 
-	private volatile ApplicationUserDetails userInfo;
+	private volatile UserDetailsImpl userInfo;
 
-	public Mutex(ApplicationUserDetails userInfo) {
+	public Mutex(UserDetailsImpl userInfo) {
 		super();
 		this.userInfo = userInfo;
 	}
 
-	public ApplicationUserDetails getUserInfo() {
+	public UserDetailsImpl getUserInfo() {
 		return userInfo;
 	}
 
-	public void setUserInfo(ApplicationUserDetails userInfo) {
+	public void setUserInfo(UserDetailsImpl userInfo) {
 		this.userInfo = userInfo;
 	}
 

@@ -269,7 +269,7 @@ public class DatabaseInitializer implements ContextBuilder {
 		admin.setLastName("Vu Ngoc Huy");
 		admin.setPhone("0974032706");
 		admin.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
-		admin.setRole(Role.ADMIN);
+		admin.setRole(Role.HEAD);
 
 		return admin;
 	}

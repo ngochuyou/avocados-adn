@@ -4,8 +4,10 @@
 package adn.helpers;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -20,10 +22,14 @@ public class CollectionHelper {
 
 	public static final String[] EMPTY_STRING_ARRAY = new String[0];
 
-	public static final String[] from(Collection<String> elements) {
+	public static String[] from(Collection<String> elements) {
 		return elements.toArray(String[]::new);
 	}
 
+	public static <E> List<E> list(Collection<E> collection) {
+		return collection instanceof List ? (List<E>) collection : new ArrayList<>(collection);
+	}
+	
 	@SuppressWarnings("unchecked")
 	public static <E, C extends Collection<E>> E[] from(C collection, Class<E> type) {
 		return collection.toArray((E[]) Array.newInstance(type, collection.size()));

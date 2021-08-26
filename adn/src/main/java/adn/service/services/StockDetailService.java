@@ -3,7 +3,6 @@
  */
 package adn.service.services;
 
-import static adn.helpers.CollectionHelper.from;
 import static adn.helpers.HibernateHelper.selectColumns;
 import static adn.helpers.HibernateHelper.toRows;
 
@@ -24,7 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import adn.model.entities.Product;
 import adn.model.entities.StockDetail;
-import adn.service.internal.Role;
+import adn.model.factory.authentication.Credential;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.internal.Service;
 
 /**
@@ -46,9 +46,10 @@ public class StockDetailService implements Service {
 	}
 
 	public List<Map<String, Object>> readActiveOnly(Serializable productId, Collection<String> requestedColumns,
-			Role principalRole) throws NoSuchFieldException {
+			Credential credential, Credential inactiveAllowedCredential)
+			throws NoSuchFieldException, UnauthorizedCredential {
 		Collection<String> validatedColumns = requestedColumns.isEmpty() ? FETCHED_COLUMNS
-				: crudService.getDefaultColumns(StockDetail.class, principalRole, requestedColumns);
+				: crudService.getDefaultColumns(StockDetail.class, credential, requestedColumns);
 		Session session = crudService.getCurrentSession();
 		CriteriaBuilder builder = session.getCriteriaBuilder();
 		CriteriaQuery<Tuple> criteriaQuery = builder.createQuery(Tuple.class);
@@ -60,8 +61,7 @@ public class StockDetailService implements Service {
 
 		Query<Tuple> jpql = session.createQuery(criteriaQuery);
 
-		return crudService.resolveReadResults(StockDetail.class, toRows(jpql.list()), from(validatedColumns),
-				principalRole);
+		return crudService.resolveReadResults(StockDetail.class, toRows(jpql.list()), validatedColumns, credential);
 	}
 
 }

@@ -29,8 +29,7 @@ import adn.dao.generic.Result;
 import adn.helpers.FunctionHelper.HandledConsumer;
 import adn.model.DomainEntity;
 import adn.model.entities.Entity;
-import adn.model.factory.AuthenticationBasedModelFactory;
-import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
+import adn.model.factory.authentication.DynamicMapModelProducerFactory;
 import adn.model.factory.pojo.extraction.EntityExtractorProvider;
 import adn.service.internal.CRUDService;
 import adn.service.internal.Role;
@@ -47,10 +46,7 @@ public class BaseController {
 	protected ModelContextProvider modelContext;
 
 	@Autowired
-	protected AuthenticationBasedModelFactory authenticationBasedModelFactory;
-
-	@Autowired
-	protected AuthenticationBasedModelPropertiesFactory authenticationBasedModelPropertiesFactory;
+	protected DynamicMapModelProducerFactory dynamicMapModelFactory;
 
 	@Autowired
 	protected EntityExtractorProvider extractorProvider;
@@ -107,7 +103,8 @@ public class BaseController {
 
 	protected <T extends DomainEntity, E extends T> Map<String, Object> produce(E entity, Class<E> entityClass,
 			Role role) {
-		return authenticationBasedModelFactory.produce(entityClass, entity, role);
+//		return dynamicMapModelFactory.produce(entityClass, entity, role);
+		return null;
 	}
 
 	protected <T> ResponseEntity<?> unauthorize(T body) {

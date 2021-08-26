@@ -3,17 +3,19 @@
  */
 package adn.service.services;
 
-import static adn.application.context.ContextProvider.getPrincipalRole;
 import static adn.dao.generic.Result.bad;
 import static adn.dao.generic.Result.failed;
 import static adn.dao.generic.ResultBatch.bad;
 import static adn.dao.generic.ResultBatch.failed;
 import static adn.dao.generic.ResultBatch.ok;
 import static adn.helpers.CollectionHelper.from;
+import static adn.helpers.CollectionHelper.list;
 import static adn.helpers.HibernateHelper.getEntityName;
 import static adn.helpers.HibernateHelper.getIdentifier;
 import static adn.helpers.HibernateHelper.getIdentifierPropertyName;
 import static adn.helpers.HibernateHelper.toRows;
+import static adn.model.factory.authentication.dynamicmap.SourceMetadataFactory.unknownArray;
+import static adn.model.factory.authentication.dynamicmap.SourceMetadataFactory.unknownArrayCollection;
 import static adn.service.internal.Service.Status.BAD;
 import static adn.service.internal.Service.Status.FAILED;
 
@@ -27,7 +29,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
@@ -65,15 +66,14 @@ import adn.dao.generic.ResultBatch;
 import adn.dao.specification.Selections;
 import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
-import adn.model.DepartmentScoped;
 import adn.model.entities.Entity;
 import adn.model.entities.metadata.DomainEntityMetadata;
-import adn.model.factory.AuthenticationBasedModelFactory;
-import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
-import adn.model.factory.DepartmentBasedModelPropertiesFactory;
+import adn.model.factory.authentication.Credential;
+import adn.model.factory.authentication.DynamicMapModelProducerFactory;
+import adn.model.factory.authentication.SourceMetadata;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.entity.builder.EntityBuilder;
 import adn.service.internal.CRUDService;
-import adn.service.internal.Role;
 import adn.service.specification.GenericJpaSpecificationExecutor;
 
 /**
@@ -89,10 +89,9 @@ public final class GenericCRUDService implements CRUDService {
 	private final ModelContextProvider modelContext;
 	private final EntityBuilderProvider entityBuilderProvider;
 
-	private final GenericRepository repository;
+	protected final GenericRepository repository;
 	private final GenericJpaSpecificationExecutor genericSpecificationExecutor;
-	private final AuthenticationBasedModelPropertiesFactory authenticationBasedPropertiesFactory;
-	private final DepartmentBasedModelPropertiesFactory departmentBasedPropertiesFactory;
+	protected final DynamicMapModelProducerFactory dynamicMapModelFactory;
 
 	public static final String EXECUTOR_NAME = "CRUDServiceBatchExecutor";
 	private static final int MAXIMUM_BATCHSIZE_IN_SINGULAR_PROCESS = 100;
@@ -109,17 +108,14 @@ public final class GenericCRUDService implements CRUDService {
 	public GenericCRUDService(
 			GenericRepository baseRepository,
 			EntityBuilderProvider entityBuilderProvider,
-			AuthenticationBasedModelPropertiesFactory authenticationBasedModelPropertiesFactory,
-			AuthenticationBasedModelFactory authenticationBasedModelFactory,
-			DepartmentBasedModelPropertiesFactory departmentBasedPropertiesFactory,
 			ModelContextProvider modelContext,
-			GenericJpaSpecificationExecutor genericSpecificationExecutor) {
+			GenericJpaSpecificationExecutor genericSpecificationExecutor,
+			DynamicMapModelProducerFactory dynamicMapModelFactory) {
 		this.repository = baseRepository;
 		this.entityBuilderProvider = entityBuilderProvider;
-		this.authenticationBasedPropertiesFactory = authenticationBasedModelPropertiesFactory;
-		this.departmentBasedPropertiesFactory = departmentBasedPropertiesFactory;
 		this.modelContext = modelContext;
 		this.genericSpecificationExecutor = genericSpecificationExecutor;
+		this.dynamicMapModelFactory = dynamicMapModelFactory;
 	}
 
 	public GenericCRUDService() {
@@ -127,153 +123,11 @@ public final class GenericCRUDService implements CRUDService {
 		
 		this.repository = context.getBean(GenericRepository.class);
 		this.entityBuilderProvider = context.getBean(EntityBuilderProvider.class);
-		this.authenticationBasedPropertiesFactory = context.getBean(AuthenticationBasedModelPropertiesFactory.class);
-		this.departmentBasedPropertiesFactory = context.getBean(DepartmentBasedModelPropertiesFactory.class);
 		this.modelContext = context.getBean(ModelContextProvider.class);
 		this.genericSpecificationExecutor = context.getBean(GenericJpaSpecificationExecutor.class);
+		this.dynamicMapModelFactory = context.getBean(DynamicMapModelProducerFactory.class);
 	}
 	// @formatter:on
-	@Override
-	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> columns,
-			Pageable pageable) throws NoSuchFieldException {
-		return read(type, columns, pageable, getPrincipalRole());
-	}
-
-	@Override
-	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> columns,
-			Pageable pageable, Role role) throws NoSuchFieldException {
-		String[] validatedColumns = from(getDefaultColumns(type, role, columns));
-		List<Object[]> rows = repository.fetch(type, validatedColumns, pageable);
-
-		if (rows.isEmpty()) {
-			return new ArrayList<Map<String, Object>>();
-		}
-
-		if (rows.get(0).length == 0) {
-			return new ArrayList<Map<String, Object>>();
-		}
-
-		return resolveReadResults(type, rows, validatedColumns, role);
-	}
-
-	@Override
-	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> columns,
-			Pageable pageable, UUID departmentId) throws NoSuchFieldException {
-		String[] validatedColumns = from(getDefaultColumns(type, departmentId, columns));
-		List<Object[]> rows = repository.fetch(type, validatedColumns, pageable);
-
-		if (rows.isEmpty()) {
-			return new ArrayList<Map<String, Object>>();
-		}
-
-		if (rows.get(0).length == 0) {
-			return new ArrayList<Map<String, Object>>();
-		}
-
-		return resolveReadResults(type, rows, validatedColumns, departmentId);
-	}
-
-	private String prependAlias(String columnName) {
-		return "e." + columnName;
-	}
-
-	/**
-	 * We don't validate associating attribute name, that's up to devs as a contract
-	 */
-	@Override
-	public <T extends Entity> List<Map<String, Object>> readByAssociation(Class<T> type,
-			Class<? extends Entity> associatingType, String associatingAttribute, String associationProperty,
-			Serializable associationIdentifier, Collection<String> columns, Pageable pageable, Role role)
-			throws NoSuchFieldException {
-		Collection<String> validatedColumns = getDefaultColumns(type, role, columns);
-
-		try {
-			List<?> rows = repository.find(String.format("""
-					SELECT %s FROM %s e WHERE e.%s.%s=:associationIdentifier
-					""", validatedColumns.stream().map(this::prependAlias).collect(Collectors.joining(",")),
-					getEntityName(type), associatingAttribute,
-					!StringHelper.hasLength(associationProperty) ? getIdentifierPropertyName(associatingType)
-							: associationProperty),
-					Map.of("associationIdentifier", associationIdentifier));
-
-			return resolveReadResults(type, rows, from(validatedColumns), role);
-		} catch (Exception any) {
-			// the association property is not checked so QueryException
-			// will be thrown when the association property column does not exist
-			if (any.getCause() instanceof QueryException) {
-				throw new NoSuchFieldException(String.format("Unknown columns %s", associationProperty));
-			}
-
-			throw any;
-		}
-	}
-
-	@Override
-	public <T extends Entity> List<String> getDefaultColumns(Class<T> type, Role role, Collection<String> columns)
-			throws NoSuchFieldException {
-		if (columns.isEmpty()) {
-			DomainEntityMetadata<T> metadata = modelContext.getMetadata(type);
-
-			return new ArrayList<>(metadata.getNonLazyPropertyNames());
-		}
-
-		return new ArrayList<>(
-				authenticationBasedPropertiesFactory.validateAndTranslateColumnNames(type, role, columns));
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public <T extends Entity> List<String> getDefaultColumns(Class<T> type, UUID departmentId,
-			Collection<String> columns) throws NoSuchFieldException {
-		if (!DepartmentScoped.class.isAssignableFrom(type)) {
-			throw new IllegalArgumentException(String.format("Type [%s] is not of type %a", type.getName(),
-					DepartmentScoped.class.getSimpleName()));
-		}
-
-		if (columns.isEmpty()) {
-			DomainEntityMetadata<T> metadata = modelContext.getMetadata(type);
-
-			return new ArrayList<>(metadata.getNonLazyPropertyNames());
-		}
-
-		return new ArrayList<>(
-				departmentBasedPropertiesFactory.validateColumnNames((Class<DepartmentScoped>) type, columns));
-	}
-
-	@Override
-	public <T extends Entity> Map<String, Object> find(Serializable id, Class<T> type, Collection<String> columns)
-			throws NoSuchFieldException {
-		return find(id, type, columns, getPrincipalRole());
-	}
-
-	@Override
-	public <T extends Entity> Map<String, Object> find(Serializable id, Class<T> type, Collection<String> columns,
-			Role role) throws NoSuchFieldException {
-		String[] validatedColumns = from(getDefaultColumns(type, role, columns));
-		Object[] row = repository.findById(id, type, validatedColumns);
-
-		if (row == null) {
-			return null;
-		}
-
-		return authenticationBasedPropertiesFactory.produce(type, row, validatedColumns, role);
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public <T extends Entity> Map<String, Object> find(Serializable id, Class<T> type, Collection<String> columns,
-			UUID departmentId) throws NoSuchFieldException {
-		String[] validatedColumns = from(getDefaultColumns(type, departmentId, columns));
-		Object[] row = repository.findById(id, type, validatedColumns);
-
-		if (row == null) {
-			return null;
-		}
-
-		return departmentBasedPropertiesFactory.produce((Class<? extends DepartmentScoped>) type, row, validatedColumns,
-				departmentId);
-	}
-
 	protected <T extends Entity> Serializable resolveId(Serializable id, T entity) {
 		return id == null ? getIdentifier(entity) : id;
 	}
@@ -466,66 +320,6 @@ public final class GenericCRUDService implements CRUDService {
 		return Map.entry(paging.getPageSize(), Long.valueOf(paging.getPageNumber() * paging.getPageSize()));
 	}
 
-	protected <T extends Entity> Map<String, Object> resolveReadResult(Class<T> type, Object source,
-			String[] validatedColumns, Role role) {
-		if (source == null) {
-			return null;
-		}
-
-		if (source.getClass().isArray()) {
-			return authenticationBasedPropertiesFactory.produce(type, (Object[]) source, validatedColumns, role);
-		}
-
-		return authenticationBasedPropertiesFactory.singularProduce(type, source, validatedColumns[0], role);
-	}
-
-	@SuppressWarnings("unchecked")
-	protected <T extends Entity> List<Map<String, Object>> resolveReadResults(Class<T> type, List<?> source,
-			String[] validatedColumns, Role role) {
-		if (source.isEmpty()) {
-			return new ArrayList<>();
-		}
-
-		if (source.get(0).getClass().isArray()) {
-			return authenticationBasedPropertiesFactory.produce(type, (List<Object[]>) source, validatedColumns, role);
-		}
-
-		return authenticationBasedPropertiesFactory.singularProduce(type, (List<Object>) source, validatedColumns[0],
-				role);
-	}
-
-	@SuppressWarnings("unchecked")
-	protected <T extends Entity> Map<String, Object> resolveReadResult(Class<T> type, Object source,
-			String[] validatedColumns, UUID departmentId) {
-		if (source == null) {
-			return null;
-		}
-
-		if (source.getClass().isArray()) {
-			return departmentBasedPropertiesFactory.produce((Class<DepartmentScoped>) type, (Object[]) source,
-					validatedColumns, departmentId);
-		}
-
-		return departmentBasedPropertiesFactory.singularProduce((Class<DepartmentScoped>) type, source,
-				validatedColumns[0], departmentId);
-	}
-
-	@SuppressWarnings("unchecked")
-	protected <T extends Entity> List<Map<String, Object>> resolveReadResults(Class<T> type, List<?> source,
-			String[] validatedColumns, UUID departmentId) {
-		if (source.isEmpty()) {
-			return new ArrayList<>();
-		}
-
-		if (source.get(0).getClass().isArray()) {
-			return departmentBasedPropertiesFactory.produce((Class<DepartmentScoped>) type, (List<Object[]>) source,
-					validatedColumns, departmentId);
-		}
-
-		return departmentBasedPropertiesFactory.singularProduce((Class<DepartmentScoped>) type, (List<Object>) source,
-				validatedColumns[0], departmentId);
-	}
-
 	@Component
 	public class BatchWorker {
 
@@ -578,10 +372,104 @@ public final class GenericCRUDService implements CRUDService {
 		};
 	}
 
+	/*
+	 * ==================================MIGRATION==================================
+	 */
+
 	@Override
-	public <T extends Entity, E extends T> Map<String, Object> find(Class<E> type, Collection<String> requestedColumns,
-			Specification<E> spec, Role role) throws NoSuchFieldException {
-		Collection<String> validatedColumns = getDefaultColumns(type, role, requestedColumns);
+	public <T extends Entity> Map<String, Object> find(Serializable id, Class<T> type, Collection<String> columns,
+			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
+		return find(id, type, columns, credential, unknownArray(type, list(columns)));
+	}
+
+	@Override
+	public <T extends Entity> Map<String, Object> find(Serializable id, Class<T> type, Collection<String> columns,
+			Credential credential, SourceMetadata<T> sourceMetadata)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		String[] validatedColumns = from(getDefaultColumns(type, credential, columns));
+		Object[] row = repository.findById(id, type, validatedColumns);
+
+		if (row == null) {
+			return null;
+		}
+
+		return dynamicMapModelFactory.produce(row, sourceMetadata, credential);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected <T extends Entity> List<Map<String, Object>> resolveReadResults(Class<T> type, List<?> source,
+			String[] validatedColumns, Credential credential, SourceMetadata<T> sourceMetadata)
+			throws UnauthorizedCredential {
+		if (source.get(0).getClass().isArray()) {
+			return dynamicMapModelFactory.produce((List<Object[]>) source, null, credential);
+		}
+
+		return dynamicMapModelFactory.produceSingular((List<Object>) source, sourceMetadata, credential);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected <T extends Entity> List<Map<String, Object>> resolveReadResults(Class<T> type, List<?> source,
+			Collection<String> validatedColumns, Credential credential) throws UnauthorizedCredential {
+		if (source.get(0).getClass().isArray()) {
+			return dynamicMapModelFactory.produce((List<Object[]>) source, unknownArrayCollection(type, list(validatedColumns)),
+					credential);
+		}
+
+		return dynamicMapModelFactory.produceSingular((List<Object>) source, unknownArrayCollection(type, list(validatedColumns)),
+				credential);
+	}
+
+	protected <T extends Entity> Map<String, Object> resolveReadResult(Class<T> type, Object source,
+			String[] validatedColumns, Credential credential, SourceMetadata<T> sourceMetadata)
+			throws UnauthorizedCredential {
+		if (source.getClass().isArray()) {
+			return dynamicMapModelFactory.produce((Object[]) source, sourceMetadata, credential);
+		}
+
+		return dynamicMapModelFactory.produceSingular(source, sourceMetadata, credential);
+	}
+
+	protected <T extends Entity> Map<String, Object> resolveReadResult(Class<T> type, Object source,
+			Collection<String> validatedColumns, Credential credential) throws UnauthorizedCredential {
+		if (source.getClass().isArray()) {
+			return dynamicMapModelFactory.produce((Object[]) source, unknownArray(type, list(validatedColumns)),
+					credential);
+		}
+
+		return dynamicMapModelFactory.produceSingular(source, unknownArray(type, list(validatedColumns)), credential);
+	}
+
+	@Override
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> columns,
+			Pageable pageable, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
+		return read(type, columns, pageable, credential, unknownArrayCollection(type, list(columns)));
+	}
+
+	@Override
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> columns,
+			Pageable pageable, Credential credential, SourceMetadata<T> sourceMetadata)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		String[] validatedColumns = from(getDefaultColumns(type, credential, columns));
+		List<Object[]> rows = repository.fetch(type, validatedColumns, pageable);
+
+		if (rows.isEmpty()) {
+			return new ArrayList<Map<String, Object>>();
+		}
+
+		return resolveReadResults(type, rows, validatedColumns, credential, sourceMetadata);
+	}
+
+	@Override
+	public <T extends Entity> Map<String, Object> find(Class<T> type, Collection<String> requestedColumns,
+			Specification<T> spec, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
+		return find(type, requestedColumns, spec, credential, unknownArray(type, list(requestedColumns)));
+	}
+
+	@Override
+	public <T extends Entity> Map<String, Object> find(Class<T> type, Collection<String> requestedColumns,
+			Specification<T> spec, Credential credential, SourceMetadata<T> sourceMetadata)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		Collection<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
 		Optional<Tuple> optionalRow = genericSpecificationExecutor.findOne(type, getSelections(validatedColumns), spec);
 		Tuple row = optionalRow.get();
 
@@ -589,93 +477,127 @@ public final class GenericCRUDService implements CRUDService {
 			return null;
 		}
 
-		return resolveReadResult(type, row.toArray(), from(validatedColumns), role);
+		return resolveReadResult(type, row.toArray(), from(validatedColumns), credential, sourceMetadata);
 	}
 
 	@Override
-	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type,
-			Collection<String> requestedColumns, Specification<E> spec, Role role) throws NoSuchFieldException {
-		Collection<String> validatedColumns = getDefaultColumns(type, role, requestedColumns);
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> requestedColumns,
+			Specification<T> spec, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
+		return read(type, requestedColumns, spec, credential, unknownArrayCollection(type, list(requestedColumns)));
+	}
+
+	@Override
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> requestedColumns,
+			Specification<T> spec, Credential credential, SourceMetadata<T> sourceMetadata)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		Collection<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
 		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec);
 
-		return resolveReadResults(type, toRows(tuples), from(validatedColumns), role);
+		return resolveReadResults(type, toRows(tuples), from(validatedColumns), credential, sourceMetadata);
 	}
 
 	@Override
-	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type,
-			Collection<String> requestedColumns, Specification<E> spec, Pageable pageable, Role role)
-			throws NoSuchFieldException {
-		Collection<String> validatedColumns = getDefaultColumns(type, role, requestedColumns);
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> requestedColumns,
+			Specification<T> spec, Pageable pageable, Credential credential)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		return read(type, requestedColumns, spec, pageable, credential,
+				unknownArrayCollection(type, list(requestedColumns)));
+	}
+
+	@Override
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> requestedColumns,
+			Specification<T> spec, Pageable pageable, Credential credential, SourceMetadata<T> metadata)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		Collection<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
 		Page<Tuple> page = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec, pageable);
 
-		return resolveReadResults(type, toRows(page.getContent()), from(validatedColumns), role);
+		return resolveReadResults(type, toRows(page.getContent()), from(validatedColumns), credential, metadata);
 	}
 
 	@Override
-	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type,
-			Collection<String> requestedColumns, Specification<E> spec, Sort sort, Role role)
-			throws NoSuchFieldException {
-		Collection<String> validatedColumns = getDefaultColumns(type, role, requestedColumns);
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> requestedColumns,
+			Specification<T> spec, Sort sort, Credential credential)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		return read(type, requestedColumns, spec, sort, credential,
+				unknownArrayCollection(type, list(requestedColumns)));
+	}
+
+	@Override
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> requestedColumns,
+			Specification<T> spec, Sort sort, Credential credential, SourceMetadata<T> sourceMetadata)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		Collection<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
 		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec, sort);
 
-		return resolveReadResults(type, toRows(tuples), from(validatedColumns), role);
+		return resolveReadResults(type, toRows(tuples), from(validatedColumns), credential, sourceMetadata);
 	}
 
 	@Override
-	public <T extends Entity, E extends T> Map<String, Object> find(Class<E> type, Collection<String> requestedColumns,
-			Specification<E> spec, UUID departmentId) throws NoSuchFieldException {
-		Collection<String> validatedColumns = getDefaultColumns(type, departmentId, requestedColumns);
-		Optional<Tuple> optionalRow = genericSpecificationExecutor.findOne(type, getSelections(validatedColumns), spec);
-		Tuple row = optionalRow.get();
+	public <T extends Entity> List<Map<String, Object>> readByAssociation(Class<T> type,
+			Class<? extends Entity> associatingType, String associatingAttribute, String associationProperty,
+			Serializable associationIdentifier, Collection<String> columns, Pageable pageable, Credential credential)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		return readByAssociation(type, associatingType, associatingAttribute, associationProperty,
+				associationIdentifier, columns, pageable, credential, unknownArrayCollection(type, list(columns)));
+	}
 
-		if (row == null) {
-			return null;
+	@Override
+	public <T extends Entity> List<Map<String, Object>> readByAssociation(Class<T> type,
+			Class<? extends Entity> associatingType, String associatingAttribute, String associationProperty,
+			Serializable associationIdentifier, Collection<String> columns, Pageable pageable, Credential credential,
+			SourceMetadata<T> sourceMetadata) throws NoSuchFieldException, UnauthorizedCredential {
+		Collection<String> validatedColumns = getDefaultColumns(type, credential, columns);
+
+		try {
+			List<?> rows = repository.find(String.format("""
+					SELECT %s FROM %s e WHERE e.%s.%s=:associationIdentifier
+					""", validatedColumns.stream().map(this::prependAlias).collect(Collectors.joining(",")),
+					getEntityName(type), associatingAttribute,
+					!StringHelper.hasLength(associationProperty) ? getIdentifierPropertyName(associatingType)
+							: associationProperty),
+					Map.of("associationIdentifier", associationIdentifier));
+
+			return resolveReadResults(type, rows, from(validatedColumns), credential, sourceMetadata);
+		} catch (Exception any) {
+			// the association property is not checked so QueryException
+			// will be thrown when the association property column does not exist
+			if (any.getCause() instanceof QueryException) {
+				throw new NoSuchFieldException(String.format("Unknown columns %s", associationProperty));
+			}
+
+			throw any;
+		}
+	}
+
+	@Override
+	public <T extends Entity> List<String> getDefaultColumns(Class<T> type, Credential credential,
+			Collection<String> columns) throws NoSuchFieldException {
+		if (columns.isEmpty()) {
+			DomainEntityMetadata<T> metadata = modelContext.getMetadata(type);
+
+			return new ArrayList<>(metadata.getNonLazyPropertyNames());
 		}
 
-		return resolveReadResult(type, row.toArray(), from(validatedColumns), departmentId);
+		return new ArrayList<>(dynamicMapModelFactory.validateColumns(type, columns, credential));
 	}
 
-	@Override
-	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type,
-			Collection<String> requestedColumns, Specification<E> spec, UUID departmentId) throws NoSuchFieldException {
-		Collection<String> validatedColumns = getDefaultColumns(type, departmentId, requestedColumns);
-		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec);
-
-		return resolveReadResults(type, toRows(tuples), from(validatedColumns), departmentId);
-	}
-
-	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type,
-			Collection<String> requestedColumns, Specification<E> spec, UUID departmentId,
-			Function<Collection<String>, Selections<E>> selectionResolver) throws NoSuchFieldException {
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> requestedColumns,
+			Specification<T> spec, Credential credential, Function<Collection<String>, Selections<T>> selectionResolver)
+			throws NoSuchFieldException, UnauthorizedCredential {
 		if (selectionResolver == null) {
-			return read(type, requestedColumns, spec, departmentId);
+			return read(type, requestedColumns, spec, credential);
 		}
 
-		Collection<String> validatedColumns = getDefaultColumns(type, departmentId, requestedColumns);
-		Selections<E> selections = selectionResolver.apply(validatedColumns);
+		Collection<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
+		Selections<T> selections = selectionResolver.apply(validatedColumns);
 		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, selections, spec);
 
-		return resolveReadResults(type, toRows(tuples), from(validatedColumns), departmentId);
+		return resolveReadResults(type, toRows(tuples), from(validatedColumns), credential,
+				unknownArrayCollection(type, list(validatedColumns)));
 	}
 
-	@Override
-	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type,
-			Collection<String> requestedColumns, Specification<E> spec, Pageable pageable, UUID departmentId)
-			throws NoSuchFieldException {
-		Collection<String> validatedColumns = getDefaultColumns(type, departmentId, requestedColumns);
-		Page<Tuple> page = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec, pageable);
-
-		return resolveReadResults(type, toRows(page.getContent()), from(validatedColumns), departmentId);
-	}
-
-	@Override
-	public <T extends Entity, E extends T> List<Map<String, Object>> read(Class<E> type,
-			Collection<String> requestedColumns, Specification<E> spec, Sort sort, UUID departmentId)
-			throws NoSuchFieldException {
-		Collection<String> validatedColumns = getDefaultColumns(type, departmentId, requestedColumns);
-		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec, sort);
-
-		return resolveReadResults(type, toRows(tuples), from(validatedColumns), departmentId);
+	private String prependAlias(String columnName) {
+		return "e." + columnName;
 	}
 
 }

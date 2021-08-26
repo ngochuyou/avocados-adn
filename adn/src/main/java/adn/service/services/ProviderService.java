@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -38,6 +37,8 @@ import adn.dao.specification.Selections;
 import adn.helpers.StringHelper;
 import adn.model.entities.ProductProviderDetail;
 import adn.model.entities.Provider;
+import adn.model.factory.authentication.Credential;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 
 /**
  * @author Ngoc Huy
@@ -96,13 +97,13 @@ public class ProviderService extends AbstractFactorService<Provider> {
 		};
 	}
 
-	public Map<String, Object> find(Serializable id, ProviderRequest columnsRequest, UUID principalDepartment)
-			throws NoSuchFieldException {
+	public Map<String, Object> find(Serializable id, ProviderRequest columnsRequest, Credential credential)
+			throws NoSuchFieldException, UnauthorizedCredential {
 		boolean isProductDetailsCollectivelyRequested = columnsRequest.isProductDetailsCollectivelyRequested();
 		boolean isProductDetailsSpecificallyRequested = columnsRequest.isProductDetailsSpecificallyRequested();
 
 		if (!isProductDetailsCollectivelyRequested && !isProductDetailsSpecificallyRequested) {
-			return crudService.find(id, Provider.class, columnsRequest.getColumns(), principalDepartment);
+			return crudService.find(id, Provider.class, columnsRequest.getColumns(), credential);
 		}
 
 		List<String> columns = columnsRequest.getColumns();
@@ -111,11 +112,11 @@ public class ProviderService extends AbstractFactorService<Provider> {
 			columns.remove(PRODUCT_DETAILS_FIELD);
 		}
 
-		Map<String, Object> fetchedProviderColumns = crudService.find(id, Provider.class, columns);
+		Map<String, Object> fetchedProviderColumns = crudService.find(id, Provider.class, columns, credential);
 		List<Map<String, Object>> fetchedProductDetailsColumns = findProductDetailsByProviderDetails(id,
 				isProductDetailsCollectivelyRequested ? FETCHED_PRODUCT_DETAILS_COLUMNS
 						: columnsRequest.getProductDetailsColumns(),
-				principalDepartment, isProductDetailsSpecificallyRequested);
+				credential, isProductDetailsSpecificallyRequested);
 
 		fetchedProviderColumns.put(PRODUCT_DETAILS_FIELD, fetchedProductDetailsColumns);
 
@@ -123,8 +124,8 @@ public class ProviderService extends AbstractFactorService<Provider> {
 	}
 
 	public List<Map<String, Object>> findProductDetailsByProviderDetails(Serializable providerId,
-			Collection<String> requestedColumns, UUID principalDepartment, boolean isPathResolvingNeeded)
-			throws NoSuchFieldException {
+			Collection<String> requestedColumns, Credential credential, boolean isPathResolvingNeeded)
+			throws NoSuchFieldException, UnauthorizedCredential {
 		return crudService.read(ProductProviderDetail.class, requestedColumns,
 				new Specification<ProductProviderDetail>() {
 
@@ -138,13 +139,13 @@ public class ProviderService extends AbstractFactorService<Provider> {
 								builder.isNull(root.get(DROPPED_TIMESTAMP_FIELD)));
 					}
 
-				}, principalDepartment, isPathResolvingNeeded ? this::resolveProductDetailColumnPaths : null);
+				}, credential, isPathResolvingNeeded ? this::resolveProductDetailColumnPaths : null);
 	}
 
 	public List<Map<String, Object>> search(Collection<String> requestedColumns, Pageable pageable,
-			ProviderQuery restQuery, UUID departmentId) throws NoSuchFieldException {
+			ProviderQuery restQuery, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
 		return crudService.read(Provider.class, requestedColumns, hasId(restQuery).or(hasNameLike(restQuery)), pageable,
-				departmentId);
+				credential);
 	}
 
 	private static Specification<Provider> hasId(ProviderQuery restQuery) {

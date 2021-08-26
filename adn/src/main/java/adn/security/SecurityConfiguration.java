@@ -55,7 +55,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	private AuthenticationService authService;
 
 	@Autowired
-	@Qualifier(ApplicationUserDetailsService.NAME)
+	@Qualifier(UserDetailsServiceImpl.NAME)
 	private UserDetailsService userDetailsService;
 
 	@Autowired

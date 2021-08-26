@@ -22,10 +22,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import adn.application.context.ContextProvider;
 import adn.application.context.builders.DepartmentScopeContext;
 import adn.controller.query.request.ProviderRequest;
 import adn.controller.query.specification.ProviderQuery;
 import adn.model.entities.Provider;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.services.DepartmentService;
 import adn.service.services.ProviderService;
 
@@ -52,10 +54,12 @@ public class RestProviderController extends BaseController {
 	@Secured("ROLE_PERSONNEL")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getAllProviders(@PageableDefault(size = 10) Pageable paging,
-			@RequestParam(name = "columns", required = true) List<String> columns) throws NoSuchFieldException {
+			@RequestParam(name = "columns", required = true) List<String> columns)
+			throws NoSuchFieldException, UnauthorizedCredential {
 		departmentService.assertSaleDepartment();
 
-		List<Map<String, Object>> rows = crudService.read(Provider.class, columns, paging);
+		List<Map<String, Object>> rows = crudService.read(Provider.class, columns, paging,
+				ContextProvider.getPrincipalCredential());
 
 		return ResponseEntity.ok(rows);
 	}
@@ -64,10 +68,11 @@ public class RestProviderController extends BaseController {
 	@Secured("ROLE_PERSONNEL")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> obtainProvider(@PathVariable(name = "providerId", required = true) UUID providerId,
-			ProviderRequest columnsRequest) throws NoSuchFieldException {
-		UUID principalDepartment = departmentService.assertSaleDepartment();
+			ProviderRequest columnsRequest) throws NoSuchFieldException, UnauthorizedCredential {
+		departmentService.assertSaleDepartment();
 
-		Map<String, Object> provider = providerService.find(providerId, columnsRequest, principalDepartment);
+		Map<String, Object> provider = providerService.find(providerId, columnsRequest,
+				ContextProvider.getPrincipalCredential());
 
 		return send(provider, String.format("Provider %s not found", providerId));
 	}
@@ -87,16 +92,18 @@ public class RestProviderController extends BaseController {
 	@Secured("ROLE_PERSONNEL")
 	public ResponseEntity<?> searchForProviders(ProviderQuery query,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
-			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException {
+			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
 		UUID departmentId = departmentService.getPrincipalDepartment();
 
-		DepartmentScopeContext.assertDepartment(departmentId, DepartmentScopeContext.stock(), DepartmentScopeContext.sale());
+		DepartmentScopeContext.assertDepartment(departmentId, DepartmentScopeContext.stock(),
+				DepartmentScopeContext.sale());
 
 		if (query.isEmpty()) {
 			return sendBadRequest(INVALID_SEARCH_CRITERIA);
 		}
 
-		return ResponseEntity.ok(providerService.search(columns, paging, query, departmentId));
+		return ResponseEntity
+				.ok(providerService.search(columns, paging, query, ContextProvider.getPrincipalCredential()));
 	}
 
 }

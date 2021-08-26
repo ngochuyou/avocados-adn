@@ -7,7 +7,6 @@ import static adn.dao.generic.Result.bad;
 import static adn.helpers.CollectionHelper.from;
 import static adn.helpers.HibernateHelper.toRows;
 import static adn.model.entities.Product.STOCKDETAIL_FIELD_NAME;
-import static adn.service.internal.Role.PERSONNEL;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -37,15 +36,15 @@ import adn.controller.query.specification.ProductQuery;
 import adn.dao.generic.Repository;
 import adn.dao.generic.Result;
 import adn.dao.specification.GenericFactorRepository;
+import adn.helpers.CollectionHelper;
 import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
 import adn.model.entities.Category;
 import adn.model.entities.Product;
-import adn.model.factory.AuthenticationBasedModelFactory;
-import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
-import adn.model.factory.DepartmentBasedModelPropertiesFactory;
+import adn.model.factory.authentication.Credential;
+import adn.model.factory.authentication.dynamicmap.SourceMetadataFactory;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.internal.ResourceService;
-import adn.service.internal.Role;
 import adn.service.internal.Service;
 import adn.service.internal.ServiceResult;
 
@@ -65,9 +64,6 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 
 	@Autowired
 	public ProductService(GenericCRUDService crudService, ResourceService resourceService, Repository repository,
-			DepartmentBasedModelPropertiesFactory departmentBasedModelFactory,
-			AuthenticationBasedModelFactory modelFactory,
-			AuthenticationBasedModelPropertiesFactory authenticationBasedPropertiesFactory,
 			StockDetailService stockDetailService, GenericFactorRepository genericFactorReopsitory) {
 		super(crudService, repository, genericFactorReopsitory);
 		this.resourceService = resourceService;
@@ -75,13 +71,15 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 	}
 
 	public List<Map<String, Object>> getProductsByCategory(String categoryIdentifier, String categoryIdentifierProperty,
-			Collection<String> requestedColumns, Pageable paging, Role role) throws NoSuchFieldException {
-		if (role == PERSONNEL) {
+			Collection<String> requestedColumns, Pageable paging, Credential credential,
+			Credential inactiveAllowedCredential) throws NoSuchFieldException, UnauthorizedCredential {
+		if (credential.equal(inactiveAllowedCredential)) {
 			return crudService.readByAssociation(Product.class, Category.class, Product.CATEGORY_FIELD_NAME,
-					categoryIdentifierProperty, categoryIdentifier, requestedColumns, paging, role);
+					categoryIdentifierProperty, categoryIdentifier, requestedColumns, paging, credential);
 		}
 
-		Collection<String> validatedColumns = crudService.getDefaultColumns(Product.class, role, requestedColumns);
+		Collection<String> validatedColumns = crudService.getDefaultColumns(Product.class, credential,
+				requestedColumns);
 		List<Tuple> rows = genericFactorRepository.findAllActive(Product.class, requestedColumns, paging,
 				new Specification<Product>() {
 					@Override
@@ -98,7 +96,8 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 					}
 				});
 
-		return crudService.resolveReadResults(Product.class, toRows(rows), from(validatedColumns), role);
+		return crudService.resolveReadResults(Product.class, toRows(rows), from(validatedColumns), credential,
+				SourceMetadataFactory.unknownArrayCollection(Product.class, CollectionHelper.list(validatedColumns)));
 	}
 
 	public Result<Product> createProduct(Product product, MultipartFile[] images, boolean flushOnFinish) {
@@ -177,14 +176,21 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 	}
 
 	public List<Map<String, Object>> searchProduct(Collection<String> requestedColumns, Pageable pageable,
-			ProductQuery restQuery, Role role) throws NoSuchFieldException {
-		return crudService.read(Product.class, requestedColumns, hasNameLike(restQuery).or(hasIdLike(restQuery)),
-				pageable, role);
+			ProductQuery restQuery, Credential credential, Credential inactiveAllowedCredential)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		if (credential.equal(inactiveAllowedCredential)) {
+			return crudService.read(Product.class, requestedColumns, hasNameLike(restQuery).or(hasIdLike(restQuery)),
+					pageable, credential);
+		}
+
+		return crudService.read(Product.class, requestedColumns,
+				isActive(Product.class).and(hasNameLike(restQuery).or(hasIdLike(restQuery))), pageable, credential);
 	}
 
 	@Override
 	public Map<String, Object> findWithActiveCheck(Serializable id, Class<Product> type,
-			Collection<String> requestedColumns, Role principalRole) throws NoSuchFieldException {
+			Collection<String> requestedColumns, Credential credential, Credential inactiveAllowedCredential)
+			throws NoSuchFieldException, UnauthorizedCredential {
 		boolean stockDetailsRequired = false;
 		Set<String> columns = new HashSet<>(requestedColumns);
 
@@ -192,14 +198,15 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 			columns.remove(STOCKDETAIL_FIELD_NAME);
 		}
 
-		Map<String, Object> product = super.findWithActiveCheck(id, type, columns, principalRole);
+		Map<String, Object> product = super.findWithActiveCheck(id, type, columns, credential,
+				inactiveAllowedCredential);
 
 		if (!stockDetailsRequired || product == null) {
 			return product;
 		}
 
 		List<Map<String, Object>> stockDetails = stockDetailService.readActiveOnly(id, Collections.emptyList(),
-				principalRole);
+				credential, inactiveAllowedCredential);
 
 		product.put(STOCKDETAIL_FIELD_NAME, stockDetails);
 

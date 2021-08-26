@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.model.factory;
+package adn.model.factory.authentication;
 
 import adn.model.DomainEntity;
 

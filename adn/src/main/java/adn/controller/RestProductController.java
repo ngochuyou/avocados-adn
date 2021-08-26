@@ -3,7 +3,8 @@
  */
 package adn.controller;
 
-import static adn.application.context.ContextProvider.getPrincipalRole;
+import static adn.application.context.ContextProvider.getPrincipalCredential;
+import static adn.service.DepartmentCredential.SALE_CREDENTIAL;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.ResponseEntity.ok;
 
@@ -38,6 +39,7 @@ import adn.helpers.StringHelper;
 import adn.model.entities.Category;
 import adn.model.entities.Product;
 import adn.model.entities.StockDetail;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.model.models.StockDetailBatch;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Service.Status;
@@ -66,8 +68,8 @@ public class RestProductController extends ProductController {
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getProductCount() {
 		return makeStaleWhileRevalidate(
-				ResponseEntity
-						.ok(productService.countWithActiveCheck(Product.class, ContextProvider.getPrincipalRole())),
+				ResponseEntity.ok(
+						productService.countWithActiveCheck(Product.class, getPrincipalCredential(), SALE_CREDENTIAL)),
 				2, TimeUnit.DAYS, 7, TimeUnit.DAYS);
 	}
 
@@ -75,9 +77,9 @@ public class RestProductController extends ProductController {
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> obtainProduct(@PathVariable(name = "productId", required = true) String productId,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns)
-			throws NoSuchFieldException {
-		return send(productService.findWithActiveCheck(productId, Product.class, columns, getPrincipalRole()),
-				String.format("Product %s not found", productId));
+			throws NoSuchFieldException, UnauthorizedCredential {
+		return send(productService.findWithActiveCheck(productId, Product.class, columns, getPrincipalCredential(),
+				SALE_CREDENTIAL), String.format("Product %s not found", productId));
 	}
 
 	@GetMapping(produces = APPLICATION_JSON_VALUE)
@@ -86,25 +88,27 @@ public class RestProductController extends ProductController {
 			@RequestParam(name = "category", required = false, defaultValue = "") String categoryId,
 			@RequestParam(name = "by", required = false, defaultValue = "") String identifierName,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
-			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException {
+			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
 		if (StringHelper.hasLength(categoryId)) {
 			return ok(productService.getProductsByCategory(categoryId, identifierName, columns, paging,
-					getPrincipalRole()));
+					getPrincipalCredential(), SALE_CREDENTIAL));
 		}
 
-		return ok(productService.readWithActiveCheck(Product.class, columns, paging, getPrincipalRole()));
+		return ok(productService.readWithActiveCheck(Product.class, columns, paging, getPrincipalCredential(),
+				SALE_CREDENTIAL));
 	}
 
 	@GetMapping(path = "/search", produces = APPLICATION_JSON_VALUE)
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> searchForProducts(ProductQuery query,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
-			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException {
+			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
 		if (query.isEmpty()) {
 			return sendBadRequest(INVALID_SEARCH_CRITERIA);
 		}
 
-		return ResponseEntity.ok(productService.searchProduct(columns, paging, query, getPrincipalRole()));
+		return ResponseEntity
+				.ok(productService.searchProduct(columns, paging, query, getPrincipalCredential(), SALE_CREDENTIAL));
 	}
 
 	@PostMapping(path = "/category", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
@@ -136,21 +140,25 @@ public class RestProductController extends ProductController {
 	@Transactional(readOnly = true)
 	@Secured("ROLE_PERSONNEL")
 	public ResponseEntity<?> getCategoryList(@PageableDefault(size = 5) Pageable pageable,
-			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws NoSuchFieldException {
-		return send(crudService.read(Category.class, columns, pageable), null);
+			@RequestParam(name = "columns", defaultValue = "") List<String> columns)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		return send(crudService.read(Category.class, columns, pageable, getPrincipalCredential()), null);
 	}
 
 	@GetMapping("/category/all")
 	@Transactional(readOnly = true)
-	public ResponseEntity<?> getAllCategories() throws NoSuchFieldException {
-		return makeStaleWhileRevalidate(categoryService.readWithActiveCheck(Category.class, Arrays.asList("id", "name"),
-				PageRequest.of(0, 1000), getPrincipalRole()), 1, TimeUnit.DAYS, 2, TimeUnit.DAYS);
+	public ResponseEntity<?> getAllCategories() throws NoSuchFieldException, UnauthorizedCredential {
+		return makeStaleWhileRevalidate(
+				categoryService.readWithActiveCheck(Category.class, Arrays.asList("id", "name"),
+						PageRequest.of(0, 1000), getPrincipalCredential(), SALE_CREDENTIAL),
+				1, TimeUnit.DAYS, 2, TimeUnit.DAYS);
 	}
 
 	@GetMapping("/category/count")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getCategoryCount() {
-		return makeStaleWhileRevalidate(categoryService.countWithActiveCheck(Category.class, getPrincipalRole()), 1,
+		return makeStaleWhileRevalidate(
+				categoryService.countWithActiveCheck(Category.class, getPrincipalCredential(), SALE_CREDENTIAL), 1,
 				TimeUnit.DAYS, 3, TimeUnit.DAYS);
 	}
 
@@ -181,11 +189,13 @@ public class RestProductController extends ProductController {
 		ResultBatch<StockDetail> results = crudService.createBatch(batch.getDetails(), StockDetail.class, true);
 
 		if (results.isOk()) {
-			return ResponseEntity
-					.ok(results
-							.getResults().stream().map(result -> authenticationBasedModelFactory
-									.produce(StockDetail.class, result.getInstance(), getPrincipalRole()))
-							.collect(Collectors.toList()));
+			return ResponseEntity.ok(results.getResults().stream().map(result -> {
+				try {
+					return dynamicMapModelFactory.producePojo(result.getInstance(), null, getPrincipalCredential());
+				} catch (UnauthorizedCredential e) {
+					return e.getMessage();
+				}
+			}).collect(Collectors.toList()));
 		}
 
 		if (results.getStatus() == Status.BAD) {

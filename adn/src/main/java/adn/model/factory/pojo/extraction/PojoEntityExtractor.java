@@ -4,7 +4,7 @@
 package adn.model.factory.pojo.extraction;
 
 import adn.model.DomainEntity;
-import adn.model.factory.EntityExtractor;
+import adn.model.factory.authentication.EntityExtractor;
 
 /**
  * @author Ngoc Huy

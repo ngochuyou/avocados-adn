@@ -4,13 +4,15 @@
 package adn.service.services;
 
 import static adn.helpers.CollectionHelper.from;
+import static adn.helpers.CollectionHelper.list;
+import static adn.model.factory.authentication.dynamicmap.SourceMetadataFactory.unknownArray;
+import static adn.model.factory.authentication.dynamicmap.SourceMetadataFactory.unknownArrayCollection;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -24,15 +26,14 @@ import org.springframework.stereotype.Service;
 
 import adn.application.context.ContextProvider;
 import adn.application.context.builders.DepartmentScopeContext;
-import adn.dao.generic.GenericRepository;
 import adn.dao.generic.ParamContext;
+import adn.helpers.CollectionHelper;
 import adn.model.entities.DepartmentChief;
 import adn.model.entities.Personnel;
-import adn.model.factory.AuthenticationBasedModelFactory;
-import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
-import adn.security.ApplicationUserDetails;
+import adn.model.factory.authentication.Credential;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.security.PersonnelDetails;
-import adn.service.internal.Role;
+import adn.security.UserDetailsImpl;
 
 /**
  * @author Ngoc Huy
@@ -43,29 +44,16 @@ public class DepartmentService implements adn.service.internal.Service {
 
 	private final SessionFactory sessionFactory;
 	private final GenericCRUDService crudService;
-	private final GenericRepository repository;
 
-	private final AuthenticationBasedModelFactory modelFactory;
-	private final AuthenticationBasedModelPropertiesFactory modelPropertiesFactory;
-
-	@Autowired
-	public DepartmentService(
 	// @formatter:off
-			SessionFactory sessionFactory,
-			GenericCRUDService crudService,
-			GenericRepository repository,
-			AuthenticationBasedModelFactory modelFactory,
-			AuthenticationBasedModelPropertiesFactory modelPropertiesFactory) {
-		// @formatter:on
+	@Autowired
+	public DepartmentService(SessionFactory sessionFactory, GenericCRUDService crudService) {
 		this.sessionFactory = sessionFactory;
 		this.crudService = crudService;
-		this.repository = repository;
-		this.modelFactory = modelFactory;
-		this.modelPropertiesFactory = modelPropertiesFactory;
 	}
-
+	// @formatter:on
 	public UUID getPrincipalDepartment() {
-		ApplicationUserDetails userDetails = ContextProvider.getPrincipal();
+		UserDetailsImpl userDetails = ContextProvider.getPrincipal();
 
 		if (!(userDetails instanceof PersonnelDetails)) {
 			return DepartmentScopeContext.unknown();
@@ -76,9 +64,9 @@ public class DepartmentService implements adn.service.internal.Service {
 
 	public UUID assertSaleDepartment() {
 		UUID principalDepartment = getPrincipalDepartment();
-		
+
 		DepartmentScopeContext.assertDepartment(principalDepartment, DepartmentScopeContext.sale());
-		
+
 		return principalDepartment;
 	}
 
@@ -111,7 +99,7 @@ public class DepartmentService implements adn.service.internal.Service {
 					builder.equal(root.get("id").get("departmentId"), departmentId),
 					builder.isNull(root.get("endDate"))));
 		// @formatter:on
-		Personnel chief = repository.findOne(query, Personnel.class);
+		Personnel chief = crudService.repository.findOne(query, Personnel.class);
 
 		if (chief == null) {
 			return null;
@@ -120,19 +108,20 @@ public class DepartmentService implements adn.service.internal.Service {
 		return chief;
 	}
 
-	public Map<String, Object> getDepartmentChief(UUID departmentId, Role role) {
+	public Map<String, Object> getDepartmentChief(UUID departmentId, Credential credential)
+			throws UnauthorizedCredential {
 		Personnel chief = getDepartmentChief(departmentId);
 
 		if (chief == null) {
 			return null;
 		}
 
-		return modelFactory.produce(Personnel.class, getDepartmentChief(departmentId), role);
+		return crudService.dynamicMapModelFactory.producePojo(chief, null, credential);
 	}
 
-	public Map<String, Object> getDepartmentChief(UUID departmentId, Collection<String> columns, Role role)
-			throws NoSuchFieldException {
-		String[] validatedColumns = from(crudService.getDefaultColumns(Personnel.class, role, columns));
+	public Map<String, Object> getDepartmentChief(UUID departmentId, Collection<String> columns, Credential credential)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		Collection<String> validatedColumns = crudService.getDefaultColumns(Personnel.class, credential, columns);
 		// @formatter:off
 		String query = String.format("""
 				SELECT %s
@@ -140,22 +129,23 @@ public class DepartmentService implements adn.service.internal.Service {
 				INNER JOIN Personnel p
 					ON dc.personnel.id = p.id
 				WHERE dc.department.id=:id AND dc.endDate IS NULL
-				""", Stream.of(validatedColumns)
+				""", validatedColumns.stream()
 						.map(col -> "p.".concat(col))
 						.collect(Collectors.joining(",")));
 		// @formatter:on
-		Object[] row = repository.findOne(query, Map.of("id", departmentId));
+		Object[] row = crudService.repository.findOne(query, Map.of("id", departmentId));
 
 		if (row == null) {
 			return null;
 		}
 
-		return modelPropertiesFactory.produce(Personnel.class, row, validatedColumns, role);
+		return crudService.dynamicMapModelFactory.produce(row,
+				unknownArray(Personnel.class, CollectionHelper.list(validatedColumns)), credential);
 	}
 
-	public List<Map<String, Object>> getDepartmentChiefs(UUID[] departmentIds, Collection<String> columns, Role role)
-			throws NoSuchFieldException {
-		String[] validatedColumns = from(crudService.getDefaultColumns(Personnel.class, role, columns));
+	public List<Map<String, Object>> getDepartmentChiefs(UUID[] departmentIds, Collection<String> columns,
+			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
+		Collection<String> validatedColumns = crudService.getDefaultColumns(Personnel.class, credential, columns);
 		// @formatter:off
 		String query = String.format("""
 				SELECT %s
@@ -163,13 +153,14 @@ public class DepartmentService implements adn.service.internal.Service {
 				INNER JOIN Personnel p
 					ON dc.personnel.id = p.id
 				WHERE dc.department.id IN (:ids) AND dc.endDate IS NULL
-				""", Stream.of(validatedColumns)
+				""", validatedColumns.stream()
 						.map(col -> "p." + col)
 						.collect(Collectors.joining(",")));
 		// @formatter:on
-		List<?> rows = repository.findWithContext(query, Map.of("ids", ParamContext.array(departmentIds)));
+		List<?> rows = crudService.repository.findWithContext(query, Map.of("ids", ParamContext.array(departmentIds)));
 
-		return crudService.resolveReadResults(Personnel.class, rows, validatedColumns, role);
+		return crudService.resolveReadResults(Personnel.class, rows, from(validatedColumns), credential,
+				unknownArrayCollection(Personnel.class, list(validatedColumns)));
 	}
 
 	public Long[] countPersonnel(UUID[] departmentIds) {
@@ -179,7 +170,8 @@ public class DepartmentService implements adn.service.internal.Service {
 				WHERE p.department.id IN (:ids)
 				GROUP BY p.department.id
 				""";
-		List<Long> countResults = repository.countWithContext(query, Map.of("ids", ParamContext.array(departmentIds)));
+		List<Long> countResults = crudService.repository.countWithContext(query,
+				Map.of("ids", ParamContext.array(departmentIds)));
 		int size;
 
 		if ((size = countResults.size()) == 0) {
@@ -190,25 +182,26 @@ public class DepartmentService implements adn.service.internal.Service {
 	}
 
 	public List<Map<String, Object>> getPersonnelListByDepartmentId(UUID departmentId, Collection<String> columns,
-			Pageable paging, Role role) throws NoSuchFieldException {
-		String[] validatedColumns = from(crudService.getDefaultColumns(Personnel.class, role, columns));
+			Pageable paging, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
+		Collection<String> validatedColumns = crudService.getDefaultColumns(Personnel.class, credential, columns);
 		// @formatter:off
 		String query = String.format("""
 				SELECT %s FROM Personnel p
 				WHERE p.department.id=:id
-					""", Stream.of(validatedColumns)
+					""", validatedColumns.stream()
 					.map(col -> "p.".concat(col))
 					.collect(Collectors.joining(",")));
 		// @formatter:on
-		query = repository.appendOrderBy(query, paging.getSort());
+		query = crudService.repository.appendOrderBy(query, paging.getSort());
 
-		List<?> rows = repository.find(query, paging, Map.of("id", departmentId));
+		List<?> rows = crudService.repository.find(query, paging, Map.of("id", departmentId));
 
-		return crudService.resolveReadResults(Personnel.class, rows, validatedColumns, role);
+		return crudService.resolveReadResults(Personnel.class, rows, from(validatedColumns), credential,
+				unknownArrayCollection(Personnel.class, list(columns)));
 	}
 
 	public UUID getPersonnelDepartmentId(String personnelId) {
-		Object[] row = repository.findById(personnelId, Personnel.class, new String[] { "department.id" });
+		Object[] row = crudService.repository.findById(personnelId, Personnel.class, new String[] { "department.id" });
 
 		if (row == null) {
 			return null;

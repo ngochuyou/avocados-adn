@@ -4,6 +4,7 @@
 package adn.model.factory.authentication.dynamicmap;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -14,7 +15,6 @@ import adn.model.DomainEntity;
 import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.authentication.SourceMetadata;
 import adn.model.factory.authentication.SourceType;
-import io.jsonwebtoken.lang.Collections;
 
 /**
  * @author Ngoc Huy
@@ -61,7 +61,7 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 		// this must be asserted by devs as contract
 		Map<Integer, SourceMetadata<?>> metadatas = new HashMap<>();
 		
-		associationIndicies = IntStream.range(0, columns.length)
+		associationIndicies = Collections.unmodifiableSet(IntStream.range(0, columns.length)
 				.filter(index -> {
 					if (entityMetadata.isAssociation(columns[index])) {
 						metadatas.put(index, associationMetadatas[metadatas.size()]);
@@ -70,8 +70,8 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 					
 					return false;
 				})
-				.boxed().collect(Collectors.toSet());
-		this.associationMetadatas = metadatas;
+				.boxed().collect(Collectors.toSet()));
+		this.associationMetadatas = Collections.unmodifiableMap(metadatas);
 	}
 	
 	public SourceMetadataImpl(
@@ -88,9 +88,7 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 		this.representation = resolveRepresentation(sourceType, representation);
 		// associationIndicies.size() and associationMetadatas.length must match
 		// this must be asserted by devs as contract
-		associationIndicies = IntStream.range(0, columns.length)
-				.filter(index -> entityMetadata.isAssociation(columns[index]))
-				.boxed().collect(Collectors.toSet());
+		associationIndicies = associationMetadatas.keySet();
 		this.associationMetadatas = associationMetadatas;
 	}
 	// @formatter:on
@@ -129,7 +127,7 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 
 	@Override
 	public boolean hasAssociation() {
-		return !Collections.isEmpty(associationIndicies);
+		return !(associationIndicies != null || !associationIndicies.isEmpty());
 	}
 
 	@Override

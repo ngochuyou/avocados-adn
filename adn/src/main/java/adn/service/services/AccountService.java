@@ -41,7 +41,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 	protected final ResourceService resourceService;
 	// @formatter:off
 	private final Map<Role, Class<? extends Account>> roleClassMap = Map.of(
-			Role.ADMIN, Admin.class,
+			Role.HEAD, Admin.class,
 			Role.CUSTOMER, Customer.class,
 			Role.PERSONNEL, Personnel.class,
 			Role.ANONYMOUS, Account.class);
@@ -112,7 +112,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 		if (!persistence.getRole().equals(account.getRole())) {
 			// determine role update, currently only administrators could update account
 			// role
-			if (!principalRole.equals(Role.ADMIN)) {
+			if (!principalRole.equals(Role.HEAD)) {
 				return bad(Map.of(Account.ROLE_FIELD_NAME, INVALID_ROLE));
 			}
 

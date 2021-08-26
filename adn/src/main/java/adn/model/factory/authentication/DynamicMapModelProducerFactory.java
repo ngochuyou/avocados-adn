@@ -23,6 +23,12 @@ public interface DynamicMapModelProducerFactory {
 	<T extends DomainEntity, E extends T> List<Map<String, Object>> produce(List<Object[]> source,
 			SourceMetadata<E> metadata, Credential credential) throws UnauthorizedCredential;
 
+	<T extends DomainEntity, E extends T> Map<String, Object> produceSingular(Object source, SourceMetadata<E> metadata,
+			Credential credential) throws UnauthorizedCredential;
+
+	<T extends DomainEntity, E extends T> List<Map<String, Object>> produceSingular(List<Object> source,
+			SourceMetadata<E> metadata, Credential credential) throws UnauthorizedCredential;
+	
 	<T extends DomainEntity, E extends T> Map<String, Object> producePojo(E entity, SourceMetadata<E> metadata,
 			Credential credential) throws UnauthorizedCredential;
 
