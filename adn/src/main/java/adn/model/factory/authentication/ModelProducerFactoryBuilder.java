@@ -17,7 +17,7 @@ public interface ModelProducerFactoryBuilder {
 
 	<T extends DomainEntity> WithType<T> type(Class<T> type);
 
-	interface WithType<T extends DomainEntity> {
+	public interface WithType<T extends DomainEntity> {
 
 		WithCredential<T> roles(Role... role);
 
@@ -29,7 +29,7 @@ public interface ModelProducerFactoryBuilder {
 
 	}
 
-	interface WithCredential<T extends DomainEntity> {
+	public interface WithCredential<T extends DomainEntity> {
 
 		WithField<T> fields(String... fields);
 
@@ -49,7 +49,7 @@ public interface ModelProducerFactoryBuilder {
 
 	}
 
-	interface WithField<T extends DomainEntity> {
+	public interface WithField<T extends DomainEntity> {
 
 		WithField<T> use(String... alias);
 

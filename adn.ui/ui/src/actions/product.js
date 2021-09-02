@@ -1,8 +1,8 @@
 import { $fetch, fjson, asBlob } from '../fetch';
-import { normalize } from '../utils';
+import { normalize, join } from '../utils';
 
 export function fetchCategoryList({ page = 0, size = 10, columns = [] }) {
-	return fjson(`/rest/product/category/list?page=${page}&size=${size}&columns=${columns.join(',')}`);
+	return fjson(`/rest/product/category/list?page=${page}&size=${size}&columns=${join(columns)}`);
 }
 
 export function fetchCategoryCount() {
@@ -166,15 +166,21 @@ export function getProductListByCategory({
 		return [null, "Category identifier was empty"];
 	}
 
-	return fjson(`/rest/product?category=${identifier}&by=${identifierName}&columns=${columns.join(',')}`);
+	return fjson(`/rest/product?category=${identifier}&by=${identifierName}&columns=${join(columns)}`);
 }
 
-export function searchProduct({ productId = "", productName = "", columns = [], size = 10 }) {
+export function getProductList({
+	columns = [], page = 0, size = 18
+}) {
+	return fjson(`/rest/product?columns=${join(columns)}&page=${page}&size=${size}`);
+}
+
+export function searchProduct({ productId = "", productName = "", columns = [], size = 1000 }) {
 	if (productId.length === 0 && productName.length === 0) {
 		return [[], null];
 	}
 	
-	return fjson(`/rest/product/search?id.like=${normalize(productId)}&name.like=${normalize(productName)}&columns=${columns.join(',')}&size=${size}`);
+	return fjson(`/rest/product/search?id.like=${normalize(productId)}&name.like=${normalize(productName)}&columns=${join(columns)}&size=${size}`);
 }
 
 export function createStockDetails(batch = []) {
@@ -198,5 +204,5 @@ export function obtainProduct({ id = null, columns = [] }) {
 		return [null, "Product ID was null"];
 	}
 
-	return fjson(`/rest/product/${id}?columns=${columns.join(',')}`);
+	return fjson(`/rest/product/${id}?columns=${join(columns)}`);
 }

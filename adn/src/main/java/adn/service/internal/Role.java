@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import adn.application.context.builders.CredentialFactory;
+import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.EnumeratedCredential;
 
 /**
@@ -77,6 +78,22 @@ public enum Role implements RoleDefinition, EnumeratedCredential {
 	@Override
 	public Class<? extends Enum<?>> getEnumtype() {
 		return Role.class;
+	}
+
+	@Override
+	public boolean contains(Credential credential) {
+		return equal(credential);
+	}
+
+	@Override
+	public boolean contains(String evaluation) {
+		try {
+			Role.valueOf(evaluation);
+
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
 }

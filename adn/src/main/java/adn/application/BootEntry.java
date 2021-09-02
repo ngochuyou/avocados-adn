@@ -31,7 +31,7 @@ import adn.application.context.builders.AfterBuildMethodsInvoker;
 import adn.application.context.builders.ConfigurationContext;
 import adn.application.context.builders.CredentialFactory;
 import adn.application.context.builders.DatabaseInitializer;
-import adn.application.context.builders.DefaultEntityExtractorProvider;
+import adn.application.context.builders.EntityExtractorProviderImpl;
 import adn.application.context.builders.DepartmentScopeContext;
 import adn.application.context.builders.DynamicMapModelProducerFactoryImpl;
 import adn.application.context.builders.EntityBuilderProvider;
@@ -71,7 +71,7 @@ public class BootEntry {
 			EntityBuilderProvider.class,
 			SpecificationFactory.class,
 			ResourceManagerFactoryBuilder.class,
-			DefaultEntityExtractorProvider.class,
+			EntityExtractorProviderImpl.class,
 			DynamicMapModelProducerFactoryImpl.class,
 			AfterBuildMethodsInvoker.class,
 			TestRunner.class

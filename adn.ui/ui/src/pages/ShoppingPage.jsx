@@ -36,7 +36,7 @@ function Main() {
 		dispatchProductStore, dispatchCategoryStore
 	} = useShopping();
 
-	useEffect(() => asIf(!wasInit).then(init), [wasInit, init]);
+	useEffect(() => asIf(!wasInit).then(init).else(), [wasInit, init]);
 	useEffect(() => {
 		const doFetch = async () => {
 			log(`category name: ${categoryName}`);

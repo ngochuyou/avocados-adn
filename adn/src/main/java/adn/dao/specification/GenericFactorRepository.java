@@ -24,6 +24,7 @@ import org.springframework.stereotype.Repository;
 
 import adn.helpers.HibernateHelper;
 import adn.model.entities.Factor;
+import adn.model.entities.metadata._Factor;
 
 /**
  * @author Ngoc Huy
@@ -43,7 +44,7 @@ public class GenericFactorRepository {
 	}
 
 	protected <E> Predicate isActive(CriteriaBuilder builder, Root<E> root) {
-		return builder.isTrue(root.get(Factor.ACTIVE_FIELD_NAME));
+		return builder.isTrue(root.get(_Factor.active));
 	}
 
 	public <T extends Factor, E extends T> Long countActive(Class<E> type) {

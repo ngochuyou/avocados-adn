@@ -6,9 +6,9 @@ package adn.service.services;
 import static adn.dao.generic.Result.bad;
 import static adn.helpers.CollectionHelper.from;
 import static adn.helpers.HibernateHelper.toRows;
-import static adn.model.entities.Product.STOCKDETAIL_FIELD_NAME;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -39,8 +39,9 @@ import adn.dao.specification.GenericFactorRepository;
 import adn.helpers.CollectionHelper;
 import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
-import adn.model.entities.Category;
 import adn.model.entities.Product;
+import adn.model.entities.metadata._Category;
+import adn.model.entities.metadata._Product;
 import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.dynamicmap.SourceMetadataFactory;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
@@ -71,13 +72,7 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 	}
 
 	public List<Map<String, Object>> getProductsByCategory(String categoryIdentifier, String categoryIdentifierProperty,
-			Collection<String> requestedColumns, Pageable paging, Credential credential,
-			Credential inactiveAllowedCredential) throws NoSuchFieldException, UnauthorizedCredential {
-		if (credential.equal(inactiveAllowedCredential)) {
-			return crudService.readByAssociation(Product.class, Category.class, Product.CATEGORY_FIELD_NAME,
-					categoryIdentifierProperty, categoryIdentifier, requestedColumns, paging, credential);
-		}
-
+			Collection<String> requestedColumns, Pageable paging, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
 		Collection<String> validatedColumns = crudService.getDefaultColumns(Product.class, credential,
 				requestedColumns);
 		List<Tuple> rows = genericFactorRepository.findAllActive(Product.class, requestedColumns, paging,
@@ -85,9 +80,8 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 					@Override
 					public Predicate toPredicate(Root<Product> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
 						try {
-							return builder.equal(root.get(Product.CATEGORY_FIELD_NAME)
-									.get(!StringHelper.hasLength(categoryIdentifierProperty)
-											? Category.IDENTIFIER_FIELD_NAME
+							return builder.equal(root.get(_Product.category)
+									.get(!StringHelper.hasLength(categoryIdentifierProperty) ? _Category.id
 											: categoryIdentifierProperty),
 									categoryIdentifier);
 						} catch (IllegalArgumentException e) {
@@ -95,6 +89,10 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 						}
 					}
 				});
+
+		if (rows.isEmpty()) {
+			return new ArrayList<>();
+		}
 
 		return crudService.resolveReadResults(Product.class, toRows(rows), from(validatedColumns), credential,
 				SourceMetadataFactory.unknownArrayCollection(Product.class, CollectionHelper.list(validatedColumns)));
@@ -119,7 +117,7 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 			}
 
 			isResourceSessionFlushed = true;
-			product.setImages(Stream.of(uploadResult.getBody()).collect(Collectors.toSet()));
+			product.setImages(Stream.of(uploadResult.getBody()).collect(Collectors.toList()));
 		}
 
 		Result<Product> result = crudService.create(null, product, Product.class, false);
@@ -137,9 +135,9 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 		Product persistence = session.load(Product.class, model.getId());
 
 		boolean isResourceSessionFlushed = false;
-		Set<String> newImagesState = model.getImages();
-		Set<String> removedImages = persistence.getImages().stream()
-				.filter(filename -> !newImagesState.contains(filename)).collect(Collectors.toSet());
+		List<String> newImagesState = model.getImages();
+		List<String> removedImages = persistence.getImages().stream()
+				.filter(filename -> !newImagesState.contains(filename)).collect(Collectors.toList());
 
 		if (removedImages.size() != 0) {
 			ServiceResult<String> removeResult = resourceService.removeProductImages(removedImages);
@@ -176,54 +174,34 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 	}
 
 	public List<Map<String, Object>> searchProduct(Collection<String> requestedColumns, Pageable pageable,
-			ProductQuery restQuery, Credential credential, Credential inactiveAllowedCredential)
-			throws NoSuchFieldException, UnauthorizedCredential {
-		if (credential.equal(inactiveAllowedCredential)) {
-			return crudService.read(Product.class, requestedColumns, hasNameLike(restQuery).or(hasIdLike(restQuery)),
-					pageable, credential);
-		}
-
+			ProductQuery restQuery, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
 		return crudService.read(Product.class, requestedColumns,
 				isActive(Product.class).and(hasNameLike(restQuery).or(hasIdLike(restQuery))), pageable, credential);
 	}
 
 	@Override
 	public Map<String, Object> findWithActiveCheck(Serializable id, Class<Product> type,
-			Collection<String> requestedColumns, Credential credential, Credential inactiveAllowedCredential)
+			Collection<String> requestedColumns, Credential credential)
 			throws NoSuchFieldException, UnauthorizedCredential {
 		boolean stockDetailsRequired = false;
 		Set<String> columns = new HashSet<>(requestedColumns);
 
-		if (stockDetailsRequired = requestedColumns.contains(STOCKDETAIL_FIELD_NAME)) {
-			columns.remove(STOCKDETAIL_FIELD_NAME);
+		if (stockDetailsRequired = requestedColumns.contains(_Product.stockDetails)) {
+			columns.remove(_Product.stockDetails);
 		}
 
-		Map<String, Object> product = super.findWithActiveCheck(id, type, columns, credential,
-				inactiveAllowedCredential);
+		Map<String, Object> product = super.findWithActiveCheck(id, type, columns, credential);
 
 		if (!stockDetailsRequired || product == null) {
 			return product;
 		}
 
 		List<Map<String, Object>> stockDetails = stockDetailService.readActiveOnly(id, Collections.emptyList(),
-				credential, inactiveAllowedCredential);
+				credential);
 
-		product.put(STOCKDETAIL_FIELD_NAME, stockDetails);
+		product.put(_Product.stockDetails, stockDetails);
 
 		return product;
-	}
-
-	private static Specification<Product> hasNameLike(ProductQuery restQuery) {
-		return new Specification<Product>() {
-			@Override
-			public Predicate toPredicate(Root<Product> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
-				if (restQuery.getName() == null || !StringHelper.hasLength(restQuery.getName().getLike())) {
-					return null;
-				}
-
-				return builder.like(root.get("name"), restQuery.getName().getLike());
-			}
-		};
 	}
 
 	private static Specification<Product> hasIdLike(ProductQuery restQuery) {

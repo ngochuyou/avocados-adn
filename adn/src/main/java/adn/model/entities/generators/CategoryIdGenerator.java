@@ -31,6 +31,7 @@ import adn.application.context.internal.EffectivelyFinal;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Category;
+import adn.model.entities.metadata._Category;
 import adn.service.DomainEntityServiceObserver;
 import adn.service.services.CategoryService;
 
@@ -60,12 +61,12 @@ public class CategoryIdGenerator
 
 		name = StringHelper.removeSpaces(name);
 
-		String id = name.length() >= Category.IDENTIFIER_LENGTH
-				? name.substring(0, Category.IDENTIFIER_LENGTH).toUpperCase()
-				: RandomStringUtils.randomAlphanumeric(Category.IDENTIFIER_LENGTH).toUpperCase();
+		String id = name.length() >= _Category.IDENTIFIER_LENGTH
+				? name.substring(0, _Category.IDENTIFIER_LENGTH).toUpperCase()
+				: RandomStringUtils.randomAlphanumeric(_Category.IDENTIFIER_LENGTH).toUpperCase();
 
 		if (existingIds.contains(id)) {
-			id = RandomStringUtils.randomAlphanumeric(Category.IDENTIFIER_LENGTH).toUpperCase();
+			id = RandomStringUtils.randomAlphanumeric(_Category.IDENTIFIER_LENGTH).toUpperCase();
 		}
 
 		return id;

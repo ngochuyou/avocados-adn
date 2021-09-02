@@ -12,7 +12,12 @@ import java.util.stream.Collectors;
  */
 public class UnitTest {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws NoSuchMethodException, SecurityException {
+//		String pattern = String.format("^[%s\\p{L}\\p{N}\\s\\.\\,\\-\\_\\(\\)\\*/]{1,255}$",
+//				VIETNAMESE_CHARACTERS);
+//		String string = "441/80/15 Lê Văn Qưới P. Bình Trị Đông A. Q.Bình Tân";
+//		
+//		System.out.println(string.matches(pattern));
 		// @formatter:off
 //		List<List<String>> lists = Arrays.asList(
 //				List.of("ADMIN", "PERSONNEL", "CUSTOMER"),

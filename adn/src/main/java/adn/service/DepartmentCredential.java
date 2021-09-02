@@ -82,9 +82,19 @@ public class DepartmentCredential implements OnMemoryCredential {
 			unknown(), new DepartmentCredential(unknown()));
 	// @formatter:on
 
-	public static final Credential STOCK_CREDENTIAL = CredentialFactory.from(PERSONNEL, stock());
-	public static final Credential SALE_CREDENTIAL = CredentialFactory.from(PERSONNEL, sale());
-	public static final Credential PERSONNEL_CREDENTIAL = CredentialFactory.from(PERSONNEL, personnel());
-	public static final Credential CUSTOMER_SERVICE_CREDENTIAL = CredentialFactory.from(PERSONNEL, customerService());
+	public static final Credential STOCK_CREDENTIAL = CredentialFactory.compound(PERSONNEL, stock());
+	public static final Credential SALE_CREDENTIAL = CredentialFactory.compound(PERSONNEL, sale());
+	public static final Credential PERSONNEL_CREDENTIAL = CredentialFactory.compound(PERSONNEL, personnel());
+	public static final Credential CUSTOMER_SERVICE_CREDENTIAL = CredentialFactory.compound(PERSONNEL, customerService());
+
+	@Override
+	public boolean contains(Credential credential) {
+		return equal(credential);
+	}
+
+	@Override
+	public boolean contains(String evaluation) {
+		return departmentId.equals(evaluation);
+	}
 
 }

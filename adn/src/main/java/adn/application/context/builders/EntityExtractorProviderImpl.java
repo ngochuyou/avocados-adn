@@ -18,15 +18,15 @@ import adn.helpers.TypeHelper;
 import adn.model.DomainEntity;
 import adn.model.Generic;
 import adn.model.entities.Entity;
-import adn.model.factory.pojo.extraction.EntityExtractorProvider;
-import adn.model.factory.pojo.extraction.PojoEntityExtractor;
+import adn.model.factory.extraction.PojoEntityExtractor;
+import adn.model.factory.extraction.PojoEntityExtractorProvider;
 
-@Component(DefaultEntityExtractorProvider.NAME)
+@Component(EntityExtractorProviderImpl.NAME)
 @Primary
-public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
+public class EntityExtractorProviderImpl implements PojoEntityExtractorProvider {
 
-	public static final String NAME = "defaultEntityExtractorProvider";
-	private static final String ENTITY_EXTRACTOR_PACKAGE = "adn.model.factory.pojo.extraction";
+	public static final String NAME = "entityExtractorProviderImpl";
+	private static final String ENTITY_EXTRACTOR_PACKAGE = "adn.model.factory.extraction";
 
 	private Map<Class<? extends DomainEntity>, PojoEntityExtractor<? extends DomainEntity, ? extends DomainEntity>> extractorMap;
 	private static final PojoEntityExtractor<?, ?> DEFAULT_EXTRACTOR = new PojoEntityExtractor<DomainEntity, DomainEntity>() {
@@ -87,7 +87,7 @@ public class DefaultEntityExtractorProvider implements EntityExtractorProvider {
 						parentExtractor != null ? parentExtractor : DEFAULT_EXTRACTOR);
 			}
 		});
-		extractorMap.forEach((k, v) -> logger.debug(String.format("Register one %s of type [%s] for [%s]",
+		extractorMap.forEach((k, v) -> logger.debug(String.format("Registered one %s of type [%s] for [%s]",
 				PojoEntityExtractor.class.getName(), v.getClass().getName(), k.getName())));
 		logger.info("Finished building " + this.getClass());
 	}

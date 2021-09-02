@@ -6,6 +6,8 @@ package adn.model.factory.authentication.dynamicmap;
 import static adn.helpers.LoggerHelper.with;
 import static adn.helpers.Utils.Entry.entry;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import adn.helpers.FunctionHelper.HandledBiFunction;
 import adn.helpers.StringHelper;
 import adn.helpers.TypeHelper;
+import adn.helpers.Utils;
 import adn.model.DomainEntity;
 import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.authentication.Arguments;
@@ -47,6 +50,8 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 
 	private static final float LOAD_FACTOR = 1.175f;
 
+	private final Class<T> entityType;
+
 	private final Map<String, Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>>> producingFunctions;
 	private final Map<String, Map<String, String>> aliasMap;
 	private final Map<String, Map<String, String>> namesMap;
@@ -61,14 +66,14 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 	 */
 	public DynamicMapModelProducerImpl(Class<T> entityType, Set<SecuredProperty<T>> properties,
 			DomainEntityMetadata<T> entityMetadata, DynamicMapModelProducerFactory factory) {
+		this.entityType = entityType;
 		this.factory = factory;
 		this.entityMetadata = entityMetadata;
 
-		Logger logger = LoggerFactory.getLogger(this.getClass());
 		Map<String, Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>>> producingFunctions = new HashMap<>(
 				0);
 		Map<String, Map<String, String>> aliasMap = new HashMap<>(0);
-		Map<String, Map<String, String>> originalNamesMap = new HashMap<>(0);
+		Map<String, Map<String, String>> originalNamesMap;
 		// @formatter:off
 		properties.stream().filter(prop -> {
 			boolean isParent = TypeHelper.isParentOf(prop.getOwningType(), entityType);
@@ -96,7 +101,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			
 			if (!producingFunctions.containsKey(credential)) {
 				producingFunctions.put(credential,
-						Stream.of(Map.entry(name, function))
+						Stream.of(Map.entry(name, resolveFormatters(function, prop, entityMetadata)))
 							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 				aliasMap.put(credential,
 						Stream.of(Map.entry(name, StringHelper.hasLength(alias) ? with(logger).debug(String.format("Using alternative name [%s] on property [%s]", alias, name), alias) : name))
@@ -109,7 +114,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			
 			if (functions.containsKey(name)) {
 				if (functions.get(name) != function) {
-					HandledBiFunction<Arguments<?>, Credential, ?, Exception> oldFnc = functions.put(name, function);
+					HandledBiFunction<Arguments<?>, Credential, ?, Exception> oldFnc = functions.put(name, resolveFormatters(function, prop, entityMetadata));
 					
 					logger.debug(String.format("[%s#%s] Overriding function of property [%s] using [%s], overridden function was [%s]",
 							entityType, credential, name, function, oldFnc));
@@ -124,12 +129,12 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 				return;
 			}
 			
-			functions.put(name, function);
+			functions.put(name, resolveFormatters(function, prop, entityMetadata));
 			aliases.put(name,
 					StringHelper.hasLength(alias) ?
 							with(logger).debug(String.format("[%s]: Using alternative name [%s] on property [%s]", credential, alias, name), alias) :
 							name);
-		});;
+		});
 		// @formatter:on
 		producingFunctions.entrySet().forEach(entry -> {
 			entityMetadata.getPropertyNames().stream().forEach(propName -> {
@@ -172,9 +177,33 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 						.collect(Collectors.joining("\n\t"))).collect(Collectors.joining("\n\t"))));
 	}
 
+	private HandledBiFunction<Arguments<?>, Credential, ?, Exception> resolveFormatters(
+			HandledBiFunction<Arguments<?>, Credential, ?, Exception> function, SecuredProperty<T> property,
+			DomainEntityMetadata<T> metadata) {
+		if (function != PUBLISHER) {
+			return function;
+		}
+
+		Class<?> propertyType = metadata.getPropertyType(property.getName());
+
+		if (LocalDateTime.class.isAssignableFrom(propertyType)) {
+			return LOCALDATETIME_SOURCE_FORMATER;
+		}
+
+		if (LocalDate.class.isAssignableFrom(propertyType)) {
+			return LOCALDATE_SOURCE_FORMATER;
+		}
+
+		return function;
+	}
+
 	@Override
-	public List<String> validateColumns(Credential credential, Collection<String> columns) throws NoSuchFieldException {
+	public List<String> validateColumns(Credential credential, Collection<String> columns)
+			throws NoSuchFieldException, UnauthorizedCredential {
 		String evaluation = credential.evaluate();
+
+		assertCredential(evaluation);
+
 		Map<String, String> name = namesMap.get(evaluation);
 		List<String> translatedColumnNames = new ArrayList<>(columns.size());
 		String translatedColumn;
@@ -190,16 +219,10 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 		return translatedColumnNames;
 	}
 
-	private Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> getFunctions(String evaluation)
-			throws UnauthorizedCredential {
-		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = producingFunctions
-				.get(evaluation);
-
-		if (functions == null) {
-			throw new UnauthorizedCredential(evaluation);
+	private void assertCredential(String evaluation) throws UnauthorizedCredential {
+		if (!producingFunctions.containsKey(evaluation)) {
+			throw new UnauthorizedCredential(evaluation, entityType.getSimpleName());
 		}
-
-		return functions;
 	}
 
 	// @formatter:off
@@ -208,6 +231,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			Object[] values,
 			Credential credential,
 			Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions,
+			Map<String, String> originalNames,
 			Map<String, String> alias
 			) {
 		// @formatter:on
@@ -215,12 +239,12 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			int span = values.length;
 
 			return IntStream.range(0, span).mapToObj(index -> {
-				String column = columns[index];
+				String column = originalNames.get(columns[index]);
 
 				try {
 					return entry(alias.get(column), functions.get(column).apply(argument(values[index]), credential));
 				} catch (Exception e) {
-					logger.debug(e.getMessage());
+					logger.error(e.getMessage());
 
 					return entry(alias.get(column), e.getMessage());
 				}
@@ -258,16 +282,18 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			throws UnauthorizedCredential {
 		SourceMetadata<E> metadata = source.getMetadata();
 		String evaluation = credential.evaluate();
-		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = getFunctions(evaluation);
+		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = producingFunctions
+				.get(evaluation);
 		Map<String, String> alias = aliasMap.get(evaluation);
+		Map<String, String> originalNames = namesMap.get(evaluation);
 		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
 
 		if (!metadata.hasAssociation()) {
-			return produceRow(columns, source.getSource(), credential, functions, alias);
+			return produceRow(columns, source.getSource(), credential, functions, originalNames, alias);
 		}
 
 		return produceRow(columns, source.getSource(), credential, prepareAssociationProducing(metadata, functions),
-				alias);
+				originalNames, alias);
 	}
 
 	@Override
@@ -275,15 +301,17 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			throws UnauthorizedCredential {
 		SourceMetadata<E> metadata = source.getMetadata();
 		String evaluation = credential.evaluate();
-		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = getFunctions(evaluation);
+		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = producingFunctions
+				.get(evaluation);
 		Map<String, String> alias = aliasMap.get(evaluation);
+		Map<String, String> originalNames = namesMap.get(evaluation);
 		List<Object[]> batch = source.getSource();
 		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
 
 		if (!metadata.hasAssociation()) {
 			// @formatter:off
 			return IntStream.range(0, batch.size())
-					.mapToObj(index -> produceRow(columns, batch.get(index), credential, functions, alias))
+					.mapToObj(index -> produceRow(columns, batch.get(index), credential, functions, originalNames, alias))
 					.collect(Collectors.toList());
 			// @formatter:on
 		}
@@ -292,7 +320,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 				metadata, functions);
 		// @formatter:off
 		return IntStream.range(0, batch.size())
-				.mapToObj(index -> produceRow(columns, batch.get(index), credential, preparedFunctions, alias))
+				.mapToObj(index -> produceRow(columns, batch.get(index), credential, preparedFunctions, originalNames, alias))
 				.collect(Collectors.toList());
 		// @formatter:on;
 	}
@@ -306,13 +334,22 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			throws UnauthorizedCredential {
 		SourceMetadata<E> metadata = source.getMetadata();
 		String evaluation = credential.evaluate();
-		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = getFunctions(evaluation);
+		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = producingFunctions
+				.get(evaluation);
 		Map<String, String> alias = aliasMap.get(evaluation);
+		Map<String, String> originalNames = namesMap.get(evaluation);
 		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
 		E entity = source.getSource();
+		Object[] values = Stream.of(columns).map(column -> getters.get(column).get(entity)).toArray();
 
-		return produceRow(columns, Stream.of(columns).map(column -> getters.get(column).get(entity)).toArray(),
-				credential, functions, alias);
+		if (!metadata.hasAssociation()) {
+			return produceRow(columns, values, credential, functions, originalNames, alias);
+		}
+
+		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> preparedFunctions = prepareAssociationProducing(
+				metadata, functions);
+
+		return produceRow(columns, values, credential, preparedFunctions, originalNames, alias);
 	}
 
 	@Override
@@ -320,16 +357,20 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			Credential credential) throws UnauthorizedCredential {
 		SourceMetadata<E> metadata = source.getMetadata();
 		String evaluation = credential.evaluate();
-		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = getFunctions(evaluation);
+		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = producingFunctions
+				.get(evaluation);
 		Map<String, String> alias = aliasMap.get(evaluation);
+		Map<String, String> originalNames = namesMap.get(evaluation);
 		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
 		List<E> batch = source.getSource();
 
 		if (!metadata.hasAssociation()) {
 			return IntStream.range(0, batch.size())
-					.mapToObj(index -> produceRow(columns,
-							Stream.of(columns).map(column -> getters.get(column).get(batch.get(index))).toArray(),
-							credential, functions, alias))
+					.mapToObj(
+							index -> produceRow(columns,
+									Stream.of(columns).map(column -> getters.get(column).get(batch.get(index)))
+											.toArray(),
+									credential, functions, originalNames, alias))
 					.collect(Collectors.toList());
 		}
 
@@ -339,7 +380,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 		return IntStream.range(0, batch.size())
 				.mapToObj(index -> produceRow(columns,
 						Stream.of(columns).map(column -> getters.get(column).get(batch.get(index))).toArray(),
-						credential, preparedFunctions, alias))
+						credential, preparedFunctions, originalNames, alias))
 				.collect(Collectors.toList());
 	}
 
@@ -416,26 +457,30 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 
 			if (sourceType == SourceType.COLLECTION) {
 				associationProducer = factory.getProducer(associationType);
-
-				Class<?> genericType = metadata.getRepresentation();
+				// TODO: do not remove
+//				Class<?> genericType = metadata.getRepresentation();
+				
 				// Object[]
-				if (genericType.isArray()) {
-					copiedFunctions.put(column,
-							(arg, credential) -> associationProducer.produceBatchedSource(
-									new BatchedSourceImpl<>(associationMetadata, optional(arg.getSource())),
-									credential));
-					return;
-				}
+				// This is temporarily 'unused' since it's use cases are very rare,
+				// at least until Hibernate 6
+//				if (genericType.isArray()) {
+//					copiedFunctions.put(column,
+//							(arg, credential) -> associationProducer.produceBatchedSource(
+//									new BatchedSourceImpl<>(associationMetadata, optional(arg.getSource())),
+//									credential));
+//					return;
+//				}
+				// That being said, this is the only case
 				// POJO
-				if (DomainEntity.class.isAssignableFrom(genericType)) {
-					copiedFunctions.put(column,
-							(arg, credential) -> associationProducer.produceBatchedPojo(
-									new BatchedPojoSourceImpl<>(associationMetadata, optional(arg.getSource())),
-									credential));
-					return;
-				}
+//				if (DomainEntity.class.isAssignableFrom(genericType)) {
+				copiedFunctions.put(column,
+						(arg, credential) -> associationProducer.produceBatchedPojo(
+								new BatchedPojoSourceImpl<>(associationMetadata, optional(arg.getSource())),
+								credential));
+				return;
+//				}
 
-				throw new IllegalArgumentException(String.format("Unknown association type %s", genericType));
+//				throw new IllegalArgumentException(String.format("Unknown association type %s", genericType));
 			}
 
 			throw new IllegalArgumentException(String.format("Unsupported association representation %s", sourceType));
@@ -453,5 +498,26 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 	private <X> ArrayList<X> optional(Object source) {
 		return source == null ? null : new ArrayList<>((Collection<X>) source);
 	}
+
+	private static final HandledBiFunction<Arguments<?>, Credential, ?, Exception> LOCALDATETIME_SOURCE_FORMATER = new HandledBiFunction<>() {
+
+		@Override
+		public Object apply(Arguments<?> arg, Credential credential) throws Exception {
+			Object value = arg.getSource();
+
+			return value == null ? null : Utils.localDateTime((LocalDateTime) value);
+		}
+
+	};
+	private static final HandledBiFunction<Arguments<?>, Credential, ?, Exception> LOCALDATE_SOURCE_FORMATER = new HandledBiFunction<>() {
+
+		@Override
+		public Object apply(Arguments<?> arg, Credential credential) throws Exception {
+			Object value = arg.getSource();
+
+			return value == null ? null : Utils.localDate((LocalDate) value);
+		}
+
+	};
 
 }

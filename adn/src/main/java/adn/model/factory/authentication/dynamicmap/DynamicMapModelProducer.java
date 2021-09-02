@@ -34,7 +34,7 @@ public interface DynamicMapModelProducer<T extends DomainEntity> extends ModelPr
 	<E extends T> List<Map<String, Object>> produceBatchedPojo(BatchedPojoSource<E> sourceBatch, Credential credential)
 			throws UnauthorizedCredential;
 
-	List<String> validateColumns(Credential credential, Collection<String> columns) throws NoSuchFieldException;
+	List<String> validateColumns(Credential credential, Collection<String> columns) throws NoSuchFieldException, UnauthorizedCredential;
 
 	void afterFactoryBuild(DynamicMapModelProducerFactory factory);
 

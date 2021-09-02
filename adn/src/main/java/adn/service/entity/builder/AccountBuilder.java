@@ -25,7 +25,7 @@ import adn.service.services.AccountService;
  */
 @Component
 @Generic(entityGene = Account.class)
-public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> {
+public class AccountBuilder<T extends Account> extends PermanentEntityBuilder<T> {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
@@ -39,7 +39,6 @@ public class AccountBuilder<T extends Account> extends AbstractEntityBuilder<T> 
 		target.setLastName(get(normalizeString(model.getLastName())).orElse(AccountService.UNKNOWN_USER_LASTNAME));
 		target.setGender(Optional.ofNullable(model.getGender()).orElse(Gender.UNKNOWN));
 		target.setRole(model.getRole());
-		target.setActive(model.isActive());
 		target.setPhoto(get(model.getPhoto()).orElse(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME));
 
 		return target;

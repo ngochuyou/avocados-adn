@@ -90,10 +90,10 @@ public final class GenericCRUDService implements CRUDService {
 	private final EntityBuilderProvider entityBuilderProvider;
 
 	protected final GenericRepository repository;
-	private final GenericJpaSpecificationExecutor genericSpecificationExecutor;
+	protected final GenericJpaSpecificationExecutor genericSpecificationExecutor;
 	protected final DynamicMapModelProducerFactory dynamicMapModelFactory;
 
-	public static final String EXECUTOR_NAME = "CRUDServiceBatchExecutor";
+	public static final String EXECUTOR_NAME = "GenericCRUDServiceBatchExecutor";
 	private static final int MAXIMUM_BATCHSIZE_IN_SINGULAR_PROCESS = 100;
 	private static final int MAXIMUM_ELEMENTS_PER_PARALLEL_PROCESS = 50;
 	private static final int MAXIMUM_BATCH_SIZE = 1000;
@@ -234,6 +234,10 @@ public final class GenericCRUDService implements CRUDService {
 
 			return result;
 		}).collect(Collectors.toList()), statusBatch, flushOnFinish);
+	}
+
+	protected <E> Result<E> finish(Result<E> result, boolean flushOnFinish) {
+		return finish(getCurrentSession(), result, flushOnFinish);
 	}
 
 	protected <E> Result<E> finish(Session ss, Result<E> result, boolean flushOnFinish) {
@@ -401,7 +405,7 @@ public final class GenericCRUDService implements CRUDService {
 			String[] validatedColumns, Credential credential, SourceMetadata<T> sourceMetadata)
 			throws UnauthorizedCredential {
 		if (source.get(0).getClass().isArray()) {
-			return dynamicMapModelFactory.produce((List<Object[]>) source, null, credential);
+			return dynamicMapModelFactory.produce((List<Object[]>) source, sourceMetadata, credential);
 		}
 
 		return dynamicMapModelFactory.produceSingular((List<Object>) source, sourceMetadata, credential);
@@ -411,12 +415,12 @@ public final class GenericCRUDService implements CRUDService {
 	protected <T extends Entity> List<Map<String, Object>> resolveReadResults(Class<T> type, List<?> source,
 			Collection<String> validatedColumns, Credential credential) throws UnauthorizedCredential {
 		if (source.get(0).getClass().isArray()) {
-			return dynamicMapModelFactory.produce((List<Object[]>) source, unknownArrayCollection(type, list(validatedColumns)),
-					credential);
+			return dynamicMapModelFactory.produce((List<Object[]>) source,
+					unknownArrayCollection(type, list(validatedColumns)), credential);
 		}
 
-		return dynamicMapModelFactory.produceSingular((List<Object>) source, unknownArrayCollection(type, list(validatedColumns)),
-				credential);
+		return dynamicMapModelFactory.produceSingular((List<Object>) source,
+				unknownArrayCollection(type, list(validatedColumns)), credential);
 	}
 
 	protected <T extends Entity> Map<String, Object> resolveReadResult(Class<T> type, Object source,
@@ -493,6 +497,10 @@ public final class GenericCRUDService implements CRUDService {
 		Collection<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
 		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec);
 
+		if (tuples.isEmpty()) {
+			return new ArrayList<>();
+		}
+		
 		return resolveReadResults(type, toRows(tuples), from(validatedColumns), credential, sourceMetadata);
 	}
 
@@ -510,7 +518,11 @@ public final class GenericCRUDService implements CRUDService {
 			throws NoSuchFieldException, UnauthorizedCredential {
 		Collection<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
 		Page<Tuple> page = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec, pageable);
-
+		
+		if (page.isEmpty()) {
+			return new ArrayList<>();
+		}
+		
 		return resolveReadResults(type, toRows(page.getContent()), from(validatedColumns), credential, metadata);
 	}
 
@@ -528,7 +540,11 @@ public final class GenericCRUDService implements CRUDService {
 			throws NoSuchFieldException, UnauthorizedCredential {
 		Collection<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
 		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec, sort);
-
+		
+		if (tuples.isEmpty()) {
+			return new ArrayList<>();
+		}
+		
 		return resolveReadResults(type, toRows(tuples), from(validatedColumns), credential, sourceMetadata);
 	}
 
@@ -556,7 +572,11 @@ public final class GenericCRUDService implements CRUDService {
 					!StringHelper.hasLength(associationProperty) ? getIdentifierPropertyName(associatingType)
 							: associationProperty),
 					Map.of("associationIdentifier", associationIdentifier));
-
+			
+			if (rows.isEmpty()) {
+				return new ArrayList<>();
+			}
+			
 			return resolveReadResults(type, rows, from(validatedColumns), credential, sourceMetadata);
 		} catch (Exception any) {
 			// the association property is not checked so QueryException
@@ -571,7 +591,7 @@ public final class GenericCRUDService implements CRUDService {
 
 	@Override
 	public <T extends Entity> List<String> getDefaultColumns(Class<T> type, Credential credential,
-			Collection<String> columns) throws NoSuchFieldException {
+			Collection<String> columns) throws NoSuchFieldException, UnauthorizedCredential {
 		if (columns.isEmpty()) {
 			DomainEntityMetadata<T> metadata = modelContext.getMetadata(type);
 
@@ -588,16 +608,24 @@ public final class GenericCRUDService implements CRUDService {
 			return read(type, requestedColumns, spec, credential);
 		}
 
-		Collection<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
+		List<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
 		Selections<T> selections = selectionResolver.apply(validatedColumns);
 		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, selections, spec);
 
+		if (tuples.isEmpty()) {
+			return new ArrayList<>();
+		}
+
 		return resolveReadResults(type, toRows(tuples), from(validatedColumns), credential,
-				unknownArrayCollection(type, list(validatedColumns)));
+				unknownArrayCollection(type, validatedColumns));
 	}
 
 	private String prependAlias(String columnName) {
 		return "e." + columnName;
+	}
+
+	protected void useManualSession() {
+		getCurrentSession().setHibernateFlushMode(FlushMode.MANUAL);
 	}
 
 }

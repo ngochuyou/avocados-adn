@@ -1061,7 +1061,7 @@ function CategoryForm() {
 								<label className="uk-label backgrounds">Description</label>
 							</div>
 							<div className="uk-text-right">
-								<span>{`${255 - model.description.length} left`}</span>
+								<span>{model.description && `${255 - model.description.length} left`}</span>
 							</div>
 						</div>
 						<textarea

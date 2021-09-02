@@ -40,7 +40,7 @@ public class UserDetailsImpl extends User {
 		super(username, password, true, true, true, isLocked, authorities);
 		this.role = role;
 		this.version = version;
-		this.credential = CredentialFactory.from(role, departmentId);
+		this.credential = CredentialFactory.partional(role, departmentId);
 	}
 
 	public Role getRole() {

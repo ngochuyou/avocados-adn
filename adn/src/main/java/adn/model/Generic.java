@@ -8,8 +8,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import adn.model.models.Model;
-
 /**
  * @author Ngoc Huy
  *
@@ -20,6 +18,6 @@ public @interface Generic {
 
 	public Class<? extends DomainEntity> entityGene() default DomainEntity.class;
 
-	public Class<? extends Model> modelGene() default Model.class;
+	public Class<? extends DomainEntity> modelGene() default DomainEntity.class;
 
 }

@@ -24,8 +24,9 @@ import org.springframework.web.multipart.MultipartFile;
 import adn.dao.generic.Result;
 import adn.helpers.CollectionHelper;
 import adn.model.entities.Product;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.internal.ResourceService;
-import adn.service.services.DepartmentService;
+import adn.service.services.AuthenticationService;
 import adn.service.services.ProductService;
 
 /**
@@ -38,14 +39,14 @@ public class ProductController extends BaseController {
 
 	protected final ProductService productService;
 	protected final ResourceService resourceService;
-	protected final DepartmentService departmentService;
-	
+	protected final AuthenticationService authService;
+
 	@Autowired
-	public ProductController(DepartmentService departmentService, ProductService productService,
+	public ProductController(AuthenticationService authService, ProductService productService,
 			ResourceService resourceService) {
 		this.productService = productService;
 		this.resourceService = resourceService;
-		this.departmentService = departmentService;
+		this.authService = authService;
 	}
 
 	@GetMapping(path = "/image/{filename:.+}")
@@ -63,8 +64,8 @@ public class ProductController extends BaseController {
 	@Secured("ROLE_PERSONNEL")
 	@Transactional
 	public @ResponseBody ResponseEntity<?> createProduct(@RequestPart(name = "model", required = true) Product model,
-			@RequestPart(name = "images", required = false) MultipartFile[] images) {
-		departmentService.assertSaleDepartment();
+			@RequestPart(name = "images", required = false) MultipartFile[] images) throws UnauthorizedCredential {
+		authService.assertSaleDepartment();
 
 		Result<Product> result = productService.createProduct(model, images, true);
 
@@ -75,8 +76,8 @@ public class ProductController extends BaseController {
 	@Secured("ROLE_PERSONNEL")
 	@Transactional
 	public @ResponseBody ResponseEntity<?> updateProduct(@RequestPart(name = "model", required = true) Product model,
-			@RequestPart(name = "images", required = false) MultipartFile[] images) {
-		departmentService.assertSaleDepartment();
+			@RequestPart(name = "images", required = false) MultipartFile[] images) throws UnauthorizedCredential {
+		authService.assertSaleDepartment();
 
 		Product persistence = baseRepository.findById(model.getId(), Product.class);
 
@@ -84,8 +85,8 @@ public class ProductController extends BaseController {
 			return sendNotFound(String.format("Product %s not found", model.getId()));
 		}
 
-		Result<Product> result = productService.updateProduct(model,
-				CollectionHelper.from(images, MultipartFile.class), true);
+		Result<Product> result = productService.updateProduct(model, CollectionHelper.from(images, MultipartFile.class),
+				true);
 
 		return send(result);
 	}

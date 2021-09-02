@@ -19,6 +19,7 @@ import org.springframework.util.Assert;
 import adn.helpers.StringHelper;
 import adn.model.entities.Category;
 import adn.model.entities.Product;
+import adn.model.entities.metadata._Product;
 
 /**
  * @author Ngoc Huy
@@ -48,7 +49,7 @@ public class ProductIdGenerator implements IdentifierGenerator, Configurable {
 
 		Assert.isTrue(StringHelper.hasLength(name), "Product name was empty");
 
-		int remainingSize = Product.ID_LENGTH - idBuilder.length();
+		int remainingSize = _Product.ID_LENGTH - idBuilder.length();
 		
 		name = StringHelper.removeSpaces(name);
 		idBuilder.append(name.length() >= remainingSize ? name.substring(0, remainingSize).toUpperCase()

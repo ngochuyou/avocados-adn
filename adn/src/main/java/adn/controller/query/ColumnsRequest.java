@@ -16,4 +16,9 @@ public interface ColumnsRequest extends RestQuery {
 	 */
 	Collection<String> join();
 
+	/**
+	 * @return whether any associations are being requested 
+	 */
+	boolean hasAssociation();
+	
 }

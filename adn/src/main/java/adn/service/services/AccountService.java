@@ -18,9 +18,10 @@ import org.springframework.web.multipart.MultipartFile;
 import adn.application.context.ContextProvider;
 import adn.dao.generic.Result;
 import adn.model.entities.Account;
-import adn.model.entities.Admin;
 import adn.model.entities.Customer;
+import adn.model.entities.Head;
 import adn.model.entities.Personnel;
+import adn.model.entities.metadata._Account;
 import adn.service.DomainEntityServiceObserver;
 import adn.service.ObservableDomainEntityService;
 import adn.service.internal.ResourceService;
@@ -41,7 +42,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 	protected final ResourceService resourceService;
 	// @formatter:off
 	private final Map<Role, Class<? extends Account>> roleClassMap = Map.of(
-			Role.HEAD, Admin.class,
+			Role.HEAD, Head.class,
 			Role.CUSTOMER, Customer.class,
 			Role.PERSONNEL, Personnel.class,
 			Role.ANONYMOUS, Account.class);
@@ -70,8 +71,8 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 		// @formatter:on
 	}
 
-	public <T extends Account, E extends T> Result<E> create(Serializable id, E account,
-			Class<E> type, MultipartFile photo, boolean flushOnFinish) {
+	public <T extends Account, E extends T> Result<E> create(Serializable id, E account, Class<E> type,
+			MultipartFile photo, boolean flushOnFinish) {
 		id = crudService.resolveId(id, account);
 
 		Session ss = crudService.getCurrentSession();
@@ -98,8 +99,8 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 		return crudService.finish(ss, insertResult, flushOnFinish);
 	}
 
-	public <T extends Account, E extends T> Result<E> update(Serializable id, E account,
-			Class<E> type, MultipartFile photo, boolean flushOnFinish) {
+	public <T extends Account, E extends T> Result<E> update(Serializable id, E account, Class<E> type,
+			MultipartFile photo, boolean flushOnFinish) {
 		id = crudService.resolveId(id, account);
 
 		Session ss = crudService.getCurrentSession();
@@ -113,11 +114,11 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 			// determine role update, currently only administrators could update account
 			// role
 			if (!principalRole.equals(Role.HEAD)) {
-				return bad(Map.of(Account.ROLE_FIELD_NAME, INVALID_ROLE));
+				return bad(Map.of(_Account.role, INVALID_ROLE));
 			}
 
 			if (!persistence.getRole().canBeUpdatedTo(account.getRole())) {
-				return bad(Map.of(Account.ROLE_FIELD_NAME, String.format("Unable to update role from %s to %s",
+				return bad(Map.of(_Account.role, String.format("Unable to update role from %s to %s",
 						persistence.getRole(), account.getRole())));
 			}
 		}
@@ -153,7 +154,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 		Account account = ss.load(Account.class, id);
 
 		if (!account.isActive()) {
-			return bad(Map.of(Account.ACTIVE_FIELD_NAME, "Account was already deactivated"));
+			return bad(Map.of(_Account.active, "Account was already deactivated"));
 		}
 
 		account.setActive(Boolean.FALSE);

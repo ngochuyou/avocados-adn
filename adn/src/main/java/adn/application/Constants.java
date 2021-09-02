@@ -19,10 +19,8 @@ public class Constants {
 
 	public static final String RESOURCE_MODEL_PACKAGE = ROOT_PACKAGE + ".service.resource.models";
 
-	public static final String GENERIC_SPECIFICATION_PACKAGE = ROOT_PACKAGE + ".model.specification.generic";
+	public static final String GENERIC_SPECIFICATION_PACKAGE = ROOT_PACKAGE + ".model.entities.specification";
 
-	public static final String GENERIC_FACTORY_PACKAGE = ROOT_PACKAGE + ".model.factory.generic";
-
-	public static final String ENTITY_BUILDER_PACKAGE = ROOT_PACKAGE + ".service.entity";
+	public static final String ENTITY_BUILDER_PACKAGE = ROOT_PACKAGE + ".service.entity.builder";
 
 }

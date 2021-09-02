@@ -8,6 +8,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.util.StringUtils;
 
@@ -91,15 +93,15 @@ public class StringHelper extends StringUtils {
 	}
 
 	public static boolean isEmail(String email) {
-		return email.matches(StringHelper.EMAIL_REGEX);
+		return hasLength(email) && email.matches(StringHelper.EMAIL_REGEX);
 	}
 
-	public static boolean isAcceptablePhoneNumber(String string) {
-		return string.matches("^[\\w\\d\\._\\(\\)\\+\\s\\-]{4,}$");
+	public static boolean isAcceptablePhoneNumber(String phoneNumber) {
+		return hasLength(phoneNumber) && phoneNumber.matches("^[\\w\\d\\._\\(\\)\\+\\s\\-]{4,}$");
 	}
 
 	public static boolean isBCrypt(String string) {
-		return string.matches(StringHelper.BCRYPT_REGEX);
+		return hasLength(string) && string.matches(StringHelper.BCRYPT_REGEX);
 	}
 
 	public static String normalizeString(String string) {
@@ -143,6 +145,10 @@ public class StringHelper extends StringUtils {
 
 	public static Optional<String> get(String in) {
 		return Optional.ofNullable(hasLength(in) ? in : null);
+	}
+
+	public static String join(String... strings) {
+		return Stream.of(strings).collect(Collectors.joining(", "));
 	}
 
 }

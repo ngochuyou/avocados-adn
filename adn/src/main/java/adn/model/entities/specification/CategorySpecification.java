@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.model.specification.generic;
+package adn.model.entities.specification;
 
 import java.io.Serializable;
 
@@ -13,6 +13,7 @@ import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Category;
+import adn.model.entities.metadata._Category;
 
 /**
  * @author Ngoc Huy
@@ -32,9 +33,9 @@ public class CategorySpecification extends FactorSpecification<Category> {
 		Result<Category> result = super.isSatisfiedBy(session, id, instance);
 
 		if (StringHelper.hasLength(instance.getDescription())
-				&& instance.getDescription().length() > Category.DESCRIPTION_LENGTH) {
+				&& instance.getDescription().length() > _Category.DESCRIPTION_LENGTH) {
 			result.getMessages().put("description",
-					String.format("Description can only contain %d chacracters", Category.DESCRIPTION_LENGTH));
+					String.format("Description can only contain %d chacracters", _Category.DESCRIPTION_LENGTH));
 		}
 
 		return result;

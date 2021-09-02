@@ -3,13 +3,11 @@
  */
 package adn.model.factory.authentication;
 
-import adn.model.DomainEntity;
-
 /**
  * @author Ngoc Huy
  *
  */
-public interface EntityExtractor<T extends DomainEntity, S> {
+public interface EntityExtractor<T, S> {
 
 	T extract(S source);
 

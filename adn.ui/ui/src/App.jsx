@@ -6,6 +6,7 @@ import { useAuth } from './hooks/authentication-hooks';
 
 import AuthenticatedComponent from './components/security/AuthenticatedComponent.jsx';
 import UnauthenticatedComponent from './components/security/UnauthenticatedComponent.jsx';
+import GlobalContexts from './components/context/GlobalContexts';
 
 import LoginPage from './pages/LoginPage.jsx';
 import AccessDenied from './pages/AccessDenied.jsx';
@@ -23,21 +24,21 @@ function App() {
 	const { principal } = useAuth();
 
 	return (
-		<div>
+		<GlobalContexts>
 			<AuthenticatedComponent principal={principal}>
 				<Route path='/dashboard' render={props => <Dashboard { ...props } /> }/>
 			</AuthenticatedComponent>
 			<UnauthenticatedComponent principal={principal}>
 				<Route path="/login" render={(props) => <LoginPage {...props}/> } />
 			</UnauthenticatedComponent>
-			<ShoppingContextProvider>
-				<Route path="/" render={props => <HomePage />} exact/>
-				<Route path='/access_denied' render={props => <AccessDenied { ...props } /> } exact />
-				<Route path={`${routes.shopping.mapping}`} render={(props) => <ShoppingPage {...props}/> } />
-				<Route path={`${routes.productView.mapping}`} render={(props) => <ProductPage {...props}/> } />
-			</ShoppingContextProvider>
+				<ShoppingContextProvider>
+					<Route path="/" render={props => <HomePage />} exact/>
+					<Route path='/access_denied' render={props => <AccessDenied { ...props } /> } exact />
+					<Route path={`${routes.shopping.mapping}`} render={(props) => <ShoppingPage {...props}/> } />
+					<Route path={`${routes.productView.mapping}`} render={(props) => <ProductPage {...props}/> } />
+				</ShoppingContextProvider>
 			<Route path="/notfound" component={NotFound} />
-		</div>
+		</GlobalContexts>
 	);
 }
 

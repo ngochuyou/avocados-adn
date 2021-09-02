@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.model.specification.generic;
+package adn.model.entities.specification;
 
 import java.io.Serializable;
 
@@ -10,7 +10,6 @@ import org.hibernate.Session;
 import adn.dao.generic.Result;
 import adn.helpers.HibernateHelper;
 import adn.model.entities.Entity;
-import adn.model.specification.Specification;
 
 /**
  * @author Ngoc Huy

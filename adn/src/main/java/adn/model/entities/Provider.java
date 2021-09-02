@@ -4,7 +4,6 @@
 package adn.model.entities;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import javax.persistence.Column;
@@ -19,7 +18,8 @@ import org.hibernate.annotations.GenericGenerator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import adn.model.DepartmentScoped;
-import adn.model.entities.converters.StringSetConverter;
+import adn.model.entities.converters.StringListConverter;
+import adn.model.entities.metadata._Provider;
 
 /**
  * @author Ngoc Huy
@@ -29,9 +29,6 @@ import adn.model.entities.converters.StringSetConverter;
 @Table(name = "providers")
 public class Provider extends Factor implements DepartmentScoped {
 
-	public static transient final int WEBSITE_MAX_LENGTH = 2000;
-	public static transient final String PRODUCT_DETAILS_FIELD = "productDetails";
-	
 	@Id
 	@GeneratedValue(generator = "uuid")
 	@GenericGenerator(name = "uuid", strategy = "uuid2")
@@ -45,13 +42,13 @@ public class Provider extends Factor implements DepartmentScoped {
 	private String address;
 
 	@Column(nullable = false, name = "phone_numbers")
-	@Convert(converter = StringSetConverter.class)
-	private Set<String> phoneNumbers;
+	@Convert(converter = StringListConverter.class)
+	private List<String> phoneNumbers;
 
 	@Column(name = "representator_name")
 	private String representatorName;
 
-	@Column(length = WEBSITE_MAX_LENGTH)
+	@Column(length = _Provider.WEBSITE_MAX_LENGTH)
 	private String website;
 
 	@JsonIgnore
@@ -82,11 +79,11 @@ public class Provider extends Factor implements DepartmentScoped {
 		this.address = address;
 	}
 
-	public Set<String> getPhoneNumbers() {
+	public List<String> getPhoneNumbers() {
 		return phoneNumbers;
 	}
 
-	public void setPhoneNumbers(Set<String> phoneNumbers) {
+	public void setPhoneNumbers(List<String> phoneNumbers) {
 		this.phoneNumbers = phoneNumbers;
 	}
 

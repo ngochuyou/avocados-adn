@@ -8,12 +8,14 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.ManyToOne;
 
+import adn.service.internal.Role;
+
 /**
  * @author Ngoc Huy
  *
  */
 @Entity
-public class Personnel extends Account {
+public class Personnel extends Operator {
 
 	@Column(name = "created_by")
 	private String createdBy;
@@ -22,9 +24,10 @@ public class Personnel extends Account {
 	private Department department;
 
 	public Personnel() {}
-	
+
 	public Personnel(String id) {
 		setId(id);
+		setRole(Role.PERSONNEL);
 	}
 
 	public String getCreatedBy() {

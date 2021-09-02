@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.model.factory.pojo.extraction;
+package adn.model.factory.extraction;
 
 import adn.model.DomainEntity;
 import adn.model.factory.authentication.EntityExtractor;

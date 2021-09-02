@@ -27,10 +27,6 @@ import adn.model.entities.generators.CategoryIdGenerator;
 @Table(name = "categories")
 public class Category extends Factor {
 
-	public static final String IDENTIFIER_FIELD_NAME = "id";
-	public static final int IDENTIFIER_LENGTH = 5;
-	public static final int DESCRIPTION_LENGTH = 255;
-
 	@Id
 	@GeneratedValue(generator = CategoryIdGenerator.NAME)
 	@GenericGenerator(name = CategoryIdGenerator.NAME, strategy = CategoryIdGenerator.PATH)

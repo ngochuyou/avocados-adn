@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useReducer } from 'react';
 
 export const useInput = initValue => {
 	const [value, setValue] = useState(initValue);
@@ -7,4 +7,16 @@ export const useInput = initValue => {
 		{ value, onChange: (event) => setValue(event.target.value)},
 		() => setValue(initValue)
 	];
+}
+
+export const useDispatch = (initStore, dispatchers) => {
+	const [store, dispatch] = useReducer(
+		(oldState, { type = null, payload = null } = {}) => {
+			const dispatcher = dispatchers[type];
+
+			return dispatcher != null ? dispatcher(payload, oldState) : oldState;
+		}, {...initStore}
+	);
+
+	return [store, dispatch];
 }

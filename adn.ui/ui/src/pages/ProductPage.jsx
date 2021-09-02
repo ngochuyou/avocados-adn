@@ -48,7 +48,7 @@ export default function ProductPage() {
 		};
 	}, []);
 	useEffect(() => {
-		asIf(!wasInit).then(init);
+		asIf(!wasInit).then(init).else();
 	}, [wasInit, init]);
 	useEffect(() => {
 		const doEffect = async () => {

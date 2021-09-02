@@ -28,7 +28,7 @@ public interface DynamicMapModelProducerFactory {
 
 	<T extends DomainEntity, E extends T> List<Map<String, Object>> produceSingular(List<Object> source,
 			SourceMetadata<E> metadata, Credential credential) throws UnauthorizedCredential;
-	
+
 	<T extends DomainEntity, E extends T> Map<String, Object> producePojo(E entity, SourceMetadata<E> metadata,
 			Credential credential) throws UnauthorizedCredential;
 
@@ -38,6 +38,7 @@ public interface DynamicMapModelProducerFactory {
 	<T extends DomainEntity> DynamicMapModelProducer<T> getProducer(Class<T> entityType);
 
 	<T extends DomainEntity> Collection<String> validateColumns(Class<T> entityType,
-			Collection<String> requestedColumnNames, Credential credential) throws NoSuchFieldException;
+			Collection<String> requestedColumnNames, Credential credential)
+			throws NoSuchFieldException, UnauthorizedCredential;
 
 }

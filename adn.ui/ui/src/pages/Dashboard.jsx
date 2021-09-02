@@ -33,7 +33,7 @@ function SidebarContextProvider({ children }) {
 export default function Dashboard() {
 	const { principal } = useAuth();
 	
-	if (profile.mode === 'DEV' || (principal && (principal.role === Account.Role.ADMIN || principal.role === Account.Role.PERSONNEL))) {
+	if (profile.mode === 'DEV' || (principal && (principal.role === Account.Role.HEAD || principal.role === Account.Role.PERSONNEL))) {
 		return (
 			<SidebarContextProvider>
 				<div className="uk-grid-collapse" uk-grid="">

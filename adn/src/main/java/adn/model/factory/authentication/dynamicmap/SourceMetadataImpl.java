@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import adn.helpers.CollectionHelper;
 import adn.model.DomainEntity;
 import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.authentication.SourceMetadata;
@@ -91,6 +92,26 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 		associationIndicies = associationMetadatas.keySet();
 		this.associationMetadatas = associationMetadatas;
 	}
+
+	public SourceMetadataImpl(
+			SourceType sourceType,
+			Class<?> representation,
+			SourceMetadata<T> original) {
+		super();
+		
+		if (!(original instanceof SourceMetadataImpl)) {
+			throw new IllegalArgumentException(String.format("Unqualified %s type: [%s]", SourceMetadataImpl.class.getName(), original.getClass().getName()));
+		}
+		
+		this.entityType = original.getEntityType();
+		this.columns = original.getColumns();
+		this.sourceType = sourceType;
+		this.representation = resolveRepresentation(sourceType, representation);
+		// associationIndicies.size() and associationMetadatas.length must match
+		// this must be asserted by devs as contract
+		associationIndicies = original.getAssociationIndices();
+		this.associationMetadatas = ((SourceMetadataImpl<T>) original).associationMetadatas;
+	}
 	// @formatter:on
 
 	private Class<?> resolveRepresentation(SourceType type, Class<?> requestedRepresentation) {
@@ -127,7 +148,7 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 
 	@Override
 	public boolean hasAssociation() {
-		return !(associationIndicies != null || !associationIndicies.isEmpty());
+		return !CollectionHelper.isEmpty(associationIndicies);
 	}
 
 	@Override

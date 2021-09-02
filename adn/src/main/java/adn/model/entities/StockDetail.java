@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import adn.model.entities.constants.NamedSize;
 import adn.model.entities.constants.Status;
 import adn.model.entities.generators.StockDetailIdGenerator;
+import adn.model.entities.metadata._Product;
 
 /**
  * @author Ngoc Huy
@@ -32,7 +33,7 @@ import adn.model.entities.generators.StockDetailIdGenerator;
 @Table(name = "stock_details")
 public class StockDetail extends Entity {
 
-	public static transient final int IDENTIFIER_LENGTH = Product.ID_LENGTH + 8 + 1; // 8 + delimiter
+	public static transient final int IDENTIFIER_LENGTH = _Product.ID_LENGTH + 8 + 1; // 8 + delimiter
 	public static transient final int NAMED_SIZE_MAXIMUM_LENGTH = 4;
 	public static transient final int NAMED_COLOR_MAXIMUM_LENGTH = 50;
 	public static transient final int MATERIAL_MAXIMUM_LENGTH = 50;

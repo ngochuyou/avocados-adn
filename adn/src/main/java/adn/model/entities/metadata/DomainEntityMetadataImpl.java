@@ -3,7 +3,11 @@
  */
 package adn.model.entities.metadata;
 
+import static java.util.Map.entry;
+
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
@@ -21,6 +25,7 @@ import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EntityType;
 
 import org.hibernate.MappingException;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.SingleTableEntityPersister;
@@ -103,7 +108,16 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 				}
 
 				if (!Collection.class.isAssignableFrom(attr.getJavaType())) {
-					return !laziness[metamodel.getPropertyIndex(prop)];
+					int propertyIndex = metamodel.getPropertyIndex(prop);
+
+					if (Entity.class.isAssignableFrom(attr.getJavaType())) {
+						org.hibernate.type.EntityType associationType = (org.hibernate.type.EntityType) metamodel
+								.getPropertyTypes()[propertyIndex];
+
+						return associationType.isEager(null);
+					}
+
+					return !laziness[propertyIndex];
 				}
 
 				if (!(attr.getJavaMember() instanceof Field)) {
@@ -130,23 +144,28 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 			IdentifierProperty identifier = metamodel.getIdentifierProperty();
 
 			if (!identifier.isVirtual()) {
-				String identifierName = metamodel.getIdentifierProperty().getName();
+				String identifierName = identifier.getName();
+				Getter identifierGetter = tuplizer.getIdentifierGetter();
+				Class<?> identifierJavaClass = identifier.getType().getReturnedClass();
 
-				getters.add(Map.entry(identifierName, tuplizer.getIdentifierGetter()));
+				getters.add(entry(identifierName, identifierGetter));
 				properties.add(identifierName);
 				nonLazyProperties.add(identifierName);
-				propertyTypes.put(identifierName, identifier.getType().getReturnedClass());
+				propertyTypes.put(identifierName, identifierJavaClass);
 
 				if (identifier.getType() instanceof ComponentType) {
 					ComponentType component = (ComponentType) identifier.getType();
-					List<String> componentProperties = Arrays.asList(component.getPropertyNames());
+					List<String> componentPropertiesNames = Arrays.asList(component.getPropertyNames());
+					Class<?> componentPropertyType;
 
-					for (String componentProperty : componentProperties) {
-						properties.add(componentProperty);
-						nonLazyProperties.add(componentProperty);
-						propertyTypes.put(componentProperty,
-								component.getSubtypes()[component.getPropertyIndex(componentProperty)]
-										.getReturnedClass());
+					for (String componentPropertyName : componentPropertiesNames) {
+						properties.add(componentPropertyName);
+						nonLazyProperties.add(componentPropertyName);
+						componentPropertyType = component.getSubtypes()[component
+								.getPropertyIndex(componentPropertyName)].getReturnedClass();
+						propertyTypes.put(componentPropertyName, componentPropertyType);
+						getters.add(entry(componentPropertyName, new ComponentPropertyGetter(identifierGetter,
+								identifierJavaClass, componentPropertyName, componentPropertyType)));
 					}
 				}
 			}
@@ -183,10 +202,13 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 
 			properties = new ArrayList<>(0);
 			propertyTypes = new HashMap<>(0, 1f);
+			Map<String, Getter> accessors = new HashMap<>(0, 1f);
 
 			if (superMetadata != null) {
 				properties.addAll(superMetadata.getPropertyNames());
 				propertyTypes.putAll(superMetadata.getPropertyTypes());
+				accessors.putAll(superMetadata.getGetters().stream()
+						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 			}
 
 			declaredProperties = new ArrayList<>(0);
@@ -201,10 +223,7 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 				declaredProperties.add(f.getName());
 			}
 
-			int propertySpan = properties.size();
-			Map<String, Getter> accessors = new HashMap<>(propertySpan, 1.1f);
-
-			for (String name : properties) {
+			for (String name : declaredProperties) {
 				accessors.put(name,
 						StandardAccess.locateGetter(entityClass, name)
 								.orElseThrow(() -> new IllegalArgumentException(
@@ -347,6 +366,55 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 	@Override
 	public boolean isAssociationCollection(String attributeName) {
 		return associationCollectionsTypes.containsKey(attributeName);
+	}
+
+	@SuppressWarnings({ "rawtypes", "serial" })
+	private class ComponentPropertyGetter implements Getter {
+
+		private final Getter componentGetter;
+		private final Getter propertyGetter;
+
+		private ComponentPropertyGetter(Getter componentGetter, Class<?> componentType, String propertyName,
+				Class<?> propertyType) {
+			this.componentGetter = componentGetter;
+			propertyGetter = StandardAccess.locateGetter(componentType, propertyName)
+					.orElseThrow(() -> new IllegalArgumentException(String.format(
+							"Unable to locate getter for a Component's property. Component type: [%s], property type: [%s]",
+							componentType.getName(), propertyName)));
+		}
+
+		@Override
+		public Object get(Object owner) {
+			Object componentValue = componentGetter.get(owner);
+
+			return propertyGetter.get(componentValue);
+		}
+
+		@Override
+		public Object getForInsert(Object owner, Map mergeMap, SharedSessionContractImplementor session) {
+			return get(owner);
+		}
+
+		@Override
+		public Class getReturnType() {
+			return propertyGetter.getReturnType();
+		}
+
+		@Override
+		public Member getMember() {
+			return propertyGetter.getMember();
+		}
+
+		@Override
+		public String getMethodName() {
+			return propertyGetter.getMethodName();
+		}
+
+		@Override
+		public Method getMethod() {
+			return propertyGetter.getMethod();
+		}
+
 	}
 
 }

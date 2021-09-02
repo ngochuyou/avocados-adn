@@ -29,7 +29,7 @@ public class CollectionHelper {
 	public static <E> List<E> list(Collection<E> collection) {
 		return collection instanceof List ? (List<E>) collection : new ArrayList<>(collection);
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public static <E, C extends Collection<E>> E[] from(C collection, Class<E> type) {
 		return collection.toArray((E[]) Array.newInstance(type, collection.size()));
@@ -42,6 +42,10 @@ public class CollectionHelper {
 
 	public static <T> ArrayBuilder<T> from(T[] elements) {
 		return elements == null ? FunctionHelper.doThrow("Cannot build Array from null") : new ArrayBuilder<>(elements);
+	}
+
+	public static boolean isEmpty(Collection<?> elements) {
+		return elements == null || elements.isEmpty();
 	}
 
 	/**

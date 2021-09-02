@@ -163,7 +163,7 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 
 	@Override
 	public <T extends DomainEntity> Collection<String> validateColumns(Class<T> entityType,
-			Collection<String> requestedColumnNames, Credential credential) throws NoSuchFieldException {
+			Collection<String> requestedColumnNames, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
 		return getProducer(entityType).validateColumns(credential, requestedColumnNames);
 	}
 
@@ -202,7 +202,7 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 				return new Key<>(type, credential, name);
 			}
 
-			return new Key<>(type, CredentialFactory.from(role, departmentId), name);
+			return new Key<>(type, CredentialFactory.compound(role, departmentId), name);
 		}
 
 		private void modifyAlias(SecuredPropertyImpl<?> property, String newAlias) {
@@ -342,19 +342,7 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 
 				@Override
 				public WithCredential<T> roles(Role... roles) {
-					if (departmentIds == null) {
-						setRoles(roles);
-						return this;
-					}
-
-					if (requireNonNull(roles).length != departmentIds.length) {
-						throw new IllegalArgumentException(
-								String.format("Roles length and Department IDs length must match. Roles[%d]><IDs[%d]",
-										roles.length, departmentIds.length));
-					}
-
-					setRoles(roles);
-					return this;
+					return owningType.roles(roles);
 				}
 
 				private void setDepartmentIds(UUID... departmentIds) {
@@ -369,13 +357,21 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 						return this;
 					}
 
-					if (requireNonNull(departmentIds).length != roles.length) {
-						throw new IllegalArgumentException(
-								String.format("Roles length and Department IDs length must match. Roles[%d]><IDs[%d]",
-										roles.length, departmentIds.length));
+					UUID[] ids = requireNonNull(departmentIds);
+
+					if (roles.length == 1) {
+						setRoles(IntStream.range(0, ids.length).mapToObj(index -> roles[0]).toArray(Role[]::new));
+						setDepartmentIds(ids);
+						return this;
 					}
 
-					setDepartmentIds(departmentIds);
+					if (ids.length != roles.length) {
+						throw new IllegalArgumentException(
+								String.format("Roles length and Department IDs length must match. Roles[%d]><IDs[%d]",
+										roles.length, ids.length));
+					}
+
+					setDepartmentIds(ids);
 					return this;
 				}
 

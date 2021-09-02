@@ -3,6 +3,7 @@
  */
 package adn.application.context;
 
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.SessionFactoryObserver;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -37,6 +38,10 @@ public class ContextProvider implements ApplicationContextAware {
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
 		ContextProvider.applicationContext = applicationContext;
+	}
+	
+	public static Session getCurrentSession() {
+		return getBean(SessionFactory.class).getCurrentSession();
 	}
 
 	public static <T extends SessionFactory> T getSessionFactory(Class<T> wrapperType) {

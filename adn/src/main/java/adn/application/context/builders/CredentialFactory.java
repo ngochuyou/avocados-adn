@@ -8,7 +8,6 @@ import static adn.service.DepartmentCredential.CREDENTIALS;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -30,11 +29,13 @@ import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
 import adn.application.Constants;
+import adn.application.context.ContextProvider;
 import adn.application.context.internal.ContextBuilder;
 import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.EnumeratedCredential;
 import adn.model.factory.authentication.OnMemoryCredential;
 import adn.model.factory.authentication.OnMemoryCredential.Credentials;
+import adn.model.factory.authentication.dynamicmap.PartionalCredential;
 import adn.service.DepartmentCredential;
 import adn.service.internal.Role;
 
@@ -50,9 +51,29 @@ public class CredentialFactory implements ContextBuilder {
 
 	public static final int ROLE_CREDENTIAL_POSITION = 0;
 	public static final int DEPARTMENT_ID_CREDENTIAL_POSITION = 1;
-	public static final int COMPOUND_CREDENTIAL_POSITION = 2;
+	public static final int PARTIONAL_CREDENTIAL_POSITION = 2;
+	public static final int COMPOUND_CREDENTIAL_POSITION = 3;
+	public static final int OWNER_CREDENTIAL_POSITION = 4;
 
 	private List<Credential> credentials;
+
+	private static final Credential OWNER = new Credential() {
+
+		@Override
+		public int getPosition() {
+			return OWNER_CREDENTIAL_POSITION;
+		}
+
+		@Override
+		public String evaluate() {
+			return RESOURCE_OWNER;
+		}
+
+		@Override
+		public boolean contains(Credential credential) {
+			return false;
+		}
+	};
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -180,11 +201,9 @@ public class CredentialFactory implements ContextBuilder {
 
 	public static class CompoundCredential implements Credential {
 
-		private static final String DELIMITER = "::";
-
 		private final int position;
-		private final Credential credential;
-		private final CompoundCredential nextCredential;
+		private final String evaluation;
+		private final int hashCode;
 
 		protected CompoundCredential(int position, Credential... credentials) {
 			super();
@@ -194,32 +213,31 @@ public class CredentialFactory implements ContextBuilder {
 				throw new IllegalArgumentException("Credentials was empty");
 			}
 
-			credential = Objects.requireNonNull(credentials[0], "Credential was null");
-
-			if (credentials.length == 1) {
-				nextCredential = null;
-				return;
-			}
-
-			Credential[] otherCredentials = Arrays.copyOfRange(credentials, 1, credentials.length);
-
-			nextCredential = new CompoundCredential(position, otherCredentials);
+			evaluation = Stream.of(credentials).map(credential -> credential == null ? "" : credential.evaluate())
+					.collect(Collectors.joining(Credential.DEFAULT_DELIMITER));
+			this.hashCode = getHashCode();
 		}
 
 		public CompoundCredential(Credential credential, CompoundCredential nextCredential, int position) {
 			super();
-			this.credential = credential;
-			this.nextCredential = nextCredential;
+			this.evaluation = String.format("%s%s%s", credential.evaluate(), Credential.DEFAULT_DELIMITER,
+					nextCredential.evaluation);
 			this.position = position;
+			this.hashCode = getHashCode();
+		}
+
+		private int getHashCode() {
+			int hash = 17;
+
+			hash += 37 * evaluation.hashCode();
+			hash += Objects.hash(position);
+
+			return hash;
 		}
 
 		@Override
 		public String evaluate() {
-			if (nextCredential == null) {
-				return credential.evaluate();
-			}
-
-			return credential.evaluate() + DELIMITER + nextCredential.evaluate();
+			return evaluation;
 		}
 
 		@Override
@@ -227,12 +245,33 @@ public class CredentialFactory implements ContextBuilder {
 			return position;
 		}
 
-		public Credential getCredential() {
-			return credential;
+		@Override
+		public boolean contains(Credential credential) {
+			return contains(credential.evaluate());
 		}
 
-		public CompoundCredential getNextCredential() {
-			return nextCredential;
+		@Override
+		public boolean contains(String evaluation) {
+			return this.evaluation.contains(evaluation);
+		}
+
+		@Override
+		public int hashCode() {
+			return hashCode;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+
+			CompoundCredential other = (CompoundCredential) obj;
+
+			return this.evaluation.equals(other.evaluation) && position == other.position;
 		}
 
 	}
@@ -242,10 +281,8 @@ public class CredentialFactory implements ContextBuilder {
 				.orElse(CREDENTIALS.get(DepartmentScopeContext.unknown()));
 	}
 
-	public static Credential from(Role role, UUID departmentId) {
-		if (role == null && departmentId == null) {
-			throw new IllegalArgumentException("%s and department ID cannot be both null");
-		}
+	public static Credential compound(Role role, UUID departmentId) {
+		assertRoleAndDepartmentId(role, departmentId);
 
 		if (role != null && departmentId != null) {
 			return new CompoundCredential(COMPOUND_CREDENTIAL_POSITION, role,
@@ -257,6 +294,37 @@ public class CredentialFactory implements ContextBuilder {
 		}
 
 		return resolveDepartmentCredential(departmentId);
+	}
+
+	public static Credential partional(Role role, UUID departmentId) {
+		assertRoleAndDepartmentId(role, departmentId);
+
+		if (role != null && departmentId != null) {
+			return new PartionalCredential(PARTIONAL_CREDENTIAL_POSITION, role,
+					resolveDepartmentCredential(departmentId));
+		}
+
+		if (role != null) {
+			return role;
+		}
+
+		return resolveDepartmentCredential(departmentId);
+	}
+
+	private static void assertRoleAndDepartmentId(Role role, UUID departmentId) {
+		if (role == null && departmentId == null) {
+			throw new IllegalArgumentException("%s and department ID cannot be both null");
+		}
+	}
+
+	public static List<Credential> allPersonnelsCredentials() {
+		CredentialFactory cf = ContextProvider.getBean(CredentialFactory.class);
+
+		return cf.distribute(COMPOUND_CREDENTIAL_POSITION, Role.PERSONNEL, new ArrayList<>(CREDENTIALS.values()));
+	}
+
+	public static Credential owner() {
+		return OWNER;
 	}
 
 }

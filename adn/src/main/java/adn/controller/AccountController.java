@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import adn.application.Common;
 import adn.application.context.ContextProvider;
 import adn.dao.generic.Result;
 import adn.helpers.StringHelper;
@@ -40,7 +41,6 @@ public class AccountController extends BaseController {
 	protected final ResourceService resourceService;
 
 	protected final static String MISSING_ROLE = "USER ROLE IS MISSING";
-	protected final static String NOT_FOUND = "USER NOT FOUND";
 	protected final static int PHOTO_CACHE_CONTROL_MAX_AGE = 3; // days
 	// @formatter:off
 	@Autowired
@@ -68,7 +68,7 @@ public class AccountController extends BaseController {
 		Role principalRole = ContextProvider.getPrincipalRole();
 
 		if (!principalRole.canModify(modelRole)) {
-			return unauthorize(ACCESS_DENIED);
+			return unauthorize(Common.ACCESS_DENIED);
 		}
 
 		Class<? extends Account> accountClass = accountService.getClassFromRole(modelRole);
@@ -78,13 +78,13 @@ public class AccountController extends BaseController {
 			model = objectMapper.readValue(jsonPart, accountClass);
 		} catch (JsonProcessingException any) {
 			any.printStackTrace();
-			return ResponseEntity.badRequest().body(INVALID_MODEL);
+			return ResponseEntity.badRequest().body(Common.INVALID_MODEL);
 		}
 
 		setSessionMode();
 
 		if (baseRepository.countById(model.getId(), Account.class) != 0) {
-			return ResponseEntity.status(HttpStatus.CONFLICT).body(EXISTED);
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(Common.EXISTED);
 		}
 
 		Result<Account> insertResult = accountService.create(model.getId(), model,
@@ -94,7 +94,7 @@ public class AccountController extends BaseController {
 			return ResponseEntity.ok(produce(insertResult.getInstance(), (Class<Account>) accountClass, principalRole));
 		}
 
-		return sendBadRequest(insertResult.getMessages());
+		return sendBad(insertResult.getMessages());
 	}
 
 	@Transactional(readOnly = true)
@@ -109,7 +109,7 @@ public class AccountController extends BaseController {
 
 		if (!StringHelper.hasLength(username)) {
 			if (authentication == null) {
-				return sendNotFound(NOT_FOUND);
+				return sendNotFound(Common.NOT_FOUND);
 			}
 
 			username = authentication.getName();
@@ -118,7 +118,7 @@ public class AccountController extends BaseController {
 		Account account = baseRepository.findById(username, Account.class);
 
 		if (account == null) {
-			return sendNotFound(NOT_FOUND);
+			return sendNotFound(Common.NOT_FOUND);
 		}
 
 		return cacheAccountPhoto(resourceService.directlyGetImageBytes(null, account.getPhoto()));
@@ -150,13 +150,13 @@ public class AccountController extends BaseController {
 			model = objectMapper.readValue(jsonPart, accountClass);
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
-			return ResponseEntity.badRequest().body(INVALID_MODEL);
+			return ResponseEntity.badRequest().body(Common.INVALID_MODEL);
 		}
 
 		Role principalRole = ContextProvider.getPrincipalRole();
 
 		if (!principalRole.canModify(modelRole)) {
-			return unauthorize(ACCESS_DENIED);
+			return unauthorize(Common.ACCESS_DENIED);
 		}
 		// get current session with FlushMode.MANUAL
 		setSessionMode();
@@ -165,7 +165,7 @@ public class AccountController extends BaseController {
 		// This entity will take effects as the handler progresses
 		// Only changes on this persisted entity will be committed
 		if ((persistence = baseRepository.findById(model.getId(), Account.class)) == null) {
-			return sendNotFound(NOT_FOUND);
+			return sendNotFound(Common.NOT_FOUND);
 		}
 
 		Result<Account> updateResult = accountService.update(persistence.getId(), model,
@@ -175,7 +175,7 @@ public class AccountController extends BaseController {
 			return ResponseEntity.ok(produce(updateResult.getInstance(), (Class<Account>) accountClass, principalRole));
 		}
 
-		return sendBadRequest(updateResult.getStatus());
+		return sendBad(updateResult.getStatus());
 	}
 
 }

@@ -7,6 +7,7 @@ import static adn.helpers.HibernateHelper.selectColumns;
 import static adn.helpers.HibernateHelper.toRows;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -21,8 +22,8 @@ import org.hibernate.Session;
 import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import adn.model.entities.Product;
 import adn.model.entities.StockDetail;
+import adn.model.entities.metadata._Product;
 import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.internal.Service;
@@ -46,8 +47,7 @@ public class StockDetailService implements Service {
 	}
 
 	public List<Map<String, Object>> readActiveOnly(Serializable productId, Collection<String> requestedColumns,
-			Credential credential, Credential inactiveAllowedCredential)
-			throws NoSuchFieldException, UnauthorizedCredential {
+			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
 		Collection<String> validatedColumns = requestedColumns.isEmpty() ? FETCHED_COLUMNS
 				: crudService.getDefaultColumns(StockDetail.class, credential, requestedColumns);
 		Session session = crudService.getCurrentSession();
@@ -57,11 +57,16 @@ public class StockDetailService implements Service {
 
 		criteriaQuery = selectColumns(criteriaQuery, root, validatedColumns)
 				.where(builder.and(builder.equal(root.get(StockDetail.ACTIVE_FIELD_NAME), Boolean.TRUE),
-						builder.equal(root.get(StockDetail.PRODUCT_FIELD_NAME).get(Product.ID_FIELD_NAME), productId)));
+						builder.equal(root.get(StockDetail.PRODUCT_FIELD_NAME).get(_Product.id), productId)));
 
 		Query<Tuple> jpql = session.createQuery(criteriaQuery);
+		List<Tuple> tuples = jpql.list();
 
-		return crudService.resolveReadResults(StockDetail.class, toRows(jpql.list()), validatedColumns, credential);
+		if (tuples.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		return crudService.resolveReadResults(StockDetail.class, toRows(tuples), validatedColumns, credential);
 	}
 
 }

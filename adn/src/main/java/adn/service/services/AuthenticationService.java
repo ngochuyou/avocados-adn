@@ -3,17 +3,33 @@
  */
 package adn.service.services;
 
+import static adn.application.context.ContextProvider.getPrincipalName;
+import static adn.application.context.ContextProvider.getPrincipalRole;
+import static adn.application.context.builders.DepartmentScopeContext.unknown;
+import static adn.service.internal.Role.HEAD;
+
 import java.time.LocalDate;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 import javax.servlet.http.Cookie;
 
+import org.springframework.util.Assert;
+
+import adn.application.context.ContextProvider;
 import adn.application.context.builders.ConfigurationContext;
+import adn.application.context.builders.DepartmentScopeContext;
+import adn.controller.exception.UnauthorisedDepartmentException;
+import adn.model.entities.Head;
+import adn.model.entities.Operator;
+import adn.model.entities.Personnel;
+import adn.security.PersonnelDetails;
 import adn.security.UserDetailsImpl;
 import adn.security.UserDetailsServiceImpl;
+import adn.service.internal.Role;
 import adn.service.internal.Service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -64,8 +80,8 @@ public class AuthenticationService implements Service {
 
 	private String createToken(Map<String, Object> claims, String subject) {
 		return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
-				.setExpiration(Date.from(LocalDate.now().plusDays(EXPIRE_DAYS)
-						.atStartOfDay(UserDetailsServiceImpl.ZONE).toInstant()))
+				.setExpiration(Date.from(
+						LocalDate.now().plusDays(EXPIRE_DAYS).atStartOfDay(UserDetailsServiceImpl.ZONE).toInstant()))
 				.signWith(SignatureAlgorithm.HS256, ConfigurationContext.getJwtSecretKey()).compact();
 	}
 
@@ -88,6 +104,95 @@ public class AuthenticationService implements Service {
 		c.setHttpOnly(true);
 
 		return c;
+	}
+
+	public UUID getPrincipalDepartment() {
+		UserDetailsImpl userDetails = ContextProvider.getPrincipal();
+
+		if (!(userDetails instanceof PersonnelDetails)) {
+			return DepartmentScopeContext.unknown();
+		}
+
+		return ((PersonnelDetails) userDetails).getDepartmentId();
+	}
+
+	public UUID assertSaleDepartment() {
+		if (getPrincipalRole() == HEAD) {
+			return unknown();
+		}
+
+		UUID principalDepartment = getPrincipalDepartment();
+
+		assertDepartment(principalDepartment, DepartmentScopeContext.sale());
+
+		return principalDepartment;
+	}
+
+	public UUID assertStockDepartment() {
+		if (getPrincipalRole() == HEAD) {
+			return unknown();
+		}
+
+		UUID principalDepartment = getPrincipalDepartment();
+
+		assertDepartment(principalDepartment, DepartmentScopeContext.stock());
+
+		return principalDepartment;
+	}
+
+	public UUID assertPersonnelDepartment() {
+		if (getPrincipalRole() == HEAD) {
+			return unknown();
+		}
+
+		UUID principalDepartment = getPrincipalDepartment();
+
+		assertDepartment(principalDepartment, DepartmentScopeContext.personnel());
+
+		return principalDepartment;
+	}
+
+	public UUID assertDepartment(UUID... criterias) throws UnauthorisedDepartmentException {
+		if (getPrincipalRole() == HEAD) {
+			return unknown();
+		}
+
+		UUID principalDepartment = getPrincipalDepartment();
+
+		for (UUID criteria : criterias) {
+			if (criteria.equals(principalDepartment)) {
+				return principalDepartment;
+			}
+		}
+
+		throw new UnauthorisedDepartmentException(
+				String.format("Department of id [%s] was denied", principalDepartment));
+	}
+
+	public boolean isPersonnelDepartment() {
+		return getPrincipalDepartment().equals(DepartmentScopeContext.personnel());
+	}
+
+	public Operator getOperator() {
+		Role principalRole = getPrincipalRole();
+		String principalName = getPrincipalName();
+
+		if (principalRole == Role.PERSONNEL) {
+			return new Personnel(principalName);
+		}
+
+		if (principalRole == HEAD) {
+			return new Head(principalName);
+		}
+
+		throw new IllegalArgumentException(
+				String.format("Invalid %s: [%s]", Operator.class.getSimpleName(), principalName));
+	}
+	
+	public Head getHead() {
+		Assert.isTrue(getPrincipalRole() == HEAD, String.format("Cannot resolve role [%s] to %s", getPrincipalRole(), Head.class.getName()));
+		
+		return new Head(getPrincipalName());
 	}
 
 }

@@ -8,6 +8,7 @@ import static adn.helpers.CollectionHelper.list;
 import static adn.model.factory.authentication.dynamicmap.SourceMetadataFactory.unknownArray;
 import static adn.model.factory.authentication.dynamicmap.SourceMetadataFactory.unknownArrayCollection;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -24,16 +25,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import adn.application.context.ContextProvider;
-import adn.application.context.builders.DepartmentScopeContext;
 import adn.dao.generic.ParamContext;
 import adn.helpers.CollectionHelper;
 import adn.model.entities.DepartmentChief;
 import adn.model.entities.Personnel;
 import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
-import adn.security.PersonnelDetails;
-import adn.security.UserDetailsImpl;
 
 /**
  * @author Ngoc Huy
@@ -52,39 +49,6 @@ public class DepartmentService implements adn.service.internal.Service {
 		this.crudService = crudService;
 	}
 	// @formatter:on
-	public UUID getPrincipalDepartment() {
-		UserDetailsImpl userDetails = ContextProvider.getPrincipal();
-
-		if (!(userDetails instanceof PersonnelDetails)) {
-			return DepartmentScopeContext.unknown();
-		}
-
-		return ((PersonnelDetails) userDetails).getDepartmentId();
-	}
-
-	public UUID assertSaleDepartment() {
-		UUID principalDepartment = getPrincipalDepartment();
-
-		DepartmentScopeContext.assertDepartment(principalDepartment, DepartmentScopeContext.sale());
-
-		return principalDepartment;
-	}
-
-	public void assertStockDepartment() {
-		DepartmentScopeContext.assertDepartment(getPrincipalDepartment(), DepartmentScopeContext.stock());
-	}
-
-	public void assertPersonnelDepartment() {
-		DepartmentScopeContext.assertDepartment(getPrincipalDepartment(), DepartmentScopeContext.personnel());
-	}
-
-	public boolean isPersonnelDepartment() {
-		return getPrincipalDepartment().equals(DepartmentScopeContext.personnel());
-	}
-
-	public boolean isPersonnelDepartment(UUID requestedDepartmentId) {
-		return requestedDepartmentId == DepartmentScopeContext.personnel();
-	}
 
 	public Personnel getDepartmentChief(UUID departmentId) {
 		// @formatter:off
@@ -159,6 +123,10 @@ public class DepartmentService implements adn.service.internal.Service {
 		// @formatter:on
 		List<?> rows = crudService.repository.findWithContext(query, Map.of("ids", ParamContext.array(departmentIds)));
 
+		if (rows.isEmpty()) {
+			return new ArrayList<>();
+		}
+
 		return crudService.resolveReadResults(Personnel.class, rows, from(validatedColumns), credential,
 				unknownArrayCollection(Personnel.class, list(validatedColumns)));
 	}
@@ -195,6 +163,10 @@ public class DepartmentService implements adn.service.internal.Service {
 		query = crudService.repository.appendOrderBy(query, paging.getSort());
 
 		List<?> rows = crudService.repository.find(query, paging, Map.of("id", departmentId));
+
+		if (rows.isEmpty()) {
+			return new ArrayList<>();
+		}
 
 		return crudService.resolveReadResults(Personnel.class, rows, from(validatedColumns), credential,
 				unknownArrayCollection(Personnel.class, list(columns)));

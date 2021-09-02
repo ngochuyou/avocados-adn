@@ -120,13 +120,13 @@ function SingleChunk({
 }
 
 function Pages({ min = 1, max = 1, selected = -1, onClick = () => null }) {
-	return intRange({ min, max }).map(index => (
+	return intRange({ min, max }).map(value => (
 		<li
-			key={index}
-			onClick={() => onClick(index)}
-			className={selected === index ? "uk-active noselect" : "noselect" }
+			key={value}
+			onClick={() => onClick(value)}
+			className={selected === value - 1 ? "uk-active noselect" : "noselect" }
 		>
-			<span className="pointer">{index}</span>
+			<span className="pointer">{value}</span>
 		</li>
 	));
 }

@@ -32,12 +32,7 @@ import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @Table(name = "accounts")
-public class Account extends adn.model.entities.Entity {
-
-	public static transient final String ACTIVE_FIELD_NAME = "active";
-	public static transient final String ROLE_FIELD_NAME = "role";
-	public static transient final String VERSION_FIELD_NAME = "updatedDate";
-	public static transient final String ID_FIELD_NAME = "id";
+public class Account extends PermanentEntity {
 
 	@Id
 	@JsonProperty("username")
@@ -70,9 +65,6 @@ public class Account extends adn.model.entities.Entity {
 
 	@Column(name = "birth_date")
 	private LocalDate birthDate;
-
-	@Column(name = "active", nullable = false)
-	private Boolean active;
 
 	@Column(name = "deactivated_date")
 	private LocalDate deactivatedDate;
@@ -176,15 +168,6 @@ public class Account extends adn.model.entities.Entity {
 
 	public void setUpdatedDate(LocalDateTime updatedDate) {
 		this.updatedDate = updatedDate;
-	}
-
-	@JsonProperty(value = "active")
-	public Boolean isActive() {
-		return active;
-	}
-
-	public void setActive(Boolean active) {
-		this.active = active;
 	}
 
 	@JsonIgnore

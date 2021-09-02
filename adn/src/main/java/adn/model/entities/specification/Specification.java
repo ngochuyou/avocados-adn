@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.model.specification;
+package adn.model.entities.specification;
 
 import java.io.Serializable;
 

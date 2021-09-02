@@ -52,7 +52,7 @@ public interface CRUDService extends Service {
 	}
 
 	<T extends Entity> List<String> getDefaultColumns(Class<T> type, Credential credential, Collection<String> columns)
-			throws NoSuchFieldException;
+			throws NoSuchFieldException, UnauthorizedCredential;
 
 	<T extends Entity> List<Map<String, Object>> readByAssociation(Class<T> type,
 			Class<? extends Entity> associatingType, String associatingAttribute, String associationProperty,

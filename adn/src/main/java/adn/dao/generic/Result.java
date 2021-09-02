@@ -9,7 +9,6 @@ import static adn.service.internal.Service.Status.OK;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import adn.service.internal.Service.Status;
 
@@ -84,24 +83,8 @@ public class Result<T> {
 		return new Result<T>(FAILED, null, Map.of("exception", error));
 	}
 
-	public static <T> ResultReducer<T> with(Result<T> result) {
-		return new ResultReducer<>(result);
-	}
-
-	public static class ResultReducer<T> {
-
-		private final Result<T> result;
-
-		private ResultReducer(Result<T> result) {
-			this.result = result;
-		}
-
-		public Result<T> make(Consumer<Result<T>> reducer) {
-			reducer.accept(result);
-
-			return result;
-		}
-
+	public static Map<String, String> of(String result) {
+		return Map.of("result", result);
 	}
 
 }

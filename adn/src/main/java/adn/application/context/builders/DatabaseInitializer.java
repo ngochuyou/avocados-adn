@@ -13,9 +13,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import adn.application.context.internal.ContextBuilder;
-import adn.model.entities.Admin;
+import adn.model.entities.Head;
 import adn.model.entities.constants.Gender;
-import adn.service.internal.Role;
 import adn.service.services.AccountService;
 
 /**
@@ -38,7 +37,7 @@ public class DatabaseInitializer implements ContextBuilder {
 	public void buildAfterStartUp() {
 		// TODO Auto-generated method stub
 		logger.info("Building " + this.getClass().getName());
-		insertAdmin();
+		insertHead();
 		logger.info("Finished initializing " + this.getClass().getName());
 	}
 
@@ -257,10 +256,9 @@ public class DatabaseInitializer implements ContextBuilder {
 //		session.save(provider);
 //	}
 //
-	public Admin getAdmin() {
-		Admin admin = new Admin();
+	public Head getAdmin() {
+		Head admin = new Head("ngochuy.ou");
 
-		admin.setId("ngochuy.ou");
 		admin.setPassword(passwordEncoder.encode("password"));
 		admin.setActive(true);
 		admin.setEmail("ngochuy.ou@gmail.com");
@@ -269,21 +267,20 @@ public class DatabaseInitializer implements ContextBuilder {
 		admin.setLastName("Vu Ngoc Huy");
 		admin.setPhone("0974032706");
 		admin.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
-		admin.setRole(Role.HEAD);
 
 		return admin;
 	}
 
 //
-	private void insertAdmin() {
+	private void insertHead() {
 		Session session = sessionFactory.getCurrentSession();
 
-		if (session.get(Admin.class, "ngochuy.ou") == null) {
-			Admin admin = getAdmin();
+		if (session.get(Head.class, "ngochuy.ou") == null) {
+			Head head = getAdmin();
 
-			session.save(admin);
+			session.save(head);
 
-			logger.info("Inserting ADMIN: " + admin.getId());
+			logger.info("Inserting HEAD: " + head.getId());
 		}
 	}
 //

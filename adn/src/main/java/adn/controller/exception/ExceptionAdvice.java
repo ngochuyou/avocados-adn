@@ -4,6 +4,7 @@
 package adn.controller.exception;
 
 import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
+import org.hibernate.ObjectNotFoundException;
 import org.springframework.beans.MethodInvocationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -16,8 +17,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import adn.application.Common;
 import adn.controller.BaseController;
 import adn.controller.query.BadColumnsRequestException;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.specification.InvalidCriteriaException;
 
 /**
@@ -29,7 +32,7 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 
 	@ExceptionHandler(value = { AccessDeniedException.class })
 	public ResponseEntity<?> handleUnauthorized(AccessDeniedException ex, WebRequest request) {
-		return handleExceptionInternal(ex, BaseController.ACCESS_DENIED, new HttpHeaders(), HttpStatus.UNAUTHORIZED,
+		return handleExceptionInternal(ex, Common.ACCESS_DENIED, new HttpHeaders(), HttpStatus.UNAUTHORIZED,
 				request);
 	}
 
@@ -51,14 +54,25 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 		return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.UNAUTHORIZED, request);
 	}
 
+	@ExceptionHandler(value = { UnauthorizedCredential.class })
+	public ResponseEntity<?> handleUnauthorisedCredential(UnauthorizedCredential ex, WebRequest request) {
+		return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.UNAUTHORIZED, request);
+	}
+
 	@ExceptionHandler(value = { IllegalArgumentException.class })
 	public ResponseEntity<?> handlePossibleEmptyPredicate(IllegalArgumentException ex, WebRequest request) {
 		if (ex.getCause() instanceof InvalidCriteriaException) {
-			return handleExceptionInternal(ex, BaseController.INVALID_SEARCH_CRITERIA, new HttpHeaders(), HttpStatus.BAD_REQUEST,
-					request);
+			return handleExceptionInternal(ex, Common.INVALID_SEARCH_CRITERIA, new HttpHeaders(),
+					HttpStatus.BAD_REQUEST, request);
 		}
 
 		return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR,
+				request);
+	}
+
+	@ExceptionHandler(value = { ObjectNotFoundException.class })
+	public ResponseEntity<?> handleObjectNotFoundException(ObjectNotFoundException ex, WebRequest request) {
+		return handleExceptionInternal(ex, Common.NOT_FOUND, new HttpHeaders(), HttpStatus.BAD_REQUEST,
 				request);
 	}
 
@@ -66,7 +80,7 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 	protected ResponseEntity<Object> handleBindException(BindException ex, HttpHeaders headers, HttpStatus status,
 			WebRequest request) {
 		ObjectError source = ex.getBindingResult().getAllErrors().get(0);
-		
+
 		if (source != null) {
 			try {
 				MethodInvocationException mie = source.unwrap(MethodInvocationException.class);

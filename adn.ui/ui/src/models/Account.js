@@ -1,3 +1,5 @@
+import { isEmail } from '../utils';
+
 export default class Account {
 	constructor({
 		username = "",
@@ -44,12 +46,7 @@ export default class Account {
 
 			return [ok, ok ? null : "Password must contains 8 or more characters"];
 		},
-		email: (email) => {
-			// eslint-disable-next-line
-			let ok = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i.test(email);
-
-			return [ok, ok ? null : "Invalid email"];
-		}
+		email: isEmail
 	};
 
 	static inputProps = {
@@ -68,7 +65,7 @@ export default class Account {
 	}
 	
 	static Role = {
-		ADMIN: 'ADMIN',
+		HEAD: 'HEAD',
 		PERSONNEL: 'PERSONNEL',
 		MANAGER: 'MANAGER',
 		EMPLOYEE: 'EMPLOYEE',

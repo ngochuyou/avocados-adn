@@ -7,13 +7,17 @@ export const SET_MODEL = "SET_MODEL";
 export const SET_ACTION = "SET_ACTION";
 export const SET_INDIVIDUAL_VIEW_TARGET = "SET_INDIVIDUAL_VIEW_TARGET";
 export const SET_LIST_ELEMENT = "SET_LIST_ELEMENT";
+export const SET_FETCH_STATUS = "SET_FETCH_STATUS";
 
 export const FULFILL_PAGE = "FULFILL_PAGE";
+export const SWITCH_PAGE = "SWITCH_PAGE";
 
 export const MODIFY_MODEL = "MODIFY_MODEL";
 export const MODIFY_PAGINATION_STATE = "MODIFY_PAGINATION_STATE";
 
 export const PUSH_LIST = "PUSH_LIST";
+export const POP_LIST = "POP_LIST";
+export const CLEAR_LIST = "CLEAR_LIST";
 
 export const CREATE = "CREATE";
 export const EDIT = "EDIT";
@@ -22,6 +26,3 @@ export const TOGGLE_MODAL_VISION = "TOGGLE_MODAL_VISION";
 export const TOGGLE_INDIVIDUAL_VIEW_VISION = "TOGGLE_INDIVIDUAL_VIEW_VISION";
 export const TOGGLE_FORM_VISION = "TOGGLE_FORM_VISION";
 export const TOGGLE_LIST_VISION = "TOGGLE_LIST_VISION";
-
-export const POP_LIST = "POP_LIST";
-export const CLEAR_LIST = "CLEAR_LIST";

@@ -93,20 +93,94 @@ export const isBool = (payload) => typeof payload === 'boolean';
 
 export const hasLength = (payload = null) => payload != null && payload.length !== 0;
 
+const ACCEPTABLE_PHONE_NUMBER_PATTERN = /^[\w\d._()+\s-]{4,}$/g;
+
+export const isAcceptablePhoneNumber = (phoneNumber) => {
+	ACCEPTABLE_PHONE_NUMBER_PATTERN.lastIndex = 0;
+
+	return ACCEPTABLE_PHONE_NUMBER_PATTERN.test(phoneNumber);
+}
+
+export const isAcceptablePhoneNumberErr = "Phone number can only contain: spaces, characters, numbers, '.', '_', '(', ')', '+', '-'";
+// eslint-disable-next-line
+const EMAIL_PATTERN = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+
+export const isEmail = (email) => {
+	EMAIL_PATTERN.lastIndex = 0;
+
+	return EMAIL_PATTERN.test(email);
+}
+
 export const asIf = (predicate = false) => new AsIf(predicate);
+
+export const join = (elements) => elements.join(',');
 
 class AsIf {
 	#predicate;
+	#callbackWhenTrue;
 
-	constructor(predicate) {
+	constructor(predicate = false) {
 		this.predicate = predicate;
 	}
 
-	then(callback) {
-		if (this.predicate) {
-			callback(this.predicate);
-		}
+	then(callback = () => null) {
+		this.callbackWhenTrue = callback;
 
 		return this;
 	}
+
+	else(callback = () => null) {
+		if (this.predicate) {
+			return this.callbackWhenTrue(this.predicate);
+		}
+
+		return callback(this.predicate);
+	}
+}
+
+const DAY_NAMES = [
+	"Sunday", "Monday", "Tuesday",
+	"Wednesday", "Thursday", "Friday",
+	"Saturday"
+];
+
+const DATE_NAMES = [
+	'00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
+	'11', '12', '13', '14', '15', '16', '17', '18', '19', '20', 
+	'21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31'
+];
+
+const MONTH_NAMES = [
+	"Jan", "Feb", "Mar",
+	"Apr", "May", "Jun", "Jul",
+	"Aug", "Sep", "Oct",
+	"Nov", "Dec"
+];
+
+const HOURS_NAMES = [
+	"00", "01", "02", "03", "04",
+	"05", "06", "07", "08",
+	"09", "10", "11", "12",
+	"13", "14", "15", "16",
+	"17", "18", "19", "20",
+	"21", "22", "23",
+];
+
+const MINUTE_AND_SECOND_NAMES = [
+	'00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
+	'11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
+	'21', '22', '23', '24', '25', '26', '27', '28', '29', '30',
+	'31', '32', '33', '34', '35', '36', '37', '38', '39', '40',
+	'41', '42', '43', '44', '45', '46', '47', '48', '49', '50',
+	'51', '52', '53', '54', '55', '56', '57', '58', '59'
+];
+
+export const formatDatetime = (datetime) => {
+	if (!isString(datetime)) {
+		return null;
+	}
+
+	const instant = new Date(datetime);
+
+	return `${DAY_NAMES[instant.getDay()]} ${DATE_NAMES[instant.getDate()]} ${MONTH_NAMES[instant.getMonth()]} ${instant.getFullYear()} at ${HOURS_NAMES[instant.getHours()]}:${MINUTE_AND_SECOND_NAMES[instant.getMinutes()]}`;
 }

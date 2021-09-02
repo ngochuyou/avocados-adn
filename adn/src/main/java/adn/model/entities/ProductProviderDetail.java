@@ -8,15 +8,17 @@ import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapsId;
 import javax.persistence.Table;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import adn.model.DepartmentScoped;
 import adn.model.entities.id.ProductProviderDetailId;
+import adn.model.entities.metadata._Account;
+import adn.model.entities.metadata._Product;
+import adn.model.entities.metadata._ProductProviderDetail;
 
 /**
  * @author Ngoc Huy
@@ -24,28 +26,19 @@ import adn.model.entities.id.ProductProviderDetailId;
  */
 @javax.persistence.Entity
 @Table(name = "product_provider_details")
-public class ProductProviderDetail extends Entity implements DepartmentScoped {
-
-	public static transient final String ID_FIELD = "id";
-	public static transient final String ID_PROVIDER_FIELD = "providerId";
-	public static transient final String ID_PRODUCT_FIELD = "productId";
-	public static transient final String ID_APPLIED_TIMESTAMP_FIELD = "appliedTimestamp";
-	public static transient final String PRICE_FIELD = "price";
-	public static transient final String DROPPED_TIMESTAMP_FIELD = "droppedTimestamp";
+public class ProductProviderDetail extends PermanentEntity implements DepartmentScoped {
 
 	@EmbeddedId
 	private ProductProviderDetailId id;
 
-	@ManyToOne(optional = false)
-	@JoinColumn(name = "product_id", updatable = false, columnDefinition = Product.ID_COLUMN_DEFINITION)
-	@MapsId("productId")
-	@JsonIgnore
+	@ManyToOne(optional = false, fetch = FetchType.LAZY)
+	@JoinColumn(name = "product_id", nullable = false, columnDefinition = _Product.ID_COLUMN_DEFINITION)
+	@MapsId(_ProductProviderDetail.productId)
 	private Product product;
 
-	@ManyToOne(optional = false)
-	@JoinColumn(name = "provider_id", updatable = false, columnDefinition = "BINARY(16)")
-	@MapsId("providerId")
-	@JsonIgnore
+	@ManyToOne(optional = false, fetch = FetchType.LAZY)
+	@JoinColumn(name = "provider_id", nullable = false, columnDefinition = "BINARY(16)")
+	@MapsId(_ProductProviderDetail.providerId)
 	private Provider provider;
 
 	@Column(name = "dropped_timestamp")
@@ -54,11 +47,16 @@ public class ProductProviderDetail extends Entity implements DepartmentScoped {
 	@Column(columnDefinition = "DECIMAL(13,4)", nullable = false)
 	private BigDecimal price;
 
-	@Column(nullable = false, name = "created_by")
-	private String createdBy;
+	@ManyToOne(optional = false, fetch = FetchType.LAZY)
+	@JoinColumn(name = "created_by", referencedColumnName = _Account.id)
+	private Operator createdBy;
 
-	@Column(name = "dropped_by")
-	private String droppedBy;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "approved_by", referencedColumnName = _Account.id)
+	private Head approvedBy;
+
+	@Column(name = "approved_timestamp")
+	private LocalDateTime approvedTimestamp;
 
 	public ProductProviderDetailId getId() {
 		return id;
@@ -100,20 +98,28 @@ public class ProductProviderDetail extends Entity implements DepartmentScoped {
 		this.price = price;
 	}
 
-	public String getCreatedBy() {
+	public LocalDateTime getApprovedTimestamp() {
+		return approvedTimestamp;
+	}
+
+	public void setApprovedTimestamp(LocalDateTime approvedTimestamp) {
+		this.approvedTimestamp = approvedTimestamp;
+	}
+
+	public Operator getCreatedBy() {
 		return createdBy;
 	}
 
-	public void setCreatedBy(String createdBy) {
+	public void setCreatedBy(Operator createdBy) {
 		this.createdBy = createdBy;
 	}
 
-	public String getDroppedBy() {
-		return droppedBy;
+	public Head getApprovedBy() {
+		return approvedBy;
 	}
 
-	public void setDroppedBy(String droppedBy) {
-		this.droppedBy = droppedBy;
+	public void setApprovedBy(Head approvedBy) {
+		this.approvedBy = approvedBy;
 	}
 
 }

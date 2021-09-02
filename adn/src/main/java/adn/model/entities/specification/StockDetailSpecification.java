@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.model.specification.generic;
+package adn.model.entities.specification;
 
 import static adn.model.entities.StockDetail.DESCRIPTION_MAXIMUM_LENGTH;
 import static adn.model.entities.StockDetail.MATERIAL_MAXIMUM_LENGTH;
@@ -12,7 +12,6 @@ import static adn.model.entities.StockDetail.NUMERIC_SIZE_MINIMUM_VALUE;
 import static adn.model.entities.StockDetail.STATUS_MAXIMUM_LENGTH;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.regex.Pattern;
 
 import org.hibernate.Session;
@@ -83,11 +82,6 @@ public class StockDetailSpecification extends EntitySpecification<StockDetail> {
 					.format("Material information can not be longer than %d characters", MATERIAL_MAXIMUM_LENGTH));
 		}
 
-		if (instance.getStockedTimestamp() == null || instance.getStockedTimestamp().isAfter(LocalDateTime.now())) {
-			result.bad().getMessages().put("stockedTimestamp",
-					"Stocked date can not be empty and must not be in the future");
-		}
-		
 		if (!StringHelper.hasLength(instance.getUpdatedBy())) {
 			result.bad().getMessages().put("updatedBy", "Updated by information is missing");
 		}

@@ -3,6 +3,8 @@
  */
 package adn.controller;
 
+import static adn.application.context.ContextProvider.getPrincipalCredential;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,17 +24,19 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import adn.application.context.ContextProvider;
 import adn.application.context.builders.ModelContextProvider;
 import adn.dao.generic.Repository;
 import adn.dao.generic.Result;
+import adn.helpers.CollectionHelper;
 import adn.helpers.FunctionHelper.HandledConsumer;
 import adn.model.DomainEntity;
 import adn.model.entities.Entity;
+import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.DynamicMapModelProducerFactory;
-import adn.model.factory.pojo.extraction.EntityExtractorProvider;
+import adn.model.factory.authentication.dynamicmap.SourceMetadataFactory;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
+import adn.model.factory.extraction.PojoEntityExtractorProvider;
 import adn.service.internal.CRUDService;
-import adn.service.internal.Role;
 
 /**
  * @author Ngoc Huy
@@ -49,7 +53,7 @@ public class BaseController {
 	protected DynamicMapModelProducerFactory dynamicMapModelFactory;
 
 	@Autowired
-	protected EntityExtractorProvider extractorProvider;
+	protected PojoEntityExtractorProvider extractorProvider;
 
 	@Autowired
 	protected CRUDService crudService;
@@ -65,12 +69,10 @@ public class BaseController {
 
 	public static final long MAXIMUM_FILE_SIZE = 30 * 1024 * 1024;
 
-	protected static final String LOCKED = "RESOURCE WAS DEACTIVATED";
-	protected static final String INVALID_MODEL = "INVALID MODEL";
-	protected static final String EXISTED = "RESOURCE IS ALREADY EXSITED";
-	protected static final String FAILED = "Unable to complete task";
-	public static final String ACCESS_DENIED = "ACCESS DENIDED";
-	public static final String INVALID_SEARCH_CRITERIA = "Invalid search criteria";
+	protected static final String HEAD = "ROLE_HEAD";
+	protected static final String PERSONNEL = "ROLE_PERSONNEL";
+	// for @PreAuthorize
+	protected static final String HEAD_OR_PERSONNEL = "ROLE_HEAD OR ROLE_PERSONNEL";
 
 	protected void setSessionMode() {
 		setSessionMode(FlushMode.MANUAL);
@@ -92,19 +94,23 @@ public class BaseController {
 		return extractorProvider.getExtractor(entityClass).extract(model, modelContext.instantiate(entityClass));
 	}
 
-	protected <T extends DomainEntity, E extends T> Map<String, Object> produce(E entity, Class<E> entityClass) {
-		return produce(entity, entityClass, ContextProvider.getPrincipalRole());
+	protected <T extends DomainEntity, E extends T> Map<String, Object> produce(E entity, Class<E> entityClass)
+			throws UnauthorizedCredential {
+		return produce(entity, entityClass, getPrincipalCredential());
 	}
 
 	@SuppressWarnings("unchecked")
-	protected <T extends DomainEntity, E extends T> Map<String, Object> produce(E entity) {
-		return produce(entity, (Class<E>) entity.getClass(), ContextProvider.getPrincipalRole());
+	protected <T extends DomainEntity, E extends T> Map<String, Object> produce(E entity)
+			throws UnauthorizedCredential {
+		return produce(entity, (Class<E>) entity.getClass(), getPrincipalCredential());
 	}
 
 	protected <T extends DomainEntity, E extends T> Map<String, Object> produce(E entity, Class<E> entityClass,
-			Role role) {
-//		return dynamicMapModelFactory.produce(entityClass, entity, role);
-		return null;
+			Credential credential) throws UnauthorizedCredential {
+		return dynamicMapModelFactory.producePojo(entity,
+				SourceMetadataFactory.unknown(entityClass,
+						CollectionHelper.list(modelContext.getMetadata(entityClass).getNonLazyPropertyNames())),
+				credential);
 	}
 
 	protected <T> ResponseEntity<?> unauthorize(T body) {
@@ -115,7 +121,7 @@ public class BaseController {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
 	}
 
-	protected <T> ResponseEntity<?> sendBadRequest(T body) {
+	protected <T> ResponseEntity<?> sendBad(T body) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
 	}
 
@@ -124,24 +130,36 @@ public class BaseController {
 	}
 
 	protected <T extends DomainEntity> ResponseEntity<?> send(List<T> instances) {
-		return ResponseEntity.ok(instances.stream().map(this::produce).collect(Collectors.toList()));
+		return ResponseEntity.ok(instances.stream().map(t -> {
+			try {
+				return produce(t);
+			} catch (UnauthorizedCredential e) {
+				return e.getMessage();
+			}
+		}).collect(Collectors.toList()));
 	}
 
-	protected <T extends DomainEntity> ResponseEntity<?> send(T instance, String messageIfNull) {
+	protected <T extends DomainEntity> ResponseEntity<?> send(T instance, String messageIfNull)
+			throws UnauthorizedCredential {
 		return instance == null ? sendNotFound(messageIfNull) : ResponseEntity.ok(produce(instance));
 	}
 
 	protected <T extends DomainEntity, E extends T> ResponseEntity<?> send(E instance, Class<E> type,
-			String messageIfNull) {
+			String messageIfNull) throws UnauthorizedCredential {
 		return instance == null ? sendNotFound(messageIfNull) : ResponseEntity.ok(produce(instance, type));
+	}
+
+	protected <T extends DomainEntity, E extends T> ResponseEntity<?> send(E instance, Class<E> type,
+			String messageIfNull, Credential credential) throws UnauthorizedCredential {
+		return instance == null ? sendNotFound(messageIfNull) : ResponseEntity.ok(produce(instance, type, credential));
 	}
 
 	protected <T> ResponseEntity<?> fails(T instance) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(instance);
 	}
 
-	protected <T extends Entity> ResponseEntity<?> send(Result<T> result) {
-		return result.isOk() ? ResponseEntity.ok(produce(result.getInstance())) : sendBadRequest(result.getMessages());
+	protected <T extends Entity> ResponseEntity<?> send(Result<T> result) throws UnauthorizedCredential {
+		return result.isOk() ? ResponseEntity.ok(produce(result.getInstance())) : sendBad(result.getMessages());
 	}
 
 	protected <T> ResponseEntity<?> makeStaleWhileRevalidate(T body, long maxAge, TimeUnit maxAgeDurationUnit,

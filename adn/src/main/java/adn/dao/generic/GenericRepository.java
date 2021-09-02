@@ -33,7 +33,7 @@ import org.springframework.data.domain.Sort.Order;
 import adn.application.context.builders.SpecificationFactory;
 import adn.helpers.Utils.Entry;
 import adn.model.entities.Entity;
-import adn.model.specification.Specification;
+import adn.model.entities.specification.Specification;
 
 /**
  * @author Ngoc Huy

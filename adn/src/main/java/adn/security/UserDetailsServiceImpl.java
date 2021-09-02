@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import adn.dao.generic.Repository;
 import adn.model.entities.Account;
+import adn.model.entities.metadata._Account;
 import adn.service.internal.Role;
 import adn.service.services.DepartmentService;
 
@@ -36,8 +37,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 	@Autowired
 	private DepartmentService departmentService;
 
-	private static final String[] ATTRIBUTES = new String[] { Account.ID_FIELD_NAME, "password",
-			Account.ROLE_FIELD_NAME, Account.VERSION_FIELD_NAME, Account.ACTIVE_FIELD_NAME };
+	private static final String[] ATTRIBUTES = new String[] { _Account.id, _Account.password, _Account.role,
+			_Account.updatedDate, _Account.active };
 	public static final ZoneId ZONE = ZoneId.systemDefault();
 
 	@Transactional(readOnly = true)
@@ -53,7 +54,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
 		if (role == Role.PERSONNEL) {
 			UUID departmentId = departmentService.getPersonnelDepartmentId(username);
-
 			return new PersonnelDetails((String) account[0], (String) account[1], (boolean) account[4],
 					Set.of(new SimpleGrantedAuthority("ROLE_" + role)), role,
 					((LocalDateTime) account[3]).atZone(ZONE).toEpochSecond(), departmentId);

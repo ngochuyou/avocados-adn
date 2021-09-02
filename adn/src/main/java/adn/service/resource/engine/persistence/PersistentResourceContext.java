@@ -166,7 +166,7 @@ public class PersistentResourceContext {
 		File[] files = finder.find(template, conditionValues, whereStatementColumnNames);
 
 		if (files.length == 0) {
-			error = new SQLException("Unable to find any file for update");
+			error = new SQLException("Unable to find any files for update");
 			return false;
 		}
 		// extract updated values, ignore unknowns, reserve the array so that we don't
@@ -209,22 +209,22 @@ public class PersistentResourceContext {
 		Object[] extractedValues;
 
 		for (File file : files) {
-			try {
-				extractedValues = extractingFunctions.map(fnc -> fnc.apply(file)).toArray();
+			extractedValues = extractingFunctions.map(fnc -> fnc.apply(file)).toArray();
 
-				synchronized (obtainMutex(file)) {
+			synchronized (obtainMutex(file)) {
+				try {
 					if (logger.isTraceEnabled()) {
 						logger.trace(String.format("Locking file [%s] for update", file.getPath()));
 					}
 
 					tuplizer.setPropertyValues(file, extractedValues);
+				} catch (RuntimeException rte) {
+					rte.printStackTrace();
+					error = new SQLException(rte);
+					return false;
+				} finally {
+					release(file);
 				}
-			} catch (RuntimeException rte) {
-				rte.printStackTrace();
-				error = new SQLException(rte);
-				return false;
-			} finally {
-				release(file);
 			}
 		}
 
@@ -232,23 +232,11 @@ public class PersistentResourceContext {
 	}
 
 	private class Mutex {
-
 	}
 
 	class MutexMap extends LinkedHashMap<String, Mutex> {
 
 		private static final long serialVersionUID = 1L;
-
-		private static final int MAX_SIZE = 100;
-
-		public MutexMap() {
-			super(MAX_SIZE, 1f);
-		}
-
-		@Override
-		protected boolean removeEldestEntry(java.util.Map.Entry<String, Mutex> eldest) {
-			return size() >= MAX_SIZE;
-		}
 
 	}
 

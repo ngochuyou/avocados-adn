@@ -9,10 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.File;
-import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,13 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
-import adn.model.entities.Department;
-import adn.model.entities.Personnel;
-import adn.model.factory.authentication.DynamicMapModelProducerFactory;
-import adn.model.factory.authentication.dynamicmap.SourceMetadataFactory;
-import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.security.SecurityConfiguration;
-import adn.service.internal.Role;
 import adn.service.resource.model.models.UserPhoto;
 
 /**
@@ -120,41 +111,6 @@ public class ApplicationIntegrationTest {
 				logger.trace("Successfully retrieved " + statusSet.length + " files");
 			});
 		// @formatter:on
-	}
-
-	@Autowired
-	private DynamicMapModelProducerFactory factory;
-
-	@Test
-	public void testModelFactory() throws UnauthorizedCredential {
-		Department dep = new Department();
-
-		dep.setId(UUID.randomUUID());
-		dep.setName("Personnel");
-		dep.setActive(Boolean.FALSE);
-
-		Object[] values = new Object[] { "ngochuyou", "Vu Ngoc Huy", "Tran", "ngochuy.ou@gmail.com",
-				LocalDateTime.now(), dep };
-		Map<String, Object> map = factory.produce(values,
-				SourceMetadataFactory.associatedArray(Personnel.class,
-						Arrays.asList("id", "lastName", "firstName", "email", "updatedDate", "department"),
-						SourceMetadataFactory.basic(Department.class, Arrays.asList("id", "name", "active"))),
-				Role.CUSTOMER);
-
-		System.out
-				.println(map.entrySet().stream().map(entry -> String.format("%s\t%s", entry.getKey(), entry.getValue()))
-						.collect(Collectors.joining("\n")));
-
-		map = factory.produce(values,
-				SourceMetadataFactory.associatedArray(Personnel.class,
-						Arrays.asList("id", "lastName", "firstName", "email", "updatedDate", "department"),
-						SourceMetadataFactory.basic(Department.class, Arrays.asList("id", "name", "active"))),
-				Role.PERSONNEL);
-
-		System.out
-				.println(map.entrySet().stream().map(entry -> String.format("%s\t%s", entry.getKey(), entry.getValue()))
-						.collect(Collectors.joining("\n")));
-
 	}
 
 }

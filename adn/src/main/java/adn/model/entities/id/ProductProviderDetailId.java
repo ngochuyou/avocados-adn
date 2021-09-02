@@ -20,31 +20,31 @@ import org.hibernate.annotations.CreationTimestamp;
 @Embeddable
 public class ProductProviderDetailId implements Serializable {
 
-	@Column(name = "product_id")
+	@Column(name = "product_id", nullable = false)
 	private String productId;
 
-	@Column(name = "provider_id")
+	@Column(name = "provider_id", nullable = false)
 	private UUID providerId;
 
 	@CreationTimestamp
-	@Column(name = "applied_timestamp", nullable = false, updatable = false)
-	private LocalDateTime appliedTimestamp;
+	@Column(name = "created_timestamp", nullable = false, updatable = false)
+	private LocalDateTime createdTimestamp;
 
 	public ProductProviderDetailId() {}
 
-	public ProductProviderDetailId(String productId, UUID providerId, LocalDateTime appliedTimestamp) {
+	public ProductProviderDetailId(String productId, UUID providerId, LocalDateTime createdTimestamp) {
 		super();
 		this.productId = productId;
 		this.providerId = providerId;
-		this.appliedTimestamp = appliedTimestamp;
+		this.createdTimestamp = createdTimestamp;
 	}
 
-	public LocalDateTime getAppliedTimestamp() {
-		return appliedTimestamp;
+	public LocalDateTime getCreatedTimestamp() {
+		return createdTimestamp;
 	}
 
-	public void setAppliedTimestamp(LocalDateTime appliedTimestamp) {
-		this.appliedTimestamp = appliedTimestamp;
+	public void setCreatedTimestamp(LocalDateTime approvedTimestamp) {
+		this.createdTimestamp = approvedTimestamp;
 	}
 
 	public String getProductId() {
@@ -61,6 +61,21 @@ public class ProductProviderDetailId implements Serializable {
 
 	public void setProviderId(UUID providerId) {
 		this.providerId = providerId;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+
+		ProductProviderDetailId other = (ProductProviderDetailId) obj;
+
+		return createdTimestamp.equals(other.createdTimestamp) && productId.equals(other.productId)
+				&& providerId.equals(other.providerId);
 	}
 
 }

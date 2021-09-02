@@ -29,7 +29,7 @@ public interface ResourceTuplizer extends Tuplizer {
 	File instantiate(Object[] arguments);
 
 	/**
-	 * Validate the passed values to make sure that they respect whatever the
+	 * Validate provided values to make sure that they respect whatever the
 	 * configured business of creating a {@link File}
 	 * 
 	 * @param values
