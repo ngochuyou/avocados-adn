@@ -4,11 +4,9 @@
 package adn.service.services;
 
 import static adn.application.context.ContextProvider.getPrincipalCredential;
-import static adn.helpers.CollectionHelper.from;
 import static adn.helpers.CollectionHelper.list;
 import static adn.helpers.HibernateHelper.toRows;
 import static adn.model.factory.authentication.dynamicmap.SourceMetadataFactory.unknownArray;
-import static adn.model.factory.authentication.dynamicmap.SourceMetadataFactory.unknownArrayCollection;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -33,6 +31,7 @@ import adn.model.entities.Factor;
 import adn.model.entities.Product;
 import adn.model.entities.metadata._Factor;
 import adn.model.factory.authentication.Credential;
+import adn.model.factory.authentication.SourceMetadata;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 
 /**
@@ -58,28 +57,26 @@ public abstract class AbstractFactorService<T extends Factor> {
 
 	public Map<String, Object> findWithActiveCheck(Serializable id, Class<T> type, Collection<String> columns,
 			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		Collection<String> validatedColumns = crudService.getDefaultColumns(type, credential, columns);
-		Tuple row = genericFactorRepository.findActive(type, id, validatedColumns);
+		SourceMetadata<T> metadata = crudService.getDefaultColumns(type, credential, unknownArray(type, list(columns)));
+		Tuple row = genericFactorRepository.findActive(type, id, metadata.getColumns());
 
 		if (row == null) {
 			return null;
 		}
 
-		return crudService.resolveReadResult(type, row.toArray(), from(validatedColumns), credential,
-				unknownArray(type, list(validatedColumns)));
+		return crudService.resolveReadResult(type, row.toArray(), credential, metadata);
 	}
 
 	public List<Map<String, Object>> readActive(Class<T> type, Collection<String> columns, Pageable paging,
 			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		Collection<String> validatedColumns = crudService.getDefaultColumns(type, credential, columns);
-		List<Tuple> rows = genericFactorRepository.findAllActive(type, validatedColumns, paging);
-		
+		SourceMetadata<T> metadata = crudService.getDefaultColumns(type, credential, unknownArray(type, list(columns)));
+		List<Tuple> rows = genericFactorRepository.findAllActive(type, metadata.getColumns(), paging);
+
 		if (rows.isEmpty()) {
 			return new ArrayList<>();
 		}
-		
-		return crudService.resolveReadResults(type, toRows(rows), from(validatedColumns), getPrincipalCredential(),
-				unknownArrayCollection(type, list(validatedColumns)));
+
+		return crudService.resolveReadResults(type, toRows(rows), getPrincipalCredential(), metadata);
 	}
 
 	@SuppressWarnings("serial")

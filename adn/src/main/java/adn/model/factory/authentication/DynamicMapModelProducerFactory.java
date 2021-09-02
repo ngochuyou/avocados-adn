@@ -37,7 +37,7 @@ public interface DynamicMapModelProducerFactory {
 
 	<T extends DomainEntity> DynamicMapModelProducer<T> getProducer(Class<T> entityType);
 
-	<T extends DomainEntity> Collection<String> validateColumns(Class<T> entityType,
+	<T extends DomainEntity> List<String> validateColumns(Class<T> entityType,
 			Collection<String> requestedColumnNames, Credential credential)
 			throws NoSuchFieldException, UnauthorizedCredential;
 

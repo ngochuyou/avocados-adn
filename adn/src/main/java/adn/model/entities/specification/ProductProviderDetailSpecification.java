@@ -34,8 +34,8 @@ public class ProductProviderDetailSpecification extends PermanentEntitySpecifica
 	private static final String INVALID_PRICE = normalizeString(
 			String.format("%s and %s", notEmpty("Price"), Common.notNegative()));
 	private static final String EMPTY_CREATOR = notEmpty("Creator information");
-	private static final String INVALID_APPROVED_TIMESTAMP = String.format("%s and %s %s",
-			notEmpty("Approved timestamp"), notFuture(), Common.WHEN_APPROVED);
+	private static final String INVALID_APPROVED_TIMESTAMP = normalizeString(
+			String.format("%s and %s %s", notEmpty("Approved timestamp"), notFuture(), Common.WHEN_APPROVED));
 	private static final String UNNECESSARY_APPROVED_TIMESTAMP = String.format("%s %s",
 			Common.mustEmpty("Approved timestamp"), Common.WHEN_UNAPPROVED);
 

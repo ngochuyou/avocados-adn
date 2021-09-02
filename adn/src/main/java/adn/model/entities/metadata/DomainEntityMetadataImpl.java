@@ -15,9 +15,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -49,6 +51,16 @@ import adn.model.entities.Entity;
  *
  */
 public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainEntityMetadata<T> {
+
+	private static final Set<String> SENSITIVE_FIELD_NAMES;
+
+	static {
+		Set<String> sensitiveFields = new HashSet<>();
+
+		sensitiveFields.add(_Account.password);
+
+		SENSITIVE_FIELD_NAMES = Collections.unmodifiableSet(sensitiveFields);
+	}
 
 	private final Class<T> entityType;
 
@@ -240,7 +252,8 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 		this.properties = Collections.unmodifiableList(properties);
 		this.propertyTypes = Collections.unmodifiableMap(propertyTypes);
 		this.declaredProperties = Collections.unmodifiableList(declaredProperties);
-		this.nonLazyProperties = Collections.unmodifiableList(nonLazyProperties);
+		this.nonLazyProperties = Collections.unmodifiableList(nonLazyProperties.stream()
+				.filter(propName -> !SENSITIVE_FIELD_NAMES.contains(propName)).collect(Collectors.toList()));
 		propertiesSpan = this.properties.size();
 		this.discriminatorColumnName = discriminatorColumnName;
 		// @formatter:off

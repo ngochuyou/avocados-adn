@@ -150,5 +150,9 @@ public class StringHelper extends StringUtils {
 	public static String join(String... strings) {
 		return Stream.of(strings).collect(Collectors.joining(", "));
 	}
+	
+	public static String join(CharSequence joiner, String... strings) {
+		return Stream.of(strings).collect(Collectors.joining(joiner));
+	}
 
 }

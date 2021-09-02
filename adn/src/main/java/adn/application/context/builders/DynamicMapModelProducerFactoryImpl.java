@@ -162,8 +162,9 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 	}
 
 	@Override
-	public <T extends DomainEntity> Collection<String> validateColumns(Class<T> entityType,
-			Collection<String> requestedColumnNames, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
+	public <T extends DomainEntity> List<String> validateColumns(Class<T> entityType,
+			Collection<String> requestedColumnNames, Credential credential)
+			throws NoSuchFieldException, UnauthorizedCredential {
 		return getProducer(entityType).validateColumns(credential, requestedColumnNames);
 	}
 
@@ -666,6 +667,12 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 		public SecuredPropertyImpl<T> setFunction(HandledBiFunction<Arguments<?>, Credential, ?, Exception> function) {
 			this.function = function;
 			return this;
+		}
+
+		@Override
+		public String toString() {
+			return "SecuredPropertyImpl[owningType=" + owningType + ", name=" + name + ", credential="
+					+ credential.evaluate() + ", alias=" + alias + ", function=" + function + "]";
 		}
 
 	}

@@ -19,7 +19,6 @@ import adn.application.context.builders.DynamicMapModelProducerFactoryImpl.Model
 import adn.model.entities.Account;
 import adn.model.entities.Category;
 import adn.model.entities.Customer;
-import adn.model.entities.Head;
 import adn.model.entities.Personnel;
 import adn.model.entities.Product;
 import adn.model.entities.ProductProviderDetail;
@@ -90,17 +89,12 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		// @formatter:on
 	}
 
-	private Credential[] allPersonnelsAnd(Credential... others) {
-		return Stream.concat(CredentialFactory.allPersonnelsCredentials().stream(), Stream.of(others))
-				.toArray(Credential[]::new);
-	}
-
 	private void account(ModelProducerFactoryBuilder builder) {
 		WithType<Account> account = builder.type(Account.class);
 		// @formatter:off
 		account
-			.credentials(PERSONNEL_CREDENTIAL, HEAD, owner())
-				.fields(_Account.id).use("username").publish()
+			.credentials(authorized())
+				.fields(_Account.id).use(_Account._id).publish()
 				.fields(_Account.firstName, _Account.lastName, _Account.photo, _Account.role, _Account.gender, _Account.active,
 						_Account.email, _Account.phone, _Account.birthDate).publish()
 				.anyFields().mask()
@@ -109,7 +103,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 			.credentials(PERSONNEL_CREDENTIAL, HEAD)
 				.fields(_Account.address, _Account.createdDate, _Account.deactivatedDate, _Account.updatedDate).publish();
 		
-		builder.type(Head.class).roles(HEAD).publish();
+//		builder.type(Head.class).roles(HEAD).publish();
 		
 		builder.type(Customer.class)
 			.credentials(SALE_CREDENTIAL, CUSTOMER_SERVICE_CREDENTIAL, HEAD, owner())
@@ -118,7 +112,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		builder.type(Personnel.class)
 			.credentials(HEAD, PERSONNEL_CREDENTIAL, owner())
 				.fields(_Personnel.createdBy, _Personnel.department).publish()
-			.credentials(allPersonnelsAnd())
+			.credentials(personnel())
 				.fields(_Personnel.department).publish();
 		// @formatter:on
 	}
@@ -154,8 +148,28 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		// @formatter:on
 	}
 
+	private Credential[] from(Credential... credentials) {
+		return credentials;
+	}
+
+	private Credential[] and(Credential[]... credentialsSets) {
+		return Stream.of(credentialsSets).flatMap(credentials -> Stream.of(credentials)).toArray(Credential[]::new);
+	}
+
+	private Credential[] personnel() {
+		return CredentialFactory.allPersonnelsCredentials().toArray(Credential[]::new);
+	}
+
 	private Credential[] any() {
-		return allPersonnelsAnd(ANONYMOUS, CUSTOMER, HEAD);
+		return and(operator(), from(ANONYMOUS, CUSTOMER));
+	}
+
+	private Credential[] operator() {
+		return and(personnel(), from(HEAD));
+	}
+
+	private Credential[] authorized() {
+		return and(operator(), from(owner()));
 	}
 
 	private void product(ModelProducerFactoryBuilder builder) {

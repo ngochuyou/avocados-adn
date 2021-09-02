@@ -3,6 +3,7 @@
  */
 package adn.model.factory.authentication;
 
+import java.util.List;
 import java.util.Set;
 
 import adn.model.DomainEntity;
@@ -17,17 +18,17 @@ public interface SourceMetadata<T extends DomainEntity> {
 	 * @return the entity type of this source
 	 */
 	Class<T> getEntityType();
-	
+
 	/**
-	 * Get the representation class of this source
-	 * If this source is a POJO then it's the POJO class</br>
+	 * Get the representation class of this source If this source is a POJO then
+	 * it's the POJO class</br>
 	 * If this source is a Collection<Object[]>, returns Object[].class</br>
 	 * If this source is a Collection<POJO>, returns POJO class</br>
 	 * 
 	 * @return the type of this source
 	 */
 	Class<?> getRepresentation();
-	
+
 	/**
 	 * @return the representation of this source
 	 */
@@ -38,7 +39,12 @@ public interface SourceMetadata<T extends DomainEntity> {
 	 * 
 	 * @return named columns
 	 */
-	String[] getColumns();
+	List<String> getColumns();
+
+	/**
+	 * Set the named columns to which this source is mapped
+	 */
+	void setColumns(List<String> columns);
 
 	/**
 	 * @return whether this source contains any association
@@ -55,5 +61,5 @@ public interface SourceMetadata<T extends DomainEntity> {
 	 * @return the {@code SourceMetadata} of the association
 	 */
 	SourceMetadata<? extends DomainEntity> getAssociationMetadata(int index);
-	
+
 }

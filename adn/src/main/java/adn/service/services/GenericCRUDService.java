@@ -383,15 +383,15 @@ public final class GenericCRUDService implements CRUDService {
 	@Override
 	public <T extends Entity> Map<String, Object> find(Serializable id, Class<T> type, Collection<String> columns,
 			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		return find(id, type, columns, credential, unknownArray(type, list(columns)));
+		return find(id, type, credential, unknownArray(type, list(columns)));
 	}
 
 	@Override
-	public <T extends Entity> Map<String, Object> find(Serializable id, Class<T> type, Collection<String> columns,
-			Credential credential, SourceMetadata<T> sourceMetadata)
-			throws NoSuchFieldException, UnauthorizedCredential {
-		String[] validatedColumns = from(getDefaultColumns(type, credential, columns));
-		Object[] row = repository.findById(id, type, validatedColumns);
+	public <T extends Entity> Map<String, Object> find(Serializable id, Class<T> type, Credential credential,
+			SourceMetadata<T> sourceMetadata) throws NoSuchFieldException, UnauthorizedCredential {
+		sourceMetadata = getDefaultColumns(type, credential, sourceMetadata);
+
+		Object[] row = repository.findById(id, type, from(sourceMetadata.getColumns()));
 
 		if (row == null) {
 			return null;
@@ -402,8 +402,7 @@ public final class GenericCRUDService implements CRUDService {
 
 	@SuppressWarnings("unchecked")
 	protected <T extends Entity> List<Map<String, Object>> resolveReadResults(Class<T> type, List<?> source,
-			String[] validatedColumns, Credential credential, SourceMetadata<T> sourceMetadata)
-			throws UnauthorizedCredential {
+			Credential credential, SourceMetadata<T> sourceMetadata) throws UnauthorizedCredential {
 		if (source.get(0).getClass().isArray()) {
 			return dynamicMapModelFactory.produce((List<Object[]>) source, sourceMetadata, credential);
 		}
@@ -411,21 +410,8 @@ public final class GenericCRUDService implements CRUDService {
 		return dynamicMapModelFactory.produceSingular((List<Object>) source, sourceMetadata, credential);
 	}
 
-	@SuppressWarnings("unchecked")
-	protected <T extends Entity> List<Map<String, Object>> resolveReadResults(Class<T> type, List<?> source,
-			Collection<String> validatedColumns, Credential credential) throws UnauthorizedCredential {
-		if (source.get(0).getClass().isArray()) {
-			return dynamicMapModelFactory.produce((List<Object[]>) source,
-					unknownArrayCollection(type, list(validatedColumns)), credential);
-		}
-
-		return dynamicMapModelFactory.produceSingular((List<Object>) source,
-				unknownArrayCollection(type, list(validatedColumns)), credential);
-	}
-
 	protected <T extends Entity> Map<String, Object> resolveReadResult(Class<T> type, Object source,
-			String[] validatedColumns, Credential credential, SourceMetadata<T> sourceMetadata)
-			throws UnauthorizedCredential {
+			Credential credential, SourceMetadata<T> sourceMetadata) throws UnauthorizedCredential {
 		if (source.getClass().isArray()) {
 			return dynamicMapModelFactory.produce((Object[]) source, sourceMetadata, credential);
 		}
@@ -433,119 +419,113 @@ public final class GenericCRUDService implements CRUDService {
 		return dynamicMapModelFactory.produceSingular(source, sourceMetadata, credential);
 	}
 
-	protected <T extends Entity> Map<String, Object> resolveReadResult(Class<T> type, Object source,
-			Collection<String> validatedColumns, Credential credential) throws UnauthorizedCredential {
-		if (source.getClass().isArray()) {
-			return dynamicMapModelFactory.produce((Object[]) source, unknownArray(type, list(validatedColumns)),
-					credential);
-		}
-
-		return dynamicMapModelFactory.produceSingular(source, unknownArray(type, list(validatedColumns)), credential);
-	}
-
 	@Override
 	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> columns,
 			Pageable pageable, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		return read(type, columns, pageable, credential, unknownArrayCollection(type, list(columns)));
+		return read(type, pageable, credential, unknownArrayCollection(type, list(columns)));
 	}
 
 	@Override
-	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> columns,
-			Pageable pageable, Credential credential, SourceMetadata<T> sourceMetadata)
-			throws NoSuchFieldException, UnauthorizedCredential {
-		String[] validatedColumns = from(getDefaultColumns(type, credential, columns));
-		List<Object[]> rows = repository.fetch(type, validatedColumns, pageable);
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Pageable pageable, Credential credential,
+			SourceMetadata<T> sourceMetadata) throws NoSuchFieldException, UnauthorizedCredential {
+		sourceMetadata = getDefaultColumns(type, credential, sourceMetadata);
+
+		List<Object[]> rows = repository.fetch(type, from(sourceMetadata.getColumns()), pageable);
 
 		if (rows.isEmpty()) {
 			return new ArrayList<Map<String, Object>>();
 		}
 
-		return resolveReadResults(type, rows, validatedColumns, credential, sourceMetadata);
+		return resolveReadResults(type, rows, credential, sourceMetadata);
 	}
 
 	@Override
 	public <T extends Entity> Map<String, Object> find(Class<T> type, Collection<String> requestedColumns,
 			Specification<T> spec, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		return find(type, requestedColumns, spec, credential, unknownArray(type, list(requestedColumns)));
+		return find(type, spec, credential, unknownArray(type, list(requestedColumns)));
 	}
 
 	@Override
-	public <T extends Entity> Map<String, Object> find(Class<T> type, Collection<String> requestedColumns,
-			Specification<T> spec, Credential credential, SourceMetadata<T> sourceMetadata)
-			throws NoSuchFieldException, UnauthorizedCredential {
-		Collection<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
-		Optional<Tuple> optionalRow = genericSpecificationExecutor.findOne(type, getSelections(validatedColumns), spec);
+	public <T extends Entity> Map<String, Object> find(Class<T> type, Specification<T> spec, Credential credential,
+			SourceMetadata<T> sourceMetadata) throws NoSuchFieldException, UnauthorizedCredential {
+		sourceMetadata = getDefaultColumns(type, credential, sourceMetadata);
+
+		Optional<Tuple> optionalRow = genericSpecificationExecutor.findOne(type,
+				getSelections(sourceMetadata.getColumns()), spec);
 		Tuple row = optionalRow.get();
 
 		if (row == null) {
 			return null;
 		}
 
-		return resolveReadResult(type, row.toArray(), from(validatedColumns), credential, sourceMetadata);
+		return resolveReadResult(type, row.toArray(), credential, sourceMetadata);
 	}
 
 	@Override
 	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> requestedColumns,
 			Specification<T> spec, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		return read(type, requestedColumns, spec, credential, unknownArrayCollection(type, list(requestedColumns)));
+		return read(type, spec, credential, unknownArrayCollection(type, list(requestedColumns)));
 	}
 
 	@Override
-	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> requestedColumns,
-			Specification<T> spec, Credential credential, SourceMetadata<T> sourceMetadata)
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Specification<T> spec,
+			Credential credential, SourceMetadata<T> sourceMetadata)
 			throws NoSuchFieldException, UnauthorizedCredential {
-		Collection<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
-		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec);
+		sourceMetadata = getDefaultColumns(type, credential, sourceMetadata);
+
+		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, getSelections(sourceMetadata.getColumns()),
+				spec);
 
 		if (tuples.isEmpty()) {
 			return new ArrayList<>();
 		}
-		
-		return resolveReadResults(type, toRows(tuples), from(validatedColumns), credential, sourceMetadata);
+
+		return resolveReadResults(type, toRows(tuples), credential, sourceMetadata);
 	}
 
 	@Override
 	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> requestedColumns,
 			Specification<T> spec, Pageable pageable, Credential credential)
 			throws NoSuchFieldException, UnauthorizedCredential {
-		return read(type, requestedColumns, spec, pageable, credential,
-				unknownArrayCollection(type, list(requestedColumns)));
+		return read(type, spec, pageable, credential, unknownArrayCollection(type, list(requestedColumns)));
 	}
 
 	@Override
-	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> requestedColumns,
-			Specification<T> spec, Pageable pageable, Credential credential, SourceMetadata<T> metadata)
-			throws NoSuchFieldException, UnauthorizedCredential {
-		Collection<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
-		Page<Tuple> page = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec, pageable);
-		
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Specification<T> spec, Pageable pageable,
+			Credential credential, SourceMetadata<T> metadata) throws NoSuchFieldException, UnauthorizedCredential {
+		metadata = getDefaultColumns(type, credential, metadata);
+
+		Page<Tuple> page = genericSpecificationExecutor.findAll(type, getSelections(metadata.getColumns()), spec,
+				pageable);
+
 		if (page.isEmpty()) {
 			return new ArrayList<>();
 		}
-		
-		return resolveReadResults(type, toRows(page.getContent()), from(validatedColumns), credential, metadata);
+
+		return resolveReadResults(type, toRows(page.getContent()), credential, metadata);
 	}
 
 	@Override
 	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> requestedColumns,
 			Specification<T> spec, Sort sort, Credential credential)
 			throws NoSuchFieldException, UnauthorizedCredential {
-		return read(type, requestedColumns, spec, sort, credential,
-				unknownArrayCollection(type, list(requestedColumns)));
+		return read(type, spec, sort, credential, unknownArrayCollection(type, list(requestedColumns)));
 	}
 
 	@Override
-	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> requestedColumns,
-			Specification<T> spec, Sort sort, Credential credential, SourceMetadata<T> sourceMetadata)
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Specification<T> spec, Sort sort,
+			Credential credential, SourceMetadata<T> sourceMetadata)
 			throws NoSuchFieldException, UnauthorizedCredential {
-		Collection<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
-		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, getSelections(validatedColumns), spec, sort);
-		
+		sourceMetadata = getDefaultColumns(type, credential, sourceMetadata);
+
+		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, getSelections(sourceMetadata.getColumns()),
+				spec, sort);
+
 		if (tuples.isEmpty()) {
 			return new ArrayList<>();
 		}
-		
-		return resolveReadResults(type, toRows(tuples), from(validatedColumns), credential, sourceMetadata);
+
+		return resolveReadResults(type, toRows(tuples), credential, sourceMetadata);
 	}
 
 	@Override
@@ -554,30 +534,30 @@ public final class GenericCRUDService implements CRUDService {
 			Serializable associationIdentifier, Collection<String> columns, Pageable pageable, Credential credential)
 			throws NoSuchFieldException, UnauthorizedCredential {
 		return readByAssociation(type, associatingType, associatingAttribute, associationProperty,
-				associationIdentifier, columns, pageable, credential, unknownArrayCollection(type, list(columns)));
+				associationIdentifier, pageable, credential, unknownArrayCollection(type, list(columns)));
 	}
 
 	@Override
 	public <T extends Entity> List<Map<String, Object>> readByAssociation(Class<T> type,
 			Class<? extends Entity> associatingType, String associatingAttribute, String associationProperty,
-			Serializable associationIdentifier, Collection<String> columns, Pageable pageable, Credential credential,
+			Serializable associationIdentifier, Pageable pageable, Credential credential,
 			SourceMetadata<T> sourceMetadata) throws NoSuchFieldException, UnauthorizedCredential {
-		Collection<String> validatedColumns = getDefaultColumns(type, credential, columns);
+		sourceMetadata = getDefaultColumns(type, credential, sourceMetadata);
 
 		try {
 			List<?> rows = repository.find(String.format("""
 					SELECT %s FROM %s e WHERE e.%s.%s=:associationIdentifier
-					""", validatedColumns.stream().map(this::prependAlias).collect(Collectors.joining(",")),
+					""", sourceMetadata.getColumns().stream().map(this::prependAlias).collect(Collectors.joining(",")),
 					getEntityName(type), associatingAttribute,
 					!StringHelper.hasLength(associationProperty) ? getIdentifierPropertyName(associatingType)
 							: associationProperty),
 					Map.of("associationIdentifier", associationIdentifier));
-			
+
 			if (rows.isEmpty()) {
 				return new ArrayList<>();
 			}
-			
-			return resolveReadResults(type, rows, from(validatedColumns), credential, sourceMetadata);
+
+			return resolveReadResults(type, rows, credential, sourceMetadata);
 		} catch (Exception any) {
 			// the association property is not checked so QueryException
 			// will be thrown when the association property column does not exist
@@ -590,34 +570,46 @@ public final class GenericCRUDService implements CRUDService {
 	}
 
 	@Override
-	public <T extends Entity> List<String> getDefaultColumns(Class<T> type, Credential credential,
-			Collection<String> columns) throws NoSuchFieldException, UnauthorizedCredential {
+	public <T extends Entity> SourceMetadata<T> getDefaultColumns(Class<T> type, Credential credential,
+			SourceMetadata<T> sourceMetadata) throws NoSuchFieldException, UnauthorizedCredential {
+		List<String> columns = sourceMetadata.getColumns();
+
 		if (columns.isEmpty()) {
 			DomainEntityMetadata<T> metadata = modelContext.getMetadata(type);
 
-			return new ArrayList<>(metadata.getNonLazyPropertyNames());
+			sourceMetadata.setColumns(metadata.getNonLazyPropertyNames());
+
+			return sourceMetadata;
 		}
 
-		return new ArrayList<>(dynamicMapModelFactory.validateColumns(type, columns, credential));
+		sourceMetadata.setColumns(dynamicMapModelFactory.validateColumns(type, columns, credential));
+
+		return sourceMetadata;
 	}
 
-	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> requestedColumns,
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Collection<String> columns,
 			Specification<T> spec, Credential credential, Function<Collection<String>, Selections<T>> selectionResolver)
 			throws NoSuchFieldException, UnauthorizedCredential {
+		return read(type, spec, credential, selectionResolver, unknownArrayCollection(type, list(columns)));
+	}
+
+	public <T extends Entity> List<Map<String, Object>> read(Class<T> type, Specification<T> spec,
+			Credential credential, Function<Collection<String>, Selections<T>> selectionResolver,
+			SourceMetadata<T> sourceMetadata) throws NoSuchFieldException, UnauthorizedCredential {
 		if (selectionResolver == null) {
-			return read(type, requestedColumns, spec, credential);
+			return read(type, spec, credential, sourceMetadata);
 		}
 
-		List<String> validatedColumns = getDefaultColumns(type, credential, requestedColumns);
-		Selections<T> selections = selectionResolver.apply(validatedColumns);
+		sourceMetadata = getDefaultColumns(type, credential, sourceMetadata);
+
+		Selections<T> selections = selectionResolver.apply(sourceMetadata.getColumns());
 		List<Tuple> tuples = genericSpecificationExecutor.findAll(type, selections, spec);
 
 		if (tuples.isEmpty()) {
 			return new ArrayList<>();
 		}
 
-		return resolveReadResults(type, toRows(tuples), from(validatedColumns), credential,
-				unknownArrayCollection(type, validatedColumns));
+		return resolveReadResults(type, toRows(tuples), credential, sourceMetadata);
 	}
 
 	private String prependAlias(String columnName) {

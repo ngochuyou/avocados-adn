@@ -3,7 +3,6 @@
  */
 package adn.service.services;
 
-import static adn.helpers.CollectionHelper.from;
 import static adn.helpers.CollectionHelper.list;
 import static adn.model.factory.authentication.dynamicmap.SourceMetadataFactory.unknownArray;
 import static adn.model.factory.authentication.dynamicmap.SourceMetadataFactory.unknownArrayCollection;
@@ -26,10 +25,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import adn.dao.generic.ParamContext;
-import adn.helpers.CollectionHelper;
 import adn.model.entities.DepartmentChief;
 import adn.model.entities.Personnel;
 import adn.model.factory.authentication.Credential;
+import adn.model.factory.authentication.SourceMetadata;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 
 /**
@@ -85,7 +84,8 @@ public class DepartmentService implements adn.service.internal.Service {
 
 	public Map<String, Object> getDepartmentChief(UUID departmentId, Collection<String> columns, Credential credential)
 			throws NoSuchFieldException, UnauthorizedCredential {
-		Collection<String> validatedColumns = crudService.getDefaultColumns(Personnel.class, credential, columns);
+		SourceMetadata<Personnel> metadata = crudService.getDefaultColumns(Personnel.class, credential,
+				unknownArray(Personnel.class, list(columns)));
 		// @formatter:off
 		String query = String.format("""
 				SELECT %s
@@ -93,7 +93,7 @@ public class DepartmentService implements adn.service.internal.Service {
 				INNER JOIN Personnel p
 					ON dc.personnel.id = p.id
 				WHERE dc.department.id=:id AND dc.endDate IS NULL
-				""", validatedColumns.stream()
+				""", metadata.getColumns().stream()
 						.map(col -> "p.".concat(col))
 						.collect(Collectors.joining(",")));
 		// @formatter:on
@@ -103,13 +103,13 @@ public class DepartmentService implements adn.service.internal.Service {
 			return null;
 		}
 
-		return crudService.dynamicMapModelFactory.produce(row,
-				unknownArray(Personnel.class, CollectionHelper.list(validatedColumns)), credential);
+		return crudService.resolveReadResult(Personnel.class, row, credential, metadata);
 	}
 
 	public List<Map<String, Object>> getDepartmentChiefs(UUID[] departmentIds, Collection<String> columns,
 			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		Collection<String> validatedColumns = crudService.getDefaultColumns(Personnel.class, credential, columns);
+		SourceMetadata<Personnel> metadata = crudService.getDefaultColumns(Personnel.class, credential,
+				unknownArrayCollection(Personnel.class, list(columns)));
 		// @formatter:off
 		String query = String.format("""
 				SELECT %s
@@ -117,7 +117,7 @@ public class DepartmentService implements adn.service.internal.Service {
 				INNER JOIN Personnel p
 					ON dc.personnel.id = p.id
 				WHERE dc.department.id IN (:ids) AND dc.endDate IS NULL
-				""", validatedColumns.stream()
+				""", metadata.getColumns().stream()
 						.map(col -> "p." + col)
 						.collect(Collectors.joining(",")));
 		// @formatter:on
@@ -127,8 +127,7 @@ public class DepartmentService implements adn.service.internal.Service {
 			return new ArrayList<>();
 		}
 
-		return crudService.resolveReadResults(Personnel.class, rows, from(validatedColumns), credential,
-				unknownArrayCollection(Personnel.class, list(validatedColumns)));
+		return crudService.resolveReadResults(Personnel.class, rows, credential, metadata);
 	}
 
 	public Long[] countPersonnel(UUID[] departmentIds) {
@@ -151,12 +150,13 @@ public class DepartmentService implements adn.service.internal.Service {
 
 	public List<Map<String, Object>> getPersonnelListByDepartmentId(UUID departmentId, Collection<String> columns,
 			Pageable paging, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		Collection<String> validatedColumns = crudService.getDefaultColumns(Personnel.class, credential, columns);
+		SourceMetadata<Personnel> metadata = crudService.getDefaultColumns(Personnel.class, credential,
+				unknownArrayCollection(Personnel.class, list(columns)));
 		// @formatter:off
 		String query = String.format("""
 				SELECT %s FROM Personnel p
 				WHERE p.department.id=:id
-					""", validatedColumns.stream()
+					""", metadata.getColumns().stream()
 					.map(col -> "p.".concat(col))
 					.collect(Collectors.joining(",")));
 		// @formatter:on
@@ -168,8 +168,7 @@ public class DepartmentService implements adn.service.internal.Service {
 			return new ArrayList<>();
 		}
 
-		return crudService.resolveReadResults(Personnel.class, rows, from(validatedColumns), credential,
-				unknownArrayCollection(Personnel.class, list(columns)));
+		return crudService.resolveReadResults(Personnel.class, rows, credential, metadata);
 	}
 
 	public UUID getPersonnelDepartmentId(String personnelId) {

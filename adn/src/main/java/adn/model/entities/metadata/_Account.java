@@ -36,5 +36,7 @@ public class _Account extends _PermanentEntity {
 	public static final String updatedDate = "updatedDate";
 
 	public static final String address = "address";
+	
+	public static final String _id = "username";
 
 }

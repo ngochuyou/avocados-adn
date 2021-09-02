@@ -3,13 +3,18 @@
  */
 package adn.model.factory.authentication.dynamicmap;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import adn.helpers.CollectionHelper;
 import adn.model.DomainEntity;
@@ -23,8 +28,10 @@ import adn.model.factory.authentication.SourceType;
  */
 public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadata<T> {
 
+	private static final Logger logger = LoggerFactory.getLogger(SourceMetadataImpl.class);
+
 	private final Class<T> entityType;
-	private final String[] columns;
+	private List<String> columns;
 	private final Class<?> representation;
 	private final Set<Integer> associationIndicies;
 	private final SourceType sourceType;
@@ -39,7 +46,9 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 			DomainEntityMetadata<T> entityMetadata) {
 		super();
 		this.entityType = entityType;
-		this.columns = requestedColumns.toArray(String[]::new);
+		
+		setColumns(requestedColumns);
+		
 		this.sourceType = sourceType;
 		this.representation = resolveRepresentation(sourceType, representation);
 		associationIndicies = null;
@@ -55,16 +64,18 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 			SourceMetadata<?>... associationMetadatas) {
 		super();
 		this.entityType = entityType;
-		this.columns = requestedColumns.toArray(String[]::new);
+
+		setColumns(requestedColumns);
+		
 		this.sourceType = sourceType;
 		this.representation = resolveRepresentation(sourceType, representation);
 		// associationIndicies.size() and associationMetadatas.length must match
 		// this must be asserted by devs as contract
 		Map<Integer, SourceMetadata<?>> metadatas = new HashMap<>();
 		
-		associationIndicies = Collections.unmodifiableSet(IntStream.range(0, columns.length)
+		associationIndicies = Collections.unmodifiableSet(IntStream.range(0, columns.size())
 				.filter(index -> {
-					if (entityMetadata.isAssociation(columns[index])) {
+					if (entityMetadata.isAssociation(columns.get(index))) {
 						metadatas.put(index, associationMetadatas[metadatas.size()]);
 						return true;
 					}
@@ -84,7 +95,9 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 			Map<Integer, SourceMetadata<?>> associationMetadatas) {
 		super();
 		this.entityType = entityType;
-		this.columns = requestedColumns.toArray(String[]::new);
+
+		setColumns(requestedColumns);
+		
 		this.sourceType = sourceType;
 		this.representation = resolveRepresentation(sourceType, representation);
 		// associationIndicies.size() and associationMetadatas.length must match
@@ -104,7 +117,9 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 		}
 		
 		this.entityType = original.getEntityType();
-		this.columns = original.getColumns();
+
+		setColumns(original.getColumns());
+		
 		this.sourceType = sourceType;
 		this.representation = resolveRepresentation(sourceType, representation);
 		// associationIndicies.size() and associationMetadatas.length must match
@@ -142,7 +157,7 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 	}
 
 	@Override
-	public String[] getColumns() {
+	public List<String> getColumns() {
 		return columns;
 	}
 
@@ -159,6 +174,20 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 	@Override
 	public SourceMetadata<? extends DomainEntity> getAssociationMetadata(int index) {
 		return associationMetadatas.get(index);
+	}
+
+	private void setColumns(Collection<String> columns) {
+		setColumns(columns instanceof List ? (List<String>) columns : new ArrayList<>(columns));
+	}
+
+	@Override
+	public void setColumns(List<String> columns) {
+		if (logger.isDebugEnabled()) {
+			logger.debug(String.format("%s{%s} Setting columns [%s]", entityType.getSimpleName(), sourceType,
+					columns.stream().collect(Collectors.joining(", "))));
+		}
+
+		this.columns = columns;
 	}
 
 }

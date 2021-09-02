@@ -4,8 +4,9 @@
 package adn.service.services;
 
 import static adn.dao.generic.Result.bad;
-import static adn.helpers.CollectionHelper.from;
+import static adn.helpers.CollectionHelper.list;
 import static adn.helpers.HibernateHelper.toRows;
+import static adn.model.factory.authentication.dynamicmap.SourceMetadataFactory.unknownArrayCollection;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -36,14 +37,13 @@ import adn.controller.query.specification.ProductQuery;
 import adn.dao.generic.Repository;
 import adn.dao.generic.Result;
 import adn.dao.specification.GenericFactorRepository;
-import adn.helpers.CollectionHelper;
 import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
 import adn.model.entities.Product;
 import adn.model.entities.metadata._Category;
 import adn.model.entities.metadata._Product;
 import adn.model.factory.authentication.Credential;
-import adn.model.factory.authentication.dynamicmap.SourceMetadataFactory;
+import adn.model.factory.authentication.SourceMetadata;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Service;
@@ -72,9 +72,10 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 	}
 
 	public List<Map<String, Object>> getProductsByCategory(String categoryIdentifier, String categoryIdentifierProperty,
-			Collection<String> requestedColumns, Pageable paging, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		Collection<String> validatedColumns = crudService.getDefaultColumns(Product.class, credential,
-				requestedColumns);
+			Collection<String> requestedColumns, Pageable paging, Credential credential)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		SourceMetadata<Product> metadata = crudService.getDefaultColumns(Product.class, credential,
+				unknownArrayCollection(Product.class, list(requestedColumns)));
 		List<Tuple> rows = genericFactorRepository.findAllActive(Product.class, requestedColumns, paging,
 				new Specification<Product>() {
 					@Override
@@ -94,8 +95,7 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 			return new ArrayList<>();
 		}
 
-		return crudService.resolveReadResults(Product.class, toRows(rows), from(validatedColumns), credential,
-				SourceMetadataFactory.unknownArrayCollection(Product.class, CollectionHelper.list(validatedColumns)));
+		return crudService.resolveReadResults(Product.class, toRows(rows), credential, metadata);
 	}
 
 	public Result<Product> createProduct(Product product, MultipartFile[] images, boolean flushOnFinish) {

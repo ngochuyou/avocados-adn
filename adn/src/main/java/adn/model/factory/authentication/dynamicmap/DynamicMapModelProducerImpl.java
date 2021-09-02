@@ -23,6 +23,7 @@ import org.hibernate.property.access.spi.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import adn.helpers.CollectionHelper;
 import adn.helpers.FunctionHelper.HandledBiFunction;
 import adn.helpers.StringHelper;
 import adn.helpers.TypeHelper;
@@ -53,8 +54,8 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 	private final Class<T> entityType;
 
 	private final Map<String, Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>>> producingFunctions;
-	private final Map<String, Map<String, String>> aliasMap;
-	private final Map<String, Map<String, String>> namesMap;
+	private final Map<String, String> aliasMap;
+	private final Map<String, String> namesMap;
 	private final Map<String, Getter> getters;
 
 	private final DynamicMapModelProducerFactory factory;
@@ -72,8 +73,15 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 
 		Map<String, Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>>> producingFunctions = new HashMap<>(
 				0);
-		Map<String, Map<String, String>> aliasMap = new HashMap<>(0);
-		Map<String, Map<String, String>> originalNamesMap;
+		Map<String, String> aliasMap = new HashMap<>(0);
+
+		if (logger.isTraceEnabled()) {
+			logger.trace(String.format("Following %s were passed into this %s<%s>\n\t%s",
+					SecuredProperty.class.getName(), DynamicMapModelProducerImpl.class.getSimpleName(),
+					entityType.getSimpleName(), properties.stream().map(securedProp -> securedProp.toString())
+							.collect(Collectors.joining("\n\t"))));
+		}
+
 		// @formatter:off
 		properties.stream().filter(prop -> {
 			boolean isParent = TypeHelper.isParentOf(prop.getOwningType(), entityType);
@@ -81,11 +89,14 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			boolean nullFunction = prop.getFunction() == null;
 			
 			if (!isParent || unknownProperty || nullFunction) {
-				logger.trace(String.format("[%s]: Ignoring %s [%s] %s", entityType.getName(),
-						SecuredProperty.class.getSimpleName(), prop.getName(),
-						!isParent ? "invalid type"
-								: unknownProperty ? "unknown property"
-										: " null function"));
+				if (logger.isTraceEnabled()) {
+					logger.trace(String.format("[%s]: Ignoring %s [%s] %s", entityType.getName(),
+							SecuredProperty.class.getSimpleName(), prop.getName(),
+							!isParent ? "invalid type"
+									: unknownProperty ? "unknown property"
+											: " null function"));
+				}
+				
 				return false;
 			}
 
@@ -98,42 +109,37 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			String alias = prop.getAlias();
 			HandledBiFunction<Arguments<?>, Credential, ?, Exception> function = prop.getFunction();
 			String credential = prop.getCredential().evaluate();
-			
+
+			if (function == null) {
+				throw new IllegalArgumentException(String.format("%s[%s] function was empty on property [%s]", entityType.getSimpleName(), credential, name));
+			}
+
 			if (!producingFunctions.containsKey(credential)) {
 				producingFunctions.put(credential,
 						Stream.of(Map.entry(name, resolveFormatters(function, prop, entityMetadata)))
 							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-				aliasMap.put(credential,
-						Stream.of(Map.entry(name, StringHelper.hasLength(alias) ? with(logger).debug(String.format("Using alternative name [%s] on property [%s]", alias, name), alias) : name))
-							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+				useAlias(aliasMap, name, alias);
 				return;
 			}
 			
 			Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = producingFunctions.get(credential);
-			Map<String, String> aliases = aliasMap.get(credential);
-			
+
 			if (functions.containsKey(name)) {
 				if (functions.get(name) != function) {
 					HandledBiFunction<Arguments<?>, Credential, ?, Exception> oldFnc = functions.put(name, resolveFormatters(function, prop, entityMetadata));
 					
-					logger.debug(String.format("[%s#%s] Overriding function of property [%s] using [%s], overridden function was [%s]",
-							entityType, credential, name, function, oldFnc));
+					if (logger.isDebugEnabled()) {
+						logger.debug(String.format("[%s#%s] Overriding function of property [%s] using [%s], overridden function was [%s]",
+								entityType, credential, name, function, oldFnc));
+					}
 				}
 
-				if (!aliases.get(name).equals(alias)) {
-					String oldAlias = aliases.put(name, alias);
-					
-					logger.debug(String.format("[%s]: Overriding alternative name using [%s], overridden name was [%s]",
-							credential, alias, oldAlias));
-				}
+				useAlias(aliasMap, name, alias);
 				return;
 			}
 			
 			functions.put(name, resolveFormatters(function, prop, entityMetadata));
-			aliases.put(name,
-					StringHelper.hasLength(alias) ?
-							with(logger).debug(String.format("[%s]: Using alternative name [%s] on property [%s]", credential, alias, name), alias) :
-							name);
+			useAlias(aliasMap, name, alias);
 		});
 		// @formatter:on
 		producingFunctions.entrySet().forEach(entry -> {
@@ -143,21 +149,14 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 						MASKER));
 			});
 		});
-		aliasMap.values().forEach(propNames -> {
-			entityMetadata.getPropertyNames().stream().forEach(propName -> {
-				propNames.computeIfAbsent(propName, key -> propName);
-//				propNames.merge(propName, propName, (o, n) -> Optional.ofNullable(o).orElse(n));
-			});
+		entityMetadata.getPropertyNames().stream().forEach(propName -> {
+			aliasMap.computeIfAbsent(propName, key -> propName);
 		});
-		originalNamesMap = aliasMap.entrySet().stream()
-				.map(entry -> Map.entry(entry.getKey(),
-						entry.getValue().entrySet().stream()
-								.collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey))))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		this.producingFunctions = producingFunctions;
 		this.aliasMap = Collections.unmodifiableMap(aliasMap);
-		this.namesMap = Collections.unmodifiableMap(originalNamesMap);
+		this.namesMap = Collections.unmodifiableMap(
+				aliasMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey)));
 		this.getters = entityMetadata.getGetters().stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		this.nonLazyProperties = entityMetadata.getNonLazyPropertyNames().toArray(String[]::new);
@@ -168,13 +167,33 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			return;
 		}
 
-		logger.debug(String.format("\n" + "%s:\n" + "\t%s", entityType.getName(),
-				producingFunctions.entrySet().stream().map(entry -> entry.getValue().entrySet().stream()
-						.map(fEntry -> String.format("%s:\t[%s] -> [%s]", entry.getKey(),
-								this.aliasMap.get(entry.getKey()).get(fEntry.getKey()),
-								fEntry.getValue().equals(MASKER) ? "masked"
-										: fEntry.getValue().equals(PUBLISHER) ? "published" : fEntry.getValue()))
-						.collect(Collectors.joining("\n\t"))).collect(Collectors.joining("\n\t"))));
+		if (logger.isDebugEnabled()) {
+			logger.debug(String.format("\n" + "%s:\n" + "\t%s", entityType.getName(),
+					producingFunctions.entrySet().stream().map(entry -> entry.getValue().entrySet().stream()
+							.map(fEntry -> String.format("%s:\t[%s as %s] -> [%s]", entry.getKey(), fEntry.getKey(),
+									this.aliasMap.get(fEntry.getKey()),
+									fEntry.getValue().equals(MASKER) ? "masked"
+											: fEntry.getValue().equals(PUBLISHER) ? "published" : fEntry.getValue()))
+							.collect(Collectors.joining("\n\t"))).collect(Collectors.joining("\n\t"))));
+		}
+	}
+
+	private void useAlias(Map<String, String> aliasMap, String name, String alias) {
+		if (!StringHelper.hasLength(alias)) {
+			logger.trace("Ignorig empty alias");
+			return;
+		}
+
+		String oldAlias = aliasMap.get(alias);
+
+		if (oldAlias != null && !oldAlias.equals(alias)) {
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format("Overriding alternative name using [%s], overridden name was [%s]", alias,
+						oldAlias));
+			}
+		}
+
+		aliasMap.put(name, alias);
 	}
 
 	private HandledBiFunction<Arguments<?>, Credential, ?, Exception> resolveFormatters(
@@ -204,12 +223,11 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 
 		assertCredential(evaluation);
 
-		Map<String, String> name = namesMap.get(evaluation);
 		List<String> translatedColumnNames = new ArrayList<>(columns.size());
 		String translatedColumn;
 
 		for (String requestedColumn : columns) {
-			if ((translatedColumn = name.get(requestedColumn)) == null) {
+			if ((translatedColumn = namesMap.get(requestedColumn)) == null) {
 				throw new NoSuchFieldException(String.format("Unknown property [%s]", requestedColumn));
 			}
 
@@ -230,23 +248,24 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			String[] columns,
 			Object[] values,
 			Credential credential,
-			Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions,
-			Map<String, String> originalNames,
-			Map<String, String> alias
+			Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions
 			) {
 		// @formatter:on
 		try {
 			int span = values.length;
 
 			return IntStream.range(0, span).mapToObj(index -> {
-				String column = originalNames.get(columns[index]);
+				String column = columns[index];
 
 				try {
-					return entry(alias.get(column), functions.get(column).apply(argument(values[index]), credential));
+					return entry(aliasMap.get(column),
+							functions.get(column).apply(argument(values[index]), credential));
 				} catch (Exception e) {
-					logger.error(e.getMessage());
+					logger.error(String.format("Error occured producing columns [%s] on entity [%s]", column,
+							entityType.getName()));
+					e.printStackTrace();
 
-					return entry(alias.get(column), e.getMessage());
+					return entry(aliasMap.get(column), e.getMessage());
 				}
 			})
 			// @formatter:off
@@ -284,16 +303,13 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 		String evaluation = credential.evaluate();
 		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = producingFunctions
 				.get(evaluation);
-		Map<String, String> alias = aliasMap.get(evaluation);
-		Map<String, String> originalNames = namesMap.get(evaluation);
 		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
 
 		if (!metadata.hasAssociation()) {
-			return produceRow(columns, source.getSource(), credential, functions, originalNames, alias);
+			return produceRow(columns, source.getSource(), credential, functions);
 		}
 
-		return produceRow(columns, source.getSource(), credential, prepareAssociationProducing(metadata, functions),
-				originalNames, alias);
+		return produceRow(columns, source.getSource(), credential, prepareAssociationProducing(metadata, functions));
 	}
 
 	@Override
@@ -303,15 +319,13 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 		String evaluation = credential.evaluate();
 		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = producingFunctions
 				.get(evaluation);
-		Map<String, String> alias = aliasMap.get(evaluation);
-		Map<String, String> originalNames = namesMap.get(evaluation);
 		List<Object[]> batch = source.getSource();
 		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
 
 		if (!metadata.hasAssociation()) {
 			// @formatter:off
 			return IntStream.range(0, batch.size())
-					.mapToObj(index -> produceRow(columns, batch.get(index), credential, functions, originalNames, alias))
+					.mapToObj(index -> produceRow(columns, batch.get(index), credential, functions))
 					.collect(Collectors.toList());
 			// @formatter:on
 		}
@@ -320,13 +334,13 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 				metadata, functions);
 		// @formatter:off
 		return IntStream.range(0, batch.size())
-				.mapToObj(index -> produceRow(columns, batch.get(index), credential, preparedFunctions, originalNames, alias))
+				.mapToObj(index -> produceRow(columns, batch.get(index), credential, preparedFunctions))
 				.collect(Collectors.toList());
 		// @formatter:on;
 	}
 
-	private String[] hasLengthOrNonLazy(String[] possibleEmpty) {
-		return possibleEmpty == null || possibleEmpty.length == 0 ? nonLazyProperties : possibleEmpty;
+	private String[] hasLengthOrNonLazy(List<String> possibleEmpty) {
+		return CollectionHelper.isEmpty(possibleEmpty) ? nonLazyProperties : possibleEmpty.toArray(String[]::new);
 	}
 
 	@Override
@@ -336,20 +350,18 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 		String evaluation = credential.evaluate();
 		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = producingFunctions
 				.get(evaluation);
-		Map<String, String> alias = aliasMap.get(evaluation);
-		Map<String, String> originalNames = namesMap.get(evaluation);
 		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
 		E entity = source.getSource();
 		Object[] values = Stream.of(columns).map(column -> getters.get(column).get(entity)).toArray();
 
 		if (!metadata.hasAssociation()) {
-			return produceRow(columns, values, credential, functions, originalNames, alias);
+			return produceRow(columns, values, credential, functions);
 		}
 
 		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> preparedFunctions = prepareAssociationProducing(
 				metadata, functions);
 
-		return produceRow(columns, values, credential, preparedFunctions, originalNames, alias);
+		return produceRow(columns, values, credential, preparedFunctions);
 	}
 
 	@Override
@@ -359,18 +371,14 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 		String evaluation = credential.evaluate();
 		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = producingFunctions
 				.get(evaluation);
-		Map<String, String> alias = aliasMap.get(evaluation);
-		Map<String, String> originalNames = namesMap.get(evaluation);
 		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
 		List<E> batch = source.getSource();
 
 		if (!metadata.hasAssociation()) {
 			return IntStream.range(0, batch.size())
-					.mapToObj(
-							index -> produceRow(columns,
-									Stream.of(columns).map(column -> getters.get(column).get(batch.get(index)))
-											.toArray(),
-									credential, functions, originalNames, alias))
+					.mapToObj(index -> produceRow(columns,
+							Stream.of(columns).map(column -> getters.get(column).get(batch.get(index))).toArray(),
+							credential, functions))
 					.collect(Collectors.toList());
 		}
 
@@ -380,7 +388,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 		return IntStream.range(0, batch.size())
 				.mapToObj(index -> produceRow(columns,
 						Stream.of(columns).map(column -> getters.get(column).get(batch.get(index))).toArray(),
-						credential, preparedFunctions, originalNames, alias))
+						credential, preparedFunctions))
 				.collect(Collectors.toList());
 	}
 
@@ -418,15 +426,15 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			SourceMetadata<E> metadata,
 			Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> configuredFunctions) {
 		// @formatter:on
-		String[] columns = metadata.getColumns();
+		List<String> columns = metadata.getColumns();
 		Set<Integer> associationIndices = metadata.getAssociationIndices();
-		int span = columns.length;
+		int span = columns.size();
 		// we need this to be modifiable
 		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> copiedFunctions = new HashMap<>(
 				configuredFunctions);
 
 		IntStream.range(0, span).forEach(index -> {
-			String column = columns[index];
+			String column = columns.get(index);
 
 			if (!associationIndices.contains(index)) {
 				return;
@@ -459,7 +467,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 				associationProducer = factory.getProducer(associationType);
 				// TODO: do not remove
 //				Class<?> genericType = metadata.getRepresentation();
-				
+
 				// Object[]
 				// This is temporarily 'unused' since it's use cases are very rare,
 				// at least until Hibernate 6
