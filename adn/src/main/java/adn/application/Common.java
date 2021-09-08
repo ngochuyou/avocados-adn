@@ -5,6 +5,9 @@ package adn.application;
 
 import static adn.helpers.StringHelper.join;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 /**
  * @author Ngoc Huy
  *
@@ -22,7 +25,7 @@ public class Common {
 	private static final String TEMPLATE = "%s %s";
 	public static final String WHEN_APPROVED = "when resource is approved";
 	public static final String WHEN_UNAPPROVED = "when resource hasn't been approved yet";
-	
+
 	public static String notFuture(String... prefix) {
 		return String.format(TEMPLATE, join(prefix), " must not be in the future");
 	}
@@ -38,5 +41,11 @@ public class Common {
 	public static String notNegative(String... prefix) {
 		return String.format(TEMPLATE, join(prefix), " must not be negative");
 	}
+
+	public static final String RESULT = "result";
+	public static final String ERROR = "error";
+	
+	public static final Pageable DEFAULT_PAGEABLE = PageRequest.of(0, 10);
+	public static final String UPLOAD_FAILURE = "Unable to upload file(s)";
 
 }

@@ -3,9 +3,9 @@
  */
 package adn.model.entities;
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 
 import adn.service.internal.Role;
@@ -17,10 +17,11 @@ import adn.service.internal.Role;
 @Entity
 public class Personnel extends Operator {
 
-	@Column(name = "created_by")
-	private String createdBy;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "created_by", referencedColumnName = "id")
+	private Operator createdBy;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	private Department department;
 
 	public Personnel() {}
@@ -30,11 +31,11 @@ public class Personnel extends Operator {
 		setRole(Role.PERSONNEL);
 	}
 
-	public String getCreatedBy() {
+	public Operator getCreatedBy() {
 		return createdBy;
 	}
 
-	public void setCreatedBy(String createdBy) {
+	public void setCreatedBy(Operator createdBy) {
 		this.createdBy = createdBy;
 	}
 

@@ -15,7 +15,7 @@ import adn.model.entities.Entity;
  * @author Ngoc Huy
  *
  */
-public abstract class EntitySpecification<T extends Entity> implements Specification<T> {
+public abstract class EntitySpecification<T extends Entity> implements Validator<T> {
 
 	@Override
 	public Result<T> isSatisfiedBy(Session session, T instance) {

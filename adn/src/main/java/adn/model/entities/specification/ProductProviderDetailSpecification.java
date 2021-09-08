@@ -52,8 +52,10 @@ public class ProductProviderDetailSpecification extends PermanentEntitySpecifica
 			result.bad().getMessages().put(_ProductProviderDetail.provider, EMPTY_PROVIDER);
 		}
 
-		if (instance.getDroppedTimestamp() != null || instance.getDroppedTimestamp().isAfter(LocalDateTime.now())) {
-			result.bad().getMessages().put(_ProductProviderDetail.droppedTimestamp, INVALID_DROPPED_TIMESTAMP);
+		if (instance.getDroppedTimestamp() != null) {
+			if (instance.getDroppedTimestamp().isAfter(LocalDateTime.now())) {
+				result.bad().getMessages().put(_ProductProviderDetail.droppedTimestamp, INVALID_DROPPED_TIMESTAMP);				
+			}
 		}
 
 		if (instance.getPrice() == null || instance.getPrice().compareTo(BigDecimal.ZERO) < 0) {

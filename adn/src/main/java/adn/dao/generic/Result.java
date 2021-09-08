@@ -10,6 +10,7 @@ import static adn.service.internal.Service.Status.OK;
 import java.util.HashMap;
 import java.util.Map;
 
+import adn.application.Common;
 import adn.service.internal.Service.Status;
 
 /**
@@ -80,11 +81,7 @@ public class Result<T> {
 	}
 
 	public static <T> Result<T> failed(String error) {
-		return new Result<T>(FAILED, null, Map.of("exception", error));
-	}
-
-	public static Map<String, String> of(String result) {
-		return Map.of("result", result);
+		return new Result<T>(FAILED, null, Map.of(Common.ERROR, error));
 	}
 
 }

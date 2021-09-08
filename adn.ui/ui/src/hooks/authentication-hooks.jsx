@@ -15,7 +15,7 @@ export default function AuthenticationContextProvider({ children }) {
 
 	useEffect(() => {
 		const doFetchPrincipal = async () => {
-			let principal = await fetchPrincipal([ "username", "role" ]);
+			let principal = await fetchPrincipal([ "username", "role", "firstName", "lastName" ]);
 
 			if (principal != null && principal.role === Account.Role.PERSONNEL && principal.departmentId == null) {
 				const [departmentId, err] = await getPersonnelDepartmentId({ username: principal.username });

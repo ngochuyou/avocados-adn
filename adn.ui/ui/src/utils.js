@@ -85,6 +85,8 @@ export const negateNegative = (event) => {
 	}
 }
 
+export const isNegative = (number) => !isNaN(number) && Number(number) < 0;
+
 export const isObj = (payload) => payload != null && typeof payload === 'object';
 
 export const isString = (payload) => typeof payload === 'string';
@@ -184,3 +186,27 @@ export const formatDatetime = (datetime) => {
 
 	return `${DAY_NAMES[instant.getDay()]} ${DATE_NAMES[instant.getDate()]} ${MONTH_NAMES[instant.getMonth()]} ${instant.getFullYear()} at ${HOURS_NAMES[instant.getHours()]}:${MINUTE_AND_SECOND_NAMES[instant.getMinutes()]}`;
 }
+
+export const result = (message) => { return { result: message } };
+
+const VND_FORMATTER = new Intl.NumberFormat('de-DE', { style: 'decimal' });
+
+export const formatVND = (value) => isNaN(value) ? null : `${VND_FORMATTER.format(value)}\u20AB`;
+
+class Optional {
+	#optional;
+
+	constructor(optional = null) {
+		this.optional = optional;
+	}
+
+	else(orElse = null) {
+		if (this.optional == null) {
+			return orElse;
+		}
+
+		return this.optional;
+	}
+}
+
+export const optional = (opt) => new Optional(opt);

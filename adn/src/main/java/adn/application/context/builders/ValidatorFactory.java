@@ -24,17 +24,17 @@ import adn.dao.generic.Result;
 import adn.helpers.TypeHelper;
 import adn.model.Generic;
 import adn.model.entities.Entity;
-import adn.model.entities.specification.Specification;
+import adn.model.entities.specification.Validator;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Component
-public class SpecificationFactory implements ContextBuilder {
+public class ValidatorFactory implements ContextBuilder {
 
-	private Map<Class<? extends Entity>, Specification<?>> specificationMap;
-	private Specification<Entity> defaultSpecification = new Specification<>() {
+	private Map<Class<? extends Entity>, Validator<?>> validatorMap;
+	private Validator<Entity> defaultValidator = new Validator<>() {
 
 		@Override
 		public Result<Entity> isSatisfiedBy(Session session, Entity instance) {
@@ -54,26 +54,26 @@ public class SpecificationFactory implements ContextBuilder {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void buildAfterStartUp() {
-		Logger logger = LoggerFactory.getLogger(SpecificationFactory.class);
+		Logger logger = LoggerFactory.getLogger(ValidatorFactory.class);
 
 		logger.info("Building " + this.getClass().getName());
-		this.specificationMap = new HashMap<>();
+		this.validatorMap = new HashMap<>();
 
 		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
 		// @formatter:off
-		scanner.addIncludeFilter(new AssignableTypeFilter(Specification.class));
+		scanner.addIncludeFilter(new AssignableTypeFilter(Validator.class));
 
 		try {
 			for (BeanDefinition beanDef : scanner.findCandidateComponents(Constants.GENERIC_SPECIFICATION_PACKAGE)) {
-				Class<? extends Specification<?>> clazz = (Class<? extends Specification<?>>) Class.forName(beanDef.getBeanClassName());
+				Class<? extends Validator<?>> clazz = (Class<? extends Validator<?>>) Class.forName(beanDef.getBeanClassName());
 				Generic anno = clazz.getDeclaredAnnotation(Generic.class);
 				
 				if (!Entity.class.isAssignableFrom(anno.entityGene())) {
 					continue;
 				}
 				
-				specificationMap.put((Class<? extends Entity>) anno.entityGene(),
-						(Specification<?>) ContextProvider.getApplicationContext()
+				validatorMap.put((Class<? extends Entity>) anno.entityGene(),
+						(Validator<?>) ContextProvider.getApplicationContext()
 							.getBean(TypeHelper.getComponentName(clazz)));
 			}
 		} catch (Exception e) {
@@ -83,25 +83,25 @@ public class SpecificationFactory implements ContextBuilder {
 
 		modelManager.getEntityTree()
 			.forEach(branch -> {
-				if (specificationMap.get(branch.getNode()) == null) {
+				if (validatorMap.get(branch.getNode()) == null) {
 					if (branch.getParent() == null) {
-						specificationMap.put((Class<? extends Entity>) branch.getNode(), defaultSpecification);
+						validatorMap.put((Class<? extends Entity>) branch.getNode(), defaultValidator);
 						return;
 					}
 					
-					Specification<?> parentSpec = this.specificationMap.get(branch.getParent().getNode());
+					Validator<?> parentSpec = this.validatorMap.get(branch.getParent().getNode());
 					
-					specificationMap.put((Class<? extends Entity>) branch.getNode(), parentSpec != null ? parentSpec : defaultSpecification);
+					validatorMap.put((Class<? extends Entity>) branch.getNode(), parentSpec != null ? parentSpec : defaultValidator);
 				}
 			});
-		specificationMap.forEach((k, v) -> logger.debug(String.format("Registered one %s of type [%s] for [%s] ", Specification.class.getSimpleName(), v.getClass().getName(), k.getName())));
+		validatorMap.forEach((k, v) -> logger.debug(String.format("Registered one %s of type [%s] for [%s] ", Validator.class.getSimpleName(), v.getClass().getName(), k.getName())));
 		// @formatter:on
 		logger.info("Finished building" + this.getClass().getName());
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T extends Entity> Specification<T> getSpecification(Class<T> clazz) {
-		return (Specification<T>) this.specificationMap.get(clazz);
+	public <T extends Entity> Validator<T> getValidator(Class<T> clazz) {
+		return (Validator<T>) this.validatorMap.get(clazz);
 	}
 
 }

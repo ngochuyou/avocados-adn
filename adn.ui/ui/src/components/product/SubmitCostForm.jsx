@@ -3,19 +3,22 @@ import { useProduct } from '../../hooks/product-hooks';
 import { useProvider } from '../../hooks/provider-hooks';
 
 import { getProductList, searchProduct } from '../../actions/product';
-import { fetchProviderList, searchProvider } from '../../actions/provider';
+import { fetchProviderList, searchProvider, createProductDetail } from '../../actions/provider';
 
-import { MODIFY_MODEL } from '../../actions/common';
+import { SET_ERROR, MODIFY_MODEL } from '../../actions/common';
 
 import { CenterModal } from '../utils/Modal';
 import { SearchInput } from '../utils/Input';
 import { DomainImage } from '../utils/Gallery';
+import { AlertBox } from '../utils/Alert';
 
-import { hasLength, asIf } from '../../utils';
+import { hasLength, asIf, isObj } from '../../utils';
 
 import { useDispatch } from '../../hooks/hooks';
 
 import { server } from '../../config/default';
+
+import ProductCost from '../../models/ProductCost';
 
 const FormContext = createContext();
 const useFormContext = () => useContext(FormContext);
@@ -26,7 +29,7 @@ const FORM_STORE = {
 		provider: null,
 		price: 100000
 	},
-	errors: null
+	errors: {}
 };
 
 const formDispatchers = {
@@ -40,10 +43,21 @@ const formDispatchers = {
 		const { model } = oldState;
 
 		return {
+			...oldState,
 			model: {
 				...model,
 				[name]: value
 			}
+		};
+	},
+	SET_ERROR: (payload, oldState) => {
+		if (!isObj(payload)) {
+			return oldState;
+		}
+
+		return {
+			...oldState,
+			errors: payload
 		};
 	}
 };
@@ -90,9 +104,10 @@ export default function SubmitCostForm() {
 
 function LeftPanel() {
 	const {
-		store: { model },
-		dispatch: dispatctFormStore
+		store: { model, errors },
+		dispatch: dispatchFormStore
 	} = useFormContext();
+	const [alert, setAlert] = useState(null);
 	const {
 		store: { elements: { map: products } } 
 	} = useProduct();
@@ -102,7 +117,7 @@ function LeftPanel() {
 	const [productPickerVison, setProductPickerVision] = useState(false);
 	const [providerPickerVison, setProviderPickerVision] = useState(false);
 	const onSelectProduct = (productId) => {
-		dispatctFormStore({
+		dispatchFormStore({
 			type: MODIFY_MODEL,
 			payload: {
 				name: "product",
@@ -112,7 +127,7 @@ function LeftPanel() {
 		setProductPickerVision(false);
 	};
 	const onSelectProvider = (providerId) => {
-		dispatctFormStore({
+		dispatchFormStore({
 			type: MODIFY_MODEL,
 			payload: {
 				name: "provider",
@@ -124,14 +139,65 @@ function LeftPanel() {
 	const onInputChange = (event) => {
 		const { name, value } = event.target;
 
-		dispatctFormStore({
+		dispatchFormStore({
 			type: MODIFY_MODEL,
 			payload: { name, value }
 		});
 	};
+	const validate = (columns) => {
+		let result = {}, success = true;
+
+		for (let column of columns) {
+			const [ok, err] = ProductCost.validators[column](model[column]);
+
+			success = success && ok;
+
+			if (!ok) {
+				result[column] = err;
+			}
+		}
+
+		dispatchFormStore({
+			type: SET_ERROR,
+			payload: result
+		});
+
+		return success;
+	};
+	const onSubmit = async () => {
+		const success = validate(["product", "provider", "price"]);
+
+		if (!success) {
+			return;
+		}
+
+		const [, err] = await createProductDetail(model);
+
+		if (err) {
+			console.log(err);
+
+			const { result } = err;
+
+			setAlert(result);
+			return;
+		}
+
+		setAlert("Submitted for approval");
+	};
 
 	return (
 		<div>
+		{
+			asIf(alert != null)
+			.then(() => (
+				<AlertBox
+					onClose={() => setAlert(null)}
+					message={alert}
+					className="uk-alert-primary"
+				/>
+			))
+			.else(() => null)
+		}
 			<div className="uk-grid-small uk-child-width-1-2" uk-grid="">
 				<div className="pointer noselect" >
 					<div className="uk-text-right">
@@ -189,6 +255,7 @@ function LeftPanel() {
 						);
 					})
 				}
+					<div className="uk-text-danger">{errors.product}</div>
 				</div>
 				<div
 					className="pointer noselect"
@@ -214,6 +281,7 @@ function LeftPanel() {
 						})
 					}
 					</div>
+					<div className="uk-text-danger">{errors.provider}</div>
 				</div>
 			</div>
 			<div className="uk-margin">
@@ -225,11 +293,15 @@ function LeftPanel() {
 					placeholder="Cost"
 					onChange={onInputChange}
 					type="number"
-					min={0}
+					min="0"
 				/>
+				<div className="uk-text-danger">{errors.price}</div>
 			</div>
 			<div className="uk-margin">
-				<button className="uk-button backgroundf">Submit Cost</button>
+				<button
+					className="uk-button backgroundf"
+					onClick={onSubmit}
+				>Submit Cost</button>
 			</div>
 			<ProductPicker
 				visible={productPickerVison}

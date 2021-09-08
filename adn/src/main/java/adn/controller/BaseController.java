@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.context.builders.ModelContextProvider;
-import adn.dao.generic.Repository;
+import adn.dao.generic.GenericRepository;
 import adn.dao.generic.Result;
 import adn.helpers.CollectionHelper;
 import adn.helpers.FunctionHelper.HandledConsumer;
@@ -36,7 +36,8 @@ import adn.model.factory.authentication.DynamicMapModelProducerFactory;
 import adn.model.factory.authentication.dynamicmap.SourceMetadataFactory;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.model.factory.extraction.PojoEntityExtractorProvider;
-import adn.service.internal.CRUDService;
+import adn.service.internal.GenericCRUDService;
+import adn.service.services.GenericPermanentEntityService;
 
 /**
  * @author Ngoc Huy
@@ -56,10 +57,10 @@ public class BaseController {
 	protected PojoEntityExtractorProvider extractorProvider;
 
 	@Autowired
-	protected CRUDService crudService;
+	protected GenericCRUDService crudService;
 
 	@Autowired
-	protected Repository baseRepository;
+	protected GenericRepository baseRepository;
 
 	@Autowired
 	protected SessionFactory sessionFactory;
@@ -67,6 +68,9 @@ public class BaseController {
 	@Autowired
 	protected ObjectMapper objectMapper;
 
+	@Autowired
+	protected GenericPermanentEntityService genericPermanentEntityService;
+	
 	public static final long MAXIMUM_FILE_SIZE = 30 * 1024 * 1024;
 
 	protected static final String HEAD = "ROLE_HEAD";
@@ -125,8 +129,8 @@ public class BaseController {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
 	}
 
-	protected <T> ResponseEntity<?> send(T instance, String messageIfNull) {
-		return instance == null ? sendNotFound(messageIfNull) : ResponseEntity.ok(instance);
+	protected <T, B> ResponseEntity<?> send(T instance, B ifNull) {
+		return instance == null ? sendNotFound(ifNull) : ResponseEntity.ok(instance);
 	}
 
 	protected <T extends DomainEntity> ResponseEntity<?> send(List<T> instances) {

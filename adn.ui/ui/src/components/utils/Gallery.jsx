@@ -2,7 +2,7 @@ import { server } from '../../config/default.json';
 
 import { memo } from 'react';
 
-import { isImage } from '../../utils';
+import { isImage, hasLength } from '../../utils';
 
 const DOMAIN = "DOMAIN";
 const CLIENT = "CLIENT";
@@ -220,5 +220,19 @@ export function DomainImage({ url = "", name = "", className = "", fit = "cover"
 			maxHeight: "100%",
 			maxWidth: "100%"
 		}}
+	/>;
+}
+
+export const DomainProductImage = memo(_DomainProductImage, (o, n) => o.name === n.name);
+
+function _DomainProductImage({ name = "", className = "", fit = "cover" }) {
+	if (!hasLength(name)) {
+		return <div>No preview</div>;
+	}
+
+	return <DomainImage
+		url={`${server.images.product}/${name}`}
+		className={className}
+		fit={fit}
 	/>;
 }

@@ -9,9 +9,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import adn.application.context.ContextProvider;
 import adn.application.context.builders.ModelContextProvider;
 import adn.model.DomainEntity;
+import adn.model.entities.metadata.AssociationType;
 import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.authentication.SourceMetadata;
 import adn.model.factory.authentication.SourceType;
@@ -22,6 +26,7 @@ import adn.model.factory.authentication.SourceType;
  */
 public class SourceMetadataFactory {
 
+	private static final Logger logger = LoggerFactory.getLogger(SourceMetadataFactory.class);
 	private static final ModelContextProvider MODEL_CONTEXT = ContextProvider.getBean(ModelContextProvider.class);
 
 	public static <T extends DomainEntity> SourceMetadata<T> basic(Class<T> entityType, Collection<String> columns) {
@@ -99,8 +104,9 @@ public class SourceMetadataFactory {
 		return new SourceMetadataImpl<>(entityType, columns, SourceType.POJO, entityType,
 				MODEL_CONTEXT.getMetadata(entityType), resolveUnknownAssociationMetadatas(entityType, columns));
 	}
-	
-	public static <T extends DomainEntity> SourceMetadata<T> unknownCollection(Class<T> entityType, List<String> columns) {
+
+	public static <T extends DomainEntity> SourceMetadata<T> unknownCollection(Class<T> entityType,
+			List<String> columns) {
 		return new SourceMetadataImpl<>(entityType, columns, SourceType.COLLECTION, entityType,
 				MODEL_CONTEXT.getMetadata(entityType), resolveUnknownAssociationMetadatas(entityType, columns));
 	}
@@ -109,8 +115,9 @@ public class SourceMetadataFactory {
 		return new SourceMetadataImpl<>(entityType, columns, SourceType.OBJECT_ARRAY, entityType,
 				MODEL_CONTEXT.getMetadata(entityType), resolveUnknownAssociationMetadatas(entityType, columns));
 	}
-	
-	public static <T extends DomainEntity> SourceMetadata<T> unknownArrayCollection(Class<T> entityType, List<String> columns) {
+
+	public static <T extends DomainEntity> SourceMetadata<T> unknownArrayCollection(Class<T> entityType,
+			List<String> columns) {
 		return new SourceMetadataImpl<>(entityType, columns, SourceType.COLLECTION, Object[].class,
 				MODEL_CONTEXT.getMetadata(entityType), resolveUnknownAssociationMetadatas(entityType, columns));
 	}
@@ -124,13 +131,19 @@ public class SourceMetadataFactory {
 			String column = owningTypeColumns.get(index);
 
 			if (entityMetadata.isAssociation(column)) {
-				Class<? extends DomainEntity> associationType = entityMetadata.getAssociationType(column);
-				List<String> associationColumns = MODEL_CONTEXT.getMetadata(associationType)
-						.getNonLazyPropertyNames();
+				Class<? extends DomainEntity> associationClass = entityMetadata.getAssociationClass(column);
+				List<String> associationColumns = MODEL_CONTEXT.getMetadata(associationClass).getNonLazyPropertyNames();
+				AssociationType associationType = entityMetadata.getAssociationType(column);
+
+				if (associationType != AssociationType.COLLECTION && associationType != AssociationType.ENTITY) {
+					logger.error(
+							String.format("Unknown %s: [%s]", AssociationType.class.getSimpleName(), associationType));
+					return;
+				}
 
 				associationMetadatas.put(index,
-						!entityMetadata.isAssociationCollection(column) ? unknown(associationType, associationColumns)
-								: unknownCollection(associationType, associationColumns));
+						associationType == AssociationType.ENTITY ? basic(associationClass, associationColumns)
+								: basicCollection(associationClass, associationColumns));
 				return;
 			}
 		});

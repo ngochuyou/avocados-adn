@@ -1,5 +1,6 @@
 package adn.controller;
 
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,12 +84,12 @@ public class AccountController extends BaseController {
 
 		setSessionMode();
 
-		if (baseRepository.countById(model.getId(), Account.class) != 0) {
+		if (baseRepository.countById(Account.class, model.getId()) != 0) {
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(Common.EXISTED);
 		}
 
-		Result<Account> insertResult = accountService.create(model.getId(), model,
-				(Class<Account>) accountClass, photo, true);
+		Result<Account> insertResult = accountService.create(model.getId(), model, (Class<Account>) accountClass, photo,
+				true);
 
 		if (insertResult.isOk()) {
 			return ResponseEntity.ok(produce(insertResult.getInstance(), (Class<Account>) accountClass, principalRole));
@@ -115,13 +116,13 @@ public class AccountController extends BaseController {
 			username = authentication.getName();
 		}
 
-		Account account = baseRepository.findById(username, Account.class);
+		Optional<Account> optional = baseRepository.findById(Account.class, username);
 
-		if (account == null) {
+		if (optional.isEmpty()) {
 			return sendNotFound(Common.NOT_FOUND);
 		}
 
-		return cacheAccountPhoto(resourceService.directlyGetImageBytes(null, account.getPhoto()));
+		return cacheAccountPhoto(resourceService.directlyGetImageBytes(null, optional.get().getPhoto()));
 	}
 
 	private ResponseEntity<?> cacheAccountPhoto(byte[] photoBytes) {
@@ -164,12 +165,12 @@ public class AccountController extends BaseController {
 		Account persistence;
 		// This entity will take effects as the handler progresses
 		// Only changes on this persisted entity will be committed
-		if ((persistence = baseRepository.findById(model.getId(), Account.class)) == null) {
+		if ((persistence = baseRepository.findById(Account.class, model.getId()).orElse(null)) == null) {
 			return sendNotFound(Common.NOT_FOUND);
 		}
 
-		Result<Account> updateResult = accountService.update(persistence.getId(), model,
-				(Class<Account>) accountClass, multipartPhoto, true);
+		Result<Account> updateResult = accountService.update(persistence.getId(), model, (Class<Account>) accountClass,
+				multipartPhoto, true);
 
 		if (updateResult.isOk()) {
 			return ResponseEntity.ok(produce(updateResult.getInstance(), (Class<Account>) accountClass, principalRole));

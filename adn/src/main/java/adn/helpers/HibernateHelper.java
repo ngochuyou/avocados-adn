@@ -4,13 +4,10 @@
 package adn.helpers;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.persistence.Tuple;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
@@ -86,17 +83,6 @@ public class HibernateHelper {
 
 	public static List<Object[]> toRows(List<Tuple> tuples) {
 		return tuples.stream().map(row -> row.toArray()).collect(Collectors.toList());
-	}
-
-	public static <E, R> CriteriaQuery<R> selectColumns(CriteriaQuery<R> query, Root<E> root,
-			Collection<String> columns) throws NoSuchFieldException {
-		try {
-			query.multiselect(columns.stream().map(col -> root.get(col)).collect(Collectors.toList()));
-		} catch (IllegalArgumentException iae) {
-			throw new NoSuchFieldException(UNKNOWN_COLUMNS);
-		}
-
-		return query;
 	}
 
 }

@@ -3,12 +3,15 @@
  */
 package adn.security;
 
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.Arrays;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -67,6 +70,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private OnMemoryUserContext onMemUserContext;
 
+	private static final int CLIENT_PORT = 3000;
 	public static final String TESTUNIT_PREFIX = "/testunit";
 	// @formatter:off
 	private static final String[] PUBLIC_ENDPOINTS = {
@@ -154,9 +158,19 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
+		String clientIP;
+
+		try (DatagramSocket socket = new DatagramSocket()) {
+			socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+			clientIP = String.format("http://%s:%s", socket.getLocalAddress().getHostAddress(), CLIENT_PORT);
+		} catch (Exception any) {
+			any.printStackTrace();
+			SpringApplication.exit(getApplicationContext());
+			return null;
+		}
 
 		configuration.setAllowCredentials(true);
-		configuration.setAllowedOrigins(Arrays.asList("http://192.168.100.10:3000"));
+		configuration.setAllowedOrigins(Arrays.asList(clientIP));
 		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(
 				Arrays.asList("authorization", "content-type", "x-auth-token", "Access-Control-Allow-Credentials"));

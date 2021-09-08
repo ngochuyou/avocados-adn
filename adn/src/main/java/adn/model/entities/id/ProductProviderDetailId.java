@@ -78,4 +78,15 @@ public class ProductProviderDetailId implements Serializable {
 				&& providerId.equals(other.providerId);
 	}
 
+	@Override
+	public int hashCode() {
+		int hash = 17;
+
+		hash += 37 * productId.hashCode();
+		hash += 37 * providerId.hashCode();
+		hash += createdTimestamp != null ? createdTimestamp.hashCode() : 0;
+
+		return hash;
+	}
+
 }

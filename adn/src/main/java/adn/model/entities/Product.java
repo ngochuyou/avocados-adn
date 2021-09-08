@@ -57,7 +57,7 @@ public class Product extends Factor {
 	private Float rating;
 
 	@JsonIgnore
-	@OneToMany(mappedBy = "product")
+	@OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
 	private List<StockDetail> stockDetails;
 
 	public String getId() {

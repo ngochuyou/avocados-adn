@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -94,7 +95,7 @@ public class RestAccountController extends AccountController {
 	public ResponseEntity<?> deactivateAccount(@PathVariable(name = "username", required = true) String username) {
 		authService.assertPersonnelDepartment();
 
-		if (baseRepository.countById(username, Account.class) == 0) {
+		if (baseRepository.countById(Account.class, username) == 0) {
 			return sendNotFound(Common.NOT_FOUND);
 		}
 
@@ -112,22 +113,24 @@ public class RestAccountController extends AccountController {
 		String username = ContextProvider.getPrincipalName();
 
 		if (requestedColumns.size() == 0) {
-			Account model = baseRepository.findById(username, Account.class);
+			Optional<Account> optional = baseRepository.findById(Account.class, username);
 
-			if (model == null) {
+			if (optional.isEmpty()) {
 				return sendNotFound(Common.NOT_FOUND);
 			}
 
-			if (!model.isActive()) {
+			Account account = optional.get();
+
+			if (!account.isActive()) {
 				return ResponseEntity.status(HttpStatus.LOCKED).body(Common.LOCKED);
 			}
 
-			return send(model, accountService.getClassFromRole(model.getRole()), null, owner());
+			return send(account, accountService.getClassFromRole(account.getRole()), null, owner());
 		}
 
 		requestedColumns.add(_Account.role);
 
-		Map<String, Object> cols = crudService.find(username, Account.class, requestedColumns, owner());
+		Map<String, Object> cols = crudService.readById(username, Account.class, requestedColumns, owner());
 
 		if (cols == null) {
 			return sendNotFound(Common.NOT_FOUND);
@@ -145,25 +148,27 @@ public class RestAccountController extends AccountController {
 		Role principalRole = ContextProvider.getPrincipalRole();
 
 		if (requestedColumns.size() == 0) {
-			Account model = baseRepository.findById(username, Account.class);
+			Optional<Account> optional = baseRepository.findById(Account.class, username);
 
-			if (model == null) {
+			if (optional.isEmpty()) {
 				return sendNotFound(Common.NOT_FOUND);
 			}
 
+			Account account = optional.get();
+
 			if (principalRole.equals(Role.PERSONNEL) && authService.isPersonnelDepartment()) {
-				return send(model, accountService.getClassFromRole(model.getRole()), null);
+				return send(account, accountService.getClassFromRole(account.getRole()), null);
 			}
 
-			if (!model.isActive()) {
+			if (!account.isActive()) {
 				return ResponseEntity.status(HttpStatus.LOCKED).body(Common.LOCKED);
 			}
 
-			if (!principalRole.canRead(model.getRole())) {
+			if (!principalRole.canRead(account.getRole())) {
 				return unauthorize(Common.ACCESS_DENIED);
 			}
 
-			return send(model, accountService.getClassFromRole(model.getRole()), null);
+			return send(account, accountService.getClassFromRole(account.getRole()), null);
 		}
 
 		List<String> columns = new ArrayList<>(requestedColumns);
@@ -176,7 +181,8 @@ public class RestAccountController extends AccountController {
 			columns.add(_Account.role);
 		}
 
-		Map<String, Object> fetchedRow = crudService.find(username, Account.class, columns, getPrincipalCredential());
+		Map<String, Object> fetchedRow = crudService.readById(username, Account.class, columns,
+				getPrincipalCredential());
 
 		if (fetchedRow == null) {
 			return sendNotFound(Common.NOT_FOUND);

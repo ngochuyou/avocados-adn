@@ -4,6 +4,7 @@
 package adn.controller;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ import adn.model.entities.Product;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.internal.ResourceService;
 import adn.service.services.AuthenticationService;
+import adn.service.services.GenericFactorService;
 import adn.service.services.ProductService;
 
 /**
@@ -40,13 +42,15 @@ public class ProductController extends BaseController {
 	protected final ProductService productService;
 	protected final ResourceService resourceService;
 	protected final AuthenticationService authService;
+	protected final GenericFactorService genericFactorService;
 
 	@Autowired
 	public ProductController(AuthenticationService authService, ProductService productService,
-			ResourceService resourceService) {
+			ResourceService resourceService, GenericFactorService genericFactorService) {
 		this.productService = productService;
 		this.resourceService = resourceService;
 		this.authService = authService;
+		this.genericFactorService = genericFactorService;
 	}
 
 	@GetMapping(path = "/image/{filename:.+}")
@@ -79,9 +83,9 @@ public class ProductController extends BaseController {
 			@RequestPart(name = "images", required = false) MultipartFile[] images) throws UnauthorizedCredential {
 		authService.assertSaleDepartment();
 
-		Product persistence = baseRepository.findById(model.getId(), Product.class);
+		Optional<Product> persistence = baseRepository.findById(Product.class, model.getId());
 
-		if (persistence == null) {
+		if (persistence.isEmpty()) {
 			return sendNotFound(String.format("Product %s not found", model.getId()));
 		}
 

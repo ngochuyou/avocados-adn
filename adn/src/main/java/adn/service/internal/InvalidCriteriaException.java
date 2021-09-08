@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.specification;
+package adn.service.internal;
 
 /**
  * @author Ngoc Huy

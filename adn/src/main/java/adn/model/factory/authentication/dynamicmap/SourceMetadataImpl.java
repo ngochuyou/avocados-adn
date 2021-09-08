@@ -15,6 +15,8 @@ import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import adn.helpers.CollectionHelper;
 import adn.model.DomainEntity;
@@ -36,6 +38,8 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 	private final Set<Integer> associationIndicies;
 	private final SourceType sourceType;
 	private final Map<Integer, SourceMetadata<?>> associationMetadatas;
+	private Pageable paging;
+	private Specification<T> specification;
 
 	// @formatter:off
 	public SourceMetadataImpl(
@@ -105,28 +109,6 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 		associationIndicies = associationMetadatas.keySet();
 		this.associationMetadatas = associationMetadatas;
 	}
-
-	public SourceMetadataImpl(
-			SourceType sourceType,
-			Class<?> representation,
-			SourceMetadata<T> original) {
-		super();
-		
-		if (!(original instanceof SourceMetadataImpl)) {
-			throw new IllegalArgumentException(String.format("Unqualified %s type: [%s]", SourceMetadataImpl.class.getName(), original.getClass().getName()));
-		}
-		
-		this.entityType = original.getEntityType();
-
-		setColumns(original.getColumns());
-		
-		this.sourceType = sourceType;
-		this.representation = resolveRepresentation(sourceType, representation);
-		// associationIndicies.size() and associationMetadatas.length must match
-		// this must be asserted by devs as contract
-		associationIndicies = original.getAssociationIndices();
-		this.associationMetadatas = ((SourceMetadataImpl<T>) original).associationMetadatas;
-	}
 	// @formatter:on
 
 	private Class<?> resolveRepresentation(SourceType type, Class<?> requestedRepresentation) {
@@ -172,7 +154,7 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 	}
 
 	@Override
-	public SourceMetadata<? extends DomainEntity> getAssociationMetadata(int index) {
+	public SourceMetadata<?> getAssociationMetadata(int index) {
 		return associationMetadatas.get(index);
 	}
 
@@ -188,6 +170,26 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 		}
 
 		this.columns = columns;
+	}
+
+	@Override
+	public Pageable getPaging() {
+		return paging;
+	}
+
+	@Override
+	public Specification<T> getSpecification() {
+		return specification;
+	}
+
+	@Override
+	public void setPaging(Pageable paging) {
+		this.paging = paging;
+	}
+
+	@Override
+	public void setSpecification(Specification<T> specification) {
+		this.specification = specification;
 	}
 
 }

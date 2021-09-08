@@ -13,7 +13,7 @@ import adn.dao.generic.Result;
  * @author Ngoc Huy
  *
  */
-public interface Specification<T> {
+public interface Validator<T> {
 
 	Result<T> isSatisfiedBy(Session session, T instance);
 

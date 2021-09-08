@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
 
+import adn.application.Common;
 import adn.application.context.ContextProvider;
 import adn.dao.generic.Result;
 import adn.model.entities.Account;
@@ -38,7 +39,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 
 	private final Map<String, DomainEntityServiceObserver<Account>> observers = new HashMap<>(0);
 
-	protected final GenericCRUDService crudService;
+	protected final GenericCRUDServiceImpl crudService;
 	protected final ResourceService resourceService;
 	// @formatter:off
 	private final Map<Role, Class<? extends Account>> roleClassMap = Map.of(
@@ -52,7 +53,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 	@Autowired
 	public AccountService(
 			ResourceService resourceService,
-			GenericCRUDService crudService) {
+			GenericCRUDServiceImpl crudService) {
 		this.resourceService = resourceService;
 		this.crudService = crudService;
 	}
@@ -85,7 +86,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 			ServiceResult<String> uploadResult = resourceService.uploadUserPhoto(photo);
 
 			if (!uploadResult.isOk()) {
-				return bad(Map.of("photo", UPLOAD_FAILURE));
+				return bad(Map.of("photo", Common.UPLOAD_FAILURE));
 			}
 
 			isResourceSessionFlushed = true;
@@ -128,7 +129,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 		ServiceResult<String> localResourceResult = updateOrUploadPhoto(persistence, photo);
 
 		if (localResourceResult.getStatus().equals(Status.FAILED)) {
-			return bad(Map.of("photo", UPLOAD_FAILURE));
+			return bad(Map.of("photo", Common.UPLOAD_FAILURE));
 		}
 
 		boolean isResourceSessionFlushed = localResourceResult.isOk();

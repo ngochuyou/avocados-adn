@@ -19,8 +19,16 @@ import java.util.Set;
 public class CollectionHelper {
 
 	private CollectionHelper() {}
-
+	
 	public static final String[] EMPTY_STRING_ARRAY = new String[0];
+
+	@SuppressWarnings("rawtypes")
+	private static final HashSet EMPTY_HASH_SET = new HashSet<>();
+
+	@SuppressWarnings("unchecked")
+	public static final <T> HashSet<T> emptyHashSet() {
+		return (HashSet<T>) EMPTY_HASH_SET;
+	}
 
 	public static String[] from(Collection<String> elements) {
 		return elements.toArray(String[]::new);

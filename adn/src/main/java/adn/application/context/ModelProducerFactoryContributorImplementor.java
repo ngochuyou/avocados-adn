@@ -12,10 +12,12 @@ import static adn.service.internal.Role.ANONYMOUS;
 import static adn.service.internal.Role.CUSTOMER;
 import static adn.service.internal.Role.HEAD;
 
+import java.util.Map;
 import java.util.stream.Stream;
 
 import adn.application.context.builders.CredentialFactory;
 import adn.application.context.builders.DynamicMapModelProducerFactoryImpl.ModelProducerFactoryContributor;
+import adn.helpers.Utils;
 import adn.model.entities.Account;
 import adn.model.entities.Category;
 import adn.model.entities.Customer;
@@ -23,6 +25,7 @@ import adn.model.entities.Personnel;
 import adn.model.entities.Product;
 import adn.model.entities.ProductProviderDetail;
 import adn.model.entities.Provider;
+import adn.model.entities.id.ProductProviderDetailId;
 import adn.model.entities.metadata._Account;
 import adn.model.entities.metadata._Category;
 import adn.model.entities.metadata._Customer;
@@ -117,6 +120,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		// @formatter:on
 	}
 
+	@SuppressWarnings("unchecked")
 	private void provider(ModelProducerFactoryBuilder builder) {
 		WithType<Provider> provider = builder.type(Provider.class);
 		// @formatter:off
@@ -138,11 +142,22 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 			.credentials(SALE_CREDENTIAL, STOCK_CREDENTIAL, HEAD)
 				.fields(_ProductProviderDetail.price,
 						_ProductProviderDetail.productId, _ProductProviderDetail.providerId, 
-						_ProductProviderDetail.product, _ProductProviderDetail.provider)
+						_ProductProviderDetail.product, _ProductProviderDetail.provider,
+						_ProductProviderDetail.createdTimestamp)
 				.publish()
+				.fields(_ProductProviderDetail.id)
+					.useFunction((args, credential) -> {
+						ProductProviderDetailId id = (ProductProviderDetailId) args.getSource();
+						
+						return Map.of(
+								_ProductProviderDetail.productId, id.getProductId(),
+								_ProductProviderDetail.providerId, id.getProviderId(),
+								_ProductProviderDetail.createdTimestamp, Utils.ldt(id.getCreatedTimestamp())
+							);
+					})
 			.credentials(SALE_CREDENTIAL, HEAD)
 				.fields(_ProductProviderDetail.droppedTimestamp, _ProductProviderDetail.approvedTimestamp,
-						_ProductProviderDetail.createdBy, _ProductProviderDetail.createdTimestamp,
+						_ProductProviderDetail.createdBy, 
 						_ProductProviderDetail.approvedBy)
 				.publish();
 		// @formatter:on

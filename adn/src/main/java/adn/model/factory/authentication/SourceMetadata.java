@@ -6,6 +6,9 @@ package adn.model.factory.authentication;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
 import adn.model.DomainEntity;
 
 /**
@@ -60,6 +63,14 @@ public interface SourceMetadata<T extends DomainEntity> {
 	 * @param index index of the association regarding to this source
 	 * @return the {@code SourceMetadata} of the association
 	 */
-	SourceMetadata<? extends DomainEntity> getAssociationMetadata(int index);
+	SourceMetadata<?> getAssociationMetadata(int index);
 
+	Pageable getPaging();
+	
+	void setPaging(Pageable paging);
+	
+	Specification<T> getSpecification();
+
+	void setSpecification(Specification<T> specification);
+	
 }

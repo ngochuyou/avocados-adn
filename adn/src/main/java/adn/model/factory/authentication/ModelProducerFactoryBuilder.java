@@ -53,7 +53,8 @@ public interface ModelProducerFactoryBuilder {
 
 		WithField<T> use(String... alias);
 
-		WithField<T> use(HandledBiFunction<Arguments<?>, Credential, ?, Exception>[] fncs);
+		@SuppressWarnings("unchecked")
+		WithField<T> useFunction(HandledBiFunction<Arguments<?>, Credential, ?, Exception>... fncs);
 
 		WithField<T> publish();
 

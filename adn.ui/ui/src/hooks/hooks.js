@@ -20,3 +20,7 @@ export const useDispatch = (initStore, dispatchers) => {
 
 	return [store, dispatch];
 }
+
+export const useToggle = (initState = false) => {
+	return useReducer((oldState) => !oldState, initState);
+}

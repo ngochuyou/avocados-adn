@@ -536,7 +536,8 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 					}
 
 					@Override
-					public WithField<T> use(HandledBiFunction<Arguments<?>, Credential, ?, Exception>[] fncs) {
+					@SuppressWarnings("unchecked")
+					public WithField<T> useFunction(HandledBiFunction<Arguments<?>, Credential, ?, Exception>... fncs) {
 						if (fncs.length != 1 && requireNonNull(fncs).length != fields.length) {
 							throw new IllegalArgumentException(String.format(
 									"Functions length and field lengths must match. Functions[%d]><[%d]Fields",

@@ -49,9 +49,8 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 
 	private static final Logger logger = LoggerFactory.getLogger(DynamicMapModelProducerImpl.class);
 
-	private static final float LOAD_FACTOR = 1.175f;
-
 	private final Class<T> entityType;
+	private static final float LOAD_FACTOR = 1.175f;
 
 	private final Map<String, Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>>> producingFunctions;
 	private final Map<String, String> aliasMap;
@@ -297,19 +296,25 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 	}
 
 	@Override
-	public <E extends T> Map<String, Object> produceSingleSource(SingleSource<E> source, Credential credential)
+	public <E extends T> Map<String, Object> produceSingleSource(SingleSource<E> sourceArgument, Credential credential)
 			throws UnauthorizedCredential {
-		SourceMetadata<E> metadata = source.getMetadata();
+		Object[] source = sourceArgument.getSource();
+
+		if (source == null) {
+			return null;
+		}
+
+		SourceMetadata<E> metadata = sourceArgument.getMetadata();
 		String evaluation = credential.evaluate();
 		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = producingFunctions
 				.get(evaluation);
 		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
 
 		if (!metadata.hasAssociation()) {
-			return produceRow(columns, source.getSource(), credential, functions);
+			return produceRow(columns, source, credential, functions);
 		}
 
-		return produceRow(columns, source.getSource(), credential, prepareAssociationProducing(metadata, functions));
+		return produceRow(columns, source, credential, prepareAssociationProducing(metadata, functions));
 	}
 
 	@Override
@@ -344,14 +349,20 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 	}
 
 	@Override
-	public <E extends T> Map<String, Object> produceSinglePojo(SinglePojoSource<E> source, Credential credential)
-			throws UnauthorizedCredential {
-		SourceMetadata<E> metadata = source.getMetadata();
+	public <E extends T> Map<String, Object> produceSinglePojo(SinglePojoSource<E> sourceArgument,
+			Credential credential) throws UnauthorizedCredential {
+		E source = sourceArgument.getSource();
+
+		if (source == null) {
+			return null;
+		}
+
+		SourceMetadata<E> metadata = sourceArgument.getMetadata();
 		String evaluation = credential.evaluate();
 		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = producingFunctions
 				.get(evaluation);
 		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
-		E entity = source.getSource();
+		E entity = sourceArgument.getSource();
 		Object[] values = Stream.of(columns).map(column -> getters.get(column).get(entity)).toArray();
 
 		if (!metadata.hasAssociation()) {
@@ -443,7 +454,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			SourceMetadata<DomainEntity> associationMetadata = (SourceMetadata<DomainEntity>) metadata
 					.getAssociationMetadata(index);
 			SourceType sourceType = associationMetadata.getSourceType();
-			Class<DomainEntity> associationType = (Class<DomainEntity>) entityMetadata.getAssociationType(column);
+			Class<DomainEntity> associationType = (Class<DomainEntity>) entityMetadata.getAssociationClass(column);
 			DynamicMapModelProducer<DomainEntity> associationProducer;
 
 			if (sourceType == SourceType.OBJECT_ARRAY) {

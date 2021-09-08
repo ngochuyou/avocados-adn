@@ -24,8 +24,8 @@ import org.springframework.stereotype.Component;
 
 import adn.application.context.ContextProvider;
 import adn.application.context.internal.ContextBuilder;
-import adn.dao.generic.Repository;
-import adn.service.internal.CRUDService;
+import adn.dao.generic.GenericRepository;
+import adn.service.internal.GenericCRUDService;
 
 /**
  * @author Ngoc Huy
@@ -41,10 +41,10 @@ public class TestRunner implements ContextBuilder {
 	private SessionFactoryImplementor sfi;
 
 	@Autowired
-	private Repository repo;
+	private GenericRepository repo;
 
 	@Autowired
-	private CRUDService service;
+	private GenericCRUDService service;
 
 	@Override
 	@Transactional

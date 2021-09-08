@@ -3,7 +3,7 @@ import { Link, Route } from 'react-router-dom';
 
 import { useAuth } from '../hooks/authentication-hooks';
 
-import { profile } from '../config/default';
+import { profile, routes } from '../config/default';
 
 import Account from '../models/Account';
 
@@ -32,7 +32,14 @@ function SidebarContextProvider({ children }) {
 
 export default function Dashboard() {
 	const { principal } = useAuth();
-	
+	const {
+		dashboard: {
+			provider: {
+				mapping: providerMapping
+			}
+		}
+	} = routes;
+
 	if (profile.mode === 'DEV' || (principal && (principal.role === Account.Role.HEAD || principal.role === Account.Role.PERSONNEL))) {
 		return (
 			<SidebarContextProvider>
@@ -54,7 +61,7 @@ export default function Dashboard() {
 							</StockScope>
 							<SaleScope>
 								<Route
-									path="/dashboard/provider"
+									path={`${providerMapping}`}
 									render={props => (
 										<ProviderBoard
 											{ ...props }
@@ -92,18 +99,29 @@ export default function Dashboard() {
 
 function Sidebar() {
 	const { overlay, setOverlay } = useSidebarContext();
+	const {
+		dashboard: {
+			provider: {
+				mapping: providerBoardMapping,
+				list: { mapping: providerListMapping },
+				new: { mapping: submitProviderMapping },
+				costSubmit: { mapping: submitProductCostMapping },
+				costList: { mapping: productCostsMapping },
+			}
+		}
+	} = routes;
 
 	return (
 		<header className="uk-padding-small uk-height-1-1">
 			<h3 className="colorf">
 				<a className="uk-link-reset" href="/">Avocados</a>
 			</h3>
-			<ul className="uk-list uk-list-large uk-list-divider">
+			<ul className="uk-nav-default uk-nav-parent-icon" uk-nav="">
 				<StockScope>
 					<li>
 						<Link
 							to="/dashboard/stock"
-							className="uk-link-reset uk-display-inline-block uk-height-1-1 uk-width-1-1"
+							className="uk-link-reset"
 						>Stock</Link>
 					</li>
 				</StockScope>
@@ -111,21 +129,47 @@ function Sidebar() {
 					<li>
 						<Link
 							to="/dashboard/product"
-							className="uk-link-reset uk-display-inline-block uk-height-1-1 uk-width-1-1"
+							className="uk-link-reset"
 						>Product</Link>
 					</li>
-					<li>
+					<li className="uk-parent">
 						<Link
-							to="/dashboard/provider"
-							className="uk-link-reset uk-display-inline-block uk-height-1-1 uk-width-1-1"
+							to={providerBoardMapping}
+							className="uk-link-reset uk-parent"
 						>Provider</Link>
+						<ul className="uk-nav-sub">
+							<li>
+								<Link
+									to={providerListMapping}
+									className="uk-link-reset uk-parent"
+								>Provider list</Link>
+							</li>
+							<li>
+								<Link
+									to={submitProviderMapping}
+									className="uk-link-reset uk-parent"
+								>New Provider</Link>
+							</li>
+							<li>
+								<Link
+									to={submitProductCostMapping}
+									className="uk-link-reset uk-parent"
+								>Submit Product cost</Link>
+							</li>
+							<li>
+								<Link
+									to={productCostsMapping}
+									className="uk-link-reset uk-parent"
+								>Product costs</Link>
+							</li>
+						</ul>
 					</li>
 				</SaleScope>
 				<PersonnelScope>
 					<li>
 						<Link
 							to="/dashboard/department"
-							className="uk-link-reset uk-display-inline-block uk-height-1-1 uk-width-1-1"
+							className="uk-link-reset"
 						>Department</Link>
 					</li>
 				</PersonnelScope>

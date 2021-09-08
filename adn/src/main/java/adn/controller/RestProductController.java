@@ -10,6 +10,7 @@ import static org.springframework.http.ResponseEntity.ok;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -32,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.Common;
-import adn.controller.query.specification.ProductQuery;
+import adn.controller.query.impl.ProductQuery;
 import adn.dao.generic.ResultBatch;
 import adn.helpers.StringHelper;
 import adn.model.entities.Category;
@@ -44,6 +45,7 @@ import adn.service.internal.ResourceService;
 import adn.service.internal.Service.Status;
 import adn.service.services.AuthenticationService;
 import adn.service.services.CategoryService;
+import adn.service.services.GenericFactorService;
 import adn.service.services.ProductService;
 
 /**
@@ -58,16 +60,16 @@ public class RestProductController extends ProductController {
 
 	@Autowired
 	public RestProductController(AuthenticationService authService, ProductService productService,
-			ResourceService resourceService, CategoryService categoryService) {
-		super(authService, productService, resourceService);
+			ResourceService resourceService, CategoryService categoryService,
+			GenericFactorService genericFactorService) {
+		super(authService, productService, resourceService, genericFactorService);
 		this.categoryService = categoryService;
 	}
 
 	@GetMapping(path = "/count")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getProductCount() {
-		return makeStaleWhileRevalidate(
-				ResponseEntity.ok(productService.countActive(Product.class, getPrincipalCredential())), 2,
+		return makeStaleWhileRevalidate(ResponseEntity.ok(genericFactorService.count(Product.class)), 2,
 				TimeUnit.DAYS, 7, TimeUnit.DAYS);
 	}
 
@@ -76,7 +78,7 @@ public class RestProductController extends ProductController {
 	public ResponseEntity<?> obtainProduct(@PathVariable(name = "productId", required = true) String productId,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns)
 			throws NoSuchFieldException, UnauthorizedCredential {
-		return send(productService.findWithActiveCheck(productId, Product.class, columns, getPrincipalCredential()),
+		return send(genericFactorService.readById(Product.class, productId, columns, getPrincipalCredential()),
 				String.format("Product %s not found", productId));
 	}
 
@@ -92,7 +94,7 @@ public class RestProductController extends ProductController {
 					getPrincipalCredential()));
 		}
 
-		return ok(productService.readActive(Product.class, columns, paging, getPrincipalCredential()));
+		return ok(genericFactorService.readAll(Product.class, columns, paging, getPrincipalCredential()));
 	}
 
 	@GetMapping(path = "/search")
@@ -100,7 +102,7 @@ public class RestProductController extends ProductController {
 	public ResponseEntity<?> searchForProducts(ProductQuery query,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
 			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
-		if (query.isEmpty()) {
+		if (!query.hasCriteria()) {
 			return sendBad(Common.INVALID_SEARCH_CRITERIA);
 		}
 
@@ -123,13 +125,13 @@ public class RestProductController extends ProductController {
 	public ResponseEntity<?> updateCategory(@RequestBody Category model) throws UnauthorizedCredential {
 		authService.assertSaleDepartment();
 
-		Category persistence = baseRepository.findById(model.getId(), Category.class);
+		Optional<Category> optional = baseRepository.findById(Category.class, model.getId());
 
-		if (persistence == null) {
+		if (optional.isEmpty()) {
 			return sendNotFound(String.format("Category %s not found", model.getId()));
 		}
 
-		return send(crudService.update(persistence.getId(), model, Category.class, true));
+		return send(crudService.update(optional.get().getId(), model, Category.class, true));
 	}
 
 	@GetMapping("/category/list")
@@ -138,21 +140,21 @@ public class RestProductController extends ProductController {
 	public ResponseEntity<?> getCategoryList(@PageableDefault(size = 5) Pageable pageable,
 			@RequestParam(name = "columns", defaultValue = "") List<String> columns)
 			throws NoSuchFieldException, UnauthorizedCredential {
-		return send(crudService.read(Category.class, columns, pageable, getPrincipalCredential()), null);
+		return send(crudService.readAll(Category.class, columns, pageable, getPrincipalCredential()), null);
 	}
 
 	@GetMapping("/category/all")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getAllCategories() throws NoSuchFieldException, UnauthorizedCredential {
-		return makeStaleWhileRevalidate(categoryService.readActive(Category.class, Arrays.asList("id", "name"),
+		return makeStaleWhileRevalidate(genericFactorService.readAll(Category.class, Arrays.asList("id", "name"),
 				PageRequest.of(0, 1000), getPrincipalCredential()), 1, TimeUnit.DAYS, 2, TimeUnit.DAYS);
 	}
 
 	@GetMapping("/category/count")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getCategoryCount() {
-		return makeStaleWhileRevalidate(categoryService.countActive(Category.class, getPrincipalCredential()), 1,
-				TimeUnit.DAYS, 3, TimeUnit.DAYS);
+		return makeStaleWhileRevalidate(genericFactorService.count(Category.class), 1, TimeUnit.DAYS, 3,
+				TimeUnit.DAYS);
 	}
 
 	@PatchMapping("/category/activation")
@@ -161,7 +163,13 @@ public class RestProductController extends ProductController {
 			@RequestParam(name = "active", required = true) Boolean requestedActiveState) {
 		authService.assertSaleDepartment();
 
-		Category category = baseRepository.findById(categoryId, Category.class);
+		Optional<Category> optional = baseRepository.findById(Category.class, categoryId);
+
+		if (optional.isEmpty()) {
+			return sendNotFound(Common.NOT_FOUND);
+		}
+
+		Category category = optional.get();
 		// we use AUTO-FLUSH here
 		category.setActive(requestedActiveState);
 

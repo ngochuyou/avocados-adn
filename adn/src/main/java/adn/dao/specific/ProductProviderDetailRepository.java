@@ -1,0 +1,176 @@
+/**
+ * 
+ */
+package adn.dao.specific;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import javax.persistence.Tuple;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Path;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Subquery;
+
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.Query;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Repository;
+
+import adn.dao.generic.GenericRepositoryImpl;
+import adn.helpers.HibernateHelper;
+import adn.model.entities.ProductProviderDetail;
+import adn.model.entities.Provider;
+import adn.model.entities.metadata._ProductProviderDetail;
+import adn.model.entities.metadata._Provider;
+
+/**
+ * @author Ngoc Huy
+ *
+ */
+@Repository
+public class ProductProviderDetailRepository {
+
+	private static final Logger logger = LoggerFactory.getLogger(ProductProviderDetailRepository.class);
+
+	private final SessionFactory sessionFactory;
+	private final GenericRepositoryImpl genericRepository;
+
+	@Autowired
+	public ProductProviderDetailRepository(GenericRepositoryImpl genericRepository, SessionFactory sessionFactory) {
+		super();
+		this.genericRepository = genericRepository;
+		this.sessionFactory = sessionFactory;
+	}
+
+	@SuppressWarnings("serial")
+	public Optional<ProductProviderDetail> findCurrent(UUID providerId, String productId) {
+		return genericRepository.findOne(ProductProviderDetail.class, new Specification<ProductProviderDetail>() {
+			@Override
+			public Predicate toPredicate(Root<ProductProviderDetail> root, CriteriaQuery<?> query,
+					CriteriaBuilder builder) {
+				return builder.and(hasId(root, builder, providerId, productId), isCurrent(root, builder));
+			}
+		});
+	}
+
+	@SuppressWarnings("serial")
+	public Optional<ProductProviderDetail> findUnapproved(UUID providerId, String productId) {
+		return genericRepository.findOne(ProductProviderDetail.class, new Specification<ProductProviderDetail>() {
+			@Override
+			public Predicate toPredicate(Root<ProductProviderDetail> root, CriteriaQuery<?> query,
+					CriteriaBuilder builder) {
+				return builder.and(hasId(root, builder, providerId, productId), isUnapproved(root, builder));
+			}
+		});
+	}
+
+	@SuppressWarnings("serial")
+	public List<Object[]> findAllCurrentByProvider(UUID providerId, Collection<String> columns, Pageable paging) {
+		return genericRepository.findAll(ProductProviderDetail.class, columns,
+				new Specification<ProductProviderDetail>() {
+					@Override
+					public Predicate toPredicate(Root<ProductProviderDetail> root, CriteriaQuery<?> query,
+							CriteriaBuilder builder) {
+						return builder.and(hasProviderId(root, builder, providerId), isCurrent(root, builder));
+					}
+				}, paging);
+	}
+
+	@SuppressWarnings("serial")
+	public boolean hasUnapproved(UUID providerId, String productId) {
+		return genericRepository.count(ProductProviderDetail.class, new Specification<ProductProviderDetail>() {
+			@Override
+			public Predicate toPredicate(Root<ProductProviderDetail> root, CriteriaQuery<?> query,
+					CriteriaBuilder builder) {
+				return builder.and(hasId(root, builder, providerId, productId), isUnapproved(root, builder));
+			}
+		}) != 0;
+	}
+
+	@SuppressWarnings("serial")
+	public List<Object[]> findAllCurrentByProduct(String productId, Collection<String> columns, Pageable paging) {
+		return genericRepository.findAll(ProductProviderDetail.class, columns,
+				new Specification<ProductProviderDetail>() {
+					@Override
+					public Predicate toPredicate(Root<ProductProviderDetail> root, CriteriaQuery<?> query,
+							CriteriaBuilder builder) {
+						return builder.and(hasProductId(root, builder, productId), isCurrent(root, builder));
+					}
+				}, paging);
+	}
+
+	public List<Object[]> findAllCurrentProviderOfProduct(String productId, Collection<String> columns,
+			Pageable paging) {
+		// Provider root
+		Session session = sessionFactory.getCurrentSession();
+		CriteriaBuilder builder = session.getCriteriaBuilder();
+		CriteriaQuery<Tuple> query = builder.createTupleQuery();
+		Root<Provider> providerRoot = query.from(Provider.class);
+		// ProductProviderDetail root
+		Subquery<UUID> subQuery = query.subquery(UUID.class);
+		Root<ProductProviderDetail> detailRoot = subQuery.from(ProductProviderDetail.class);
+		// @formatter:off
+		subQuery.select(detailRoot.get(_ProductProviderDetail.id).get(_ProductProviderDetail.providerId));
+		subQuery.where(builder.and(
+			hasProductId(detailRoot, builder, productId),
+			isCurrent(detailRoot, builder)
+		));
+		// the above query will always return distinct Provider IDs, otherwise, business logic
+		// was violated
+		// @formatter:on
+		query.multiselect(genericRepository.resolveSelect(Provider.class, providerRoot, columns));
+		query.where(builder.in(providerRoot.get(_Provider.id)).value(subQuery));
+//		query.where(providerRoot.get(_Provider.id).in(subQuery));
+
+		Query<Tuple> hql = genericRepository.resolvePagedQuery(session, query, paging);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(hql.getQueryString());
+		}
+
+		return HibernateHelper.toRows(hql.list());
+	}
+
+	public static Predicate hasId(Root<ProductProviderDetail> root, CriteriaBuilder builder, UUID providerId,
+			String productId) {
+		Path<Object> idPath = root.get(_ProductProviderDetail.id);
+		// @formatter:off
+		return builder.and(
+				builder.equal(idPath.get(_ProductProviderDetail.productId), productId),
+				builder.equal(idPath.get(_ProductProviderDetail.providerId), providerId));
+		// @formatter:on
+	}
+
+	public static Predicate hasProviderId(Root<ProductProviderDetail> root, CriteriaBuilder builder, UUID providerId) {
+		return builder.and(
+				builder.equal(root.get(_ProductProviderDetail.id).get(_ProductProviderDetail.providerId), providerId));
+	}
+
+	public static Predicate hasProductId(Root<ProductProviderDetail> root, CriteriaBuilder builder, String productId) {
+		return builder.and(
+				builder.equal(root.get(_ProductProviderDetail.id).get(_ProductProviderDetail.productId), productId));
+	}
+
+	public static Predicate isCurrent(Root<ProductProviderDetail> root, CriteriaBuilder builder) {
+		// @formatter:off
+		return builder.and(
+				builder.isNotNull(root.get(_ProductProviderDetail.approvedTimestamp)),
+				builder.isNull(root.get(_ProductProviderDetail.droppedTimestamp)));
+		// @formatter:on
+	}
+
+	public static Predicate isUnapproved(Root<ProductProviderDetail> root, CriteriaBuilder builder) {
+		return builder.isNull(root.get(_ProductProviderDetail.approvedTimestamp));
+	}
+
+}

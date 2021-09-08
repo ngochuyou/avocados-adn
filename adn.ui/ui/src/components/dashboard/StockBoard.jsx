@@ -1,6 +1,6 @@
 import {
 	createContext, useContext,
-	useReducer, Fragment,
+	useReducer, Fragment, useRef,
 	useState, useEffect
 } from 'react';
 
@@ -11,14 +11,14 @@ import {
 	CLEAR_LIST, SET_LIST
 } from '../../actions/common';
 import { searchProduct, createStockDetails } from '../../actions/product';
-import { searchProvider } from '../../actions/provider';
+import { getProvidersOfProduct } from '../../actions/provider';
 
 import { DomainImage } from '../utils/Gallery';
 import { FixedAddButton } from '../utils/Button';
 import { ColorInput } from '../utils/Input';
 import { ConfirmModal } from '../utils/ConfirmModal';
 
-import { spread } from '../../utils';
+import { spread, asIf } from '../../utils';
 
 import StockDetail from '../../models/StockDetail';
 
@@ -104,14 +104,15 @@ const importDispatchers = {
 	MODIFY_MODEL: (payload, oldState) => {
 		const { index, name, value } = payload;
 
-		if (typeof index !== 'number' || typeof name !== 'string') {
+		if (isNaN(index) || typeof name !== 'string') {
 			return oldState;
 		}
 
 		const { form, form: { elements, elementsAmount } } = oldState;
 		const newElements = [...elements].map((model, i) => i !== index ? model : {
 			...model,
-			[name]: isNaN(value) ? value : Number(value) // no negative
+			[name]: isNaN(value) ? value : Number(value), // no negative
+			provider: asIf(name === 'product').then(() => null).else(() => name !== 'provider' ? model.provider : value)
 		});
 
 		return {
@@ -130,18 +131,20 @@ const importDispatchers = {
 			...oldState,
 			form: {
 				...form,
-				elements: []
+				elements: [],
+				elementsAmount: 0
 			}
 		};
 	},
 	PUSH_LIST: (payload, oldState) => {
-		const { form, form: { elements } } = oldState;
+		const { form, form: { elements, elementsAmount } } = oldState;
 
 		return {
 			...oldState,
 			form: {
 				...form,
-				elements: [...elements, IMPORT_STORE.form.model]
+				elements: [...elements, IMPORT_STORE.form.model],
+				elementsAmount: elementsAmount + 1
 			}
 		};
 	},
@@ -151,17 +154,19 @@ const importDispatchers = {
 		}
 
 		const { form, form: { elements } } = oldState;
+		const newElements = [...elements].filter((model, index) => index !== payload);
 
 		return {
 			...oldState,
 			form: {
 				...form,
-				elements: [...elements].filter((model, index) => index !== payload)
+				elements: newElements,
+				elementsAmount: newElements.reduce((total, item) => !isNaN(item.quantity) ? total + parseInt(item.quantity) : total, 0)
 			}
 		};
 	},
 	TOGGLE_MODAL_VISION: (payload, oldState) => {
-		const { index, name, value } = payload;
+		const { index, name, value, productId } = payload;
 
 		if (typeof index !== 'number' || typeof name !== 'string' || typeof value !== 'boolean') {
 			return oldState;
@@ -180,7 +185,12 @@ const importDispatchers = {
 				...form,
 				pickers: {
 					...pickers,
-					[name]: { ...target, visible: value, index }
+					[name]: {
+						...target,
+						visible: value,
+						index,
+						productId
+					}
 				}
 			}
 		};
@@ -332,7 +342,12 @@ function ImportBoard() {
 	const openProviderPicker = (index) => {
 		dispatchImportStore({
 			type: TOGGLE_MODAL_VISION,
-			payload: { name: PROVIDER_PICKER, value: true, index }
+			payload: {
+				name: PROVIDER_PICKER,
+				value: true,
+				index,
+				productId: formElements[index].product.id
+			}
 		});
 	};
 	const clearBatch = () => {
@@ -495,22 +510,26 @@ function ImportBoard() {
 										)
 									}
 									</div>
-									<div
-										className="uk-position-relative pointer uk-text-right"
-										onClick={() => openProviderPicker(index)}
-										uk-tooltip="Choose a Provider"
-									>
-										<div>
-										{
-											model.provider != null ? (
-												<div className="uk-text-muted">
-													<span>{model.provider.email}</span>
-													<span className="colors uk-margin-small-left uk-text-large">{model.provider.name}</span>
+									{
+										model.product != null ? (
+											<div
+												className="uk-position-relative pointer uk-text-right"
+												onClick={() => openProviderPicker(index)}
+												uk-tooltip="Choose a Provider"
+											>
+												<div>
+												{
+													model.provider != null ? (
+														<div className="uk-text-muted">
+															<span>{model.provider.email}</span>
+															<span className="colors uk-margin-small-left uk-text-large">{model.provider.name}</span>
+														</div>
+													) : <span className="uk-text-primary uk-position-bottom-left">Pick a provider</span>
+												}
 												</div>
-											) : <span className="uk-text-primary uk-position-bottom-left">Pick a provider</span>
-										}
-										</div>
-									</div>
+											</div>	
+										) : null
+									}
 								</div>
 								<div className="uk-width-expand uk-margin-small uk-grid-small" uk-grid="">
 									<div className="uk-width-expand">
@@ -649,7 +668,6 @@ function ImportBoard() {
 const SEARCHED_PRODUCT_COLUMNS = ["id", "name", "images", "active"];
 const SEARCHED_PRODUCT_AMOUNT = 100;
 const SEARCHED_PROVIDER_COLUMNS = ["id", "name", "email", "representatorName", "active"];
-const SEARCHED_PROVIDER_AMOUNT = 500;
 const SET_PICKER_VIEW = "SET_PICKER_VIEW";
 const PUSH_PICKER_ELEMENTS = "PUSH_PICKER_ELEMENTS";
 const VALIDATED_STOCKDETAIL_COLUMNS = ["product", "provider", "size", "status", "numericSize", "quantity"];
@@ -667,6 +685,10 @@ function ProductPicker() {
 	} = useGlobalContext();
 	const [containerClassName, setContainerClassName] = useState('fade-in');
 	const [isFetching, toggleFetching] = useReducer((isFetching) => !isFetching, false);
+	const searchInputRef = useRef(null);
+	useEffect(() => {
+		searchInputRef.current.focus();
+	}, []);
 	const closeProductPicker = () => {
 		setContainerClassName('fade-out uk-modal');
 		setTimeout(() => {
@@ -752,7 +774,11 @@ function ProductPicker() {
 	const onPick = (product) => {
 		dispatchImportStore({
 			type: MODIFY_MODEL,
-			payload: { name: "product", value: product, index }
+			payload: {
+				name: "product",
+				value: product,
+				index
+			}
 		});
 		closeProductPicker();
 	};
@@ -763,7 +789,11 @@ function ProductPicker() {
 			uk-modal="" style={{ maxHeight: "100vh", overflow: "hidden", zIndex: 2 }}
 			tabIndex={10} onKeyDown={onModalKeyDown}
 		>
-			<div className="uk-modal-dialog uk-width-2xlarge uk-padding-small">
+			<div
+				className="uk-modal-dialog uk-padding-small"
+				style={{width: "90vw", height: "90vh"}}
+				uk-overflow-auto=""
+			>
 				<button
 					className="uk-button uk-position-top-right uk-position-z-index"
 					type="button" uk-icon="icon: close; ratio: 1.25;"
@@ -775,50 +805,51 @@ function ProductPicker() {
 				<main>
 					<div className="uk-margin-small">
 						<input
+							ref={searchInputRef}
 							type="search" placeholder="Product code or Product name"
 							className="uk-input uk-border-pill" onChange={onSearchInputChange}
 							onKeyDown={onSearchInputKeyDown}
 						/>
 					</div>
 					<section
-						className="uk-height-max-medium uk-position-relative uk-grid-collapse uk-child-width-1-2 uk-overflow-auto"
+						className="uk-position-relative uk-grid-collapse uk-child-width-1-3"
 						uk-grid=""
 					>
 					{
 						view.length === 0 ?
-						<div className="uk-height-medium">
-							<span className="uk-text-muted uk-position-center">Nothing found</span>
-						</div> : 
-						view.map(product => (
-							<div
-								key={product.id}
-								className="uk-box-shadow-hover-small uk-padding-small pointer"
-								onClick={() => onPick(product)}
-							>
+							<div className="uk-height-medium">
+								<span className="uk-text-muted uk-position-center">Nothing found</span>
+							</div> : 
+							view.map(product => (
 								<div
-									uk-grid=""
-									className="uk-grid-small uk-padding-small"
+									key={product.id}
+									className="uk-box-shadow-hover-small uk-padding-small pointer"
+									onClick={() => onPick(product)}
 								>
-									<div className="uk-width-auto">
-										<div style={{width: "100px", height: "100px"}}>
-											<DomainImage
-												url={`${IMAGE_URL}/${product.images[0]}`} name={product.images[0]}
-												className="uk-border-circle"
-											/>
+									<div
+										uk-grid=""
+										className="uk-grid-small uk-padding-small"
+									>
+										<div className="uk-width-auto">
+											<div style={{width: "100px", height: "100px"}}>
+												<DomainImage
+													url={`${IMAGE_URL}/${product.images[0]}`} name={product.images[0]}
+													className="uk-border-circle"
+												/>
+											</div>
+										</div>
+										<div className="uk-width-expand">
+											<div className="uk-text-lead">{product.id}</div>
+											<div className="uk-text-muted">{product.name}</div>
+											{
+												product.active ?
+												<div className="uk-text-success">ACTIVE</div> :
+												<div className="uk-text-muted">INACTIVE</div>
+											}
 										</div>
 									</div>
-									<div className="uk-width-expand">
-										<div className="uk-text-lead">{product.id}</div>
-										<div className="uk-text-muted">{product.name}</div>
-										{
-											product.active ?
-											<div className="uk-text-success">ACTIVE</div> :
-											<div className="uk-text-muted">INACTIVE</div>
-										}
-									</div>
 								</div>
-							</div>
-						))
+							))
 					}
 					</section>
 				</main>
@@ -831,13 +862,51 @@ function ProviderPicker() {
 	const {
 		importStore: {
 			form: {
-				pickers: { provider: { elements, view, index } }
+				pickers: { provider: {
+					elements, view, index,
+					productId
+				} }
 			}
 		},
 		dispatchImportStore
 	} = useGlobalContext();
 	const [containerClassName, setContainerClassName] = useState('fade-in');
-	const [isFetching, toggleFetching] = useReducer((isFetching) => !isFetching, false);
+	const searchInputRef = useRef(null);
+
+	useEffect(() => {
+		const doFetch = async () => {
+			const [res, err] = await getProvidersOfProduct({
+				productId,
+				columns: SEARCHED_PROVIDER_COLUMNS
+			});
+
+			if (err) {
+				console.error(err);
+				return;
+			}
+
+			dispatchImportStore({
+				type: PUSH_PICKER_ELEMENTS,
+				payload: {
+					name: PROVIDER_PICKER,
+					list: res
+				}
+			});
+			dispatchImportStore({
+				type: SET_PICKER_VIEW,
+				payload: {
+					name: PROVIDER_PICKER,
+					list: res
+				}
+			});
+		};
+
+		doFetch();
+	}, [productId, dispatchImportStore]);
+	useEffect(() => {
+		searchInputRef.current.focus();
+	}, []);
+
 	const closeProviderPicker = () => {
 		setContainerClassName('fade-out uk-modal');
 		setTimeout(() => {
@@ -850,7 +919,7 @@ function ProviderPicker() {
 			});
 			dispatchImportStore({
 				type: TOGGLE_MODAL_VISION,
-				payload: { name: PROVIDER_PICKER, value: false, index }
+				payload: { name: PROVIDER_PICKER, value: false, index, productId }
 			});
 		}, 180);
 	};
@@ -876,45 +945,6 @@ function ProviderPicker() {
 			}
 		});
 	};
-	const onSearchInputKeyDown = async (event) => {
-		if (event.keyCode === 13) {
-			if (isFetching) {
-				return;
-			}
-
-			toggleFetching();
-
-			const { target: { value } } = event;
-			const [res, err] = await searchProvider({
-				name: value,
-				columns: SEARCHED_PROVIDER_COLUMNS,
-				size: SEARCHED_PROVIDER_AMOUNT
-			});
-
-			if (err) {
-				console.error(err);
-				toggleFetching();
-				return;
-			}
-
-			dispatchImportStore({
-				type: PUSH_PICKER_ELEMENTS,
-				payload: {
-					name: PROVIDER_PICKER,
-					list: res
-				}
-			});
-			dispatchImportStore({
-				type: SET_PICKER_VIEW,
-				payload: {
-					name: PROVIDER_PICKER,
-					list: res
-				}
-			});
-			toggleFetching();
-			return;
-		}
-	};
 	const onModalKeyDown = (event) => {
 		if (event.keyCode === 27) {
 			closeProviderPicker();
@@ -934,7 +964,11 @@ function ProviderPicker() {
 			uk-modal="" style={{ maxHeight: "100vh", overflow: "hidden", zIndex: 2 }}
 			tabIndex={10} onKeyDown={onModalKeyDown}
 		>
-			<div className="uk-modal-dialog uk-width-2xlarge uk-padding-small">
+			<div
+				className="uk-modal-dialog uk-padding-small"
+				style={{width: "90vw", height: "90vh"}}
+				uk-overflow-auto=""
+			>
 				<button
 					className="uk-button uk-position-top-right uk-position-z-index"
 					type="button" uk-icon="icon: close; ratio: 1.25;"
@@ -946,13 +980,13 @@ function ProviderPicker() {
 				<main>
 					<div className="uk-margin-small">
 						<input
+							ref={searchInputRef}
 							type="search" placeholder="Provider name"
 							className="uk-input uk-border-pill" onChange={onSearchInputChange}
-							onKeyDown={onSearchInputKeyDown}
 						/>
 					</div>
 					<section
-						className="uk-height-max-medium uk-position-relative uk-grid-collapse uk-child-width-1-2 uk-overflow-auto"
+						className="uk-height-max-medium uk-position-relative uk-grid-collapse uk-child-width-1-3"
 						uk-grid=""
 					>
 					{

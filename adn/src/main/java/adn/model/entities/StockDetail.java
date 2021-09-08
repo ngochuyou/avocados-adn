@@ -82,7 +82,7 @@ public class StockDetail extends Entity {
 	@JoinColumn(referencedColumnName = "id", name = "stocked_by")
 	private Personnel stockedBy;
 
-	@ManyToOne(optional = false)
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(referencedColumnName = "id")
 	private Provider provider;
 

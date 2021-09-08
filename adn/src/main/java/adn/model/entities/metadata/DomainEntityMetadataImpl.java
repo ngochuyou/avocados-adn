@@ -35,6 +35,7 @@ import org.hibernate.property.access.spi.Getter;
 import org.hibernate.tuple.IdentifierProperty;
 import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.tuple.entity.EntityTuplizer;
+import org.hibernate.type.CollectionType;
 import org.hibernate.type.ComponentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,8 +72,9 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 	private final List<Map.Entry<String, Getter>> getters;
 	private final String discriminatorColumnName;
 	private final Map<String, Class<?>> propertyTypes;
-	private final Map<String, Class<? extends DomainEntity>> associationTypes;
-	private final Map<String, Class<? extends Collection<? extends DomainEntity>>> associationCollectionsTypes;
+	private final Map<String, Class<? extends DomainEntity>> associationsClass;
+	private final Map<String, AssociationType> associationTypes;
+	private final Set<String> optionalAssociations;
 
 	@SuppressWarnings("unchecked")
 	public DomainEntityMetadataImpl(final ModelContextProvider modelContext, Class<T> entityClass) {
@@ -83,6 +85,8 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 		String discriminatorColumnName = null;
 		List<String> declaredProperties;
 		Map<String, Class<?>> propertyTypes;
+		Set<String> optionalAssociations = new HashSet<>();
+		Map<String, AssociationType> associationTypes = new HashMap<>();
 
 		try {
 			if (!Entity.class.isAssignableFrom(entityClass)) {
@@ -109,6 +113,16 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 			propertyTypes = persistenceType.getAttributes().stream()
 					.map(attr -> Map.entry(attr.getName(), (Class<? extends DomainEntity>) attr.getJavaType()))
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+			associationTypes = properties.stream()
+					.map(prop -> entry(prop, metamodel.getPropertyTypes()[metamodel.getPropertyIndex(prop)]))
+					.filter(entry -> org.hibernate.type.AssociationType.class
+							.isAssignableFrom(entry.getValue().getClass()))
+					.map(entry -> CollectionType.class.isAssignableFrom(entry.getValue().getClass())
+							? entry(entry.getKey(), AssociationType.COLLECTION)
+							: org.hibernate.type.EntityType.class.isAssignableFrom(entry.getValue().getClass())
+									? entry(entry.getKey(), AssociationType.ENTITY)
+									: entry(entry.getKey(), AssociationType.ANY))
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 			nonLazyProperties = properties.stream().filter(prop -> {
 				Attribute<T, ?> attr = attrs.get(prop);
@@ -125,6 +139,10 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 					if (Entity.class.isAssignableFrom(attr.getJavaType())) {
 						org.hibernate.type.EntityType associationType = (org.hibernate.type.EntityType) metamodel
 								.getPropertyTypes()[propertyIndex];
+
+						if (metamodel.getPropertyNullability()[propertyIndex]) {
+							optionalAssociations.add(prop);
+						}
 
 						return associationType.isEager(null);
 					}
@@ -254,17 +272,17 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 		this.declaredProperties = Collections.unmodifiableList(declaredProperties);
 		this.nonLazyProperties = Collections.unmodifiableList(nonLazyProperties.stream()
 				.filter(propName -> !SENSITIVE_FIELD_NAMES.contains(propName)).collect(Collectors.toList()));
+		this.optionalAssociations = Collections.unmodifiableSet(optionalAssociations);
 		propertiesSpan = this.properties.size();
 		this.discriminatorColumnName = discriminatorColumnName;
 		// @formatter:off
-		Map<String, Class<? extends Collection<? extends DomainEntity>>> associationCollectionsTypes = new HashMap<>(0);
-		Map<String, Class<? extends DomainEntity>> associationTypes = new HashMap<>(0);
+		Map<String, Class<? extends DomainEntity>> associationsClass = new HashMap<>(0);
 		
 		propertyTypes.entrySet().stream().forEach(entry -> {
 			Class<?> type = entry.getValue();
 			
 			if (DomainEntity.class.isAssignableFrom(type)) {
-				associationTypes.put(entry.getKey(), (Class<? extends DomainEntity>) type);
+				associationsClass.put(entry.getKey(), (Class<? extends DomainEntity>) type);
 				return;
 			}
 			
@@ -273,16 +291,15 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 					Class<?> genericType = (Class<?>) TypeHelper.getGenericType(entityClass.getDeclaredField(entry.getKey()));
 					
 					if (DomainEntity.class.isAssignableFrom(genericType)) {
-						associationTypes.put(entry.getKey(), (Class<? extends DomainEntity>) genericType);
-						associationCollectionsTypes.put(entry.getKey(), (Class<? extends Collection<? extends DomainEntity>>) type);
+						associationsClass.put(entry.getKey(), (Class<? extends DomainEntity>) genericType);
 					}
 				} catch (NoSuchFieldException | SecurityException e) {
 					return;
 				}
 			}
 		});
-		
-		this.associationCollectionsTypes = Collections.unmodifiableMap(associationCollectionsTypes);
+
+		this.associationsClass = Collections.unmodifiableMap(associationsClass);
 		this.associationTypes = Collections.unmodifiableMap(associationTypes);
 		// @formatter:on
 	}
@@ -329,6 +346,9 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 				+ "\tnonLazyProperties=[\n"
 				+ "\t\t%s\n"
 				+ "\t]\n"
+				+ "\tassociationsClass=[\n"
+				+ "\t\t%s\n"
+				+ "\t]\n"
 				+ "\tassociationTypes=[\n"
 				+ "\t\t%s\n"
 				+ "\t]\n"
@@ -336,8 +356,10 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 				this.getClass().getSimpleName(),
 				properties.stream().collect(Collectors.joining(", ")),
 				nonLazyProperties.stream().collect(Collectors.joining(", ")),
+				associationsClass.entrySet().stream()
+					.map(entry -> String.format("%s|%s", entry.getKey(), entry.getValue().getSimpleName())).collect(Collectors.joining(", ")),
 				associationTypes.entrySet().stream()
-					.map(entry -> String.format("%s|%s", entry.getKey(), entry.getValue().getSimpleName())).collect(Collectors.joining(", ")));
+					.map(entry -> String.format("%s|%s", entry.getKey(), entry.getValue())).collect(Collectors.joining(", ")));
 		// @formatter:on
 	}
 
@@ -357,13 +379,8 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 	}
 
 	@Override
-	public boolean isEntityType(String attributeName) {
-		return DomainEntity.class.isAssignableFrom(propertyTypes.get(attributeName));
-	}
-
-	@Override
 	public boolean isAssociation(String attributeName) {
-		return associationTypes.containsKey(attributeName);
+		return associationsClass.containsKey(attributeName);
 	}
 
 	@Override
@@ -372,13 +389,18 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 	}
 
 	@Override
-	public Class<? extends DomainEntity> getAssociationType(String associationName) {
-		return associationTypes.get(associationName);
+	public Class<? extends DomainEntity> getAssociationClass(String associationName) {
+		return associationsClass.get(associationName);
 	}
 
 	@Override
-	public boolean isAssociationCollection(String attributeName) {
-		return associationCollectionsTypes.containsKey(attributeName);
+	public boolean isAssociationOptional(String attributeName) {
+		return optionalAssociations.contains(attributeName);
+	}
+
+	@Override
+	public AssociationType getAssociationType(String associationName) {
+		return associationTypes.get(associationName);
 	}
 
 	@SuppressWarnings({ "rawtypes", "serial" })

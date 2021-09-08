@@ -1,4 +1,4 @@
-import { isString, isEmpty, join } from '../utils';
+import { isString, hasLength, isEmpty, join, result } from '../utils';
 import { fjson } from '../fetch';
 
 export function fetchProviderList({ page = 0, size = 10, columns = [] }) {
@@ -53,4 +53,64 @@ export function updateProvider(model) {
 		},
 		body: JSON.stringify(model)
 	});
+}
+
+export function getProductDetailList({ columns = "", page = 0, size = 10 }) {
+	return fjson(`/rest/provider/product-detail?columns=${join(columns)}&page=${page}&size=${size}`);
+}
+
+export function getProductDetailsCount() {
+	return fjson(`/rest/provider/product-detail/count`);
+}
+
+export function createProductDetail(model) {
+	if (model == null) {
+		return [null, result("Model was null")];
+	}
+
+	return fjson(`/rest/provider/product-detail`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(model)
+	});
+}
+
+export function getProductDetailsByProduct({
+	productId = null, columns = [],
+	page = 0, size = 10
+}) {
+	if (!isString(productId) || !hasLength(productId)) {
+		return [null, result("Product ID was empty")];
+	}
+
+	return fjson(`/rest/provider/product-detail/${productId}?columns=${join(columns)}&page=${page}&size=${size}`);
+}
+
+export function approveProductDetail({
+	productId = null, providerId = null
+}) {
+	if (!isString(productId) || !hasLength(productId)) {
+		return [null, result("Product code was empty")];
+	}
+
+	if (!isString(providerId) || !hasLength(providerId)) {
+		return [null, result("Provider ID was empty")];
+	}
+
+	return fjson(`/rest/provider/product-detail/approve?productId=${productId}&providerId=${providerId}`, {
+		method: 'PATCH'
+	});
+}
+
+export function getProvidersOfProduct({
+	productId = null, columns = [],
+	page = 0, size = 1000
+}) {
+	if (!isString(productId) || !hasLength(productId)) {
+		return [null, result("Product code was empty")];
+	}
+
+	return fjson(`/rest/provider/current/${productId}?columns=${join(columns)}&page=${page}&size=${size}`);
 }

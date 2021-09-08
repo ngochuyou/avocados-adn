@@ -5,6 +5,9 @@ package adn.security;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -16,7 +19,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import adn.dao.generic.Repository;
+import adn.dao.generic.GenericRepository;
 import adn.model.entities.Account;
 import adn.model.entities.metadata._Account;
 import adn.service.internal.Role;
@@ -32,36 +35,53 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 	public static final String NAME = "applicationUserDetailsService";
 
 	@Autowired
-	private Repository repo;
+	private GenericRepository repo;
 
 	@Autowired
 	private DepartmentService departmentService;
 
-	private static final String[] ATTRIBUTES = new String[] { _Account.id, _Account.password, _Account.role,
-			_Account.updatedDate, _Account.active };
+	private static final List<String> ATTRIBUTES = Arrays.asList(_Account.id, _Account.password, _Account.role,
+			_Account.updatedDate, _Account.active);
 	public static final ZoneId ZONE = ZoneId.systemDefault();
 
 	@Transactional(readOnly = true)
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		Object[] account = (Object[]) repo.findById(username, Account.class, ATTRIBUTES);
+		Optional<Object[]> optional = repo.findById(Account.class, username, ATTRIBUTES);
 
-		if (account == null) {
+		if (optional.isEmpty()) {
 			throw new UsernameNotFoundException(String.format("%s not found", username));
 		}
 
-		Role role = (Role) account[2];
+		Object[] cols = optional.get();
+		Role role = (Role) cols[2];
+		String id = (String) cols[0];
+		String password = (String) cols[1];
+		boolean activeState = (boolean) cols[4];
+		Set<SimpleGrantedAuthority> auths = Set.of(new SimpleGrantedAuthority("ROLE_" + role));
+		long version = ((LocalDateTime) cols[3]).atZone(ZONE).toEpochSecond();
 
 		if (role == Role.PERSONNEL) {
 			UUID departmentId = departmentService.getPersonnelDepartmentId(username);
-			return new PersonnelDetails((String) account[0], (String) account[1], (boolean) account[4],
-					Set.of(new SimpleGrantedAuthority("ROLE_" + role)), role,
-					((LocalDateTime) account[3]).atZone(ZONE).toEpochSecond(), departmentId);
+			// @formatter:off
+			return new PersonnelDetails(
+					id,
+					password,
+					activeState,
+					auths,
+					role,
+					version,
+					departmentId);
 		}
 
-		return new UserDetailsImpl((String) account[0], (String) account[1], (boolean) account[4],
-				Set.of(new SimpleGrantedAuthority("ROLE_" + role)), role,
-				((LocalDateTime) account[3]).atZone(ZONE).toEpochSecond());
+		return new UserDetailsImpl(
+				id,
+				password,
+				activeState,
+				auths,
+				role,
+				version);
+		// @formatter:on
 	}
 
 }

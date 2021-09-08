@@ -21,7 +21,7 @@ import adn.application.Common;
 import adn.controller.BaseController;
 import adn.controller.query.BadColumnsRequestException;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
-import adn.service.specification.InvalidCriteriaException;
+import adn.service.internal.InvalidCriteriaException;
 
 /**
  * @author Ngoc Huy

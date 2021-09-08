@@ -20,15 +20,15 @@ public interface DomainEntityMetadata<T> {
 
 	boolean hasProperty(String attributeName);
 
-	boolean isEntityType(String attributeName);
-
 	boolean isAssociation(String attributeName);
 
-	boolean isAssociationCollection(String attributeName);
+	boolean isAssociationOptional(String attributeName);
+	
+	AssociationType getAssociationType(String associationName);
 
 	Class<?> getPropertyType(String attributeName);
 
-	Class<? extends DomainEntity> getAssociationType(String associationName);
+	Class<? extends DomainEntity> getAssociationClass(String associationName);
 
 	List<String> getPropertyNames();
 

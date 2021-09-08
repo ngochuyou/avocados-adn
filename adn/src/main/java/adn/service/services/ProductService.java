@@ -4,22 +4,15 @@
 package adn.service.services;
 
 import static adn.dao.generic.Result.bad;
-import static adn.helpers.CollectionHelper.list;
-import static adn.helpers.HibernateHelper.toRows;
-import static adn.model.factory.authentication.dynamicmap.SourceMetadataFactory.unknownArrayCollection;
+import static adn.service.services.GenericPermanentEntityService.isActive;
 
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.persistence.Tuple;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
@@ -27,23 +20,20 @@ import javax.persistence.criteria.Root;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.multipart.MultipartFile;
 
+import adn.application.Common;
 import adn.application.context.internal.EffectivelyFinal;
-import adn.controller.query.specification.ProductQuery;
-import adn.dao.generic.Repository;
+import adn.controller.query.impl.ProductQuery;
 import adn.dao.generic.Result;
-import adn.dao.specification.GenericFactorRepository;
 import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
+import adn.model.entities.Category;
 import adn.model.entities.Product;
-import adn.model.entities.metadata._Category;
 import adn.model.entities.metadata._Product;
 import adn.model.factory.authentication.Credential;
-import adn.model.factory.authentication.SourceMetadata;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Service;
@@ -55,47 +45,35 @@ import adn.service.internal.ServiceResult;
  */
 @SuppressWarnings("serial")
 @org.springframework.stereotype.Service
-public class ProductService extends AbstractFactorService<Product> implements Service, EffectivelyFinal {
+public class ProductService implements Service, EffectivelyFinal {
 
 	private final ResourceService resourceService;
-	private final StockDetailService stockDetailService;
+	private final GenericCRUDServiceImpl crudService;
 
 	public static final int MAXIMUM_IMAGES_AMOUNT = 20;
 	protected static String PRODUCT_ENTITY_NAME;
 
-	@Autowired
-	public ProductService(GenericCRUDService crudService, ResourceService resourceService, Repository repository,
-			StockDetailService stockDetailService, GenericFactorRepository genericFactorReopsitory) {
-		super(crudService, repository, genericFactorReopsitory);
+	public ProductService(ResourceService resourceService, GenericCRUDServiceImpl curdService) {
+		super();
 		this.resourceService = resourceService;
-		this.stockDetailService = stockDetailService;
+		this.crudService = curdService;
 	}
 
 	public List<Map<String, Object>> getProductsByCategory(String categoryIdentifier, String categoryIdentifierProperty,
 			Collection<String> requestedColumns, Pageable paging, Credential credential)
 			throws NoSuchFieldException, UnauthorizedCredential {
-		SourceMetadata<Product> metadata = crudService.getDefaultColumns(Product.class, credential,
-				unknownArrayCollection(Product.class, list(requestedColumns)));
-		List<Tuple> rows = genericFactorRepository.findAllActive(Product.class, requestedColumns, paging,
-				new Specification<Product>() {
-					@Override
-					public Predicate toPredicate(Root<Product> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
-						try {
-							return builder.equal(root.get(_Product.category)
-									.get(!StringHelper.hasLength(categoryIdentifierProperty) ? _Category.id
-											: categoryIdentifierProperty),
-									categoryIdentifier);
-						} catch (IllegalArgumentException e) {
-							return null;
-						}
-					}
-				});
-
-		if (rows.isEmpty()) {
-			return new ArrayList<>();
-		}
-
-		return crudService.resolveReadResults(Product.class, toRows(rows), credential, metadata);
+		// @formatter:off
+		return crudService.readAllByAssociation(
+				Product.class,
+				Category.class,
+				_Product.category,
+				categoryIdentifierProperty,
+				categoryIdentifier,
+				requestedColumns,
+				paging,
+				credential,
+				isActive(Product.class));
+		// @formatter:on
 	}
 
 	public Result<Product> createProduct(Product product, MultipartFile[] images, boolean flushOnFinish) {
@@ -113,7 +91,7 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 			ServiceResult<String[]> uploadResult = resourceService.uploadProductImages(images);
 
 			if (!uploadResult.isOk()) {
-				return bad(Map.of("images", UPLOAD_FAILURE));
+				return bad(Map.of("images", Common.UPLOAD_FAILURE));
 			}
 
 			isResourceSessionFlushed = true;
@@ -157,7 +135,7 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 			ServiceResult<String[]> uploadResult = resourceService.uploadProductImages(savedImages);
 
 			if (!uploadResult.isOk()) {
-				return bad(Map.of("images", UPLOAD_FAILURE));
+				return bad(Map.of("images", Common.UPLOAD_FAILURE));
 			}
 
 			isResourceSessionFlushed = true;
@@ -175,34 +153,34 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 
 	public List<Map<String, Object>> searchProduct(Collection<String> requestedColumns, Pageable pageable,
 			ProductQuery restQuery, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		return crudService.read(Product.class, requestedColumns,
-				isActive(Product.class).and(hasNameLike(restQuery).or(hasIdLike(restQuery))), pageable, credential);
+		return crudService.readAll(Product.class, requestedColumns,
+				isActive(Product.class).and(GenericFactorService.hasNameLike(restQuery).or(hasIdLike(restQuery))),
+				pageable, credential);
 	}
 
-	@Override
-	public Map<String, Object> findWithActiveCheck(Serializable id, Class<Product> type,
-			Collection<String> requestedColumns, Credential credential)
-			throws NoSuchFieldException, UnauthorizedCredential {
-		boolean stockDetailsRequired = false;
-		Set<String> columns = new HashSet<>(requestedColumns);
-
-		if (stockDetailsRequired = requestedColumns.contains(_Product.stockDetails)) {
-			columns.remove(_Product.stockDetails);
-		}
-
-		Map<String, Object> product = super.findWithActiveCheck(id, type, columns, credential);
-
-		if (!stockDetailsRequired || product == null) {
-			return product;
-		}
-
-		List<Map<String, Object>> stockDetails = stockDetailService.readActiveOnly(id, Collections.emptyList(),
-				credential);
-
-		product.put(_Product.stockDetails, stockDetails);
-
-		return product;
-	}
+//	@Override
+//	public Map<String, Object> findActiveById(Serializable id, Class<Product> type, Collection<String> requestedColumns,
+//			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
+//		boolean stockDetailsRequired = false;
+//		Set<String> columns = new HashSet<>(requestedColumns);
+//
+//		if (stockDetailsRequired = requestedColumns.contains(_Product.stockDetails)) {
+//			columns.remove(_Product.stockDetails);
+//		}
+//
+//		Map<String, Object> product = super.findOneActive(id, type, columns, credential);
+//
+//		if (!stockDetailsRequired || product == null) {
+//			return product;
+//		}
+//
+//		List<Map<String, Object>> stockDetails = stockDetailService.readActiveOnly(id, Collections.emptyList(),
+//				credential);
+//
+//		product.put(_Product.stockDetails, stockDetails);
+//
+//		return product;
+//	}
 
 	private static Specification<Product> hasIdLike(ProductQuery restQuery) {
 		return new Specification<Product>() {

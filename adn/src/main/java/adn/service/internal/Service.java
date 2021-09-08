@@ -1,14 +1,7 @@
 package adn.service.internal;
 
-import adn.application.context.ContextProvider;
-import adn.helpers.TypeHelper;
-
 public interface Service {
 
-	final TypeHelper reflector = ContextProvider.getApplicationContext().getBean(TypeHelper.class);
-	
-	final String UPLOAD_FAILURE = "Unable to upload file(s)";
-	
 	public enum Status {
 
 		UNMODIFIED(3, "NOTHING CHANGED"),

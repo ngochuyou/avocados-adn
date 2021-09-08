@@ -49,7 +49,7 @@ public class RestDepartmentController extends BaseController {
 			@RequestParam(name = "columns", defaultValue = "") List<String> columns)
 			throws NoSuchFieldException, UnauthorizedCredential {
 		return makeStaleWhileRevalidate(
-				crudService.read(Department.class, columns, paging, ContextProvider.getPrincipalCredential()), 4,
+				crudService.readAll(Department.class, columns, paging, ContextProvider.getPrincipalCredential()), 4,
 				TimeUnit.DAYS, 7, TimeUnit.DAYS);
 	}
 
