@@ -156,8 +156,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 		this.aliasMap = Collections.unmodifiableMap(aliasMap);
 		this.namesMap = Collections.unmodifiableMap(
 				aliasMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey)));
-		this.getters = entityMetadata.getGetters().stream()
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		this.getters = entityMetadata.getGetters();
 		this.nonLazyProperties = entityMetadata.getNonLazyPropertyNames().toArray(String[]::new);
 
 		if (producingFunctions.isEmpty()) {

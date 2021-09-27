@@ -22,7 +22,8 @@ import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import adn.helpers.CollectionHelper;
-import adn.model.entities.StockDetail;
+import adn.model.entities.Item;
+import adn.model.entities.metadata._Item;
 import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.SourceMetadata;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
@@ -36,9 +37,9 @@ import adn.service.internal.Service;
 public class StockDetailService implements Service {
 
 	private final GenericCRUDServiceImpl crudService;
-	private static final List<String> FETCHED_COLUMNS = Arrays.asList(StockDetail.ID_FIELD_NAME,
-			StockDetail.SIZE_FIELD_NAME, StockDetail.NUMERIC_SIZE_FIELD_NAME, StockDetail.COLOR_FIELD_NAME,
-			StockDetail.MATERIAL_FIELD_NAME, StockDetail.STATUS_FIELD_NAME, StockDetail.DESCRIPTION_FIELD_NAME);
+	private static final List<String> FETCHED_COLUMNS = Arrays.asList(_Item.id,
+			_Item.namedSize, _Item.numericSize, _Item.color, _Item.status,
+			_Item.note);
 
 	@Autowired
 	public StockDetailService(GenericCRUDServiceImpl crudService) {
@@ -48,10 +49,10 @@ public class StockDetailService implements Service {
 
 	public List<Map<String, Object>> readActiveOnly(Serializable productId, Collection<String> requestedColumns,
 			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		SourceMetadata<StockDetail> metadata = requestedColumns.isEmpty()
-				? unknownArrayCollection(StockDetail.class, FETCHED_COLUMNS)
-				: crudService.optionallyValidate(StockDetail.class, credential,
-						unknownArrayCollection(StockDetail.class, CollectionHelper.list(requestedColumns)));
+		SourceMetadata<Item> metadata = requestedColumns.isEmpty()
+				? unknownArrayCollection(Item.class, FETCHED_COLUMNS)
+				: crudService.optionallyValidate(Item.class, credential,
+						unknownArrayCollection(Item.class, CollectionHelper.list(requestedColumns)));
 		Session session = crudService.getCurrentSession();
 		CriteriaBuilder builder = session.getCriteriaBuilder();
 		CriteriaQuery<Tuple> criteriaQuery = builder.createQuery(Tuple.class);
@@ -68,7 +69,7 @@ public class StockDetailService implements Service {
 			return new ArrayList<>();
 		}
 
-		return crudService.resolveReadResults(StockDetail.class, toRows(tuples), credential, metadata);
+		return crudService.resolveReadResults(Item.class, toRows(tuples), credential, metadata);
 	}
 
 }

@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 import adn.helpers.StringHelper;
 import adn.model.Generic;
-import adn.model.entities.Account;
+import adn.model.entities.User;
 import adn.model.entities.constants.Gender;
 import adn.service.services.AccountService;
 
@@ -24,8 +24,8 @@ import adn.service.services.AccountService;
  *
  */
 @Component
-@Generic(entityGene = Account.class)
-public class AccountBuilder<T extends Account> extends PermanentEntityBuilder<T> {
+@Generic(entityGene = User.class)
+public class AccountBuilder<T extends User> extends AbstractPermanentEntityBuilder<T> {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;

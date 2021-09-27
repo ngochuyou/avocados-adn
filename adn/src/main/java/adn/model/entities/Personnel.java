@@ -3,10 +3,11 @@
  */
 package adn.model.entities;
 
+import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
 import adn.service.internal.Role;
 
@@ -15,14 +16,14 @@ import adn.service.internal.Role;
  *
  */
 @Entity
-public class Personnel extends Operator {
-
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "created_by", referencedColumnName = "id")
-	private Operator createdBy;
+@Table(name = "personnels")
+public class Personnel extends Operator implements AuditableResource<String> {
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	private Department department;
+
+	@Embedded
+	private AuditInformations auditInformations;
 
 	public Personnel() {}
 
@@ -31,20 +32,21 @@ public class Personnel extends Operator {
 		setRole(Role.PERSONNEL);
 	}
 
-	public Operator getCreatedBy() {
-		return createdBy;
-	}
-
-	public void setCreatedBy(Operator createdBy) {
-		this.createdBy = createdBy;
-	}
-
 	public Department getDepartment() {
 		return department;
 	}
 
 	public void setDepartment(Department department) {
 		this.department = department;
+	}
+
+	@Override
+	public AuditInformations getAuditInformations() {
+		return auditInformations;
+	}
+
+	public void setAuditInformations(AuditInformations auditInformations) {
+		this.auditInformations = auditInformations;
 	}
 
 }

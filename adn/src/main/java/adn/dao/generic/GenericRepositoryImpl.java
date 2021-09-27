@@ -7,6 +7,7 @@ import static adn.helpers.HibernateHelper.getIdentifierPropertyName;
 import static adn.helpers.HibernateHelper.toRows;
 
 import java.io.Serializable;
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,16 +28,12 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Selection;
 
-import org.hibernate.HibernateException;
-import org.hibernate.MappingException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.Query;
-import org.hibernate.tuple.IdentifierProperty;
 import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.type.ComponentType;
-import org.hibernate.type.EmbeddedComponentType;
 import org.hibernate.type.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +50,7 @@ import adn.helpers.HibernateHelper;
 import adn.model.DomainEntity;
 import adn.model.entities.Entity;
 import adn.model.entities.metadata.DomainEntityMetadata;
-import adn.model.entities.specification.Validator;
+import adn.model.entities.validator.Validator;
 import adn.service.internal.InvalidCriteriaException;
 
 /**
@@ -83,85 +80,72 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 	@Override
 	@SuppressWarnings("unchecked")
 	public void buildAfterStartUp() throws Exception {
-		logger.debug(String.format("Configuring %s", this.getClass().getName()));
+		logger.info(String.format("Configuring %s", this.getClass().getName()));
 		Map<Class<? extends Entity>, Map<String, BiFunction<String, Root<? extends Entity>, Path<?>>>> selectorMap = new HashMap<>();
 
 		modelContext.getEntityTree().forEach(tree -> {
-			Class<? extends DomainEntity> node = tree.getNode();
+			Class<? extends DomainEntity> entityType = tree.getNode();
 
-			if (!Entity.class.isAssignableFrom(node)) {
-				logger.debug(String.format("Skiping non-Entity type %s", node.getName()));
+			if (!Entity.class.isAssignableFrom(entityType) || Modifier.isAbstract(entityType.getModifiers())) {
+				logger.debug(String.format("Skiping non-Entity of type [%s]", entityType.getName()));
 				return;
 			}
 
-			Class<? extends Entity> type = (Class<? extends Entity>) node;
+			Class<? extends Entity> type = (Class<? extends Entity>) entityType;
 			Map<String, BiFunction<String, Root<? extends Entity>, Path<?>>> selectors = new HashMap<>();
 			DomainEntityMetadata<? extends Entity> metadata = modelContext.getMetadata(type);
-			EntityPersister persister;
-
-			try {
-				persister = HibernateHelper.getEntityPersister(type);
-			} catch (MappingException me) {
-				logger.debug(me.getMessage());
-				return;
-			}
-
+			EntityPersister persister = HibernateHelper.getEntityPersister(type);
 			EntityMetamodel metamodel = persister.getEntityMetamodel();
-			IdentifierProperty identifier = metamodel.getIdentifierProperty();
 
-			metadata.getPropertyNames().stream().forEach(prop -> {
-				try {
-					Type propertyType = prop.equals(identifier.getName()) ? identifier.getType()
-							: metamodel.getPropertyTypes()[metamodel.getPropertyIndex(prop)];
+			Stream.of(metamodel.getPropertyNames()).forEach(prop -> {
+				Type propertyType = metamodel.getPropertyTypes()[metamodel.getPropertyIndex(prop)];
 
-					if (ComponentType.class.isAssignableFrom(propertyType.getClass())) {
-						selectors.putAll(resolveEmbeddedTypeSelectors(type, null, prop, (ComponentType) propertyType));
-						return;
-					}
-
-					if (metadata.isAssociationOptional(prop)) {
-						logger.debug(String.format("Optional association: [%s] in type [%s]", prop, type.getName()));
-						selectors.put(prop, (column, root) -> root.join(column, JoinType.LEFT));
-						return;
-					}
-
-					selectors.put(prop, (column, root) -> root.get(column));
-				} catch (HibernateException he) {
-					logger.debug(
-							String.format("Failed to resolve selector for property [%s] in type [%s] with message: %s",
-									prop, type.getName(), he.getMessage()));
+				if (propertyType instanceof ComponentType) {
+					selectors.putAll(
+							resolveComponentTypeSelectors(type, null, prop, (ComponentType) propertyType, metadata));
 					return;
 				}
 
-				selectorMap.put(type, selectors);
+				if (metadata.isAssociationOptional(prop)) {
+					logger.debug(String.format("Optional association: [%s] in type [%s]", prop, type.getName()));
+					selectors.put(prop, (column, root) -> root.join(column, JoinType.LEFT));
+					return;
+				}
+
+				selectors.put(prop, (column, root) -> root.get(column));
 			});
 		});
 
 		this.selectorMap = Collections.unmodifiableMap(selectorMap);
-		logger.debug(String.format("Finished %s", this.getClass().getName()));
+		logger.info(String.format("Finished %s", this.getClass().getName()));
 	}
 
-	private Map<String, BiFunction<String, Root<? extends Entity>, Path<?>>> resolveEmbeddedTypeSelectors(
-			Class<?> owningType, String owningPropertyName, String propertyName, ComponentType type) {
+	private Map<String, BiFunction<String, Root<? extends Entity>, Path<?>>> resolveComponentTypeSelectors(
+			Class<?> owningType, String owningPropertyName, String propertyName, ComponentType type,
+			DomainEntityMetadata<? extends Entity> metadata) {
 		logger.debug(String.format("Embedded component: [%s] in type [%s]", propertyName, owningType.getName()));
 
 		Map<String, BiFunction<String, Root<? extends Entity>, Path<?>>> selectors = new HashMap<>();
-
-		if (owningPropertyName == null) {
-			selectors.put(propertyName, (column, root) -> root.get(column));
-		} else {
-			selectors.put(propertyName,
+		// @formatter:off
+		selectors.put(propertyName,
+				owningPropertyName == null ? 
+					(column, root) -> root.get(column) :
 					(column, root) -> selectors.get(owningPropertyName).apply(owningPropertyName, root).get(column));
-		}
-
+		// @formatter:on
 		Stream.of(type.getPropertyNames()).forEach(subProp -> {
 			Type subType = type.getSubtypes()[type.getPropertyIndex(subProp)];
 
-			if (EmbeddedComponentType.class.isAssignableFrom(subType.getClass())) {
-				selectors.putAll(resolveEmbeddedTypeSelectors(subType.getReturnedClass(), propertyName, subProp,
-						(EmbeddedComponentType) subType));
+			if (subType instanceof ComponentType) {
+				selectors.putAll(resolveComponentTypeSelectors(subType.getReturnedClass(), propertyName, subProp,
+						(ComponentType) subType, metadata));
 				return;
 			}
+
+//			if (subType instanceof AssociationType && metadata.isAssociationOptional(propertyName)) {
+//				logger.debug(String.format("Optional association: [%s] in type [%s]", propertyName, type.getName()));
+//				selectors.put(propertyName, (column, root) -> root.join(column, JoinType.LEFT));
+//				return;
+//			}
 
 			selectors.put(subProp, (column, root) -> selectors.get(propertyName).apply(propertyName, root).get(column));
 		});

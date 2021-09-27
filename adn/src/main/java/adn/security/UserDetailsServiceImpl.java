@@ -20,8 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import adn.dao.generic.GenericRepository;
-import adn.model.entities.Account;
-import adn.model.entities.metadata._Account;
+import adn.model.entities.User;
+import adn.model.entities.metadata._User;
 import adn.service.internal.Role;
 import adn.service.services.DepartmentService;
 
@@ -40,14 +40,14 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 	@Autowired
 	private DepartmentService departmentService;
 
-	private static final List<String> ATTRIBUTES = Arrays.asList(_Account.id, _Account.password, _Account.role,
-			_Account.updatedDate, _Account.active);
+	private static final List<String> ATTRIBUTES = Arrays.asList(_User.id, _User.password, _User.role,
+			_User.updatedDate, _User.active);
 	public static final ZoneId ZONE = ZoneId.systemDefault();
 
 	@Transactional(readOnly = true)
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		Optional<Object[]> optional = repo.findById(Account.class, username, ATTRIBUTES);
+		Optional<Object[]> optional = repo.findById(User.class, username, ATTRIBUTES);
 
 		if (optional.isEmpty()) {
 			throw new UsernameNotFoundException(String.format("%s not found", username));

@@ -3,7 +3,6 @@
  */
 package adn.model.entities;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import javax.persistence.Column;
@@ -11,6 +10,7 @@ import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -20,9 +20,12 @@ import javax.persistence.Table;
 import org.hibernate.annotations.GenericGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import adn.model.entities.converters.StringListConverter;
-import adn.model.entities.generators.ProductIdGenerator;
+import adn.model.entities.generators.ProductCodeGenerator;
+import adn.model.entities.metadata._Category;
+import adn.model.entities.metadata._Item;
 import adn.model.entities.metadata._Product;
 
 /**
@@ -31,20 +34,20 @@ import adn.model.entities.metadata._Product;
  */
 @Entity
 @Table(name = "products")
-public class Product extends Factor {
+public class Product extends FullyAuditedEntity<Long> {
 
 	@Id
-	@GeneratedValue(generator = ProductIdGenerator.NAME)
-	@GenericGenerator(name = ProductIdGenerator.NAME, strategy = ProductIdGenerator.PATH)
-	@Column(updatable = false, length = _Product.ID_LENGTH)
-	private String id;
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(updatable = false)
+	private Long id;
 
-	@Column(columnDefinition = "DECIMAL(13,4)", nullable = false)
-	private BigDecimal price;
+	@GeneratedValue(generator = ProductCodeGenerator.NAME)
+	@GenericGenerator(name = ProductCodeGenerator.NAME, strategy = ProductCodeGenerator.PATH)
+	@Column(updatable = false, length = _Product.CODE_LENGTH, unique = true)
+	private String code;
 
-	@ManyToOne(optional = false, fetch = FetchType.LAZY)
-	@JoinColumn(name = "category_id", referencedColumnName = "id")
-	private Category category;
+	@Column(columnDefinition = "VARCHAR(50)")
+	private String material;
 	// IDENTIFIER_LENGTH
 	@Column(columnDefinition = "VARCHAR(500)")
 	@Convert(converter = StringListConverter.class)
@@ -56,24 +59,32 @@ public class Product extends Factor {
 	@Column
 	private Float rating;
 
-	@JsonIgnore
-	@OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
-	private List<StockDetail> stockDetails;
+	@Column(nullable = false)
+	private Boolean locked;
 
-	public String getId() {
+	@ManyToOne(optional = false, fetch = FetchType.LAZY)
+	@JoinColumn(name = "category_id", referencedColumnName = _Category.id)
+	private Category category;
+
+	@JsonIgnore
+	@OneToMany(mappedBy = _Item.product, fetch = FetchType.LAZY)
+	private List<Item> items;
+
+	@Override
+	public Long getId() {
 		return id;
 	}
 
-	public void setId(String code) {
-		this.id = code;
+	public void setId(Long id) {
+		this.id = id;
 	}
 
-	public BigDecimal getPrice() {
-		return price;
+	public String getCode() {
+		return code;
 	}
 
-	public void setPrice(BigDecimal price) {
-		this.price = price;
+	public void setCode(String code) {
+		this.code = code;
 	}
 
 	public Category getCategory() {
@@ -108,12 +119,37 @@ public class Product extends Factor {
 		this.rating = rating;
 	}
 
-	public List<StockDetail> getStockDetails() {
-		return stockDetails;
+	public List<Item> getStockDetails() {
+		return items;
 	}
 
-	public void setStockDetails(List<StockDetail> stockDetails) {
-		this.stockDetails = stockDetails;
+	public void setStockDetails(List<Item> stockDetails) {
+		this.items = stockDetails;
+	}
+
+	public String getMaterial() {
+		return material;
+	}
+
+	public void setMaterial(String material) {
+		this.material = material;
+	}
+
+	@JsonProperty("locked")
+	public Boolean isLocked() {
+		return locked;
+	}
+
+	public void setLocked(Boolean locked) {
+		this.locked = locked;
+	}
+
+	public List<Item> getItems() {
+		return items;
+	}
+
+	public void setItems(List<Item> items) {
+		this.items = items;
 	}
 
 }

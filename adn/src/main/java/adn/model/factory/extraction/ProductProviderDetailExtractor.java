@@ -6,21 +6,21 @@ package adn.model.factory.extraction;
 import org.springframework.stereotype.Component;
 
 import adn.model.Generic;
-import adn.model.entities.ProductProviderDetail;
-import adn.model.entities.id.ProductProviderDetailId;
+import adn.model.entities.ProductCost;
+import adn.model.entities.id.ProductCostId;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Component
-@Generic(entityGene = ProductProviderDetail.class, modelGene = ProductProviderDetail.class)
+@Generic(entityGene = ProductCost.class, modelGene = ProductCost.class)
 public class ProductProviderDetailExtractor
-		implements PojoEntityExtractor<ProductProviderDetail, ProductProviderDetail> {
+		implements PojoEntityExtractor<ProductCost, ProductCost> {
 
 	@Override
-	public ProductProviderDetail extract(ProductProviderDetail model) {
-		ProductProviderDetailId embeddedId = new ProductProviderDetailId();
+	public ProductCost extract(ProductCost model) {
+		ProductCostId embeddedId = new ProductCostId();
 
 		embeddedId.setProductId(model.getProduct().getId());
 		embeddedId.setProviderId(model.getProvider().getId());
@@ -31,8 +31,8 @@ public class ProductProviderDetailExtractor
 	}
 
 	@Override
-	public ProductProviderDetail extract(ProductProviderDetail source, ProductProviderDetail target) {
-		ProductProviderDetailId embeddedId = new ProductProviderDetailId();
+	public ProductCost extract(ProductCost source, ProductCost target) {
+		ProductCostId embeddedId = new ProductCostId();
 
 		embeddedId.setProductId(source.getProduct().getId());
 		embeddedId.setProviderId(source.getProvider().getId());

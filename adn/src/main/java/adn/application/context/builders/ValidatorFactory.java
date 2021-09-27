@@ -24,7 +24,7 @@ import adn.dao.generic.Result;
 import adn.helpers.TypeHelper;
 import adn.model.Generic;
 import adn.model.entities.Entity;
-import adn.model.entities.specification.Validator;
+import adn.model.entities.validator.Validator;
 
 /**
  * @author Ngoc Huy

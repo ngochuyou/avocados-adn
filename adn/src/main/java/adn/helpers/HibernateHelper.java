@@ -29,7 +29,7 @@ public class HibernateHelper {
 
 	private HibernateHelper() {}
 
-	private static SessionFactoryImplementor getSessionFactory() {
+	public static SessionFactoryImplementor getSessionFactory() {
 		return ContextProvider.getBean(SessionFactoryImplementor.class);
 	}
 

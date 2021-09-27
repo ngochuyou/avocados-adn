@@ -28,7 +28,7 @@ import adn.model.entities.Product;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.internal.ResourceService;
 import adn.service.services.AuthenticationService;
-import adn.service.services.GenericFactorService;
+import adn.service.services.GenericFullyAuditedEntityService;
 import adn.service.services.ProductService;
 
 /**
@@ -42,11 +42,11 @@ public class ProductController extends BaseController {
 	protected final ProductService productService;
 	protected final ResourceService resourceService;
 	protected final AuthenticationService authService;
-	protected final GenericFactorService genericFactorService;
+	protected final GenericFullyAuditedEntityService genericFactorService;
 
 	@Autowired
 	public ProductController(AuthenticationService authService, ProductService productService,
-			ResourceService resourceService, GenericFactorService genericFactorService) {
+			ResourceService resourceService, GenericFullyAuditedEntityService genericFactorService) {
 		this.productService = productService;
 		this.resourceService = resourceService;
 		this.authService = authService;

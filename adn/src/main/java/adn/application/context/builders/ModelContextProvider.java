@@ -71,7 +71,13 @@ public class ModelContextProvider implements ContextBuilder {
 		this.metadataMap = new HashMap<>();
 
 		entityTree.forEach(
-				branch -> metadataMap.put(branch.getNode(), new DomainEntityMetadataImpl<>(this, branch.getNode())));
+				branch -> {
+					try {
+						metadataMap.put(branch.getNode(), new DomainEntityMetadataImpl<>(this, branch.getNode()));
+					} catch (NoSuchFieldException | SecurityException e) {
+						e.printStackTrace();
+					}
+				});
 		entityTree.forEach(branch -> logger.debug(
 				String.format("%s -> %s", branch.getNode().getName(), metadataMap.get(branch.getNode()).toString())));
 

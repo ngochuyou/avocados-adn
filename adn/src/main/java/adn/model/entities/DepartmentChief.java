@@ -15,6 +15,7 @@ import javax.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import adn.application.Common;
 import adn.model.entities.id.DepartmentChiefId;
 
 /**
@@ -35,7 +36,7 @@ public class DepartmentChief extends adn.model.entities.Entity {
 	private Personnel personnel;
 
 	@ManyToOne(optional = false)
-	@JoinColumn(name = "department_id", updatable = false, columnDefinition = "BINARY(16)")
+	@JoinColumn(name = "department_id", updatable = false, columnDefinition = Common.UUID_MYSQL_COLUMN_DEFINITION)
 	@MapsId("departmentId")
 	@JsonIgnore
 	private Department department;

@@ -17,8 +17,9 @@ import org.hibernate.annotations.GenericGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import adn.model.DepartmentScoped;
+import adn.application.Common;
 import adn.model.entities.converters.StringListConverter;
+import adn.model.entities.metadata._ProductCost;
 import adn.model.entities.metadata._Provider;
 
 /**
@@ -27,19 +28,25 @@ import adn.model.entities.metadata._Provider;
  */
 @javax.persistence.Entity
 @Table(name = "providers")
-public class Provider extends Factor implements DepartmentScoped {
+public class Provider extends PermanentEntity implements NamedResource {
 
 	@Id
 	@GeneratedValue(generator = "uuid")
 	@GenericGenerator(name = "uuid", strategy = "uuid2")
-	@Column(columnDefinition = "BINARY(16)")
+	@Column(columnDefinition = Common.UUID_MYSQL_COLUMN_DEFINITION)
 	protected UUID id;
 
-	@Column(nullable = false)
-	private String email;
+	@Column(nullable = false, unique = true)
+	private String name;
 
 	@Column(nullable = false)
 	private String address;
+
+	@Column(length = _Provider.WEBSITE_MAX_LENGTH)
+	private String website;
+
+	@Column(nullable = false)
+	private String email;
 
 	@Column(nullable = false, name = "phone_numbers")
 	@Convert(converter = StringListConverter.class)
@@ -48,12 +55,9 @@ public class Provider extends Factor implements DepartmentScoped {
 	@Column(name = "representator_name")
 	private String representatorName;
 
-	@Column(length = _Provider.WEBSITE_MAX_LENGTH)
-	private String website;
-
 	@JsonIgnore
-	@OneToMany(mappedBy = "provider")
-	private List<ProductProviderDetail> productDetails;
+	@OneToMany(mappedBy = _ProductCost.provider)
+	private List<ProductCost> productCosts;
 
 	public UUID getId() {
 		return id;
@@ -61,6 +65,14 @@ public class Provider extends Factor implements DepartmentScoped {
 
 	public void setId(UUID id) {
 		this.id = id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public String getEmail() {
@@ -103,12 +115,12 @@ public class Provider extends Factor implements DepartmentScoped {
 		this.website = website;
 	}
 
-	public List<ProductProviderDetail> getProductDetails() {
-		return productDetails;
+	public List<ProductCost> getProductCosts() {
+		return productCosts;
 	}
 
-	public void setProductDetails(List<ProductProviderDetail> productDetails) {
-		this.productDetails = productDetails;
+	public void setProductCosts(List<ProductCost> productDetails) {
+		this.productCosts = productDetails;
 	}
 
 }

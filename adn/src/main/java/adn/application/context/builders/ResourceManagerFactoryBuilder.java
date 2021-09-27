@@ -171,7 +171,6 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 	// @formatter:on
 	@Override
 	public void buildAfterStartUp() throws Exception {
-		logger.info("Building " + this.getClass());
 		// @formatter:off
 		logger.info("\n\n"
 				+ "\t\t\t\t\t\t========================================================\n"

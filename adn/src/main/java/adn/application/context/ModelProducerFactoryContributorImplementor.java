@@ -4,6 +4,7 @@
 package adn.application.context;
 
 import static adn.application.context.builders.CredentialFactory.owner;
+import static adn.model.entities.metadata._NamedResource.name;
 import static adn.service.DepartmentCredential.CUSTOMER_SERVICE_CREDENTIAL;
 import static adn.service.DepartmentCredential.PERSONNEL_CREDENTIAL;
 import static adn.service.DepartmentCredential.SALE_CREDENTIAL;
@@ -18,21 +19,21 @@ import java.util.stream.Stream;
 import adn.application.context.builders.CredentialFactory;
 import adn.application.context.builders.DynamicMapModelProducerFactoryImpl.ModelProducerFactoryContributor;
 import adn.helpers.Utils;
-import adn.model.entities.Account;
 import adn.model.entities.Category;
 import adn.model.entities.Customer;
 import adn.model.entities.Personnel;
 import adn.model.entities.Product;
-import adn.model.entities.ProductProviderDetail;
+import adn.model.entities.ProductCost;
 import adn.model.entities.Provider;
-import adn.model.entities.id.ProductProviderDetailId;
-import adn.model.entities.metadata._Account;
+import adn.model.entities.User;
+import adn.model.entities.id.ProductCostId;
 import adn.model.entities.metadata._Category;
 import adn.model.entities.metadata._Customer;
 import adn.model.entities.metadata._Personnel;
 import adn.model.entities.metadata._Product;
-import adn.model.entities.metadata._ProductProviderDetail;
+import adn.model.entities.metadata._ProductCost;
 import adn.model.entities.metadata._Provider;
+import adn.model.entities.metadata._User;
 import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.ModelProducerFactoryBuilder;
 import adn.model.factory.authentication.ModelProducerFactoryBuilder.WithType;
@@ -93,18 +94,16 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 	}
 
 	private void account(ModelProducerFactoryBuilder builder) {
-		WithType<Account> account = builder.type(Account.class);
+		WithType<User> account = builder.type(User.class);
 		// @formatter:off
 		account
 			.credentials(authorized())
-				.fields(_Account.id).use(_Account._id).publish()
-				.fields(_Account.firstName, _Account.lastName, _Account.photo, _Account.role, _Account.gender, _Account.active,
-						_Account.email, _Account.phone, _Account.birthDate).publish()
+				.fields(_User.id).use(_User._id).publish()
+				.fields(_User.firstName, _User.lastName, _User.photo, _User.role, _User.gender, _User.active,
+						_User.email, _User.phone, _User.birthDate).publish()
 				.anyFields().mask()
-			.credentials(owner())
-				.fields(_Account.createdDate).publish()
 			.credentials(PERSONNEL_CREDENTIAL, HEAD)
-				.fields(_Account.address, _Account.createdDate, _Account.deactivatedDate, _Account.updatedDate).publish();
+				.fields(_User.address).publish();
 		
 //		builder.type(Head.class).roles(HEAD).publish();
 		
@@ -126,39 +125,34 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		// @formatter:off
 		provider
 			.credentials(SALE_CREDENTIAL, STOCK_CREDENTIAL, HEAD)
-				.fields(_Provider.id, _Provider.name, _Provider.active, _Provider.productDetails).publish()
+				.fields(_Provider.id, name, _Provider.active, _Provider.productCosts).publish()
 			.credentials(SALE_CREDENTIAL, HEAD)
-				.fields(_Provider.createdBy, _Provider.createdTimestamp,
-						_Provider.updatedBy, _Provider.updatedTimestamp,
-						_Provider.deactivatedTimestamp,
-						_Provider.approvedBy, _Provider.approvedTimestamp,
-						_Provider.email, _Provider.phoneNumbers, _Provider.address,
+				.fields(_Provider.email, _Provider.phoneNumbers, _Provider.address,
 						_Provider.representatorName, _Provider.website)
 				.publish();
 		
-		WithType<ProductProviderDetail> productDetail = builder.type(ProductProviderDetail.class);
+		WithType<ProductCost> cost = builder.type(ProductCost.class);
 		
-		productDetail
+		cost
 			.credentials(SALE_CREDENTIAL, STOCK_CREDENTIAL, HEAD)
-				.fields(_ProductProviderDetail.price,
-						_ProductProviderDetail.productId, _ProductProviderDetail.providerId, 
-						_ProductProviderDetail.product, _ProductProviderDetail.provider,
-						_ProductProviderDetail.createdTimestamp)
+				.fields(_ProductCost.cost,
+						_ProductCost.productId, _ProductCost.providerId, 
+						_ProductCost.product, _ProductCost.provider,
+						_ProductCost.createdTimestamp)
 				.publish()
-				.fields(_ProductProviderDetail.id)
+				.fields(_ProductCost.id)
 					.useFunction((args, credential) -> {
-						ProductProviderDetailId id = (ProductProviderDetailId) args.getSource();
+						ProductCostId id = (ProductCostId) args.getSource();
 						
 						return Map.of(
-								_ProductProviderDetail.productId, id.getProductId(),
-								_ProductProviderDetail.providerId, id.getProviderId(),
-								_ProductProviderDetail.createdTimestamp, Utils.ldt(id.getCreatedTimestamp())
+								_ProductCost.productId, id.getProductId(),
+								_ProductCost.providerId, id.getProviderId(),
+								_ProductCost.createdTimestamp, Utils.ldt(id.getCreatedTimestamp())
 							);
 					})
 			.credentials(SALE_CREDENTIAL, HEAD)
-				.fields(_ProductProviderDetail.droppedTimestamp, _ProductProviderDetail.approvedTimestamp,
-						_ProductProviderDetail.createdBy, 
-						_ProductProviderDetail.approvedBy)
+				.fields(_ProductCost.droppedTimestamp, _ProductCost.approvedTimestamp,
+						_ProductCost.approvedBy)
 				.publish();
 		// @formatter:on
 	}
@@ -192,15 +186,15 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		// @formatter:off
 		product
 			.credentials(any())
-				.fields(_Product.id, _Product.name, _Product.price,
-						_Product.category, _Product.images, _Product.description,
-						_Product.rating, _Product.stockDetails)
+				.fields(_Product.id, name, _Product.category,
+						_Product.images, _Product.description,
+						_Product.rating, _Product.items)
 				.publish()
 			.credentials(SALE_CREDENTIAL, HEAD)
-				.fields(_Product.createdBy, _Product.createdTimestamp,
-						_Product.updatedBy, _Product.updatedTimestamp,
-						_Product.active, _Product.deactivatedTimestamp,
-						_Product.approvedBy, _Product.approvedTimestamp)
+				.fields(_Product.createdBy, _Product.createdDate,
+						_Product.lastModifiedBy, _Product.lastModifiedDate,
+						_Product.active, _Product.approvedBy,
+						_Product.approvedTimestamp)
 				.publish();
 		// @formatter:on
 	}
@@ -210,14 +204,10 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		// @formatter:off
 		product
 			.credentials(any())
-				.fields(_Category.id, _Category.description, _Category.name)
+				.fields(_Category.id, _Category.description, name)
 				.publish()
 			.credentials(SALE_CREDENTIAL, HEAD)
-				.fields(_Category.products,
-						_Category.createdBy, _Category.createdTimestamp,
-						_Category.updatedBy, _Category.updatedTimestamp,
-						_Category.active, _Category.deactivatedTimestamp,
-						_Category.approvedBy, _Category.approvedTimestamp)
+				.fields(_Category.products, _Category.active)
 				.publish();
 		// @formatter:on
 	}

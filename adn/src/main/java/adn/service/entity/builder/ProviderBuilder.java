@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Provider;
-import adn.service.services.AuthenticationService;
 
 /**
  * @author Ngoc Huy
@@ -20,15 +19,7 @@ import adn.service.services.AuthenticationService;
  */
 @Component
 @Generic(entityGene = Provider.class)
-public class ProviderBuilder extends FactorBuilder<Provider> {
-
-	/**
-	 * @param authService
-	 */
-	public ProviderBuilder(AuthenticationService authService) {
-		super(authService);
-		// TODO Auto-generated constructor stub
-	}
+public class ProviderBuilder extends AbstractPermanentEntityBuilder<Provider> {
 
 	@Override
 	protected <E extends Provider> E mandatoryBuild(E target, E model) {

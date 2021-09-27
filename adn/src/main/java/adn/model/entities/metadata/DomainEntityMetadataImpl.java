@@ -3,13 +3,9 @@
  */
 package adn.model.entities.metadata;
 
-import static java.util.Map.entry;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -18,25 +14,29 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.stream.IntStream;
 
-import javax.persistence.metamodel.Attribute;
-import javax.persistence.metamodel.EntityType;
+import javax.persistence.Basic;
+import javax.persistence.FetchType;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 
 import org.hibernate.MappingException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.hibernate.property.access.spi.Getter;
 import org.hibernate.tuple.IdentifierProperty;
 import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.tuple.entity.EntityTuplizer;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.ComponentType;
+import org.hibernate.type.EntityType;
+import org.hibernate.type.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +44,7 @@ import adn.application.context.builders.ModelContextProvider;
 import adn.engine.access.StandardAccess;
 import adn.helpers.HibernateHelper;
 import adn.helpers.TypeHelper;
+import adn.model.DomainComponentType;
 import adn.model.DomainEntity;
 import adn.model.entities.Entity;
 
@@ -58,7 +59,7 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 	static {
 		Set<String> sensitiveFields = new HashSet<>();
 
-		sensitiveFields.add(_Account.password);
+		sensitiveFields.add(_User.password);
 
 		SENSITIVE_FIELD_NAMES = Collections.unmodifiableSet(sensitiveFields);
 	}
@@ -66,111 +67,126 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 	private final Class<T> entityType;
 
 	private final List<String> properties;
-	private final List<String> declaredProperties;
 	private final List<String> nonLazyProperties;
-	private final int propertiesSpan;
-	private final List<Map.Entry<String, Getter>> getters;
-	private final String discriminatorColumnName;
 	private final Map<String, Class<?>> propertyTypes;
-	private final Map<String, Class<? extends DomainEntity>> associationsClass;
-	private final Map<String, AssociationType> associationTypes;
+	private final Map<String, Getter> getters;
+	private final Map<String, Class<? extends DomainEntity>> associationClassMap;
+	private final Map<String, AssociationType> associationTypeMap;
 	private final Set<String> optionalAssociations;
 
 	@SuppressWarnings("unchecked")
-	public DomainEntityMetadataImpl(final ModelContextProvider modelContext, Class<T> entityClass) {
+	public DomainEntityMetadataImpl(final ModelContextProvider modelContext, Class<T> entityType)
+			throws NoSuchFieldException, SecurityException {
 		final Logger logger = LoggerFactory.getLogger(this.getClass());
-		List<Map.Entry<String, Getter>> getters;
 		List<String> properties;
-		List<String> nonLazyProperties;
-		String discriminatorColumnName = null;
-		List<String> declaredProperties;
 		Map<String, Class<?>> propertyTypes;
-		Set<String> optionalAssociations = new HashSet<>();
-		Map<String, AssociationType> associationTypes = new HashMap<>();
+		List<String> nonLazyProperties;
+		Map<String, Getter> getters;
+		Map<String, Class<? extends DomainEntity>> associationClassMap;
+		Map<String, AssociationType> associationTypeMap;
+		Set<String> optionalAssociations;
+
+		this.entityType = entityType;
 
 		try {
-			if (!Entity.class.isAssignableFrom(entityClass)) {
+			if (!Entity.class.isAssignableFrom(entityType)) {
 				throw new MappingException("Not a HBM entity");
 			}
 
-			Class<? extends Entity> type = (Class<? extends Entity>) entityClass;
+			Class<? extends Entity> type = (Class<? extends Entity>) entityType;
 			EntityPersister persister = HibernateHelper.getEntityPersister(type);
 			EntityMetamodel metamodel = persister.getEntityMetamodel();
-			EntityTuplizer tuplizer = metamodel.getTuplizer();
+			EntityTuplizer tuplizer = persister.getEntityTuplizer();
+			boolean[] propertyLaziness = metamodel.getPropertyLaziness();
+			boolean[] propertyNullabilities = metamodel.getPropertyNullability();
 
-			getters = Stream.of(metamodel.getPropertyNames())
-					.map(name -> Map.entry(name, tuplizer.getGetter(metamodel.getPropertyIndex(name))))
-					.collect(Collectors.toList());
+			properties = new ArrayList<>(0);
+			propertyTypes = new HashMap<>(0, 1f);
+			nonLazyProperties = new ArrayList<>(0);
+			getters = new HashMap<>(0, 1f);
+			associationClassMap = new HashMap<>(0, 1f);
+			associationTypeMap = new HashMap<>(0, 1f);
+			optionalAssociations = new HashSet<>(0);
 
-			properties = Stream.of(metamodel.getPropertyNames()).collect(Collectors.toList());
-			// notice-start: do following before adding identifier
-			boolean[] laziness = metamodel.getPropertyLaziness();
-			EntityType<? extends Entity> persistenceType = persister.getFactory().getMetamodel().entity(type);
-			Map<String, Attribute<T, ?>> attrs = persistenceType.getAttributes().stream()
-					.map(attr -> Map.entry(attr.getName(), (Attribute<T, ?>) attr))
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+			for (String property : metamodel.getPropertyNames()) {
+				int propertyIndex = metamodel.getPropertyIndex(property);
+				Type propertyType = metamodel.getPropertyTypes()[propertyIndex];
+				Getter propertyGetter = tuplizer.getGetter(propertyIndex);
+				Class<?> propertyClass = propertyType.getReturnedClass();
 
-			propertyTypes = persistenceType.getAttributes().stream()
-					.map(attr -> Map.entry(attr.getName(), (Class<? extends DomainEntity>) attr.getJavaType()))
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-			associationTypes = properties.stream()
-					.map(prop -> entry(prop, metamodel.getPropertyTypes()[metamodel.getPropertyIndex(prop)]))
-					.filter(entry -> org.hibernate.type.AssociationType.class
-							.isAssignableFrom(entry.getValue().getClass()))
-					.map(entry -> CollectionType.class.isAssignableFrom(entry.getValue().getClass())
-							? entry(entry.getKey(), AssociationType.COLLECTION)
-							: org.hibernate.type.EntityType.class.isAssignableFrom(entry.getValue().getClass())
-									? entry(entry.getKey(), AssociationType.ENTITY)
-									: entry(entry.getKey(), AssociationType.ANY))
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+				getters.put(property, propertyGetter);
 
-			nonLazyProperties = properties.stream().filter(prop -> {
-				Attribute<T, ?> attr = attrs.get(prop);
-
-				if (attr == null) {
-					logger.warn(String.format("Null attribute [%s] in [%s], potentially a virtual property", prop,
-							type.getName()));
-					return false;
-				}
-
-				if (!Collection.class.isAssignableFrom(attr.getJavaType())) {
-					int propertyIndex = metamodel.getPropertyIndex(prop);
-
-					if (Entity.class.isAssignableFrom(attr.getJavaType())) {
-						org.hibernate.type.EntityType associationType = (org.hibernate.type.EntityType) metamodel
-								.getPropertyTypes()[propertyIndex];
-
-						if (metamodel.getPropertyNullability()[propertyIndex]) {
-							optionalAssociations.add(prop);
-						}
-
-						return associationType.isEager(null);
+				if (!ComponentType.class.isAssignableFrom(propertyType.getClass())) {
+					properties.add(property);
+					propertyTypes.put(property, propertyClass);
+					// @formatter:off
+					resolvePropertyLaziness(
+							property,
+							propertyType,
+							propertyIndex,
+							propertyLaziness,
+							nonLazyProperties,
+							entityType);
+					
+					if (org.hibernate.type.AssociationType.class.isAssignableFrom(propertyType.getClass())) {
+						resolveAssociationMetadata(
+								entityType,
+								property,
+								propertyType,
+								propertyIndex,
+								propertyNullabilities,
+								associationClassMap,
+								associationTypeMap,
+								optionalAssociations);
 					}
-
-					return !laziness[propertyIndex];
+					// @formatter:on
+					continue;
 				}
 
-				if (!(attr.getJavaMember() instanceof Field)) {
-					return true;
-				}
+				ComponentType componentType = (ComponentType) propertyType;
+				Type componentPropertyType;
+				int componentPropertyIndex;
+				Class<?> componentPropertyClass;
+				boolean[] componentPropertyLaziness = new boolean[componentType.getPropertyNames().length];
+				boolean[] componentPropertyNullabilities = componentType.getPropertyNullability();
+				// assumes all properties in a component is non-lazy
+				Arrays.fill(componentPropertyLaziness, false);
 
-				ParameterizedType genericTypes = (ParameterizedType) ((Field) attr.getJavaMember()).getGenericType();
-				Class<?> clz = (Class<?>) genericTypes.getActualTypeArguments()[0];
+				for (String componentProperty : componentType.getPropertyNames()) {
+					componentPropertyIndex = componentType.getPropertyIndex(componentProperty);
+					properties.add(componentProperty);
+					componentPropertyType = componentType.getSubtypes()[componentPropertyIndex];
+					componentPropertyClass = componentPropertyType.getReturnedClass();
+					propertyTypes.put(componentProperty, componentPropertyClass);
+					// @formatter:off
+					resolvePropertyLaziness(
+							componentProperty,
+							componentPropertyType,
+							componentPropertyIndex,
+							componentPropertyLaziness,
+							nonLazyProperties,
+							componentPropertyClass);
+					getters.put(componentProperty, new ComponentPropertyGetter(
+							propertyGetter,
+							propertyClass,
+							componentProperty,
+							componentPropertyClass));
 
-				if (!Entity.class.isAssignableFrom(clz)) {
-					return true;
+					if (org.hibernate.type.AssociationType.class.isAssignableFrom(componentPropertyType.getClass())) {
+						resolveAssociationMetadata(
+								componentPropertyClass,
+								componentProperty,
+								componentPropertyType,
+								componentPropertyIndex,
+								componentPropertyNullabilities,
+								associationClassMap,
+								associationTypeMap,
+								optionalAssociations);
+					}
+					// @formatter:on
 				}
-				// this is how a CollectionPersister role is resolved by Hibernate
-				// see org.hibernate.cfg.annotations.CollectionBinder.bind()
-				String collectionRole = StringHelper.qualify(type.getName(), prop);
+			}
 
-				try {
-					return !persister.getFactory().getMetamodel().collectionPersister(collectionRole).isLazy();
-				} catch (MappingException me) {
-					return true;
-				}
-			}).collect(Collectors.toList());
-			// notice-end:
 			IdentifierProperty identifier = metamodel.getIdentifierProperty();
 
 			if (!identifier.isVirtual()) {
@@ -178,136 +194,297 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 				Getter identifierGetter = tuplizer.getIdentifierGetter();
 				Class<?> identifierJavaClass = identifier.getType().getReturnedClass();
 
-				getters.add(entry(identifierName, identifierGetter));
+				getters.put(identifierName, identifierGetter);
 				properties.add(identifierName);
 				nonLazyProperties.add(identifierName);
 				propertyTypes.put(identifierName, identifierJavaClass);
 
 				if (identifier.getType() instanceof ComponentType) {
 					ComponentType component = (ComponentType) identifier.getType();
-					List<String> componentPropertiesNames = Arrays.asList(component.getPropertyNames());
-					Class<?> componentPropertyType;
+					Class<?> identifierPropertyClass;
+					int identifierPropertyIndex;
+					Type identifierPropertyType;
+					boolean[] identifierPropertyNullabilities = component.getPropertyNullability();
 
-					for (String componentPropertyName : componentPropertiesNames) {
-						properties.add(componentPropertyName);
-						nonLazyProperties.add(componentPropertyName);
-						componentPropertyType = component.getSubtypes()[component
-								.getPropertyIndex(componentPropertyName)].getReturnedClass();
-						propertyTypes.put(componentPropertyName, componentPropertyType);
-						getters.add(entry(componentPropertyName, new ComponentPropertyGetter(identifierGetter,
-								identifierJavaClass, componentPropertyName, componentPropertyType)));
+					for (String identifierPropertyName : component.getPropertyNames()) {
+						identifierPropertyIndex = component.getPropertyIndex(identifierPropertyName);
+						identifierPropertyType = component.getSubtypes()[identifierPropertyIndex];
+						properties.add(identifierPropertyName);
+						nonLazyProperties.add(identifierPropertyName);
+						identifierPropertyClass = identifierPropertyType.getReturnedClass();
+						propertyTypes.put(identifierPropertyName, identifierPropertyClass);
+						getters.put(identifierPropertyName, new ComponentPropertyGetter(identifierGetter,
+								identifierJavaClass, identifierPropertyName, identifierPropertyClass));
+						// @formatter:off
+						if (org.hibernate.type.AssociationType.class.isAssignableFrom(identifierPropertyType.getClass())) {
+							resolveAssociationMetadata(
+									identifierPropertyClass,
+									identifierPropertyName,
+									identifierPropertyType,
+									identifierPropertyIndex,
+									identifierPropertyNullabilities,
+									associationClassMap,
+									associationTypeMap,
+									optionalAssociations);
+						}
+						// @formatter:on
 					}
 				}
 			}
-
-			if (persister instanceof SingleTableEntityPersister) {
-				SingleTableEntityPersister singleTableEntityPersister = (SingleTableEntityPersister) persister;
-
-				discriminatorColumnName = singleTableEntityPersister.getDiscriminatorColumnName();
-
-				if (discriminatorColumnName != null) {
-					properties.add(discriminatorColumnName);
-					propertyTypes.put(discriminatorColumnName, singleTableEntityPersister.getType().getReturnedClass());
-				}
-			}
-
-			declaredProperties = persistenceType.getDeclaredAttributes().stream().map(attr -> attr.getName())
-					.collect(Collectors.toList());
 		} catch (MappingException me) {
+			// this block resolves either Hibernate's abstract entities or
+			// entities of type adn.model.models.Model
+			// TODO: make this class into two classes, one for Hibernate's entities, the
+			// other is for non-Hibernate's entities
 			if (logger.isTraceEnabled()) {
-				me.printStackTrace();
-				logger.error(
-						String.format("Unable to resolve getters of [%s] from Hibernate, resolving getters through %s",
-								entityClass.getName(), StandardAccess.class.getName()));
+				logger.debug(String.format("Unable to resolve [%s] from Hibernate", entityType.getName()));
 			}
 
-			Class<?> superClass = entityClass.getSuperclass();
-			DomainEntityMetadataImpl<?> superMetadata = null;
+			Class<?> superClass = entityType.getSuperclass();
+			DomainEntityMetadataImpl<? extends DomainEntity> superMetadata = null;
 
-			while (superClass != null && superClass != Object.class
-					&& ((superMetadata) = (DomainEntityMetadataImpl<?>) modelContext
-							.getMetadata((Class<DomainEntity>) superClass)) == null) {
+			while (superClass != Object.class && (superMetadata = (DomainEntityMetadataImpl<?>) modelContext
+					.getMetadata((Class<DomainEntity>) superClass)) == null) {
 				superClass = superClass.getSuperclass();
 			}
 
 			properties = new ArrayList<>(0);
 			propertyTypes = new HashMap<>(0, 1f);
-			Map<String, Getter> accessors = new HashMap<>(0, 1f);
+			nonLazyProperties = new ArrayList<>(0);
+			getters = new HashMap<>(0, 1f);
+			associationClassMap = new HashMap<>(0, 1f);
+			associationTypeMap = new HashMap<>(0, 1f);
+			optionalAssociations = new HashSet<>(0);
 
 			if (superMetadata != null) {
-				properties.addAll(superMetadata.getPropertyNames());
-				propertyTypes.putAll(superMetadata.getPropertyTypes());
-				accessors.putAll(superMetadata.getGetters().stream()
-						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+				properties.addAll(superMetadata.properties);
+				propertyTypes.putAll(superMetadata.propertyTypes);
+				nonLazyProperties.addAll(superMetadata.nonLazyProperties);
+				getters.putAll(superMetadata.getters);
+				associationClassMap.putAll(superMetadata.associationClassMap);
+				associationTypeMap.putAll(superMetadata.associationTypeMap);
+				optionalAssociations.addAll(superMetadata.optionalAssociations);
 			}
 
-			declaredProperties = new ArrayList<>(0);
+			for (Field field : entityType.getDeclaredFields()) {
+				String propertyName = field.getName();
+				Class<?> propertyType = field.getType();
+				Getter propertyGetter = StandardAccess.locateGetter(entityType, propertyName)
+						.orElseThrow(() -> new IllegalArgumentException(
+								String.format("Unable to locate getter for property [%s] in type [%s]", propertyName,
+										entityType.getName())));
 
-			for (Field f : entityClass.getDeclaredFields()) {
-				if (Modifier.isTransient(f.getModifiers())) {
+				getters.put(propertyName, propertyGetter);
+
+				if (!DomainComponentType.class.isAssignableFrom(propertyType)) {
+					// @formatter:off
+					resolveNonHibernateProperty(
+							entityType,
+							field,
+							properties,
+							propertyTypes,
+							nonLazyProperties,
+							associationClassMap,
+							associationTypeMap,
+							optionalAssociations);
+					// @formatter:on
 					continue;
 				}
 
-				properties.add(f.getName());
-				propertyTypes.put(f.getName(), (Class<? extends DomainEntity>) f.getType());
-				declaredProperties.add(f.getName());
+				for (Field componentField : propertyType.getDeclaredFields()) {
+					String propertyComponentName = componentField.getName();
+					// @formatter:off
+					resolveNonHibernateProperty(
+							propertyType,
+							componentField,
+							properties,
+							propertyTypes,
+							nonLazyProperties,
+							associationClassMap,
+							associationTypeMap,
+							optionalAssociations);
+					getters.put(propertyComponentName, new ComponentPropertyGetter(
+							propertyGetter,
+							propertyType,
+							propertyComponentName,
+							componentField.getType()));
+					// @formatter:on
+				}
 			}
-
-			for (String name : declaredProperties) {
-				accessors.put(name,
-						StandardAccess.locateGetter(entityClass, name)
-								.orElseThrow(() -> new IllegalArgumentException(
-										String.format("Unable to locate getter for property [%s] in type [%s]", name,
-												entityClass.getName()))));
-			}
-
-			getters = new ArrayList<>(accessors.entrySet());
-			nonLazyProperties = properties;
 		}
 
-		this.entityType = entityClass;
-		this.getters = Collections.unmodifiableList(getters);
 		this.properties = Collections.unmodifiableList(properties);
 		this.propertyTypes = Collections.unmodifiableMap(propertyTypes);
-		this.declaredProperties = Collections.unmodifiableList(declaredProperties);
 		this.nonLazyProperties = Collections.unmodifiableList(nonLazyProperties.stream()
-				.filter(propName -> !SENSITIVE_FIELD_NAMES.contains(propName)).collect(Collectors.toList()));
+				.filter(property -> !SENSITIVE_FIELD_NAMES.contains(property)).collect(Collectors.toList()));
+		this.getters = Collections.unmodifiableMap(getters);
+		this.associationClassMap = Collections.unmodifiableMap(associationClassMap);
+		this.associationTypeMap = Collections.unmodifiableMap(associationTypeMap);
 		this.optionalAssociations = Collections.unmodifiableSet(optionalAssociations);
-		propertiesSpan = this.properties.size();
-		this.discriminatorColumnName = discriminatorColumnName;
-		// @formatter:off
-		Map<String, Class<? extends DomainEntity>> associationsClass = new HashMap<>(0);
+	}
+
+	// @formatter:off
+	@SuppressWarnings("unchecked")
+	private void resolveNonHibernateProperty(
+			Class<?> owningType,
+			Field propertyField,
+			List<String > properties,
+			Map<String, Class<?>> propertyTypes,
+			List<String > nonLazyProperties,
+			Map<String, Class<? extends DomainEntity>> associationClassMap,
+			Map<String, AssociationType> associationTypeMap,
+			Set<String> optionalAssociations
+			) {
+		String propertyName = propertyField.getName();
+		Class<?> propertyType = propertyField.getType();
+
+		properties.add(propertyName);
+		propertyTypes.put(propertyName, propertyType);
 		
-		propertyTypes.entrySet().stream().forEach(entry -> {
-			Class<?> type = entry.getValue();
-			
-			if (DomainEntity.class.isAssignableFrom(type)) {
-				associationsClass.put(entry.getKey(), (Class<? extends DomainEntity>) type);
+		Basic basicAnno = propertyField.getDeclaredAnnotation(Basic.class);
+
+		if (basicAnno == null || basicAnno.fetch() == FetchType.EAGER) {
+			nonLazyProperties.add(propertyName);
+		}
+
+		if (Entity.class.isAssignableFrom(propertyType)) {
+			associationClassMap.put(propertyName,
+					(Class<? extends DomainEntity>) propertyType);
+			associationTypeMap.put(propertyName, AssociationType.ENTITY);
+
+			ManyToOne mto = propertyField.getDeclaredAnnotation(ManyToOne.class);
+
+			if (mto != null) {
+				if (mto.fetch() == FetchType.EAGER) {
+					nonLazyProperties.add(propertyName);
+				}
+
+				if (mto.optional()) {
+					optionalAssociations.add(propertyName);
+				}
+
 				return;
 			}
+
+			OneToOne oto = propertyField.getDeclaredAnnotation(OneToOne.class);
+
+			if (oto != null) {
+				if (oto.fetch() == FetchType.EAGER) {
+					nonLazyProperties.add(propertyName);
+				}
+
+				if (oto.optional()) {
+					optionalAssociations.add(propertyName);
+				}
+
+				return;
+			}
+		}
+		
+		if (Collection.class.isAssignableFrom(propertyType)) {
+			Class<?> genericType = (Class<?>) TypeHelper.getGenericType(propertyField);
+
+			if (Entity.class.isAssignableFrom(genericType)) {
+				associationClassMap.put(propertyName, (Class<? extends DomainEntity>) genericType);
+				associationTypeMap.put(propertyName, AssociationType.COLLECTION);
+
+				OneToMany otm = propertyField.getDeclaredAnnotation(OneToMany.class);
+
+				if (otm != null && otm.fetch() == FetchType.EAGER) {
+					nonLazyProperties.add(propertyName);
+				}
+				
+				ManyToMany mtm = propertyField.getDeclaredAnnotation(ManyToMany.class);
+				
+				if (mtm != null && mtm.fetch() == FetchType.EAGER) {
+					nonLazyProperties.add(propertyName);
+				}
+			}
+		}
+	}
+	
+	private void resolvePropertyLaziness(
+			String propertyName,
+			Type propertyType,
+			int propertyIndex,
+			boolean[] propertyLaziness,
+			List<String> nonLazyProperties,
+			Class<?> owningType) throws NoSuchFieldException, SecurityException {
+		if (!org.hibernate.type.AssociationType.class.isAssignableFrom(propertyType.getClass())) {
+			if (!propertyLaziness[propertyIndex]) {
+				nonLazyProperties.add(propertyName);
+				return;
+			}
+		}
+		
+		if (EntityType.class.isAssignableFrom(propertyType.getClass())) {
+			if (((EntityType) propertyType).isEager(null)) {
+				nonLazyProperties.add(propertyName);
+			}
 			
-			if (Collection.class.isAssignableFrom(type)) {
-				try {
-					Class<?> genericType = (Class<?>) TypeHelper.getGenericType(entityClass.getDeclaredField(entry.getKey()));
-					
-					if (DomainEntity.class.isAssignableFrom(genericType)) {
-						associationsClass.put(entry.getKey(), (Class<? extends DomainEntity>) genericType);
-					}
-				} catch (NoSuchFieldException | SecurityException e) {
+			return;
+		}
+		
+		if (CollectionType.class.isAssignableFrom(propertyType.getClass())) {
+			if (!Entity.class.isAssignableFrom((Class<?>) TypeHelper.getGenericType(owningType.getDeclaredField(propertyName)))) {
+				if (!propertyLaziness[propertyIndex]) {
+					nonLazyProperties.add(propertyName);
 					return;
 				}
 			}
-		});
+			// this is how a CollectionPersister role is resolved by Hibernate
+			// see org.hibernate.cfg.annotations.CollectionBinder.bind()
+			String collectionRole = StringHelper.qualify(owningType.getName(), propertyName);
 
-		this.associationsClass = Collections.unmodifiableMap(associationsClass);
-		this.associationTypes = Collections.unmodifiableMap(associationTypes);
-		// @formatter:on
+			if (!HibernateHelper.getSessionFactory().getMetamodel().collectionPersister(collectionRole).isLazy()) {
+				nonLazyProperties.add(propertyName);
+			}
+
+			return;
+		}
+		
+		if (!propertyLaziness[propertyIndex]) {
+			nonLazyProperties.add(propertyName);
+		}
 	}
+	
+	@SuppressWarnings("unchecked")
+	private void resolveAssociationMetadata(
+			Class<?> owningType,
+			String propertyName,
+			Type propertyType,
+			int propertyIndex,
+			boolean[] nullabilities,
+			Map<String, Class<? extends DomainEntity>> associationClassMap,
+			Map<String, AssociationType> associationTypeMap,
+			Set<String> optionalAssociations) throws NoSuchFieldException, SecurityException {
+		if (!CollectionType.class.isAssignableFrom(propertyType.getClass())) {
+			associationClassMap.put(propertyName, (Class<? extends DomainEntity>) propertyType.getReturnedClass());
+			associationTypeMap.put(
+					propertyName,
+					EntityType.class.isAssignableFrom(propertyType.getClass()) ?
+							AssociationType.ENTITY : AssociationType.ANY);
 
-	private Map<String, Class<?>> getPropertyTypes() {
-		return propertyTypes;
+			if (nullabilities[propertyIndex]) {
+				optionalAssociations.add(propertyName);
+			}
+			
+			return;
+		}
+		
+		Class<?> genericType = (Class<?>) TypeHelper
+				.getGenericType(owningType.getDeclaredField(propertyName));
+		
+		if (DomainEntity.class.isAssignableFrom(genericType)) {
+			associationClassMap.put(propertyName, (Class<? extends DomainEntity>) genericType);
+			associationTypeMap.put(propertyName, AssociationType.COLLECTION);
+			return;
+		}
+		
+		throw new IllegalArgumentException(
+				String.format("Unknown association type: [%s]", genericType.getName()));
 	}
-
+	// @formatter:on
 	@Override
 	public Class<T> getType() {
 		return entityType;
@@ -329,8 +506,38 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 	}
 
 	@Override
-	public List<Entry<String, Getter>> getGetters() {
+	public Map<String, Getter> getGetters() {
 		return getters;
+	}
+
+	@Override
+	public Class<?> getPropertyType(String propertyName) {
+		return propertyTypes.get(propertyName);
+	}
+
+	@Override
+	public boolean isAssociation(String attributeName) {
+		return associationClassMap.containsKey(attributeName);
+	}
+
+	@Override
+	public boolean isAssociationOptional(String propertyName) {
+		return optionalAssociations.contains(propertyName);
+	}
+
+	@Override
+	public AssociationType getAssociationType(String associationName) {
+		return associationTypeMap.get(associationName);
+	}
+
+	@Override
+	public Class<? extends DomainEntity> getAssociationClass(String associationName) {
+		return associationClassMap.get(associationName);
+	}
+
+	@Override
+	public int getPropertiesSpan() {
+		return properties.size();
 	}
 
 	@Override
@@ -340,79 +547,44 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 		}
 		// @formatter:off
 		return String.format("%s(\n"
-				+ "\tproperties=[\n"
+				+ "\tproperties|propertyTypes=[\n"
 				+ "\t\t%s\n"
 				+ "\t],\n"
 				+ "\tnonLazyProperties=[\n"
 				+ "\t\t%s\n"
 				+ "\t]\n"
-				+ "\tassociationsClass=[\n"
+				+ "\tassociationClasses=[\n"
 				+ "\t\t%s\n"
 				+ "\t]\n"
 				+ "\tassociationTypes=[\n"
 				+ "\t\t%s\n"
 				+ "\t]\n"
+				+ "\toptionalAssociations=[\n"
+				+ "\t\t%s\n"
+				+ "\t]\n"
 				+ ")",
 				this.getClass().getSimpleName(),
-				properties.stream().collect(Collectors.joining(", ")),
-				nonLazyProperties.stream().collect(Collectors.joining(", ")),
-				associationsClass.entrySet().stream()
+				IntStream.range(0, properties.size())
+					.mapToObj(index -> String.format("%s:\t%s", properties.get(index), propertyTypes.get(properties.get(index)))).collect(Collectors.joining("\n\t\t")),
+				nonLazyProperties.isEmpty() ? "<<empty>>" : nonLazyProperties.stream().collect(Collectors.joining(", ")),
+				associationClassMap.isEmpty() ? "<<empty>>" : associationClassMap.entrySet().stream()
 					.map(entry -> String.format("%s|%s", entry.getKey(), entry.getValue().getSimpleName())).collect(Collectors.joining(", ")),
-				associationTypes.entrySet().stream()
-					.map(entry -> String.format("%s|%s", entry.getKey(), entry.getValue())).collect(Collectors.joining(", ")));
+				associationTypeMap.isEmpty() ? "<<empty>>" : associationTypeMap.entrySet().stream()
+					.map(entry -> String.format("%s|%s", entry.getKey(), entry.getValue())).collect(Collectors.joining(", ")),
+				optionalAssociations.isEmpty() ? "<<empty>>" :  optionalAssociations.stream().collect(Collectors.joining(", ")));
 		// @formatter:on
-	}
-
-	@Override
-	public int getPropertiesSpan() {
-		return propertiesSpan;
-	}
-
-	@Override
-	public String getDiscriminatorColumnName() {
-		return discriminatorColumnName;
-	}
-
-	@Override
-	public List<String> getDeclaredPropertyNames() {
-		return declaredProperties;
-	}
-
-	@Override
-	public boolean isAssociation(String attributeName) {
-		return associationsClass.containsKey(attributeName);
-	}
-
-	@Override
-	public Class<?> getPropertyType(String propertyName) {
-		return propertyTypes.get(propertyName);
-	}
-
-	@Override
-	public Class<? extends DomainEntity> getAssociationClass(String associationName) {
-		return associationsClass.get(associationName);
-	}
-
-	@Override
-	public boolean isAssociationOptional(String attributeName) {
-		return optionalAssociations.contains(attributeName);
-	}
-
-	@Override
-	public AssociationType getAssociationType(String associationName) {
-		return associationTypes.get(associationName);
 	}
 
 	@SuppressWarnings({ "rawtypes", "serial" })
 	private class ComponentPropertyGetter implements Getter {
 
 		private final Getter componentGetter;
-		private final Getter propertyGetter;
+		private final Getter componentPropertyGetter;
 
 		private ComponentPropertyGetter(Getter componentGetter, Class<?> componentType, String propertyName,
 				Class<?> propertyType) {
 			this.componentGetter = componentGetter;
-			propertyGetter = StandardAccess.locateGetter(componentType, propertyName)
+			componentPropertyGetter = StandardAccess.locateGetter(componentType, propertyName)
 					.orElseThrow(() -> new IllegalArgumentException(String.format(
 							"Unable to locate getter for a Component's property. Component type: [%s], property type: [%s]",
 							componentType.getName(), propertyName)));
@@ -420,9 +592,7 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 
 		@Override
 		public Object get(Object owner) {
-			Object componentValue = componentGetter.get(owner);
-
-			return propertyGetter.get(componentValue);
+			return componentPropertyGetter.get(componentGetter.get(owner));
 		}
 
 		@Override
@@ -432,22 +602,22 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 
 		@Override
 		public Class getReturnType() {
-			return propertyGetter.getReturnType();
+			return componentPropertyGetter.getReturnType();
 		}
 
 		@Override
 		public Member getMember() {
-			return propertyGetter.getMember();
+			return componentPropertyGetter.getMember();
 		}
 
 		@Override
 		public String getMethodName() {
-			return propertyGetter.getMethodName();
+			return componentPropertyGetter.getMethodName();
 		}
 
 		@Override
 		public Method getMethod() {
-			return propertyGetter.getMethod();
+			return componentPropertyGetter.getMethod();
 		}
 
 	}

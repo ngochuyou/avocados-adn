@@ -4,7 +4,6 @@ import static adn.dao.generic.Result.bad;
 import static adn.dao.generic.Result.success;
 
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,11 +17,11 @@ import org.springframework.web.multipart.MultipartFile;
 import adn.application.Common;
 import adn.application.context.ContextProvider;
 import adn.dao.generic.Result;
-import adn.model.entities.Account;
 import adn.model.entities.Customer;
 import adn.model.entities.Head;
 import adn.model.entities.Personnel;
-import adn.model.entities.metadata._Account;
+import adn.model.entities.User;
+import adn.model.entities.metadata._User;
 import adn.service.DomainEntityServiceObserver;
 import adn.service.ObservableDomainEntityService;
 import adn.service.internal.ResourceService;
@@ -31,22 +30,22 @@ import adn.service.internal.Service;
 import adn.service.internal.ServiceResult;
 
 @org.springframework.stereotype.Service
-public class AccountService implements Service, ObservableDomainEntityService<Account> {
+public class AccountService implements Service, ObservableDomainEntityService<User> {
 
 	public static final String UNKNOWN_USER_FIRSTNAME = "APP";
 	public static final String UNKNOWN_USER_LASTNAME = "USER";
 	protected static final String INVALID_ROLE = "Invalid role";
 
-	private final Map<String, DomainEntityServiceObserver<Account>> observers = new HashMap<>(0);
+	private final Map<String, DomainEntityServiceObserver<User>> observers = new HashMap<>(0);
 
 	protected final GenericCRUDServiceImpl crudService;
 	protected final ResourceService resourceService;
 	// @formatter:off
-	private final Map<Role, Class<? extends Account>> roleClassMap = Map.of(
+	private final Map<Role, Class<? extends User>> roleClassMap = Map.of(
 			Role.HEAD, Head.class,
 			Role.CUSTOMER, Customer.class,
 			Role.PERSONNEL, Personnel.class,
-			Role.ANONYMOUS, Account.class);
+			Role.ANONYMOUS, User.class);
 
 	public static final String DEFAULT_ACCOUNT_PHOTO_NAME = "1619973416467_0c46022.png";
 	// keep this constructor
@@ -59,11 +58,11 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 	}
 	// @formatter:on
 	@SuppressWarnings("unchecked")
-	public <A extends Account> Class<A> getClassFromRole(Role role) {
+	public <A extends User> Class<A> getClassFromRole(Role role) {
 		return (Class<A>) this.roleClassMap.get(role);
 	}
 
-	public <A extends Account> Role getRoleFromClass(Class<A> clazz) {
+	public <A extends User> Role getRoleFromClass(Class<A> clazz) {
 		// @formatter:off
 		return this.roleClassMap
 				.keySet().stream()
@@ -72,7 +71,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 		// @formatter:on
 	}
 
-	public <T extends Account, E extends T> Result<E> create(Serializable id, E account, Class<E> type,
+	public <T extends User, E extends T> Result<E> create(Serializable id, E account, Class<E> type,
 			MultipartFile photo, boolean flushOnFinish) {
 		id = crudService.resolveId(id, account);
 
@@ -100,7 +99,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 		return crudService.finish(ss, insertResult, flushOnFinish);
 	}
 
-	public <T extends Account, E extends T> Result<E> update(Serializable id, E account, Class<E> type,
+	public <T extends User, E extends T> Result<E> update(Serializable id, E account, Class<E> type,
 			MultipartFile photo, boolean flushOnFinish) {
 		id = crudService.resolveId(id, account);
 
@@ -115,11 +114,11 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 			// determine role update, currently only administrators could update account
 			// role
 			if (!principalRole.equals(Role.HEAD)) {
-				return bad(Map.of(_Account.role, INVALID_ROLE));
+				return bad(Map.of(_User.role, INVALID_ROLE));
 			}
 
 			if (!persistence.getRole().canBeUpdatedTo(account.getRole())) {
-				return bad(Map.of(_Account.role, String.format("Unable to update role from %s to %s",
+				return bad(Map.of(_User.role, String.format("Unable to update role from %s to %s",
 						persistence.getRole(), account.getRole())));
 			}
 		}
@@ -147,25 +146,24 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 		return crudService.finish(ss, updateResult, flushOnFinish);
 	}
 
-	public Result<Account> deactivateAccount(String id, boolean flushOnFinish) {
+	public Result<User> deactivateAccount(String id, boolean flushOnFinish) {
 		Session ss = crudService.getCurrentSession();
 
 		ss.setHibernateFlushMode(FlushMode.MANUAL);
 
-		Account account = ss.load(Account.class, id);
+		User account = ss.load(User.class, id);
 
 		if (!account.isActive()) {
-			return bad(Map.of(_Account.active, "Account was already deactivated"));
+			return bad(Map.of(_User.active, "Account was already deactivated"));
 		}
 
 		account.setActive(Boolean.FALSE);
-		account.setDeactivatedDate(LocalDate.now());
 		// use Hibernate dirty check to flush here, we don't have to call update from
 		// repository to avoid unnecessary Specification validation
 		return crudService.finish(ss, success(account), flushOnFinish);
 	}
 
-	private ServiceResult<String> updateOrUploadPhoto(Account persistence, MultipartFile multipartPhoto) {
+	private ServiceResult<String> updateOrUploadPhoto(User persistence, MultipartFile multipartPhoto) {
 		if (multipartPhoto != null) {
 			if (!persistence.getPhoto().equals(DEFAULT_ACCOUNT_PHOTO_NAME)) {
 				return resourceService.updateUserPhotoContent(multipartPhoto, persistence.getPhoto());
@@ -178,7 +176,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Ac
 	}
 
 	@Override
-	public void register(DomainEntityServiceObserver<Account> observer) {
+	public void register(DomainEntityServiceObserver<User> observer) {
 		final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 		if (observers.containsKey(observer.getId())) {

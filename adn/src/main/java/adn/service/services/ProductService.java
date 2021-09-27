@@ -154,7 +154,7 @@ public class ProductService implements Service, EffectivelyFinal {
 	public List<Map<String, Object>> searchProduct(Collection<String> requestedColumns, Pageable pageable,
 			ProductQuery restQuery, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
 		return crudService.readAll(Product.class, requestedColumns,
-				isActive(Product.class).and(GenericFactorService.hasNameLike(restQuery).or(hasIdLike(restQuery))),
+				isActive(Product.class).and(GenericFullyAuditedEntityService.hasNameLike(restQuery).or(hasIdLike(restQuery))),
 				pageable, credential);
 	}
 

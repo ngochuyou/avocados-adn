@@ -7,7 +7,6 @@ import static adn.application.context.ContextProvider.getPrincipalCredential;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.ResponseEntity.ok;
 
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +22,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -38,14 +36,14 @@ import adn.dao.generic.ResultBatch;
 import adn.helpers.StringHelper;
 import adn.model.entities.Category;
 import adn.model.entities.Product;
-import adn.model.entities.StockDetail;
+import adn.model.entities.Item;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.model.models.StockDetailBatch;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Service.Status;
 import adn.service.services.AuthenticationService;
 import adn.service.services.CategoryService;
-import adn.service.services.GenericFactorService;
+import adn.service.services.GenericFullyAuditedEntityService;
 import adn.service.services.ProductService;
 
 /**
@@ -61,7 +59,7 @@ public class RestProductController extends ProductController {
 	@Autowired
 	public RestProductController(AuthenticationService authService, ProductService productService,
 			ResourceService resourceService, CategoryService categoryService,
-			GenericFactorService genericFactorService) {
+			GenericFullyAuditedEntityService genericFactorService) {
 		super(authService, productService, resourceService, genericFactorService);
 		this.categoryService = categoryService;
 	}
@@ -69,8 +67,8 @@ public class RestProductController extends ProductController {
 	@GetMapping(path = "/count")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getProductCount() {
-		return makeStaleWhileRevalidate(ResponseEntity.ok(genericFactorService.count(Product.class)), 2,
-				TimeUnit.DAYS, 7, TimeUnit.DAYS);
+		return makeStaleWhileRevalidate(ResponseEntity.ok(genericFactorService.count(Product.class)), 2, TimeUnit.DAYS,
+				7, TimeUnit.DAYS);
 	}
 
 	@GetMapping(path = "/{productId}")
@@ -153,33 +151,32 @@ public class RestProductController extends ProductController {
 	@GetMapping("/category/count")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getCategoryCount() {
-		return makeStaleWhileRevalidate(genericFactorService.count(Category.class), 1, TimeUnit.DAYS, 3,
-				TimeUnit.DAYS);
+		return makeStaleWhileRevalidate(genericFactorService.count(Category.class), 1, TimeUnit.DAYS, 3, TimeUnit.DAYS);
 	}
 
-	@PatchMapping("/category/activation")
-	@Transactional
-	public ResponseEntity<?> deactivateCategory(@RequestParam(name = "id", required = true) String categoryId,
-			@RequestParam(name = "active", required = true) Boolean requestedActiveState) {
-		authService.assertSaleDepartment();
-
-		Optional<Category> optional = baseRepository.findById(Category.class, categoryId);
-
-		if (optional.isEmpty()) {
-			return sendNotFound(Common.NOT_FOUND);
-		}
-
-		Category category = optional.get();
-		// we use AUTO-FLUSH here
-		category.setActive(requestedActiveState);
-
-		if (requestedActiveState == false) {
-			category.setDeactivatedTimestamp(LocalDateTime.now());
-			category.setUpdatedBy(authService.getOperator());
-		}
-
-		return send(String.format("Modified activation state of category %s", categoryId), null);
-	}
+//	@PatchMapping("/category/activation")
+//	@Transactional
+//	public ResponseEntity<?> deactivateCategory(@RequestParam(name = "id", required = true) String categoryId,
+//			@RequestParam(name = "active", required = true) Boolean requestedActiveState) {
+//		authService.assertSaleDepartment();
+//
+//		Optional<Category> optional = baseRepository.findById(Category.class, categoryId);
+//
+//		if (optional.isEmpty()) {
+//			return sendNotFound(Common.NOT_FOUND);
+//		}
+//
+//		Category category = optional.get();
+//		// we use AUTO-FLUSH here
+//		category.setActive(requestedActiveState);
+//
+//		if (requestedActiveState == false) {
+//			category.setDeactivatedTimestamp(LocalDateTime.now());
+//			category.setLastModifiedBy(authService.getOperator());
+//		}
+//
+//		return send(String.format("Modified activation state of category %s", categoryId), null);
+//	}
 
 	@PostMapping("/stockdetail")
 	@Secured({ HEAD, PERSONNEL })
@@ -187,7 +184,7 @@ public class RestProductController extends ProductController {
 	public ResponseEntity<?> createStockDetails(@RequestBody(required = true) StockDetailBatch batch) {
 		authService.assertStockDepartment();
 
-		ResultBatch<StockDetail> results = crudService.createBatch(batch.getDetails(), StockDetail.class, true);
+		ResultBatch<Item> results = crudService.createBatch(batch.getDetails(), Item.class, true);
 
 		if (results.isOk()) {
 			return ResponseEntity.ok(results.getResults().stream().map(result -> {

@@ -18,7 +18,17 @@ public interface DomainEntityMetadata<T> {
 
 	Class<T> getType();
 
+	int getPropertiesSpan();
+
 	boolean hasProperty(String attributeName);
+	
+	Class<?> getPropertyType(String attributeName);
+
+	List<String> getPropertyNames();
+
+	List<String> getNonLazyPropertyNames();
+
+	Map<String, Getter> getGetters();
 
 	boolean isAssociation(String attributeName);
 
@@ -26,20 +36,6 @@ public interface DomainEntityMetadata<T> {
 	
 	AssociationType getAssociationType(String associationName);
 
-	Class<?> getPropertyType(String attributeName);
-
 	Class<? extends DomainEntity> getAssociationClass(String associationName);
-
-	List<String> getPropertyNames();
-
-	List<String> getNonLazyPropertyNames();
-
-	List<String> getDeclaredPropertyNames();
-
-	int getPropertiesSpan();
-
-	String getDiscriminatorColumnName();
-
-	List<Map.Entry<String, Getter>> getGetters();
 
 }

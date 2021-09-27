@@ -7,11 +7,11 @@ package adn.model.entities.metadata;
  * @author Ngoc Huy
  *
  */
-public class _Product extends _Factor {
+public class _Product extends _FullyAuditedEntity {
 
-	public static final String price = "price";
+	public static final String code = "code";
 
-	public static final String category = "category";
+	public static final String material = "material";
 
 	public static final String images = "images";
 
@@ -19,9 +19,13 @@ public class _Product extends _Factor {
 
 	public static final String rating = "rating";
 
-	public static final String stockDetails = "stockDetails";
+	public static final String locked = "locked";
 
-	public static final String ID_COLUMN_DEFINITION = "VARCHAR(11)";
-	public static final int ID_LENGTH = _Category.IDENTIFIER_LENGTH + 5 + 1; // 5 + delimiter
+	public static final String category = "category";
 
+	public static final String items = "items";
+
+	public static final int CODE_LENGTH = _Category.CODE_LENGTH + 6 + 1; // 6 + delimiter
+	public static final int MAXIMUM_MATERIAL_LENGTH = 50;
+	
 }

@@ -44,10 +44,6 @@ public class ContextProvider implements ApplicationContextAware {
 		return getBean(SessionFactory.class).getCurrentSession();
 	}
 
-	public static <T extends SessionFactory> T getSessionFactory(Class<T> wrapperType) {
-		return getApplicationContext().getBean(SessionFactory.class).unwrap(wrapperType);
-	}
-
 	public static <T> T getBean(Class<T> beanType) {
 		return getApplicationContext().getBean(beanType);
 	}

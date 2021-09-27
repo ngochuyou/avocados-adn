@@ -3,7 +3,6 @@
  */
 package adn.service.entity.builder;
 
-import java.math.RoundingMode;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
@@ -19,7 +18,7 @@ import adn.service.services.AuthenticationService;
  */
 @Component
 @Generic(entityGene = Product.class)
-public class ProductBuilder extends FactorBuilder<Product> {
+public class ProductBuilder extends AbstractFullyAuditedEntityBuilder<Product> {
 
 	/**
 	 * @param authService
@@ -33,7 +32,6 @@ public class ProductBuilder extends FactorBuilder<Product> {
 	protected <E extends Product> E mandatoryBuild(E target, E model) {
 		target = super.mandatoryBuild(target, model);
 
-		target.setPrice(model.getPrice().setScale(4, RoundingMode.HALF_UP));
 		target.setDescription(StringHelper.normalizeString(model.getDescription()));
 		target.setImages(model.getImages().stream().filter(StringHelper::hasLength).collect(Collectors.toList()));
 		target.setCategory(model.getCategory());

@@ -28,10 +28,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.Common;
 import adn.application.context.ContextProvider;
-import adn.application.context.builders.DepartmentScopeContext;
 import adn.controller.query.impl.ProviderQuery;
 import adn.dao.generic.Result;
-import adn.model.entities.ProductProviderDetail;
+import adn.model.entities.ProductCost;
 import adn.model.entities.Provider;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.internal.ServiceResult;
@@ -47,7 +46,7 @@ import adn.service.services.ProviderService;
 public class RestProviderController extends BaseController {
 
 	private static final int COMMON_CACHE_MAXAGE = 1;
-	private static final String SUCCESSFUL_APPROVAL = "Successfully approved";
+//	private static final String SUCCESSFUL_APPROVAL = "Successfully approved";
 
 	private final ProviderService providerService;
 	private final AuthenticationService authService;
@@ -95,19 +94,19 @@ public class RestProviderController extends BaseController {
 				TimeUnit.DAYS);
 	}
 
-	@GetMapping(path = "/search")
-	@Transactional(readOnly = true)
-	@Secured({ HEAD, PERSONNEL })
-	public ResponseEntity<?> searchForProviders(ProviderQuery query, @PageableDefault(size = 10) Pageable paging)
-			throws NoSuchFieldException, UnauthorizedCredential {
-		authService.assertDepartment(DepartmentScopeContext.stock(), DepartmentScopeContext.sale());
-
-		if (!query.hasCriteria()) {
-			return sendBad(ServiceResult.of(Common.INVALID_SEARCH_CRITERIA));
-		}
-
-		return ResponseEntity.ok(providerService.searchForProviders(paging, query, getPrincipalCredential()));
-	}
+//	@GetMapping(path = "/search")
+//	@Transactional(readOnly = true)
+//	@Secured({ HEAD, PERSONNEL })
+//	public ResponseEntity<?> searchForProviders(ProviderQuery query, @PageableDefault(size = 10) Pageable paging)
+//			throws NoSuchFieldException, UnauthorizedCredential {
+//		authService.assertDepartment(DepartmentScopeContext.stock(), DepartmentScopeContext.sale());
+//
+//		if (!query.hasCriteria()) {
+//			return sendBad(ServiceResult.of(Common.INVALID_SEARCH_CRITERIA));
+//		}
+//
+//		return ResponseEntity.ok(providerService.searchForProviders(paging, query, getPrincipalCredential()));
+//	}
 
 	@PostMapping
 	@Secured({ HEAD, PERSONNEL })
@@ -138,23 +137,6 @@ public class RestProviderController extends BaseController {
 		return send(result);
 	}
 
-	@PatchMapping(path = "/approve/{providerId}")
-	@Secured(HEAD)
-	@Transactional
-	public ResponseEntity<?> approveProvider(@PathVariable(name = "providerId", required = true) UUID providerId) {
-		try {
-			Result<Provider> result = providerService.approveProvider(providerId, true);
-
-			if (result.isOk()) {
-				return ResponseEntity.ok(ServiceResult.of(SUCCESSFUL_APPROVAL));
-			}
-
-			return sendBad(result.getMessages());
-		} catch (Exception e) {
-			return fails(e.getMessage());
-		}
-	}
-
 	@GetMapping(path = "/current/{productId}")
 	@Secured({ HEAD, PERSONNEL })
 	@Transactional(readOnly = true)
@@ -177,14 +159,11 @@ public class RestProviderController extends BaseController {
 	@PostMapping(path = "/product-detail")
 	@Secured({ HEAD, PERSONNEL })
 	@Transactional
-	public ResponseEntity<?> createProductDetail(@RequestBody ProductProviderDetail model)
-			throws UnauthorizedCredential {
+	public ResponseEntity<?> createProductDetail(@RequestBody ProductCost model) throws UnauthorizedCredential {
 		authService.assertSaleDepartment();
 
-		ProductProviderDetail extractedModel = extractorProvider.getExtractor(ProductProviderDetail.class)
-				.extract(model);
-		Result<ProductProviderDetail> result = providerService.createProductDetail(extractedModel,
-				getPrincipalCredential(), true);
+		ProductCost extractedModel = extractorProvider.getExtractor(ProductCost.class).extract(model);
+		Result<ProductCost> result = providerService.createProductCost(extractedModel, getPrincipalCredential(), true);
 
 		return send(result);
 	}
@@ -195,8 +174,8 @@ public class RestProviderController extends BaseController {
 	public ResponseEntity<?> getProductDetailsCount() throws NoSuchFieldException, UnauthorizedCredential {
 		authService.assertSaleDepartment();
 
-		return makeStaleWhileRevalidate(genericPermanentEntityService.count(ProductProviderDetail.class), 30,
-				TimeUnit.SECONDS, 60, TimeUnit.SECONDS);
+		return makeStaleWhileRevalidate(genericPermanentEntityService.count(ProductCost.class), 30, TimeUnit.SECONDS,
+				60, TimeUnit.SECONDS);
 	}
 
 	@GetMapping(path = "/product-detail/{productId}")
@@ -223,8 +202,8 @@ public class RestProviderController extends BaseController {
 			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
 		authService.assertSaleDepartment();
 
-		List<Map<String, Object>> productDetails = genericPermanentEntityService.readAll(ProductProviderDetail.class,
-				columns, paging, getPrincipalCredential());
+		List<Map<String, Object>> productDetails = genericPermanentEntityService.readAll(ProductCost.class, columns,
+				paging, getPrincipalCredential());
 
 		return ResponseEntity.ok(productDetails);
 	}
@@ -233,7 +212,7 @@ public class RestProviderController extends BaseController {
 	@Secured(HEAD)
 	@Transactional
 	public ResponseEntity<?> approveProductDetail(@RequestParam(name = "providerId", required = true) UUID providerId,
-			@RequestParam(name = "productId", required = true) String productId) throws UnauthorizedCredential {
+			@RequestParam(name = "productId", required = true) Long productId) throws UnauthorizedCredential {
 		return send(providerService.approveProductDetail(providerId, productId, true));
 	}
 

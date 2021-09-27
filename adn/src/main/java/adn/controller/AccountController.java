@@ -26,7 +26,7 @@ import adn.application.Common;
 import adn.application.context.ContextProvider;
 import adn.dao.generic.Result;
 import adn.helpers.StringHelper;
-import adn.model.entities.Account;
+import adn.model.entities.User;
 import adn.service.AccountRoleExtractor;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Role;
@@ -72,8 +72,8 @@ public class AccountController extends BaseController {
 			return unauthorize(Common.ACCESS_DENIED);
 		}
 
-		Class<? extends Account> accountClass = accountService.getClassFromRole(modelRole);
-		Account model;
+		Class<? extends User> accountClass = accountService.getClassFromRole(modelRole);
+		User model;
 
 		try {
 			model = objectMapper.readValue(jsonPart, accountClass);
@@ -84,15 +84,15 @@ public class AccountController extends BaseController {
 
 		setSessionMode();
 
-		if (baseRepository.countById(Account.class, model.getId()) != 0) {
+		if (baseRepository.countById(User.class, model.getId()) != 0) {
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(Common.EXISTED);
 		}
 
-		Result<Account> insertResult = accountService.create(model.getId(), model, (Class<Account>) accountClass, photo,
+		Result<User> insertResult = accountService.create(model.getId(), model, (Class<User>) accountClass, photo,
 				true);
 
 		if (insertResult.isOk()) {
-			return ResponseEntity.ok(produce(insertResult.getInstance(), (Class<Account>) accountClass, principalRole));
+			return ResponseEntity.ok(produce(insertResult.getInstance(), (Class<User>) accountClass, principalRole));
 		}
 
 		return sendBad(insertResult.getMessages());
@@ -116,7 +116,7 @@ public class AccountController extends BaseController {
 			username = authentication.getName();
 		}
 
-		Optional<Account> optional = baseRepository.findById(Account.class, username);
+		Optional<User> optional = baseRepository.findById(User.class, username);
 
 		if (optional.isEmpty()) {
 			return sendNotFound(Common.NOT_FOUND);
@@ -144,8 +144,8 @@ public class AccountController extends BaseController {
 			return ResponseEntity.badRequest().body(MISSING_ROLE);
 		}
 
-		Class<? extends Account> accountClass = accountService.getClassFromRole(modelRole);
-		Account model;
+		Class<? extends User> accountClass = accountService.getClassFromRole(modelRole);
+		User model;
 
 		try {
 			model = objectMapper.readValue(jsonPart, accountClass);
@@ -162,18 +162,18 @@ public class AccountController extends BaseController {
 		// get current session with FlushMode.MANUAL
 		setSessionMode();
 
-		Account persistence;
+		User persistence;
 		// This entity will take effects as the handler progresses
 		// Only changes on this persisted entity will be committed
-		if ((persistence = baseRepository.findById(Account.class, model.getId()).orElse(null)) == null) {
+		if ((persistence = baseRepository.findById(User.class, model.getId()).orElse(null)) == null) {
 			return sendNotFound(Common.NOT_FOUND);
 		}
 
-		Result<Account> updateResult = accountService.update(persistence.getId(), model, (Class<Account>) accountClass,
+		Result<User> updateResult = accountService.update(persistence.getId(), model, (Class<User>) accountClass,
 				multipartPhoto, true);
 
 		if (updateResult.isOk()) {
-			return ResponseEntity.ok(produce(updateResult.getInstance(), (Class<Account>) accountClass, principalRole));
+			return ResponseEntity.ok(produce(updateResult.getInstance(), (Class<User>) accountClass, principalRole));
 		}
 
 		return sendBad(updateResult.getStatus());

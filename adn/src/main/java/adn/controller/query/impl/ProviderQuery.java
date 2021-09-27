@@ -14,10 +14,10 @@ import adn.model.entities.metadata._Provider;
  * @author Ngoc Huy
  *
  */
-public class ProviderQuery extends AbstractFactorQuery<Provider> {
+public class ProviderQuery extends AbstractPermanentEntityQuery<Provider> {
 
-	private static final HashSet<String> ASSOCIATION_COLUMNS = new HashSet<>(Set.of(_Provider.productDetails));
-	
+	private static final HashSet<String> ASSOCIATION_COLUMNS = new HashSet<>(Set.of(_Provider.productCosts));
+
 	private UUIDFilter id;
 
 	private ProductProviderDetailQuery productDetails;

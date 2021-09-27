@@ -4,12 +4,14 @@
 package adn.model.entities;
 
 import javax.persistence.Entity;
+import javax.persistence.Table;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Entity
-public class Operator extends Account {
+@Table(name = "operators")
+public class Operator extends User {
 
 }

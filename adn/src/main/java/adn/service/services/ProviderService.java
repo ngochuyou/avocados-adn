@@ -23,19 +23,16 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
 import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
-import org.hibernate.ObjectNotFoundException;
 import org.hibernate.Session;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import adn.application.Common;
-import adn.application.context.ContextProvider;
 import adn.controller.query.impl.ProviderQuery;
 import adn.dao.generic.Result;
 import adn.dao.specific.ProductProviderDetailRepository;
-import adn.model.entities.ProductProviderDetail;
+import adn.model.entities.ProductCost;
 import adn.model.entities.Provider;
 import adn.model.entities.metadata._Provider;
 import adn.model.factory.authentication.Credential;
@@ -51,17 +48,17 @@ import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 @Service
 public class ProviderService {
 
-	private static final String ALREADY_APPROVED = "Resource was already approved";
+//	private static final String ALREADY_APPROVED = "Resource was already approved";
 	private static final String UNAPPROVED_EXIST = "There're other requests waiting to be approved";
 
 	private final ProductProviderDetailRepository productProviderDetailRepository;
 	private final AuthenticationService authService;
 	private final GenericCRUDServiceImpl crudService;
-	private final GenericFactorService genericFactorService;
+	private final GenericFullyAuditedEntityService genericFactorService;
 
 	public ProviderService(GenericCRUDServiceImpl crudService,
 			ProductProviderDetailRepository productProviderDetailRepository, AuthenticationService authService,
-			GenericFactorService genericFactorService) {
+			GenericFullyAuditedEntityService genericFactorService) {
 		this.productProviderDetailRepository = productProviderDetailRepository;
 		this.authService = authService;
 		this.crudService = crudService;
@@ -76,7 +73,7 @@ public class ProviderService {
 
 		List<String> columns = new ArrayList<>(columnsRequest.getColumns());
 
-		columns.remove(_Provider.productDetails);
+		columns.remove(_Provider.productCosts);
 
 		Map<String, Object> provider = crudService.readById(id, Provider.class, columns, credential);
 
@@ -84,44 +81,30 @@ public class ProviderService {
 			return null;
 		}
 
-		provider.put(_Provider.productDetails, readCurrentProductDetailsByProvider(id,
+		provider.put(_Provider.productCosts, readCurrentProductDetailsByProvider(id,
 				list(columnsRequest.getProductDetails().getColumns()), Common.DEFAULT_PAGEABLE, credential));
 
 		return provider;
 	}
 
-	public List<Map<String, Object>> searchForProviders(Pageable pageable, ProviderQuery restQuery,
-			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		return crudService.readAll(Provider.class, restQuery.getColumns(),
-				providerHasId(restQuery).or(GenericFactorService.hasNameLike(restQuery)), pageable, credential);
-	}
+//	public List<Map<String, Object>> searchForProviders(Pageable pageable, ProviderQuery restQuery,
+//			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
+//		return crudService.readAll(Provider.class, restQuery.getColumns(),
+//				providerHasId(restQuery).or(GenericFactorService.hasNameLike(restQuery)), pageable, credential);
+//	}
 
-	public Result<Provider> approveProvider(UUID providerId, boolean flushOnFinish) throws ObjectNotFoundException {
-		Session session = ContextProvider.getCurrentSession();
-		Provider provider = session.load(Provider.class, providerId, new LockOptions(LockMode.PESSIMISTIC_WRITE));
-
-		if (provider.getApprovedTimestamp() != null) {
-			return bad(of(ALREADY_APPROVED));
-		}
-
-		provider.setApprovedBy(authService.getHead());
-		provider.setApprovedTimestamp(LocalDateTime.now());
-
-		return crudService.finish(session, Result.success(provider), flushOnFinish);
-	}
-
-	private static Specification<Provider> providerHasId(ProviderQuery restQuery) {
-		return new Specification<Provider>() {
-			@Override
-			public Predicate toPredicate(Root<Provider> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
-				if (restQuery.getId() == null || restQuery.getId().getEquals() == null) {
-					return null;
-				}
-
-				return builder.equal(root.get(_Provider.id), restQuery.getId().getEquals());
-			}
-		};
-	}
+//	private static Specification<Provider> providerHasId(ProviderQuery restQuery) {
+//		return new Specification<Provider>() {
+//			@Override
+//			public Predicate toPredicate(Root<Provider> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
+//				if (restQuery.getId() == null || restQuery.getId().getEquals() == null) {
+//					return null;
+//				}
+//
+//				return builder.equal(root.get(_Provider.id), restQuery.getId().getEquals());
+//			}
+//		};
+//	}
 
 	public List<Map<String, Object>> readAllCurrentProvidersOfProduct(String productId, List<String> columns,
 			Pageable paging, Credential credential) throws UnauthorizedCredential, NoSuchFieldException {
@@ -141,19 +124,17 @@ public class ProviderService {
 	 * ===========================ProductProviderDetail===========================
 	 */
 
-	public Result<ProductProviderDetail> createProductDetail(ProductProviderDetail model, Credential credential,
-			boolean flushOnFinish) {
+	public Result<ProductCost> createProductCost(ProductCost model, Credential credential, boolean flushOnFinish) {
 		crudService.useManualSession();
 
 		UUID providerId = model.getId().getProviderId();
-		String productId = model.getId().getProductId();
+		Long productId = model.getId().getProductId();
 		// make sure there's no other details waiting to be approved
 		if (productProviderDetailRepository.hasUnapproved(providerId, productId)) {
 			return bad(of(UNAPPROVED_EXIST));
 		}
 		// then we insert the new detail
-		Result<ProductProviderDetail> insertResult = crudService.create(model.getId(), model,
-				ProductProviderDetail.class, false);
+		Result<ProductCost> insertResult = crudService.create(model.getId(), model, ProductCost.class, false);
 
 		if (!insertResult.isOk()) {
 			return insertResult;
@@ -162,22 +143,19 @@ public class ProviderService {
 		return crudService.finish(insertResult, flushOnFinish);
 	}
 
-	public Result<ProductProviderDetail> approveProductDetail(UUID providerId, String productId,
-			boolean flushOnFinish) {
+	public Result<ProductCost> approveProductDetail(UUID providerId, Long productId, boolean flushOnFinish) {
 		crudService.useManualSession();
 		// make sure there's an "unapproved"
-		Optional<ProductProviderDetail> optional = productProviderDetailRepository.findUnapproved(providerId,
-				productId);
+		Optional<ProductCost> optional = productProviderDetailRepository.findUnapproved(providerId, productId);
 
 		if (optional.isEmpty()) {
 			return bad(of(NOT_FOUND));
 		}
 
-		ProductProviderDetail unapprovedDetail = optional.get();
+		ProductCost unapprovedDetail = optional.get();
 		Session session = crudService.getCurrentSession();
 		// find the current detail
-		ProductProviderDetail currentDetail = productProviderDetailRepository.findCurrent(providerId, productId)
-				.orElse(null);
+		ProductCost currentDetail = productProviderDetailRepository.findCurrent(providerId, productId).orElse(null);
 		LocalDateTime timestamp = LocalDateTime.now();
 
 		if (currentDetail != null) {
@@ -196,10 +174,9 @@ public class ProviderService {
 
 	public List<Map<String, Object>> readProductDetailsByProduct(String productId, Collection<String> columns,
 			Pageable paging, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		return genericFactorService.readAll(ProductProviderDetail.class, new Specification<ProductProviderDetail>() {
+		return genericFactorService.readAll(ProductCost.class, new Specification<ProductCost>() {
 			@Override
-			public Predicate toPredicate(Root<ProductProviderDetail> root, CriteriaQuery<?> query,
-					CriteriaBuilder builder) {
+			public Predicate toPredicate(Root<ProductCost> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
 				return ProductProviderDetailRepository.hasProductId(root, builder, productId);
 			}
 		}, columns, paging, credential);
@@ -218,8 +195,8 @@ public class ProviderService {
 	private List<Map<String, Object>> readCurrentProductDetails(Serializable identifier, List<String> columns,
 			Pageable pageable, Credential credential, boolean byProduct)
 			throws NoSuchFieldException, UnauthorizedCredential {
-		SourceMetadata<ProductProviderDetail> metadata = crudService.optionallyValidate(ProductProviderDetail.class,
-				credential, SourceMetadataFactory.unknownArrayCollection(ProductProviderDetail.class, list(columns)));
+		SourceMetadata<ProductCost> metadata = crudService.optionallyValidate(ProductCost.class, credential,
+				SourceMetadataFactory.unknownArrayCollection(ProductCost.class, list(columns)));
 		List<Object[]> rows = byProduct
 				? productProviderDetailRepository.findAllCurrentByProduct((String) identifier, columns, pageable)
 				: productProviderDetailRepository.findAllCurrentByProvider((UUID) identifier, columns, pageable);
@@ -228,7 +205,7 @@ public class ProviderService {
 			return new ArrayList<>();
 		}
 
-		return crudService.resolveReadResults(ProductProviderDetail.class, rows, credential, metadata);
+		return crudService.resolveReadResults(ProductCost.class, rows, credential, metadata);
 	}
 
 }

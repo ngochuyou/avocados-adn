@@ -78,7 +78,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 			"/product/image/**\\GET",
 			"/rest/product/category/all\\GET",
 			"/rest/product\\GET",
-			String.format("/rest/product/{productId:^[A-Z0-9-]{%d}$}\\GET", _Product.ID_LENGTH)
+			String.format("/rest/product/{productId:^[A-Z0-9-]{%d}$}\\GET", _Product.CODE_LENGTH)
 	};
 	// @formatter:on
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());

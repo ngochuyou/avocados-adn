@@ -28,9 +28,9 @@ import org.springframework.stereotype.Repository;
 
 import adn.dao.generic.GenericRepositoryImpl;
 import adn.helpers.HibernateHelper;
-import adn.model.entities.ProductProviderDetail;
+import adn.model.entities.ProductCost;
 import adn.model.entities.Provider;
-import adn.model.entities.metadata._ProductProviderDetail;
+import adn.model.entities.metadata._ProductCost;
 import adn.model.entities.metadata._Provider;
 
 /**
@@ -53,10 +53,10 @@ public class ProductProviderDetailRepository {
 	}
 
 	@SuppressWarnings("serial")
-	public Optional<ProductProviderDetail> findCurrent(UUID providerId, String productId) {
-		return genericRepository.findOne(ProductProviderDetail.class, new Specification<ProductProviderDetail>() {
+	public Optional<ProductCost> findCurrent(UUID providerId, Long productId) {
+		return genericRepository.findOne(ProductCost.class, new Specification<ProductCost>() {
 			@Override
-			public Predicate toPredicate(Root<ProductProviderDetail> root, CriteriaQuery<?> query,
+			public Predicate toPredicate(Root<ProductCost> root, CriteriaQuery<?> query,
 					CriteriaBuilder builder) {
 				return builder.and(hasId(root, builder, providerId, productId), isCurrent(root, builder));
 			}
@@ -64,10 +64,10 @@ public class ProductProviderDetailRepository {
 	}
 
 	@SuppressWarnings("serial")
-	public Optional<ProductProviderDetail> findUnapproved(UUID providerId, String productId) {
-		return genericRepository.findOne(ProductProviderDetail.class, new Specification<ProductProviderDetail>() {
+	public Optional<ProductCost> findUnapproved(UUID providerId, Long productId) {
+		return genericRepository.findOne(ProductCost.class, new Specification<ProductCost>() {
 			@Override
-			public Predicate toPredicate(Root<ProductProviderDetail> root, CriteriaQuery<?> query,
+			public Predicate toPredicate(Root<ProductCost> root, CriteriaQuery<?> query,
 					CriteriaBuilder builder) {
 				return builder.and(hasId(root, builder, providerId, productId), isUnapproved(root, builder));
 			}
@@ -76,10 +76,10 @@ public class ProductProviderDetailRepository {
 
 	@SuppressWarnings("serial")
 	public List<Object[]> findAllCurrentByProvider(UUID providerId, Collection<String> columns, Pageable paging) {
-		return genericRepository.findAll(ProductProviderDetail.class, columns,
-				new Specification<ProductProviderDetail>() {
+		return genericRepository.findAll(ProductCost.class, columns,
+				new Specification<ProductCost>() {
 					@Override
-					public Predicate toPredicate(Root<ProductProviderDetail> root, CriteriaQuery<?> query,
+					public Predicate toPredicate(Root<ProductCost> root, CriteriaQuery<?> query,
 							CriteriaBuilder builder) {
 						return builder.and(hasProviderId(root, builder, providerId), isCurrent(root, builder));
 					}
@@ -87,10 +87,10 @@ public class ProductProviderDetailRepository {
 	}
 
 	@SuppressWarnings("serial")
-	public boolean hasUnapproved(UUID providerId, String productId) {
-		return genericRepository.count(ProductProviderDetail.class, new Specification<ProductProviderDetail>() {
+	public boolean hasUnapproved(UUID providerId, Long productId) {
+		return genericRepository.count(ProductCost.class, new Specification<ProductCost>() {
 			@Override
-			public Predicate toPredicate(Root<ProductProviderDetail> root, CriteriaQuery<?> query,
+			public Predicate toPredicate(Root<ProductCost> root, CriteriaQuery<?> query,
 					CriteriaBuilder builder) {
 				return builder.and(hasId(root, builder, providerId, productId), isUnapproved(root, builder));
 			}
@@ -99,10 +99,10 @@ public class ProductProviderDetailRepository {
 
 	@SuppressWarnings("serial")
 	public List<Object[]> findAllCurrentByProduct(String productId, Collection<String> columns, Pageable paging) {
-		return genericRepository.findAll(ProductProviderDetail.class, columns,
-				new Specification<ProductProviderDetail>() {
+		return genericRepository.findAll(ProductCost.class, columns,
+				new Specification<ProductCost>() {
 					@Override
-					public Predicate toPredicate(Root<ProductProviderDetail> root, CriteriaQuery<?> query,
+					public Predicate toPredicate(Root<ProductCost> root, CriteriaQuery<?> query,
 							CriteriaBuilder builder) {
 						return builder.and(hasProductId(root, builder, productId), isCurrent(root, builder));
 					}
@@ -118,9 +118,9 @@ public class ProductProviderDetailRepository {
 		Root<Provider> providerRoot = query.from(Provider.class);
 		// ProductProviderDetail root
 		Subquery<UUID> subQuery = query.subquery(UUID.class);
-		Root<ProductProviderDetail> detailRoot = subQuery.from(ProductProviderDetail.class);
+		Root<ProductCost> detailRoot = subQuery.from(ProductCost.class);
 		// @formatter:off
-		subQuery.select(detailRoot.get(_ProductProviderDetail.id).get(_ProductProviderDetail.providerId));
+		subQuery.select(detailRoot.get(_ProductCost.id).get(_ProductCost.providerId));
 		subQuery.where(builder.and(
 			hasProductId(detailRoot, builder, productId),
 			isCurrent(detailRoot, builder)
@@ -141,36 +141,36 @@ public class ProductProviderDetailRepository {
 		return HibernateHelper.toRows(hql.list());
 	}
 
-	public static Predicate hasId(Root<ProductProviderDetail> root, CriteriaBuilder builder, UUID providerId,
-			String productId) {
-		Path<Object> idPath = root.get(_ProductProviderDetail.id);
+	public static Predicate hasId(Root<ProductCost> root, CriteriaBuilder builder, UUID providerId,
+			Long productId) {
+		Path<Object> idPath = root.get(_ProductCost.id);
 		// @formatter:off
 		return builder.and(
-				builder.equal(idPath.get(_ProductProviderDetail.productId), productId),
-				builder.equal(idPath.get(_ProductProviderDetail.providerId), providerId));
+				builder.equal(idPath.get(_ProductCost.productId), productId),
+				builder.equal(idPath.get(_ProductCost.providerId), providerId));
 		// @formatter:on
 	}
 
-	public static Predicate hasProviderId(Root<ProductProviderDetail> root, CriteriaBuilder builder, UUID providerId) {
+	public static Predicate hasProviderId(Root<ProductCost> root, CriteriaBuilder builder, UUID providerId) {
 		return builder.and(
-				builder.equal(root.get(_ProductProviderDetail.id).get(_ProductProviderDetail.providerId), providerId));
+				builder.equal(root.get(_ProductCost.id).get(_ProductCost.providerId), providerId));
 	}
 
-	public static Predicate hasProductId(Root<ProductProviderDetail> root, CriteriaBuilder builder, String productId) {
+	public static Predicate hasProductId(Root<ProductCost> root, CriteriaBuilder builder, String productId) {
 		return builder.and(
-				builder.equal(root.get(_ProductProviderDetail.id).get(_ProductProviderDetail.productId), productId));
+				builder.equal(root.get(_ProductCost.id).get(_ProductCost.productId), productId));
 	}
 
-	public static Predicate isCurrent(Root<ProductProviderDetail> root, CriteriaBuilder builder) {
+	public static Predicate isCurrent(Root<ProductCost> root, CriteriaBuilder builder) {
 		// @formatter:off
 		return builder.and(
-				builder.isNotNull(root.get(_ProductProviderDetail.approvedTimestamp)),
-				builder.isNull(root.get(_ProductProviderDetail.droppedTimestamp)));
+				builder.isNotNull(root.get(_ProductCost.approvedTimestamp)),
+				builder.isNull(root.get(_ProductCost.droppedTimestamp)));
 		// @formatter:on
 	}
 
-	public static Predicate isUnapproved(Root<ProductProviderDetail> root, CriteriaBuilder builder) {
-		return builder.isNull(root.get(_ProductProviderDetail.approvedTimestamp));
+	public static Predicate isUnapproved(Root<ProductCost> root, CriteriaBuilder builder) {
+		return builder.isNull(root.get(_ProductCost.approvedTimestamp));
 	}
 
 }

@@ -113,4 +113,30 @@ public class ApplicationIntegrationTest {
 		// @formatter:on
 	}
 
+//	@Test
+//	@Transactional
+//	public void testJoin() {
+//		Session session = ContextProvider.getCurrentSession();
+//		CriteriaBuilder builder = session.getCriteriaBuilder();
+//		CriteriaQuery<Tuple> query = builder.createTupleQuery();
+//		Root<Category> root = query.from(Category.class);
+//		
+//		query.multiselect(((Root<?>) root.get("approvalInformations")).join("approvedBy"));
+//		
+//		System.out.println(session.createQuery(query).getResultList().size());
+//	}
+//	
+//	@Test
+//	@Transactional
+//	public void testJoin1() {
+//		Session session = ContextProvider.getCurrentSession();
+//		CriteriaBuilder builder = session.getCriteriaBuilder();
+//		CriteriaQuery<Tuple> query = builder.createTupleQuery();
+//		Root<Category> root = query.from(Category.class);
+//		
+//		query.multiselect(root.get("approvalInformations").get("approvedBy"));
+//		
+//		System.out.println(session.createQuery(query).getResultList().size());
+//	}
+
 }

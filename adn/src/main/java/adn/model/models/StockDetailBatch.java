@@ -5,17 +5,17 @@ package adn.model.models;
 
 import java.util.Collection;
 
-import adn.model.entities.StockDetail;
+import adn.model.entities.Item;
 
 public class StockDetailBatch {
 
-	private Collection<StockDetail> details;
+	private Collection<Item> details;
 
-	public Collection<StockDetail> getDetails() {
+	public Collection<Item> getDetails() {
 		return details;
 	}
 
-	public void setDetails(Collection<StockDetail> details) {
+	public void setDetails(Collection<Item> details) {
 		this.details = details;
 	}
 

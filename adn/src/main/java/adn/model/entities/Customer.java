@@ -6,22 +6,41 @@ package adn.model.entities;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import adn.service.internal.Role;
+
 /**
  * @author Ngoc Huy
  *
  */
 @Entity
-public class Customer extends Account {
+public class Customer extends User {
 
 	@Column(name = "prestige_point")
-	private float prestigePoint;
+	private Float prestigePoint;
 
-	public float getPrestigePoint() {
+	private Boolean subscribed;
+
+	public Customer() {
+		setRole(Role.CUSTOMER);
+	}
+
+	public Float getPrestigePoint() {
 		return prestigePoint;
 	}
 
-	public void setPrestigePoint(float prestigePoint) {
+	public void setPrestigePoint(Float prestigePoint) {
 		this.prestigePoint = prestigePoint;
+	}
+
+	@JsonProperty("subscribed")
+	public Boolean isSubscribed() {
+		return subscribed;
+	}
+
+	public void setSubscribed(Boolean subscribed) {
+		this.subscribed = subscribed;
 	}
 
 }

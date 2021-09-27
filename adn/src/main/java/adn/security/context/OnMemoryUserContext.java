@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import adn.model.entities.Account;
+import adn.model.entities.User;
 import adn.security.UserDetailsImpl;
 import adn.service.DomainEntityServiceObserver;
 import adn.service.services.AccountService;
@@ -21,7 +21,7 @@ import adn.service.services.AccountService;
  *
  */
 @Component
-public class OnMemoryUserContext implements DomainEntityServiceObserver<Account> {
+public class OnMemoryUserContext implements DomainEntityServiceObserver<User> {
 
 	private static final Logger logger = LoggerFactory.getLogger(OnMemoryUserContext.class);
 	private static final String ID = UUID.randomUUID().toString();
@@ -83,7 +83,7 @@ public class OnMemoryUserContext implements DomainEntityServiceObserver<Account>
 	}
 
 	@Override
-	public void notifyUpdate(Account newState) {
+	public void notifyUpdate(User newState) {
 		if (logger.isTraceEnabled()) {
 			logger.trace(String.format("Removing user info on user update, user id: [%s]", newState.getId()));
 		}
@@ -92,7 +92,7 @@ public class OnMemoryUserContext implements DomainEntityServiceObserver<Account>
 	}
 
 	@Override
-	public void notifyCreation(Account newState) {}
+	public void notifyCreation(User newState) {}
 
 }
 

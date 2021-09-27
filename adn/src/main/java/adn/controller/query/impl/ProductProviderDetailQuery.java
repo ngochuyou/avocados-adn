@@ -6,20 +6,20 @@ package adn.controller.query.impl;
 import java.util.HashSet;
 import java.util.Set;
 
-import adn.model.entities.ProductProviderDetail;
-import adn.model.entities.metadata._ProductProviderDetail;
+import adn.model.entities.ProductCost;
+import adn.model.entities.metadata._ProductCost;
 
 /**
  * @author Ngoc Huy
  *
  */
-public class ProductProviderDetailQuery extends AbstractPermanentEntityQuery<ProductProviderDetail> {
+public class ProductProviderDetailQuery extends AbstractPermanentEntityQuery<ProductCost> {
 
-	private static final HashSet<String> ASSOCIATION_COLUMNS = new HashSet<>(Set.of(_ProductProviderDetail.product,
-			_ProductProviderDetail.provider, _ProductProviderDetail.createdBy, _ProductProviderDetail.approvedBy));
+	private static final HashSet<String> ASSOCIATION_COLUMNS = new HashSet<>(Set.of(_ProductCost.product,
+			_ProductCost.provider, _ProductCost.approvedBy));
 
 	public ProductProviderDetailQuery() {
-		super(ProductProviderDetail.class, ASSOCIATION_COLUMNS);
+		super(ProductCost.class, ASSOCIATION_COLUMNS);
 	}
 
 	private ProductQuery product;

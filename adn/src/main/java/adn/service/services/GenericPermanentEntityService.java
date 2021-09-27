@@ -23,7 +23,7 @@ import org.springframework.data.jpa.domain.Specification;
 import adn.dao.generic.GenericRepository;
 import adn.helpers.HibernateHelper;
 import adn.model.entities.PermanentEntity;
-import adn.model.entities.metadata._Factor;
+import adn.model.entities.metadata._FullyAuditedEntity;
 import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.SourceMetadata;
 import adn.model.factory.authentication.dynamicmap.SourceMetadataFactory;
@@ -94,7 +94,7 @@ public class GenericPermanentEntityService implements Service {
 		return new Specification<E>() {
 			@Override
 			public Predicate toPredicate(Root<E> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
-				return builder.isTrue(root.get(_Factor.active));
+				return builder.isTrue(root.get(_FullyAuditedEntity.active));
 			}
 		};
 	}

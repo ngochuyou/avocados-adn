@@ -4,6 +4,7 @@
 package adn.model.entities;
 
 import javax.persistence.Entity;
+import javax.persistence.Table;
 
 import adn.service.internal.Role;
 
@@ -12,6 +13,7 @@ import adn.service.internal.Role;
  *
  */
 @Entity
+@Table(name = "heads")
 public class Head extends Operator {
 
 	public Head() {
