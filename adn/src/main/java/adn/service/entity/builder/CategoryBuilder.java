@@ -20,6 +20,7 @@ public class CategoryBuilder extends AbstractPermanentEntityBuilder<Category> {
 	@Override
 	protected <E extends Category> E mandatoryBuild(E target, E model) {
 		target = super.mandatoryBuild(target, model);
+		
 		target.setDescription(StringHelper.normalizeString(model.getDescription()));
 
 		return target;

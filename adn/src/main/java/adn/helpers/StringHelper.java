@@ -52,7 +52,7 @@ public class StringHelper extends StringUtils {
 			+ "\\u205F" // MEDIUM MATHEMATICAL SPACE
 			+ "\\u3000"; // IDEOGRAPHIC SPACE
 
-	public static final String ONE_OF_WHITESPACE_CHARS = "[" + WHITESPACE_CHARS + "]";
+	public static final String WHITESPACE_CHAR_CLASS = "[" + WHITESPACE_CHARS + "]";
 
 	private static final MessageDigest SHA_256_MD;
 
@@ -105,11 +105,11 @@ public class StringHelper extends StringUtils {
 	}
 
 	public static String normalizeString(String string) {
-		return hasLength(string) ? string.trim().replaceAll(ONE_OF_WHITESPACE_CHARS + "+", " ") : string;
+		return hasLength(string) ? string.trim().replaceAll(WHITESPACE_CHAR_CLASS + "+", " ") : string;
 	}
 
 	public static String removeSpaces(String string) {
-		return hasLength(string) ? string.trim().replaceAll(ONE_OF_WHITESPACE_CHARS + "+", "") : string;
+		return hasLength(string) ? string.trim().replaceAll(WHITESPACE_CHAR_CLASS + "+", "") : string;
 	}
 
 	public static String toCamel(String s, CharSequence seperator) {
@@ -135,7 +135,7 @@ public class StringHelper extends StringUtils {
 
 	public static String getFirstWord(String str) {
 		for (int i = 0; i < str.length(); i++) {
-			if (("" + str.charAt(i)).matches(ONE_OF_WHITESPACE_CHARS)) {
+			if (("" + str.charAt(i)).matches(WHITESPACE_CHAR_CLASS)) {
 				return str.substring(0, i);
 			}
 		}

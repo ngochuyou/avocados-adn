@@ -80,7 +80,7 @@ public class StandardAccess extends AbstractPropertyAccess {
 		try {
 			Field field = ownerType.getDeclaredField(fieldName);
 			String setterName = StringHelper.toCamel(String.format("%s %s", "set", fieldName),
-					StringHelper.ONE_OF_WHITESPACE_CHARS);
+					StringHelper.WHITESPACE_CHAR_CLASS);
 			Method setterMethod = bestGuessSetter(ownerType, field, setterName);
 
 			return Optional.of(new SetterMethodImpl(ownerType, fieldName, setterMethod));

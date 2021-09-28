@@ -61,14 +61,14 @@ public abstract class AbstractPropertyAccess implements PropertyAccessImplemento
 	 */
 	protected static Method bestGuessGetter(Class<?> ownerType, String fieldName) throws NoSuchMethodException {
 		String leadingGetMethodName = StringHelper.toCamel(String.format("%s %s", "get", fieldName),
-				StringHelper.ONE_OF_WHITESPACE_CHARS);
+				StringHelper.WHITESPACE_CHAR_CLASS);
 		Method getterMethod;
 
 		try {
 			getterMethod = ownerType.getDeclaredMethod(leadingGetMethodName);
 		} catch (NoSuchMethodException nsme) {
 			String leadingIsMethodName = StringHelper.toCamel(String.format("%s %s", "is", fieldName),
-					StringHelper.ONE_OF_WHITESPACE_CHARS);
+					StringHelper.WHITESPACE_CHAR_CLASS);
 
 			try {
 				getterMethod = ownerType.getDeclaredMethod(leadingIsMethodName);

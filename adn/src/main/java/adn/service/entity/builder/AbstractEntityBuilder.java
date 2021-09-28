@@ -14,7 +14,7 @@ import adn.model.entities.Entity;
  * @author Ngoc Huy
  *
  */
-public abstract class AbstractEntityBuilder<T extends Entity> implements EntityBuilder<T> {
+public abstract class AbstractEntityBuilder<T extends Entity> extends AbstractCompositeEntityBuilder<T> {
 
 	protected <E extends T> E mandatoryBuild(E target, E model) {
 		return target;

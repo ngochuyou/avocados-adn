@@ -33,8 +33,6 @@ public class ProductCostBuilder extends AbstractPermanentEntityBuilder<ProductCo
 
 		model.getId().setCreatedTimestamp(LocalDateTime.now());
 		model.setDroppedTimestamp(null);
-		model.setApprovedTimestamp(null);
-		model.setApprovedBy(null);
 
 		return model;
 	}

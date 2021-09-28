@@ -24,7 +24,7 @@ public class ModelInheritanceTree<T extends DomainEntity> {
 		super();
 		this.parent = parent;
 		this.node = node;
-		this.childrens = childrens == null ? new HashSet<>() : childrens;
+		this.childrens = childrens == null ? new HashSet<>(0) : childrens;
 	}
 
 	@SuppressWarnings("unchecked")

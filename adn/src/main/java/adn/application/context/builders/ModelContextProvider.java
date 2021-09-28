@@ -70,14 +70,13 @@ public class ModelContextProvider implements ContextBuilder {
 	private void initializeMetadataMap() {
 		this.metadataMap = new HashMap<>();
 
-		entityTree.forEach(
-				branch -> {
-					try {
-						metadataMap.put(branch.getNode(), new DomainEntityMetadataImpl<>(this, branch.getNode()));
-					} catch (NoSuchFieldException | SecurityException e) {
-						e.printStackTrace();
-					}
-				});
+		entityTree.forEach(branch -> {
+			try {
+				metadataMap.put(branch.getNode(), new DomainEntityMetadataImpl<>(this, branch.getNode()));
+			} catch (NoSuchFieldException | SecurityException e) {
+				e.printStackTrace();
+			}
+		});
 		entityTree.forEach(branch -> logger.debug(
 				String.format("%s -> %s", branch.getNode().getName(), metadataMap.get(branch.getNode()).toString())));
 
@@ -253,7 +252,7 @@ public class ModelContextProvider implements ContextBuilder {
 		defaultModelMap.forEach((k, v) -> logger
 				.debug(String.format("[%s] is default for [%s]", v.getName(), k.equals(v) ? "itself" : k.getName())));
 
-		this.defaultModelMap = defaultModelMap;
+		this.defaultModelMap = Collections.unmodifiableMap(defaultModelMap);
 	}
 
 	public ModelInheritanceTree<DomainEntity> getEntityTree() {

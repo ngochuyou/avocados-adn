@@ -39,4 +39,8 @@ public interface EntityBuilder<T extends Entity> {
 	 */
 	<E extends T> E buildUpdate(Serializable id, E entity, E persistence);
 
+	String getLoggableName();
+	
+	<E extends T> EntityBuilder<E> and(EntityBuilder<E> next);
+
 }
