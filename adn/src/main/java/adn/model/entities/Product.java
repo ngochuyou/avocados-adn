@@ -3,6 +3,8 @@
  */
 package adn.model.entities;
 
+import static adn.application.Common.SHARED_TABLE_GENERATOR;
+
 import java.util.List;
 
 import javax.persistence.Column;
@@ -16,14 +18,13 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
-
-import org.hibernate.annotations.GenericGenerator;
+import javax.persistence.TableGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import adn.application.Common;
 import adn.model.entities.converters.StringListConverter;
-import adn.model.entities.generators.ProductCodeGenerator;
 import adn.model.entities.metadata._Category;
 import adn.model.entities.metadata._Item;
 import adn.model.entities.metadata._Product;
@@ -37,19 +38,19 @@ import adn.model.entities.metadata._Product;
 public class Product extends FullyAuditedEntity<Long> {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@GeneratedValue(strategy = GenerationType.TABLE, generator = SHARED_TABLE_GENERATOR)
+	@TableGenerator(name = SHARED_TABLE_GENERATOR, initialValue = Common.CROCKFORD_10A
+			- 1, allocationSize = 1, table = Common.SHARED_TABLE_GENERATOR_TABLENAME)
 	@Column(updatable = false)
 	private Long id;
 
-	@GeneratedValue(generator = ProductCodeGenerator.NAME)
-	@GenericGenerator(name = ProductCodeGenerator.NAME, strategy = ProductCodeGenerator.PATH)
-	@Column(updatable = false, length = _Product.CODE_LENGTH, unique = true)
+	@Column(unique = true)
 	private String code;
 
-	@Column(columnDefinition = "VARCHAR(50)")
+	@Column(length = _Product.MAXIMUM_MATERIAL_LENGTH)
 	private String material;
 	// IDENTIFIER_LENGTH
-	@Column(columnDefinition = "VARCHAR(500)")
+	@Column(length = _Product.MAXIMUM_IMAGES_LENGTH)
 	@Convert(converter = StringListConverter.class)
 	private List<String> images;
 
@@ -63,7 +64,7 @@ public class Product extends FullyAuditedEntity<Long> {
 	private Boolean locked;
 
 	@ManyToOne(optional = false, fetch = FetchType.LAZY)
-	@JoinColumn(name = "category_id", referencedColumnName = _Category.id)
+	@JoinColumn(name = "category_id", referencedColumnName = _Category.$id)
 	private Category category;
 
 	@JsonIgnore

@@ -4,17 +4,21 @@
 package adn.helpers;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.persistence.Tuple;
 
+import org.hibernate.FlushMode;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
 import org.hibernate.id.IdentifierGenerator;
+import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.query.NativeQuery;
 
 import adn.application.context.ContextProvider;
 import adn.model.entities.Entity;
@@ -26,6 +30,9 @@ import adn.model.entities.Entity;
 public class HibernateHelper {
 
 	public static final String UNKNOWN_COLUMNS = "Unknown columns found";
+	public static final String HIBERNATE_SEQUENCE_TABLE_NAME = "hibernate_sequences";
+	public static final String HIBERNATE_SEQUENCE_PK = "sequence_name";
+	public static final String HIBERNATE_SEQUENCE_VAL = "sequence_next_hi_value";
 
 	private HibernateHelper() {}
 
@@ -83,6 +90,24 @@ public class HibernateHelper {
 
 	public static List<Object[]> toRows(List<Tuple> tuples) {
 		return tuples.stream().map(row -> row.toArray()).collect(Collectors.toList());
+	}
+
+	public static void useManualSession() {
+		ContextProvider.getCurrentSession().setHibernateFlushMode(FlushMode.MANUAL);
+	}
+
+	// @formatter:off
+	private static final String AUTO_INCREMENT_SELECT_TEMPLATE = String.format("SELECT %s FROM %s WHERE %s = '%s'",
+			HIBERNATE_SEQUENCE_VAL, HIBERNATE_SEQUENCE_TABLE_NAME, HIBERNATE_SEQUENCE_PK, "%s");
+	// @formatter:on
+	public static <T extends Entity> BigInteger getNextAutoIncrementedValue(Class<T> type) {
+		AbstractEntityPersister persister = (AbstractEntityPersister) getEntityPersister(type);
+		@SuppressWarnings("unchecked")
+		NativeQuery<BigInteger> query = ContextProvider.getCurrentSession().createNativeQuery(
+				String.format(AUTO_INCREMENT_SELECT_TEMPLATE, persister.getTableName()));
+
+		return query.getResultStream().findFirst().orElseThrow(() -> new AssertionError(
+				String.format("Unable to get AUTO_INCREMENT identifier of entity type: [%s]", type.getName())));
 	}
 
 }

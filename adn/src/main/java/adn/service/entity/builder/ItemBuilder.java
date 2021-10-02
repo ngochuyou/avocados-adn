@@ -38,7 +38,9 @@ public class ItemBuilder extends AbstractPermanentEntityBuilder<Item> {
 	public <E extends Item> E buildInsertion(Serializable id, E model) {
 		model = super.buildInsertion(id, model);
 
-		model.setCost(model.getCost().setScale(4, RoundingMode.HALF_UP));
+		if (model.getCost() != null) {
+			model.setCost(model.getCost().setScale(4, RoundingMode.HALF_UP));
+		}
 
 		return model;
 	}

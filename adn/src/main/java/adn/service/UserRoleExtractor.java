@@ -14,12 +14,12 @@ import adn.service.internal.Role;
  * @author Ngoc Huy
  *
  */
-public interface AccountRoleExtractor {
+public interface UserRoleExtractor {
 
 	Role extractRole(String jsonString);
 
 	@Component
-	public class DefaultAccountRoleExtractor implements AccountRoleExtractor {
+	public class DefaultAccountRoleExtractor implements UserRoleExtractor {
 
 		private final ObjectMapper objectMapper;
 		private final String roleFieldname = "role";

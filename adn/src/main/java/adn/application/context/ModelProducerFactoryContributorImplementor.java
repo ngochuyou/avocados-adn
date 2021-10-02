@@ -4,7 +4,6 @@
 package adn.application.context;
 
 import static adn.application.context.builders.CredentialFactory.owner;
-import static adn.model.entities.metadata._NamedResource.name;
 import static adn.service.DepartmentCredential.CUSTOMER_SERVICE_CREDENTIAL;
 import static adn.service.DepartmentCredential.PERSONNEL_CREDENTIAL;
 import static adn.service.DepartmentCredential.SALE_CREDENTIAL;
@@ -47,7 +46,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 	@Override
 	public void contribute(ModelProducerFactoryBuilder builder) {
 		// @formatter:off
-		account(builder);
+		user(builder);
 		provider(builder);
 		category(builder);
 		product(builder);
@@ -93,20 +92,20 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		// @formatter:on
 	}
 
-	private void account(ModelProducerFactoryBuilder builder) {
-		WithType<User> account = builder.type(User.class);
+	private void user(ModelProducerFactoryBuilder builder) {
+		WithType<User> user = builder.type(User.class);
 		// @formatter:off
-		account
+		user
 			.credentials(authorized())
 				.fields(_User.id).use(_User._id).publish()
-				.fields(_User.firstName, _User.lastName, _User.photo, _User.role, _User.gender, _User.active,
-						_User.email, _User.phone, _User.birthDate).publish()
+				.fields(_User.firstName, _User.lastName, _User.photo,
+						_User.role, _User.gender, _User.active,
+						_User.email, _User.phone, _User.birthDate,
+						_User.locked).publish()
 				.anyFields().mask()
 			.credentials(PERSONNEL_CREDENTIAL, HEAD)
 				.fields(_User.address).publish();
-		
-//		builder.type(Head.class).roles(HEAD).publish();
-		
+
 		builder.type(Customer.class)
 			.credentials(SALE_CREDENTIAL, CUSTOMER_SERVICE_CREDENTIAL, HEAD, owner())
 				.fields(_Customer.prestigePoint).publish();
@@ -125,7 +124,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		// @formatter:off
 		provider
 			.credentials(SALE_CREDENTIAL, STOCK_CREDENTIAL, HEAD)
-				.fields(_Provider.id, name, _Provider.active, _Provider.productCosts).publish()
+				.fields(_Provider.id, _Provider.name, _Provider.active, _Provider.productCosts).publish()
 			.credentials(SALE_CREDENTIAL, HEAD)
 				.fields(_Provider.email, _Provider.phoneNumbers, _Provider.address,
 						_Provider.representatorName, _Provider.website)
@@ -186,7 +185,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		// @formatter:off
 		product
 			.credentials(any())
-				.fields(_Product.id, name, _Product.category,
+				.fields(_Product.id, _Product.name, _Product.category,
 						_Product.images, _Product.description,
 						_Product.rating, _Product.items)
 				.publish()
@@ -204,7 +203,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		// @formatter:off
 		product
 			.credentials(any())
-				.fields(_Category.id, _Category.description, name)
+				.fields(_Category.id, _Category.description, _Category.name)
 				.publish()
 			.credentials(SALE_CREDENTIAL, HEAD)
 				.fields(_Category.products, _Category.active)

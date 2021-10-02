@@ -34,6 +34,7 @@ public class LocalResourceService implements ResourceService {
 
 	private static final String USER_PHOTO_PATH;
 	private static final String PRODUCT_IMAGE_PATH;
+	private static final String EXTENSION_DELIMITER = ".";
 	private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
 	static {
@@ -61,7 +62,7 @@ public class LocalResourceService implements ResourceService {
 			image = type.getConstructor().newInstance();
 
 			image.setName(originalFilename);
-			image.setExtension("." + getExtension(originalFilename));
+			image.setExtension(EXTENSION_DELIMITER + getExtension(originalFilename));
 			image.setContent(file.getBytes());
 			results[i++] = image;
 		}

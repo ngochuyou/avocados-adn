@@ -19,11 +19,11 @@ import org.springframework.util.StringUtils;
  */
 public class StringHelper extends StringUtils {
 
-	// stolen from stackoverflow below
+	public static final String VIETNAMESE_CHARACTERS = "ÁáÀàẢảÃãẠạĂăẮắẰằẲẳẴẵẶặÂâẤấẦầẨẩẪẫẬậĐđÉéÈèẺẻẼẽẸẹÊêỂểẾếỀềỄễỆệÍíÌìỊịỈỉĨĩỊịÓóÒòỎỏÕõỌọÔôỐốỒồỔổỖỗỘộƠơỚớỜờỞởỠỡỢợÚùÙùỦủŨũỤụƯưỨứỪừỬửỮữỰựÝýỲỳỶỷỸỹỴỵ";
+
 	public static final String EMAIL_REGEX = "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])";
 
 	public static final String BCRYPT_REGEX = "^\\$2[ayb]\\$.{56}$";
-	public static final String VIETNAMESE_CHARACTERS = "ÁáÀàẢảÃãẠạĂăẮắẰằẲẳẴẵẶặÂâẤấẦầẨẩẪẫẬậĐđÉéÈèẺẻẼẽẸẹÊêỂểẾếỀềỄễỆệÍíÌìỊịỈỉĨĩỊịÓóÒòỎỏÕõỌọÔôỐốỒồỔổỖỗỘộƠơỚớỜờỞởỠỡỢợÚùÙùỦủŨũỤụƯưỨứỪừỬửỮữỰựÝýỲỳỶỷỸỹỴỵ";
 	public static final String WHITESPACE_CHARS = "" /* dummy empty string for homogeneity */
 			+ "\\u0009" // CHARACTER TABULATION
 			+ "\\u000A" // LINE FEED (LF)
@@ -97,7 +97,7 @@ public class StringHelper extends StringUtils {
 	}
 
 	public static boolean isAcceptablePhoneNumber(String phoneNumber) {
-		return hasLength(phoneNumber) && phoneNumber.matches("^[\\w\\d\\._\\(\\)\\+\\s\\-]{4,}$");
+		return hasLength(phoneNumber) && phoneNumber.matches("^[\\w\\d\\._\\(\\)\\+\\s\\-:]{4,}$");
 	}
 
 	public static boolean isBCrypt(String string) {
@@ -145,6 +145,10 @@ public class StringHelper extends StringUtils {
 
 	public static Optional<String> get(String in) {
 		return Optional.ofNullable(hasLength(in) ? in : null);
+	}
+	
+	public static Optional<String> get(String in, String append) {
+		return Optional.ofNullable(hasLength(in) ? String.format("%s %s", in, append) : null);
 	}
 
 	public static String join(String... strings) {

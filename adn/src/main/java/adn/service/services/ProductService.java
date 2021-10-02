@@ -85,13 +85,13 @@ public class ProductService implements Service, EffectivelyFinal {
 
 		if (images != null && images.length != 0) {
 			if (images.length > MAXIMUM_IMAGES_AMOUNT) {
-				return bad(Map.of("images", String.format("Cannot upload more than %d files", MAXIMUM_IMAGES_AMOUNT)));
+				return bad(Map.of(_Product.images, String.format("Cannot upload more than %d files", MAXIMUM_IMAGES_AMOUNT)));
 			}
 
 			ServiceResult<String[]> uploadResult = resourceService.uploadProductImages(images);
 
 			if (!uploadResult.isOk()) {
-				return bad(Map.of("images", Common.UPLOAD_FAILURE));
+				return bad(Map.of(_Product.images, Common.UPLOAD_FAILURE));
 			}
 
 			isResourceSessionFlushed = true;

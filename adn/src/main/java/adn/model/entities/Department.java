@@ -31,7 +31,7 @@ public class Department extends PermanentEntity implements NamedResource {
 	@Id
 	@GeneratedValue(generator = "uuid")
 	@GenericGenerator(name = "uuid", strategy = "uuid2")
-	@Column(columnDefinition = Common.UUID_MYSQL_COLUMN_DEFINITION)
+	@Column(columnDefinition = Common.MYSQL_UUID_COLUMN_DEFINITION)
 	protected UUID id;
 
 	@Column(nullable = false, unique = true)

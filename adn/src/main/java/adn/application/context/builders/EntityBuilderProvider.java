@@ -127,12 +127,19 @@ public class EntityBuilderProvider implements ContextBuilder {
 					e.printStackTrace();
 				}
 
-				Set<Class<?>> interfaces = ClassUtils.getAllInterfacesForClassAsSet(type);
 				EntityBuilder<? extends DomainEntity> builder = builderMap.get(type);
-
-				for (Class<?> interfaceType : interfaces) {
+				EntityBuilder fixedBuilder;
+				
+				for (Class<?> interfaceType : ClassUtils.getAllInterfacesForClassAsSet(type)) {
 					if (fixedBuilderMap.containsKey(interfaceType)) {
-						builder = fixedBuilderMap.get(interfaceType).and(builder);
+						fixedBuilder = fixedBuilderMap.get(interfaceType);
+
+						if (!builder.equals(DEFAULT_BUILDER)) {
+							builder = fixedBuilder.and(builder);
+							continue;
+						}
+						
+						builder = fixedBuilder;
 					}
 				}
 

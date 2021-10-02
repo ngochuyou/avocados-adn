@@ -21,18 +21,15 @@ import adn.model.entities.ProductCost;
 public class ProductCostBuilder extends AbstractPermanentEntityBuilder<ProductCost> {
 
 	@Override
-	protected <E extends ProductCost> E mandatoryBuild(E target, E model) {
-		target.setCost(model.getCost().setScale(4, RoundingMode.HALF_UP));
-
-		return target;
-	}
-
-	@Override
 	public <E extends ProductCost> E buildInsertion(Serializable id, E model) {
 		model = super.buildInsertion(id, model);
 
 		model.getId().setCreatedTimestamp(LocalDateTime.now());
 		model.setDroppedTimestamp(null);
+
+		if (model.getCost() != null) {
+			model.setCost(model.getCost().setScale(4, RoundingMode.HALF_UP));
+		}
 
 		return model;
 	}

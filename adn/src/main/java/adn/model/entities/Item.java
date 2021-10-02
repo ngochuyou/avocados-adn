@@ -3,6 +3,8 @@
  */
 package adn.model.entities;
 
+import static adn.application.Common.SHARED_TABLE_GENERATOR;
+
 import java.math.BigDecimal;
 
 import javax.persistence.Column;
@@ -16,13 +18,12 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-
-import org.hibernate.annotations.GenericGenerator;
+import javax.persistence.TableGenerator;
 
 import adn.application.Common;
 import adn.model.entities.constants.NamedSize;
 import adn.model.entities.constants.Status;
-import adn.model.entities.generators.ItemCodeGenerator;
+import adn.model.entities.metadata._Item;
 import adn.model.entities.metadata._ProductPrice;
 import adn.model.entities.metadata._Provider;
 
@@ -35,23 +36,23 @@ import adn.model.entities.metadata._Provider;
 public class Item extends PermanentEntity implements AuditableResource<Long> {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@GeneratedValue(strategy = GenerationType.TABLE, generator = SHARED_TABLE_GENERATOR)
+	@TableGenerator(name = SHARED_TABLE_GENERATOR, initialValue = Common.CROCKFORD_10A
+			- 1, allocationSize = 1, table = Common.SHARED_TABLE_GENERATOR_TABLENAME)
 	@Column(updatable = false)
 	private Long id;
 
-	@GeneratedValue(generator = ItemCodeGenerator.NAME)
-	@GenericGenerator(name = ItemCodeGenerator.NAME, strategy = ItemCodeGenerator.PATH)
-	@Column(updatable = false)
+	@Column(unique = true)
 	private String code;
 
 	@Enumerated
-	@Column(name = "named_size", columnDefinition = "VARCHAR(4)")
+	@Column(name = "named_size", length = _Item.MAXIMUM_NAMED_SIZE_LENGTH)
 	private NamedSize namedSize;
 
 	@Column(name = "numeric_size", columnDefinition = "TINYINT UNSIGNED")
 	private Integer numericSize;
 
-	@Column(name = "color", columnDefinition = "VARCHAR(50)", nullable = false)
+	@Column(name = "color", length = _Item.MAXIMUM_NAMED_COLOR_LENGTH, nullable = false)
 	private String color;
 
 	private String note;
@@ -60,7 +61,7 @@ public class Item extends PermanentEntity implements AuditableResource<Long> {
 	@Column(nullable = false, columnDefinition = "VARCHAR(20)")
 	private Status status;
 
-	@Column(nullable = false, columnDefinition = Common.CURRENCY_MYSQL_COLUMN_DEFINITION)
+	@Column(nullable = false, columnDefinition = Common.MYSQL_CURRENCY_COLUMN_DEFINITION)
 	private BigDecimal cost;
 
 	@ManyToOne(optional = false, fetch = FetchType.LAZY)
@@ -74,7 +75,7 @@ public class Item extends PermanentEntity implements AuditableResource<Long> {
 	private AuditInformations auditInformations;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(referencedColumnName = _ProductPrice.id)
+	@JoinColumn(referencedColumnName = _ProductPrice.$id)
 	private ProductPrice price;
 
 	@Override

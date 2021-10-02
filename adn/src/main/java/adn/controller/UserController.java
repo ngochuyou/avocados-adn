@@ -1,10 +1,11 @@
 package adn.controller;
 
+import static adn.helpers.HibernateHelper.useManualSession;
+import static java.util.concurrent.TimeUnit.DAYS;
+
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,17 +28,17 @@ import adn.application.context.ContextProvider;
 import adn.dao.generic.Result;
 import adn.helpers.StringHelper;
 import adn.model.entities.User;
-import adn.service.AccountRoleExtractor;
+import adn.service.UserRoleExtractor;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Role;
-import adn.service.services.AccountService;
+import adn.service.services.UserService;
 
 @Controller
-@RequestMapping("/account")
-public class AccountController extends BaseController {
+@RequestMapping("/user")
+public class UserController extends BaseController {
 
-	protected final AccountService accountService;
-	protected final AccountRoleExtractor roleExtractor;
+	protected final UserService accountService;
+	protected final UserRoleExtractor roleExtractor;
 
 	protected final ResourceService resourceService;
 
@@ -45,9 +46,9 @@ public class AccountController extends BaseController {
 	protected final static int PHOTO_CACHE_CONTROL_MAX_AGE = 3; // days
 	// @formatter:off
 	@Autowired
-	public AccountController(
-			final AccountService accountService,
-			final AccountRoleExtractor roleExtractor,
+	public UserController(
+			final UserService accountService,
+			final UserRoleExtractor roleExtractor,
 			final ResourceService resourceService) {
 		this.accountService = accountService;
 		this.roleExtractor = roleExtractor;
@@ -58,7 +59,7 @@ public class AccountController extends BaseController {
 	@SuppressWarnings("unchecked")
 	@Transactional
 	@PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
-	public @ResponseBody ResponseEntity<?> createAccount(@RequestPart(name = "model", required = true) String jsonPart,
+	public @ResponseBody ResponseEntity<?> createUser(@RequestPart(name = "model", required = true) String jsonPart,
 			@RequestPart(name = "photo", required = false) MultipartFile photo) throws Exception {
 		Role modelRole = roleExtractor.extractRole(jsonPart);
 
@@ -82,7 +83,7 @@ public class AccountController extends BaseController {
 			return ResponseEntity.badRequest().body(Common.INVALID_MODEL);
 		}
 
-		setSessionMode();
+		useManualSession();
 
 		if (baseRepository.countById(User.class, model.getId()) != 0) {
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(Common.EXISTED);
@@ -105,7 +106,7 @@ public class AccountController extends BaseController {
 			@RequestParam(name = "filename", required = false) final String filename, Authentication authentication)
 			throws Exception {
 		if (filename != null) {
-			return cacheAccountPhoto(resourceService.directlyGetUserPhotoBytes(filename));
+			return cacheUserPhoto(resourceService.directlyGetUserPhotoBytes(filename));
 		}
 
 		if (!StringHelper.hasLength(username)) {
@@ -122,21 +123,17 @@ public class AccountController extends BaseController {
 			return sendNotFound(Common.NOT_FOUND);
 		}
 
-		return cacheAccountPhoto(resourceService.directlyGetImageBytes(null, optional.get().getPhoto()));
+		return cacheUserPhoto(resourceService.directlyGetImageBytes(null, optional.get().getPhoto()));
 	}
 
-	private ResponseEntity<?> cacheAccountPhoto(byte[] photoBytes) {
-		// @formatter:off
-		return ResponseEntity.ok()
-				.cacheControl(CacheControl.maxAge(PHOTO_CACHE_CONTROL_MAX_AGE, TimeUnit.DAYS))
-				.body(photoBytes);
-		// @formatter:on
+	private ResponseEntity<?> cacheUserPhoto(byte[] photoBytes) {
+		return makeStaleWhileRevalidate(photoBytes, PHOTO_CACHE_CONTROL_MAX_AGE, DAYS, 7, DAYS);
 	}
 
 	@Transactional
 	@SuppressWarnings("unchecked")
 	@PutMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
-	public @ResponseBody ResponseEntity<?> updateAccount(@RequestPart(name = "model", required = true) String jsonPart,
+	public @ResponseBody ResponseEntity<?> updateUser(@RequestPart(name = "model", required = true) String jsonPart,
 			@RequestPart(name = "photo", required = false) MultipartFile multipartPhoto) throws Exception {
 		Role modelRole = roleExtractor.extractRole(jsonPart);
 
@@ -160,7 +157,7 @@ public class AccountController extends BaseController {
 			return unauthorize(Common.ACCESS_DENIED);
 		}
 		// get current session with FlushMode.MANUAL
-		setSessionMode();
+		useManualSession();
 
 		User persistence;
 		// This entity will take effects as the handler progresses

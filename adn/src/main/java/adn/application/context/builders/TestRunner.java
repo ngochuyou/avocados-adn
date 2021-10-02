@@ -26,7 +26,6 @@ import adn.application.context.internal.ContextBuilder;
  *
  */
 @Component
-@SuppressWarnings("all")
 public class TestRunner implements ContextBuilder {
 
 	@Override

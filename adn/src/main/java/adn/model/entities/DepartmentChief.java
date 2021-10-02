@@ -36,7 +36,7 @@ public class DepartmentChief extends adn.model.entities.Entity {
 	private Personnel personnel;
 
 	@ManyToOne(optional = false)
-	@JoinColumn(name = "department_id", updatable = false, columnDefinition = Common.UUID_MYSQL_COLUMN_DEFINITION)
+	@JoinColumn(name = "department_id", updatable = false, columnDefinition = Common.MYSQL_UUID_COLUMN_DEFINITION)
 	@MapsId("departmentId")
 	@JsonIgnore
 	private Department department;

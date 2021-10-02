@@ -6,7 +6,7 @@ public interface Service {
 
 		UNMODIFIED(3, "NOTHING CHANGED"),
 
-		BAD(0, "INVALID INPUT"),
+		BAD(4, "INVALID INPUT"),
 
 		OK(1, "SUCCESS"),
 

@@ -29,8 +29,8 @@ public abstract class AbstractFactorQuery<T extends FullyAuditedEntity<?>> exten
 
 	private StringFilter name;
 
-	private AccountQuery createdBy;
-	private AccountQuery updatedBy;
+	private UserQuery createdBy;
+	private UserQuery updatedBy;
 	private HeadQuery approvedBy;
 
 	public StringFilter getName() {
@@ -41,20 +41,20 @@ public abstract class AbstractFactorQuery<T extends FullyAuditedEntity<?>> exten
 		this.name = name;
 	}
 
-	public AccountQuery getCreatedBy() {
+	public UserQuery getCreatedBy() {
 		return createdBy;
 	}
 
-	public void setCreatedBy(AccountQuery createdBy) {
+	public void setCreatedBy(UserQuery createdBy) {
 		this.createdBy = createdBy;
 		setAssociated(createdBy);
 	}
 
-	public AccountQuery getUpdatedBy() {
+	public UserQuery getUpdatedBy() {
 		return updatedBy;
 	}
 
-	public void setUpdatedBy(AccountQuery updatedBy) {
+	public void setUpdatedBy(UserQuery updatedBy) {
 		this.updatedBy = updatedBy;
 		setAssociated(updatedBy);
 	}

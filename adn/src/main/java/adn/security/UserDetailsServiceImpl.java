@@ -41,7 +41,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 	private DepartmentService departmentService;
 
 	private static final List<String> ATTRIBUTES = Arrays.asList(_User.id, _User.password, _User.role,
-			_User.updatedDate, _User.active);
+			_User.updatedDate, _User.locked, _User.active);
 	public static final ZoneId ZONE = ZoneId.systemDefault();
 
 	@Transactional(readOnly = true)
@@ -57,7 +57,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 		Role role = (Role) cols[2];
 		String id = (String) cols[0];
 		String password = (String) cols[1];
-		boolean activeState = (boolean) cols[4];
+		boolean isLocked = !(!((boolean) cols[4]) && (boolean) cols[5]);
 		Set<SimpleGrantedAuthority> auths = Set.of(new SimpleGrantedAuthority("ROLE_" + role));
 		long version = ((LocalDateTime) cols[3]).atZone(ZONE).toEpochSecond();
 
@@ -67,7 +67,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 			return new PersonnelDetails(
 					id,
 					password,
-					activeState,
+					isLocked,
 					auths,
 					role,
 					version,
@@ -77,7 +77,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 		return new UserDetailsImpl(
 				id,
 				password,
-				activeState,
+				isLocked,
 				auths,
 				role,
 				version);

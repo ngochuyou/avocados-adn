@@ -24,7 +24,7 @@ public class ProductProviderDetailQuery extends AbstractPermanentEntityQuery<Pro
 
 	private ProductQuery product;
 	private ProviderQuery provider;
-	private AccountQuery createdBy;
+	private UserQuery createdBy;
 	private HeadQuery approvedBy;
 //	private BooleanFilter approved;
 
@@ -46,11 +46,11 @@ public class ProductProviderDetailQuery extends AbstractPermanentEntityQuery<Pro
 		setAssociated(provider);
 	}
 
-	public AccountQuery getCreatedBy() {
+	public UserQuery getCreatedBy() {
 		return createdBy;
 	}
 
-	public void setCreatedBy(AccountQuery createdBy) {
+	public void setCreatedBy(UserQuery createdBy) {
 		this.createdBy = createdBy;
 		setAssociated(createdBy);
 	}

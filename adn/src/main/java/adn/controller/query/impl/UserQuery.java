@@ -10,9 +10,9 @@ import adn.model.entities.User;
  * @author Ngoc Huy
  *
  */
-public class AccountQuery extends AbstractPermanentEntityQuery<User> {
+public class UserQuery extends AbstractPermanentEntityQuery<User> {
 
-	public AccountQuery() {
+	public UserQuery() {
 		super(User.class, CollectionHelper.emptyHashSet());
 	}
 	

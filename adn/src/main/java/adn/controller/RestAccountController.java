@@ -33,10 +33,10 @@ import adn.helpers.Utils;
 import adn.model.entities.User;
 import adn.model.entities.metadata._User;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
-import adn.service.AccountRoleExtractor;
+import adn.service.UserRoleExtractor;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Role;
-import adn.service.services.AccountService;
+import adn.service.services.UserService;
 import adn.service.services.AuthenticationService;
 
 /**
@@ -45,16 +45,16 @@ import adn.service.services.AuthenticationService;
  */
 @RestController
 @RequestMapping("/rest/account")
-public class RestAccountController extends AccountController {
+public class RestAccountController extends UserController {
 
 	private final AuthenticationService authService;
 
 	// @formatter:off
 	@Autowired
 	public RestAccountController(
-			final AccountService accountService,
+			final UserService accountService,
 			final AuthenticationService authService,
-			final AccountRoleExtractor roleExtractor,
+			final UserRoleExtractor roleExtractor,
 			final ResourceService resourceService) {
 		super(accountService, roleExtractor, resourceService);
 		this.authService = authService;

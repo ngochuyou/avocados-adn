@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 import adn.model.entities.User;
 import adn.security.UserDetailsImpl;
 import adn.service.DomainEntityServiceObserver;
-import adn.service.services.AccountService;
+import adn.service.services.UserService;
 
 /**
  * @author Ngoc Huy
@@ -29,7 +29,7 @@ public class OnMemoryUserContext implements DomainEntityServiceObserver<User> {
 	private final MutexMap context = new MutexMap();
 
 	@Autowired
-	public OnMemoryUserContext(AccountService service) {
+	public OnMemoryUserContext(UserService service) {
 		service.register(this);
 	}
 

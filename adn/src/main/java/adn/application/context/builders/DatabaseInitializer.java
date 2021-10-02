@@ -28,7 +28,8 @@ import adn.dao.generic.GenericRepository;
 import adn.model.entities.Department;
 import adn.model.entities.Head;
 import adn.model.entities.constants.Gender;
-import adn.service.services.AccountService;
+import adn.model.entities.metadata._NamedResource;
+import adn.service.services.UserService;
 
 /**
  * @author Ngoc Huy
@@ -37,10 +38,10 @@ import adn.service.services.AccountService;
 @Component
 public class DatabaseInitializer implements ContextBuilder {
 
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
+
 	@Autowired
 	private SessionFactory sessionFactory;
-
-	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
@@ -50,7 +51,7 @@ public class DatabaseInitializer implements ContextBuilder {
 
 	@Transactional
 	@Override
-	public void buildAfterStartUp() {
+	public void buildAfterStartUp() throws ClassNotFoundException {
 		// TODO Auto-generated method stub
 		logger.info("Building " + this.getClass().getName());
 		insertHead();
@@ -64,7 +65,7 @@ public class DatabaseInitializer implements ContextBuilder {
 
 			@Override
 			public Predicate toPredicate(Root<Department> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
-				return builder.equal(root.get("name"), name);
+				return builder.equal(root.get(_NamedResource.name), name);
 			}
 		};
 	}
@@ -120,7 +121,8 @@ public class DatabaseInitializer implements ContextBuilder {
 		admin.setGender(Gender.MALE);
 		admin.setLastName("Vu Ngoc Huy");
 		admin.setPhone("0974032706");
-		admin.setPhoto(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME);
+		admin.setPhoto(UserService.DEFAULT_ACCOUNT_PHOTO_NAME);
+		admin.setLocked(Boolean.FALSE);
 
 		return admin;
 	}
@@ -136,4 +138,10 @@ public class DatabaseInitializer implements ContextBuilder {
 			logger.info("Inserting HEAD: " + head.getId());
 		}
 	}
+
+	@Override
+	public void afterBuild() {
+		logger = null;
+	}
+
 }

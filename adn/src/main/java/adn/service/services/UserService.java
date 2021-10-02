@@ -30,7 +30,7 @@ import adn.service.internal.Service;
 import adn.service.internal.ServiceResult;
 
 @org.springframework.stereotype.Service
-public class AccountService implements Service, ObservableDomainEntityService<User> {
+public class UserService implements Service, ObservableDomainEntityService<User> {
 
 	public static final String UNKNOWN_USER_FIRSTNAME = "APP";
 	public static final String UNKNOWN_USER_LASTNAME = "USER";
@@ -50,7 +50,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Us
 	public static final String DEFAULT_ACCOUNT_PHOTO_NAME = "1619973416467_0c46022.png";
 	// keep this constructor
 	@Autowired
-	public AccountService(
+	public UserService(
 			ResourceService resourceService,
 			GenericCRUDServiceImpl crudService) {
 		this.resourceService = resourceService;
@@ -133,9 +133,7 @@ public class AccountService implements Service, ObservableDomainEntityService<Us
 
 		boolean isResourceSessionFlushed = localResourceResult.isOk();
 		// set photo upload result into account so that CRUDService inject it into the
-		// persistence instead of directly setting it into persistence since CRUDService
-		// will inject account#getPhoto(), which is null if we set upload result
-		// directly into persistence here
+		// persistence instead of directly setting it into persistence
 		account.setPhoto(localResourceResult.getBody());
 
 		Result<E> updateResult = crudService.update(persistence.getId(), account, type, false);

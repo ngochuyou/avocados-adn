@@ -32,10 +32,10 @@ public class ProductPrice extends PermanentEntity implements ApprovableResource 
 	@Id
 	@GeneratedValue(generator = "uuid")
 	@GenericGenerator(name = "uuid", strategy = "uuid2")
-	@Column(columnDefinition = Common.UUID_MYSQL_COLUMN_DEFINITION, updatable = false)
+	@Column(columnDefinition = Common.MYSQL_UUID_COLUMN_DEFINITION, updatable = false)
 	private UUID id;
 
-	@Column(nullable = false, updatable = false, columnDefinition = Common.CURRENCY_MYSQL_COLUMN_DEFINITION)
+	@Column(nullable = false, updatable = false, columnDefinition = Common.MYSQL_CURRENCY_COLUMN_DEFINITION)
 	private BigDecimal price;
 
 	@Column(updatable = false, name = "dropped_timestamp")

@@ -7,14 +7,11 @@ import static adn.application.context.ContextProvider.getPrincipalCredential;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.servlet.annotation.MultipartConfig;
 
-import org.hibernate.FlushMode;
-import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.CacheControl;
@@ -28,7 +25,6 @@ import adn.application.context.builders.ModelContextProvider;
 import adn.dao.generic.GenericRepository;
 import adn.dao.generic.Result;
 import adn.helpers.CollectionHelper;
-import adn.helpers.FunctionHelper.HandledConsumer;
 import adn.model.DomainEntity;
 import adn.model.entities.Entity;
 import adn.model.factory.authentication.Credential;
@@ -70,29 +66,13 @@ public class BaseController {
 
 	@Autowired
 	protected GenericPermanentEntityService genericPermanentEntityService;
-	
+
 	public static final long MAXIMUM_FILE_SIZE = 30 * 1024 * 1024;
 
 	protected static final String HEAD = "ROLE_HEAD";
 	protected static final String PERSONNEL = "ROLE_PERSONNEL";
 	// for @PreAuthorize
 	protected static final String HEAD_OR_PERSONNEL = "ROLE_HEAD OR ROLE_PERSONNEL";
-
-	protected void setSessionMode() {
-		setSessionMode(FlushMode.MANUAL);
-	}
-
-	protected void setSessionMode(FlushMode mode) {
-		sessionFactory.getCurrentSession().setHibernateFlushMode(Optional.ofNullable(mode).orElse(FlushMode.MANUAL));
-	}
-
-	protected void currentSession(HandledConsumer<Session, Exception> fnc) {
-		try {
-			fnc.accept(sessionFactory.getCurrentSession());
-		} catch (Exception any) {
-			any.printStackTrace();
-		}
-	}
 
 	protected <T extends DomainEntity, M extends DomainEntity> T extract(M model, Class<T> entityClass) {
 		return extractorProvider.getExtractor(entityClass).extract(model, modelContext.instantiate(entityClass));

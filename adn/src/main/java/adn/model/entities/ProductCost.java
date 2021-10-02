@@ -38,11 +38,11 @@ public class ProductCost extends PermanentEntity implements ApprovableResource {
 	private Product product;
 
 	@ManyToOne(optional = false, fetch = FetchType.LAZY)
-	@JoinColumn(name = _ProductCost.$providerId, referencedColumnName = _Provider.$id, columnDefinition = Common.UUID_MYSQL_COLUMN_DEFINITION, updatable = false, nullable = false)
+	@JoinColumn(name = _ProductCost.$providerId, referencedColumnName = _Provider.$id, columnDefinition = Common.MYSQL_UUID_COLUMN_DEFINITION, updatable = false, nullable = false)
 	@MapsId(_ProductCost.providerId)
 	private Provider provider;
 
-	@Column(columnDefinition = Common.CURRENCY_MYSQL_COLUMN_DEFINITION, nullable = false, updatable = false)
+	@Column(columnDefinition = Common.MYSQL_CURRENCY_COLUMN_DEFINITION, nullable = false, updatable = false)
 	private BigDecimal cost;
 
 	@Column(name = "dropped_timestamp", updatable = false)

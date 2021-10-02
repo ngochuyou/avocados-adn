@@ -8,11 +8,14 @@ import static java.util.Map.entry;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+
+import adn.helpers.StringHelper;
 
 /**
  * @author Ngoc Huy
@@ -46,33 +49,49 @@ public class Common {
 		return String.format(TEMPLATE, join(prefix), " must not be empty");
 	}
 
-	public static String mustEmpty(String... prefix) {
-		return String.format(TEMPLATE, join(prefix), " must be empty");
-	}
-
 	public static String notNegative(String... prefix) {
 		return String.format(TEMPLATE, join(prefix), " must not be negative");
 	}
 
+	public static String invalid(String... names) {
+		return String.format("Invalid %s pattern", join(names));
+	}
+
+	public static String hasLength(String prefix, Integer min, Integer max) {
+		String lead = StringHelper.get(prefix, "must").orElse("must");
+
+		if (min != null && max != null) {
+			return String.format("%s has the length between %d and %d", lead, min, max);
+		}
+
+		Function<Integer, String> plurality = (amount) -> amount > 1 ? "s" : "";
+
+		if (min == null) {
+			return String.format("%s has at most %d character%s", lead, max, plurality.apply(max));
+		}
+
+		return String.format("%s has at least %d character%s", lead, min, plurality.apply(min));
+	}
+
 	// @formatter:off
 	private static final Map<Character, String> SYMBOL_NAMES = Map.ofEntries(
-			entry('.', "periods"),
-			entry('(', "opening parentheses"),
-			entry(')', "closing parentheses"),
-			entry('\s', "spaces"),
-			entry(',', "commas"),
-			entry('_', "underscores"),
-			entry('"', "quotes"),
+			entry('.', "period"),
+			entry('(', "opening parenthesis"),
+			entry(')', "closing parenthesis"),
+			entry('\s', "space"),
+			entry(',', "comma"),
+			entry('_', "underscore"),
+			entry('"', "quote"),
 			entry('\'', "apostrophe"),
-			entry('/', "slashes"),
-			entry('\\', "back slashes"),
-			entry('!', "exclamations"),
-			entry('@', "at signs"),
-			entry('#', "numero signs"),
-			entry('$', "dollar signs"),
-			entry('%', "percent signs"),
-			entry('&', "ampersands"),
-			entry('*', "asterisks")
+			entry('/', "slash"),
+			entry('\\', "back slash"),
+			entry('!', "exclamation"),
+			entry('@', "at sign"),
+			entry('#', "numero sign"),
+			entry('$', "dollar sign"),
+			entry('%', "percent sign"),
+			entry('&', "ampersand"),
+			entry('*', "asterisk")
 			);
 	// @formatter:on
 	private static final String STRING_JOINER = ", ";
@@ -82,7 +101,14 @@ public class Common {
 				.collect(Collectors.joining(STRING_JOINER));
 	}
 
-	public static final String CURRENCY_MYSQL_COLUMN_DEFINITION = "DECIMAL(13, 4)";
-	public static final String UUID_MYSQL_COLUMN_DEFINITION = "BINARY(16)";
+	public static final String MYSQL_CURRENCY_COLUMN_DEFINITION = "DECIMAL(13, 4)";
+	public static final String MYSQL_UUID_COLUMN_DEFINITION = "BINARY(16)";
+	public static final int MYSQL_TEXT_MAX_LENGTH = 65535;
+
+	public static final String SHARED_TABLE_GENERATOR = "SHARED_TABLE_GENERATOR";
+	public static final String SHARED_TABLE_GENERATOR_TABLENAME = "id_generators";
+
+	public static final int CROCKFORD_10A = 1034;
+	public static final int CROCKFORD_1A = 42;
 
 }

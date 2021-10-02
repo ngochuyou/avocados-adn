@@ -3,6 +3,10 @@
  */
 package adn.model.entities.metadata;
 
+import java.util.regex.Pattern;
+
+import adn.helpers.StringHelper;
+
 /**
  * @author Ngoc Huy
  *
@@ -29,12 +33,18 @@ public class _Item extends _PermanentEntity implements _AuditableResource {
 
 	public static final String price = "price";
 
-	public static final int IDENTIFIER_LENGTH = _Product.CODE_LENGTH + 8 + 1; // 8 + delimiter
 	public static final int MAXIMUM_NAMED_SIZE_LENGTH = 4;
 	public static final int MAXIMUM_NAMED_COLOR_LENGTH = 50;
 	public static final int MAXIMUM_STATUS_LENGTH = 20;
-	public static final int MAXIMUM_DESCRIPTION_LENGTH = 255;
+	public static final int MAXIMUM_NOTE_LENGTH = 255;
 	public static final int MAXIMUM_NUMERIC_SIZE_VALUE = 255; // UNSIGNED
 	public static final int MINIMUM_NUMERIC_SIZE_VALUE = 1;
+
+	public static final Pattern COLOR_PATTERN = Pattern
+			.compile(String.format("^(([A-Za-z\\s]{1,%d})|(#(?:[0-9a-fA-F]{3,4}){1,2}))$", MAXIMUM_NAMED_COLOR_LENGTH));
+
+	public static final Pattern NOTE_PATTERN = Pattern
+			.compile(String.format("^[%s\\p{L}\\p{N}\s\n\\.\\_\\-\"\'!@#$%%&*,]{0,%d}$",
+					StringHelper.VIETNAMESE_CHARACTERS, MAXIMUM_NOTE_LENGTH));
 
 }

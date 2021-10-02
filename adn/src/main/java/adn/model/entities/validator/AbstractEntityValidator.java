@@ -15,7 +15,7 @@ import adn.model.entities.Entity;
  * @author Ngoc Huy
  *
  */
-public abstract class AbstractEntityValidator<T extends Entity> implements Validator<T> {
+public abstract class AbstractEntityValidator<T extends Entity> extends AbstractCompositeEntityValidator<T> {
 
 	@Override
 	public Result<T> isSatisfiedBy(Session session, T instance) {

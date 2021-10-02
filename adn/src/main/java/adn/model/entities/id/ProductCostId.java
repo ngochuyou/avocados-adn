@@ -26,7 +26,7 @@ public class ProductCostId implements Serializable {
 	@Column(name = _ProductCost.$productId, nullable = false, updatable = false)
 	private Long productId;
 
-	@Column(name = _ProductCost.$providerId, nullable = false, updatable = false, columnDefinition = Common.UUID_MYSQL_COLUMN_DEFINITION)
+	@Column(name = _ProductCost.$providerId, nullable = false, updatable = false, columnDefinition = Common.MYSQL_UUID_COLUMN_DEFINITION)
 	private UUID providerId;
 
 	@CreationTimestamp

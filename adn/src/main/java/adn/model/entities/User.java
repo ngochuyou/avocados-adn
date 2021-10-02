@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import adn.model.entities.constants.Gender;
+import adn.model.entities.metadata._User;
 import adn.service.internal.Role;
 import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
 
@@ -64,12 +65,15 @@ public class User extends PermanentEntity {
 	@Column(length = 20)
 	private Role role;
 
-	@Column(nullable = false)
+	@Column(nullable = false, length = _User.PASSWORD_MAX_LENGTH)
 	private String password;
 
 	@UpdateTimestamp
 	@Column(name = "updated_date", nullable = false)
 	private LocalDateTime updatedDate;
+
+	@Column(nullable = false)
+	private Boolean locked;
 
 	public String getId() {
 		return id;
@@ -166,6 +170,15 @@ public class User extends PermanentEntity {
 
 	public void setUpdatedDate(LocalDateTime updatedDate) {
 		this.updatedDate = updatedDate;
+	}
+
+	@JsonProperty("locked")
+	public Boolean isLocked() {
+		return locked;
+	}
+
+	public void setLocked(Boolean locked) {
+		this.locked = locked;
 	}
 
 }

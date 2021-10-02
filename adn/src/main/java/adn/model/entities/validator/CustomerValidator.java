@@ -8,10 +8,12 @@ import java.io.Serializable;
 import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
+import adn.application.Common;
+import adn.dao.generic.GenericRepository;
 import adn.dao.generic.Result;
-import adn.helpers.HibernateHelper;
 import adn.model.Generic;
 import adn.model.entities.Customer;
+import adn.model.entities.metadata._Customer;
 
 /**
  * @author Ngoc Huy
@@ -19,11 +21,13 @@ import adn.model.entities.Customer;
  */
 @Component
 @Generic(entityGene = Customer.class)
-public class CustomerValidator extends AccountValidator<Customer> {
+public class CustomerValidator extends UserValidator<Customer> {
 
-	@Override
-	public Result<Customer> isSatisfiedBy(Session session, Customer instance) {
-		return isSatisfiedBy(session, HibernateHelper.getIdentifier(instance), instance);
+	private static final String NEGATIVE_POINT = Common.notNegative("Prestige point");
+	private static final String MISSING_SUBSCRIPTION = Common.notEmpty("Subscription information");
+
+	public CustomerValidator(GenericRepository genericRepository) {
+		super(genericRepository);
 	}
 
 	@Override
@@ -31,7 +35,11 @@ public class CustomerValidator extends AccountValidator<Customer> {
 		Result<Customer> result = super.isSatisfiedBy(session, id, instance);
 
 		if (instance.getPrestigePoint() < 0) {
-			result.bad().getMessages().put("prestigePoint", "Prestige point can not be negative");
+			result.bad().getMessages().put(_Customer.prestigePoint, NEGATIVE_POINT);
+		}
+
+		if (instance.isSubscribed() == null) {
+			result.bad().getMessages().put(_Customer.subscribed, MISSING_SUBSCRIPTION);
 		}
 
 		return result;

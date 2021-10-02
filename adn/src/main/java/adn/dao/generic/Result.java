@@ -19,9 +19,9 @@ import adn.service.internal.Service.Status;
  */
 public class Result<T> {
 
-	protected Status status; // either OK or FAILED
-	protected T instance;
-	protected Map<String, String> messages;
+	private Status status; // either OK or BAD for Validator operations
+	private T instance;
+	private Map<String, String> messages;
 
 	public Result(T instance) {
 		status = OK;

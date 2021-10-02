@@ -4,18 +4,16 @@
 package adn.test.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import javax.transaction.Transactional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -29,10 +27,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
@@ -45,14 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
-import adn.application.context.builders.EntityBuilderProvider;
-import adn.helpers.StringHelper;
-import adn.model.entities.Category;
-import adn.model.entities.Product;
 import adn.security.SecurityConfiguration;
-import adn.security.UserDetailsImpl;
-import adn.service.entity.builder.EntityBuilder;
-import adn.service.internal.Role;
 import adn.service.resource.model.models.UserPhoto;
 
 /**
@@ -128,38 +115,10 @@ public class ApplicationIntegrationTest {
 		// @formatter:on
 	}
 
-	@Autowired
-	private EntityBuilderProvider builderProvider;
-
 	@Test
-	public void testJoin() {
-		List<SimpleGrantedAuthority> of = List.of(new SimpleGrantedAuthority(Role.HEAD.toString()));
-		Authentication token = new UsernamePasswordAuthenticationToken(
-				new UserDetailsImpl("ngochuy.ou", "password", false, of, Role.HEAD, (new Date()).getTime()), "password",
-				of);
-		SecurityContextHolder.getContext().setAuthentication(token);
-
-		EntityBuilder<Category> categoryBuilder = builderProvider.getBuilder(Category.class);
-		Category category = new Category();
-		String name = "     asasd as d as d as da sd a sd    ";
-
-		category.setName(name);
-		category = categoryBuilder.buildInsertion(null, category);
-
-		assertTrue(category.getName().equals(StringHelper.normalizeString(name)));
-
-		EntityBuilder<Product> productBuilder = builderProvider.getBuilder(Product.class);
-		Product product = new Product();
-
-		name = "  unsual    product a    ";
-		product.setName(name);
-		product = productBuilder.buildInsertion(null, product);
-
-		assertThat(product.getName().equals(StringHelper.normalizeString(name)));
-		assertThat(product.getCreatedBy().get().getId().equals("ngochuy.ou"));
-		assertThat(product.getLastModifiedBy().get().getId().equals("ngochuy.ou"));
-		assertNull(product.getApprovedBy());
-		assertNull(product.getApprovedTimestamp());
+	@Transactional
+	public void test() {
+		
 	}
 
 }

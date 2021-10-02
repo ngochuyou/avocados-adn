@@ -3,6 +3,7 @@
  */
 package adn.service.entity.builder;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 import org.springframework.stereotype.Component;
@@ -24,8 +25,17 @@ public class CustomerBuilder extends UserBuilder<Customer> {
 
 		target.setPrestigePoint(model.getPrestigePoint());
 		target.setSubscribed(Optional.ofNullable(model.isSubscribed()).orElse(Boolean.FALSE));
-		
+
 		return target;
+	}
+
+	@Override
+	public <E extends Customer> E buildInsertion(Serializable id, E model) {
+		model = super.buildInsertion(id, model);
+
+		model.setLocked(Boolean.TRUE);
+
+		return model;
 	}
 
 }

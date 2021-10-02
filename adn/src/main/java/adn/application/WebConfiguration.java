@@ -80,7 +80,7 @@ public class WebConfiguration implements WebMvcConfigurer {
 		properties.put("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");
 		properties.put("hibernate.show_sql", true);
 		properties.put("hibernate.format_sql", true);
-		properties.put("hibernate.id.new_generator_mappings", "false");
+		properties.put("hibernate.id.new_generator_mappings", "true");
 //		properties.put("hibernate.hbm2ddl.auto", "create-drop");
 		properties.put("hibernate.hbm2ddl.auto", "update");
 		properties.put("hibernate.flush_mode", "MANUAL");

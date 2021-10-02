@@ -18,7 +18,8 @@ import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.User;
 import adn.model.entities.constants.Gender;
-import adn.service.services.AccountService;
+import adn.model.entities.metadata._User;
+import adn.service.services.UserService;
 
 /**
  * @author Ngoc Huy
@@ -39,11 +40,11 @@ public class UserBuilder<T extends User> extends AbstractPermanentEntityBuilder<
 		target.setEmail(model.getEmail().trim());
 		target.setPhone(normalizeString(model.getPhone()));
 		target.setAddress(normalizeString(model.getAddress()));
-		target.setLastName(get(normalizeString(model.getLastName())).orElse(AccountService.UNKNOWN_USER_LASTNAME));
-		target.setFirstName(get(normalizeString(model.getFirstName())).orElse(AccountService.UNKNOWN_USER_FIRSTNAME));
+		target.setLastName(get(normalizeString(model.getLastName())).orElse(UserService.UNKNOWN_USER_LASTNAME));
+		target.setFirstName(get(normalizeString(model.getFirstName())).orElse(UserService.UNKNOWN_USER_FIRSTNAME));
 		target.setGender(Optional.ofNullable(model.getGender()).orElse(Gender.UNKNOWN));
 		target.setRole(model.getRole());
-		target.setPhoto(get(model.getPhoto()).orElse(AccountService.DEFAULT_ACCOUNT_PHOTO_NAME));
+		target.setPhoto(get(model.getPhoto()).orElse(UserService.DEFAULT_ACCOUNT_PHOTO_NAME));
 
 		return target;
 	}
@@ -52,7 +53,7 @@ public class UserBuilder<T extends User> extends AbstractPermanentEntityBuilder<
 	public <E extends T> E buildInsertion(Serializable id, E model) {
 		model = super.buildInsertion(id, model);
 
-		if (model.getPassword() == null || model.getPassword().length() < 8) {
+		if (model.getPassword() == null || model.getPassword().length() < _User.MINIMUM_PASSWORD_LENGTH) {
 			model.setPassword(EMPTY_PASSWORD);
 
 			return model;
