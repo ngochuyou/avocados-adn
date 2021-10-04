@@ -6,9 +6,11 @@ package adn.service.services;
 import static adn.application.Common.NOT_FOUND;
 import static adn.dao.generic.Result.bad;
 import static adn.helpers.CollectionHelper.list;
+import static adn.helpers.HibernateHelper.useManualSession;
 import static adn.service.internal.ServiceResult.of;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,15 +19,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-
 import org.hibernate.LockMode;
 import org.hibernate.Session;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import adn.application.Common;
@@ -44,7 +40,6 @@ import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
  * @author Ngoc Huy
  *
  */
-@SuppressWarnings("serial")
 @Service
 public class ProviderService {
 
@@ -54,15 +49,12 @@ public class ProviderService {
 	private final ProductProviderDetailRepository productProviderDetailRepository;
 	private final AuthenticationService authService;
 	private final GenericCRUDServiceImpl crudService;
-	private final GenericFullyAuditedEntityService genericFactorService;
 
 	public ProviderService(GenericCRUDServiceImpl crudService,
-			ProductProviderDetailRepository productProviderDetailRepository, AuthenticationService authService,
-			GenericFullyAuditedEntityService genericFactorService) {
+			ProductProviderDetailRepository productProviderDetailRepository, AuthenticationService authService) {
 		this.productProviderDetailRepository = productProviderDetailRepository;
 		this.authService = authService;
 		this.crudService = crudService;
-		this.genericFactorService = genericFactorService;
 	}
 
 	public Map<String, Object> findProvider(UUID id, ProviderQuery columnsRequest, Credential credential)
@@ -125,10 +117,10 @@ public class ProviderService {
 	 */
 
 	public Result<ProductCost> createProductCost(ProductCost model, Credential credential, boolean flushOnFinish) {
-		crudService.useManualSession();
+		useManualSession();
 
 		UUID providerId = model.getId().getProviderId();
-		Long productId = model.getId().getProductId();
+		BigInteger productId = model.getId().getProductId();
 		// make sure there's no other details waiting to be approved
 		if (productProviderDetailRepository.hasUnapproved(providerId, productId)) {
 			return bad(of(UNAPPROVED_EXIST));
@@ -143,8 +135,8 @@ public class ProviderService {
 		return crudService.finish(insertResult, flushOnFinish);
 	}
 
-	public Result<ProductCost> approveProductDetail(UUID providerId, Long productId, boolean flushOnFinish) {
-		crudService.useManualSession();
+	public Result<ProductCost> approveProductDetail(UUID providerId, BigInteger productId, boolean flushOnFinish) {
+		useManualSession();
 		// make sure there's an "unapproved"
 		Optional<ProductCost> optional = productProviderDetailRepository.findUnapproved(providerId, productId);
 
@@ -174,12 +166,9 @@ public class ProviderService {
 
 	public List<Map<String, Object>> readProductDetailsByProduct(String productId, Collection<String> columns,
 			Pageable paging, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		return genericFactorService.readAll(ProductCost.class, new Specification<ProductCost>() {
-			@Override
-			public Predicate toPredicate(Root<ProductCost> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
-				return ProductProviderDetailRepository.hasProductId(root, builder, productId);
-			}
-		}, columns, paging, credential);
+		return crudService.readAll(ProductCost.class, columns,
+				(root, query, builder) -> ProductProviderDetailRepository.hasProductId(root, builder, productId),
+				paging, credential);
 	}
 
 	public List<Map<String, Object>> readCurrentProductDetailsByProvider(UUID providerId, List<String> columns,

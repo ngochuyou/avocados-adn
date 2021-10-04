@@ -8,9 +8,11 @@ import static adn.helpers.HibernateHelper.toRows;
 
 import java.io.Serializable;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,6 +23,7 @@ import java.util.stream.Stream;
 import javax.persistence.Tuple;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Path;
@@ -33,6 +36,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.Query;
 import org.hibernate.tuple.entity.EntityMetamodel;
+import org.hibernate.type.AssociationType;
 import org.hibernate.type.ComponentType;
 import org.hibernate.type.Type;
 import org.slf4j.Logger;
@@ -43,13 +47,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
+import adn.application.context.builders.EntityBuilderProvider;
 import adn.application.context.builders.ModelContextProvider;
 import adn.application.context.builders.ValidatorFactory;
 import adn.application.context.internal.ContextBuilder;
 import adn.helpers.HibernateHelper;
 import adn.model.DomainEntity;
 import adn.model.entities.Entity;
+import adn.model.entities.PermanentEntity;
 import adn.model.entities.metadata.DomainEntityMetadata;
+import adn.model.entities.metadata._PermanentEntity;
 import adn.model.entities.validator.Validator;
 import adn.service.internal.InvalidCriteriaException;
 
@@ -66,22 +73,28 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 	private final SessionFactory sessionFactory;
 	private final ValidatorFactory validatorFactory;
 	private final ModelContextProvider modelContext;
+	private final EntityBuilderProvider entityBuilderProvider;
 
 	private Map<Class<? extends Entity>, Map<String, BiFunction<String, Root<? extends Entity>, Path<?>>>> selectorMap;
+	private Map<Class<? extends Entity>, BiFunction<Root<? extends Entity>, CriteriaBuilder, Predicate>> mandatoryPredicateMap;
 
 	@Autowired
-	public GenericRepositoryImpl(final SessionFactory sessionFactory, final ValidatorFactory specificationFactory,
-			final ModelContextProvider modelContext) {
+	public GenericRepositoryImpl(SessionFactory sessionFactory, ValidatorFactory specificationFactory,
+			ModelContextProvider modelContext, EntityBuilderProvider entityBuilderProvider) {
 		this.sessionFactory = sessionFactory;
 		this.validatorFactory = specificationFactory;
 		this.modelContext = modelContext;
+		this.entityBuilderProvider = entityBuilderProvider;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public void buildAfterStartUp() throws Exception {
 		logger.info(String.format("Configuring %s", this.getClass().getName()));
-		Map<Class<? extends Entity>, Map<String, BiFunction<String, Root<? extends Entity>, Path<?>>>> selectorMap = new HashMap<>();
+		Map<Class<? extends Entity>, Map<String, BiFunction<String, Root<? extends Entity>, Path<?>>>> selectorMap = new HashMap<>(
+				0, 1f);
+		Map<Class<? extends Entity>, BiFunction<Root<? extends Entity>, CriteriaBuilder, Predicate>> mandatoryPredicateMap = new HashMap<>(
+				0, 1f);
 
 		modelContext.getEntityTree().forEach(tree -> {
 			Class<? extends DomainEntity> entityType = tree.getNode();
@@ -96,33 +109,49 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 			DomainEntityMetadata<? extends Entity> metadata = modelContext.getMetadata(type);
 			EntityPersister persister = HibernateHelper.getEntityPersister(type);
 			EntityMetamodel metamodel = persister.getEntityMetamodel();
+			List<String> propertyNames = Stream.of(metamodel.getPropertyNames()).collect(Collectors.toList());
+			String identifierName = metamodel.getIdentifierProperty().getName();
 
-			Stream.of(metamodel.getPropertyNames()).forEach(prop -> {
-				Type propertyType = metamodel.getPropertyTypes()[metamodel.getPropertyIndex(prop)];
+			propertyNames.add(identifierName);
+			propertyNames.stream().forEach(propName -> {
+				Type propertyType = propName.equals(identifierName) ? metamodel.getIdentifierProperty().getType()
+						: metamodel.getPropertyTypes()[metamodel.getPropertyIndex(propName)];
 
 				if (propertyType instanceof ComponentType) {
-					selectors.putAll(
-							resolveComponentTypeSelectors(type, null, prop, (ComponentType) propertyType, metadata));
+					selectors.putAll(resolveComponentTypeSelectors(type, null, propName, (ComponentType) propertyType,
+							metadata, new ArrayList<>()));
 					return;
 				}
 
-				if (metadata.isAssociationOptional(prop)) {
-					logger.debug(String.format("Optional association: [%s] in type [%s]", prop, type.getName()));
-					selectors.put(prop, (column, root) -> root.join(column, JoinType.LEFT));
+				if (metadata.isAssociationOptional(propName)) {
+					logger.debug(String.format("Optional association: [%s] in type [%s]", propName, type.getName()));
+					selectors.put(propName, (column, root) -> root.join(column, JoinType.LEFT));
 					return;
 				}
 
-				selectors.put(prop, (column, root) -> root.get(column));
+				selectors.put(propName, (column, root) -> root.get(column));
 			});
+
+			selectorMap.put(type, selectors);
+			mandatoryPredicateMap.put(type,
+					(root, builder) -> PermanentEntity.class.isAssignableFrom(type)
+							? builder.isTrue(root.get(_PermanentEntity.active))
+							: builder.conjunction());
 		});
 
 		this.selectorMap = Collections.unmodifiableMap(selectorMap);
+		this.mandatoryPredicateMap = Collections.unmodifiableMap(mandatoryPredicateMap);
 		logger.info(String.format("Finished %s", this.getClass().getName()));
 	}
 
+	// @formatter:off
 	private Map<String, BiFunction<String, Root<? extends Entity>, Path<?>>> resolveComponentTypeSelectors(
-			Class<?> owningType, String owningPropertyName, String propertyName, ComponentType type,
-			DomainEntityMetadata<? extends Entity> metadata) {
+			Class<?> owningType,
+			String owningPropertyName,
+			String propertyName,
+			ComponentType type,
+			DomainEntityMetadata<? extends Entity> metadata,
+			List<String> joinPath) {
 		logger.debug(String.format("Embedded component: [%s] in type [%s]", propertyName, owningType.getName()));
 
 		Map<String, BiFunction<String, Root<? extends Entity>, Path<?>>> selectors = new HashMap<>();
@@ -131,21 +160,31 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 				owningPropertyName == null ? 
 					(column, root) -> root.get(column) :
 					(column, root) -> selectors.get(owningPropertyName).apply(owningPropertyName, root).get(column));
+		joinPath.add(propertyName);
 		// @formatter:on
 		Stream.of(type.getPropertyNames()).forEach(subProp -> {
 			Type subType = type.getSubtypes()[type.getPropertyIndex(subProp)];
 
 			if (subType instanceof ComponentType) {
 				selectors.putAll(resolveComponentTypeSelectors(subType.getReturnedClass(), propertyName, subProp,
-						(ComponentType) subType, metadata));
+						(ComponentType) subType, metadata, joinPath));
 				return;
 			}
 
-//			if (subType instanceof AssociationType && metadata.isAssociationOptional(propertyName)) {
-//				logger.debug(String.format("Optional association: [%s] in type [%s]", propertyName, type.getName()));
-//				selectors.put(propertyName, (column, root) -> root.join(column, JoinType.LEFT));
-//				return;
-//			}
+			if (subType instanceof AssociationType && metadata.isAssociationOptional(subProp)) {
+				logger.debug(String.format("Optional association: [%s] in type [%s]", subProp, type.getName()));
+				selectors.put(subProp, (column, root) -> {
+					Iterator<String> iterator = joinPath.iterator();
+					Join<?, ?> join = root.join(iterator.next());
+
+					while (iterator.hasNext()) {
+						join = join.join(iterator.next());
+					}
+
+					return join.join(subProp, JoinType.LEFT);
+				});
+				return;
+			}
 
 			selectors.put(subProp, (column, root) -> selectors.get(propertyName).apply(propertyName, root).get(column));
 		});
@@ -153,6 +192,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		return selectors;
 	}
 
+	// @formatter:on
 	@Override
 	public <T extends Entity> Optional<T> findById(Class<T> clazz, Serializable id) {
 		return Optional.ofNullable(getCurrentSession().get(clazz, id));
@@ -188,7 +228,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		CriteriaQuery<T> cq = builder.createQuery(type);
 		Root<T> root = cq.from(type);
 
-		cq.select(root);
+		cq.where(resolvePredicate(type, root, cq, builder, null));
 
 		Query<T> hql = resolveFetchQuery(session, cq, root, builder, paging);
 
@@ -211,7 +251,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		CriteriaQuery<Tuple> cq = builder.createTupleQuery();
 		Root<T> root = cq.from(type);
 
-		cq.multiselect(resolveSelect(type, root, columns));
+		cq.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, cq, builder, null));
 
 		Query<Tuple> hql = resolveFetchQuery(session, cq, root, builder, paging);
 
@@ -229,7 +269,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		CriteriaQuery<Long> criteriaQuery = builder.createQuery(Long.class);
 		Root<T> root = criteriaQuery.from(type);
 
-		criteriaQuery.select(builder.count(root));
+		criteriaQuery.select(builder.count(root)).where(resolvePredicate(type, root, criteriaQuery, builder, null));
 
 		return session.createQuery(criteriaQuery).getSingleResult();
 	}
@@ -244,13 +284,14 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 	}
 
 	<T extends Entity, E extends T> Result<E> validate(Session session, Serializable id, E instance, Class<E> type) {
-		Validator<E> spec = validatorFactory.getValidator(type);
+		Validator<E> validator = validatorFactory.getValidator(type);
 
 		if (logger.isDebugEnabled()) {
-			logger.debug(String.format("Validating [%s#%s] using [%s]", type.getName(), id, spec.getClass().getName()));
+			logger.debug(
+					String.format("Validating [%s#%s] using [%s]", type.getName(), id, validator.getLoggableName()));
 		}
 
-		return spec.isSatisfiedBy(session, id, instance);
+		return validator.isSatisfiedBy(session, id, instance);
 	}
 
 	@Override
@@ -265,6 +306,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		Result<E> result = validate(session, id, persistence, type);
 
 		if (result.isOk()) {
+			persistence = entityBuilderProvider.getBuilder(type).buildPostValidationOnInsert(id, persistence);
 			session.save(persistence);
 
 			return result;
@@ -303,7 +345,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		CriteriaQuery<E> query = builder.createQuery(type);
 		Root<E> root = query.from(type);
 
-		query.where(resolvePredicate(root, query, builder, spec));
+		query.where(resolvePredicate(type, root, query, builder, spec));
 
 		Query<E> hql = session.createQuery(query);
 
@@ -321,7 +363,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		CriteriaQuery<E> query = builder.createQuery(type);
 		Root<E> root = query.from(type);
 
-		query.where(resolvePredicate(root, query, builder, spec));
+		query.where(resolvePredicate(type, root, query, builder, spec));
 
 		Query<E> hql = session.createQuery(query);
 
@@ -339,7 +381,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		CriteriaQuery<E> query = builder.createQuery(type);
 		Root<E> root = query.from(type);
 
-		query.where(resolvePredicate(root, query, builder, spec));
+		query.where(resolvePredicate(type, root, query, builder, spec));
 
 		Query<E> hql = resolvePagedQuery(session, query, pageable);
 
@@ -357,8 +399,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		CriteriaQuery<E> query = builder.createQuery(type);
 		Root<E> root = query.from(type);
 
-		query.where(resolvePredicate(root, query, builder, spec));
-		query.orderBy(resolveSort(root, builder, sort));
+		query.where(resolvePredicate(type, root, query, builder, spec)).orderBy(resolveSort(root, builder, sort));
 
 		Query<E> hql = session.createQuery(query);
 
@@ -376,8 +417,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		CriteriaQuery<Long> query = builder.createQuery(Long.class);
 		Root<E> root = query.from(type);
 
-		query.select(builder.count(root));
-		query.where(resolvePredicate(root, query, builder, spec));
+		query.select(builder.count(root)).where(resolvePredicate(type, root, query, builder, spec));
 
 		Query<Long> hql = session.createQuery(query);
 
@@ -396,8 +436,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		CriteriaQuery<Tuple> query = builder.createTupleQuery();
 		Root<E> root = query.from(type);
 
-		query.multiselect(resolveSelect(type, root, columns));
-		query.where(resolvePredicate(root, query, builder, spec));
+		query.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, query, builder, spec));
 
 		Query<Tuple> hql = session.createQuery(query);
 
@@ -405,9 +444,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 			logger.debug(hql.getQueryString());
 		}
 
-		Optional<Tuple> optional = hql.getResultStream().findFirst();
-
-		return Optional.ofNullable(optional.isEmpty() ? null : optional.get().toArray());
+		return hql.getResultStream().findFirst().map(Tuple::toArray);
 	}
 
 	@Override
@@ -417,8 +454,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		CriteriaQuery<Tuple> query = builder.createQuery(Tuple.class);
 		Root<E> root = query.from(type);
 
-		query.multiselect(resolveSelect(type, root, columns));
-		query.where(resolvePredicate(root, query, builder, spec));
+		query.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, query, builder, spec));
 
 		Query<Tuple> hql = session.createQuery(query);
 
@@ -437,8 +473,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		CriteriaQuery<Tuple> query = builder.createQuery(Tuple.class);
 		Root<E> root = query.from(type);
 
-		query.multiselect(resolveSelect(type, root, columns));
-		query.where(resolvePredicate(root, query, builder, spec));
+		query.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, query, builder, spec));
 
 		Query<Tuple> hql = resolvePagedQuery(session, query, pageable);
 
@@ -457,9 +492,8 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		CriteriaQuery<Tuple> query = builder.createQuery(Tuple.class);
 		Root<E> root = query.from(type);
 
-		query.multiselect(resolveSelect(type, root, columns));
-		query.where(resolvePredicate(root, query, builder, spec));
-		query.orderBy(resolveSort(root, builder, sort));
+		query.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, query, builder, spec))
+				.orderBy(resolveSort(root, builder, sort));
 
 		Query<Tuple> hql = session.createQuery(query);
 
@@ -484,8 +518,14 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 				: builder.desc(root.get(order.getProperty()))).collect(Collectors.toList());
 	}
 
-	private <E, R> Predicate resolvePredicate(Root<E> root, CriteriaQuery<R> criteriaQuery, CriteriaBuilder builder,
-			Specification<E> specification) {
+	private <E extends Entity, R> Predicate resolvePredicate(Class<E> entityType, Root<E> root,
+			CriteriaQuery<R> criteriaQuery, CriteriaBuilder builder, Specification<E> specification) {
+		return builder.and(mandatoryPredicateMap.get(entityType).apply(root, builder),
+				resolveRequestedPredicate(root, criteriaQuery, builder, specification));
+	}
+
+	private <E, R> Predicate resolveRequestedPredicate(Root<E> root, CriteriaQuery<R> criteriaQuery,
+			CriteriaBuilder builder, Specification<E> specification) {
 		if (specification == null) {
 			return builder.conjunction();
 		}

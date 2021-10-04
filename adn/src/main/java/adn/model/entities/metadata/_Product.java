@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 
 import adn.application.Common;
 import adn.helpers.StringHelper;
+import adn.service.resource.factory.DefaultResourceIdentifierGenerator;
 
 /**
  * @author Ngoc Huy
@@ -32,7 +33,8 @@ public class _Product extends _FullyAuditedEntity {
 	// _Category.CODE_LENGTH + DELIMITER
 	public static final int MAXIMUM_CODE_LENGTH = 255;
 	public static final int MAXIMUM_MATERIAL_LENGTH = 50;
-	public static final int MAXIMUM_IMAGES_LENGTH = 500;
+	public static final int MAXIMUM_IMAGES_AMOUNT = 20;
+	public static final int MAXIMUM_IMAGES_COLUMN_LENGTH = MAXIMUM_IMAGES_AMOUNT * DefaultResourceIdentifierGenerator.IDENTIFIER_LENGTH;
 	// @formatter:off
 	public static final Pattern MATERIAL_PATTERN = Pattern.compile(
 			String.format(

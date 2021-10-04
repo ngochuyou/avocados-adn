@@ -37,7 +37,7 @@ public class CategoryValidator extends AbstractPermanentEntityValidator<Category
 
 		if (StringHelper.hasLength(instance.getDescription())
 				&& !_Category.DESCRIPTION_PATTERN.matcher(instance.getDescription()).matches()) {
-			result.getMessages().put(_Category.description, INVALID_DESCRIPTION);
+			result.bad().getMessages().put(_Category.description, INVALID_DESCRIPTION);
 		}
 
 		return result;

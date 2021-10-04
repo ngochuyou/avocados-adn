@@ -66,6 +66,7 @@ public class BootEntry {
 		List<Class<? extends ContextBuilder>> orderedBuilderClasses = Arrays.asList(
 			ConfigurationContext.class,
 			ModelContextProvider.class,
+			GenericRepositoryImpl.class,
 			DatabaseInitializer.class,
 			DepartmentScopeContext.class,
 			CredentialFactory.class,
@@ -75,7 +76,6 @@ public class BootEntry {
 			EntityExtractorProviderImpl.class,
 			DynamicMapModelProducerFactoryImpl.class,
 			AfterBuildMethodsInvoker.class,
-			GenericRepositoryImpl.class,
 			TestRunner.class
 		);
 		// @formatter:on

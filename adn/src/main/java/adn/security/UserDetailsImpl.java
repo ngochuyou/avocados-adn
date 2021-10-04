@@ -20,24 +20,31 @@ public class UserDetailsImpl extends User {
 	private final Role role;
 	private final long version;
 	private final Credential credential;
-
-	public UserDetailsImpl(String username, String password, boolean enabled, boolean accountNonExpired,
-			boolean credentialsNonExpired, boolean accountNonLocked, Collection<? extends GrantedAuthority> authorities,
-			Role role, long version) {
-		super(username, password, enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
+	// @formatter:off
+	public UserDetailsImpl(
+			String username,
+			String password,
+			boolean enabled,
+			boolean notExpired,
+			boolean credentialsNotExpired,
+			boolean notLocked,
+			Collection<? extends GrantedAuthority> authorities,
+			Role role,
+			long version) {
+		super(username, password, enabled, notExpired, credentialsNotExpired, notLocked, authorities);
 		this.role = role;
 		this.version = version;
 		this.credential = role;
 	}
-
-	public UserDetailsImpl(String username, String password, boolean isLocked,
+	// @formatter:on
+	public UserDetailsImpl(String username, String password, boolean notLocked,
 			Collection<? extends GrantedAuthority> authorities, Role role, long version) {
-		this(username, password, true, true, true, isLocked, authorities, role, version);
+		this(username, password, true, true, true, notLocked, authorities, role, version);
 	}
 
-	public UserDetailsImpl(String username, String password, boolean isLocked,
+	public UserDetailsImpl(String username, String password, boolean notLocked,
 			Collection<? extends GrantedAuthority> authorities, Role role, UUID departmentId, long version) {
-		super(username, password, true, true, true, isLocked, authorities);
+		super(username, password, true, true, true, notLocked, authorities);
 		this.role = role;
 		this.version = version;
 		this.credential = CredentialFactory.partional(role, departmentId);

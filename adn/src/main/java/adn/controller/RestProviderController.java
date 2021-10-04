@@ -5,6 +5,7 @@ package adn.controller;
 
 import static adn.application.context.ContextProvider.getPrincipalCredential;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -111,7 +112,7 @@ public class RestProviderController extends BaseController {
 	@PostMapping
 	@Secured({ HEAD, PERSONNEL })
 	@Transactional
-	public ResponseEntity<?> createProvider(@RequestBody Provider provider) throws UnauthorizedCredential {
+	public ResponseEntity<?> createProvider(@RequestBody Provider provider) throws Exception {
 		authService.assertSaleDepartment();
 
 		Result<Provider> result = crudService.create(provider.getId(), provider, Provider.class, true);
@@ -122,7 +123,7 @@ public class RestProviderController extends BaseController {
 	@PutMapping
 	@Transactional
 	@Secured({ HEAD, PERSONNEL })
-	public ResponseEntity<?> updateProvider(@RequestBody Provider model) throws UnauthorizedCredential {
+	public ResponseEntity<?> updateProvider(@RequestBody Provider model) throws Exception {
 		authService.assertSaleDepartment();
 
 		UUID id = model.getId();
@@ -159,7 +160,7 @@ public class RestProviderController extends BaseController {
 	@PostMapping(path = "/product-detail")
 	@Secured({ HEAD, PERSONNEL })
 	@Transactional
-	public ResponseEntity<?> createProductDetail(@RequestBody ProductCost model) throws UnauthorizedCredential {
+	public ResponseEntity<?> createProductDetail(@RequestBody ProductCost model) throws Exception {
 		authService.assertSaleDepartment();
 
 		ProductCost extractedModel = extractorProvider.getExtractor(ProductCost.class).extract(model);
@@ -174,8 +175,8 @@ public class RestProviderController extends BaseController {
 	public ResponseEntity<?> getProductDetailsCount() throws NoSuchFieldException, UnauthorizedCredential {
 		authService.assertSaleDepartment();
 
-		return makeStaleWhileRevalidate(genericPermanentEntityService.count(ProductCost.class), 30, TimeUnit.SECONDS,
-				60, TimeUnit.SECONDS);
+		return makeStaleWhileRevalidate(baseRepository.count(ProductCost.class), 30, TimeUnit.SECONDS, 60,
+				TimeUnit.SECONDS);
 	}
 
 	@GetMapping(path = "/product-detail/{productId}")
@@ -202,8 +203,8 @@ public class RestProviderController extends BaseController {
 			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
 		authService.assertSaleDepartment();
 
-		List<Map<String, Object>> productDetails = genericPermanentEntityService.readAll(ProductCost.class, columns,
-				paging, getPrincipalCredential());
+		List<Map<String, Object>> productDetails = crudService.readAll(ProductCost.class, columns, paging,
+				getPrincipalCredential());
 
 		return ResponseEntity.ok(productDetails);
 	}
@@ -212,7 +213,7 @@ public class RestProviderController extends BaseController {
 	@Secured(HEAD)
 	@Transactional
 	public ResponseEntity<?> approveProductDetail(@RequestParam(name = "providerId", required = true) UUID providerId,
-			@RequestParam(name = "productId", required = true) Long productId) throws UnauthorizedCredential {
+			@RequestParam(name = "productId", required = true) BigInteger productId) throws Exception {
 		return send(providerService.approveProductDetail(providerId, productId, true));
 	}
 

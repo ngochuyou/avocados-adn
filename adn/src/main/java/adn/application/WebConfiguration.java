@@ -41,7 +41,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
 
-import adn.application.context.internal.ContextBuilder;
 import adn.service.internal.Role;
 import adn.service.services.GenericCRUDServiceImpl;
 
@@ -121,7 +120,7 @@ public class WebConfiguration implements WebMvcConfigurer {
 	public DataSource getDataSource() throws IOException, NoSuchFieldException {
 		DriverManagerDataSource dataSource = new DriverManagerDataSource();
 		File file = ResourceUtils.getFile(
-				ContextBuilder.CONFIG_PATH + "13450a773a68d2a21a88ca081962a2f71a59730fee3a6cab5647c5674626e5fe.txt");
+				Constants.CONFIG_PATH + "13450a773a68d2a21a88ca081962a2f71a59730fee3a6cab5647c5674626e5fe.txt");
 		List<String> $ = Files.readAllLines(file.toPath());
 
 		if ($.size() < 1) {

@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import javax.persistence.Tuple;
 
 import org.hibernate.FlushMode;
+import org.hibernate.Session;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
 import org.hibernate.id.IdentifierGenerator;
@@ -89,11 +90,15 @@ public class HibernateHelper {
 	}
 
 	public static List<Object[]> toRows(List<Tuple> tuples) {
-		return tuples.stream().map(row -> row.toArray()).collect(Collectors.toList());
+		return tuples.stream().map(Tuple::toArray).collect(Collectors.toList());
 	}
 
 	public static void useManualSession() {
-		ContextProvider.getCurrentSession().setHibernateFlushMode(FlushMode.MANUAL);
+		useManualSession(ContextProvider.getCurrentSession());
+	}
+
+	public static void useManualSession(Session session) {
+		session.setHibernateFlushMode(FlushMode.MANUAL);
 	}
 
 	// @formatter:off
@@ -103,8 +108,8 @@ public class HibernateHelper {
 	public static <T extends Entity> BigInteger getNextAutoIncrementedValue(Class<T> type) {
 		AbstractEntityPersister persister = (AbstractEntityPersister) getEntityPersister(type);
 		@SuppressWarnings("unchecked")
-		NativeQuery<BigInteger> query = ContextProvider.getCurrentSession().createNativeQuery(
-				String.format(AUTO_INCREMENT_SELECT_TEMPLATE, persister.getTableName()));
+		NativeQuery<BigInteger> query = ContextProvider.getCurrentSession()
+				.createNativeQuery(String.format(AUTO_INCREMENT_SELECT_TEMPLATE, persister.getTableName()));
 
 		return query.getResultStream().findFirst().orElseThrow(() -> new AssertionError(
 				String.format("Unable to get AUTO_INCREMENT identifier of entity type: [%s]", type.getName())));

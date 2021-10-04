@@ -25,10 +25,8 @@ import org.springframework.web.multipart.MultipartFile;
 import adn.dao.generic.Result;
 import adn.helpers.CollectionHelper;
 import adn.model.entities.Product;
-import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.internal.ResourceService;
 import adn.service.services.AuthenticationService;
-import adn.service.services.GenericFullyAuditedEntityService;
 import adn.service.services.ProductService;
 
 /**
@@ -42,15 +40,13 @@ public class ProductController extends BaseController {
 	protected final ProductService productService;
 	protected final ResourceService resourceService;
 	protected final AuthenticationService authService;
-	protected final GenericFullyAuditedEntityService genericFactorService;
 
 	@Autowired
 	public ProductController(AuthenticationService authService, ProductService productService,
-			ResourceService resourceService, GenericFullyAuditedEntityService genericFactorService) {
+			ResourceService resourceService) {
 		this.productService = productService;
 		this.resourceService = resourceService;
 		this.authService = authService;
-		this.genericFactorService = genericFactorService;
 	}
 
 	@GetMapping(path = "/image/{filename:.+}")
@@ -65,10 +61,10 @@ public class ProductController extends BaseController {
 	}
 
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	@Secured("ROLE_PERSONNEL")
+	@Secured({ HEAD, PERSONNEL })
 	@Transactional
 	public @ResponseBody ResponseEntity<?> createProduct(@RequestPart(name = "model", required = true) Product model,
-			@RequestPart(name = "images", required = false) MultipartFile[] images) throws UnauthorizedCredential {
+			@RequestPart(name = "images", required = false) MultipartFile[] images) throws Exception {
 		authService.assertSaleDepartment();
 
 		Result<Product> result = productService.createProduct(model, images, true);
@@ -77,10 +73,10 @@ public class ProductController extends BaseController {
 	}
 
 	@PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	@Secured("ROLE_PERSONNEL")
+	@Secured({ HEAD, PERSONNEL })
 	@Transactional
 	public @ResponseBody ResponseEntity<?> updateProduct(@RequestPart(name = "model", required = true) Product model,
-			@RequestPart(name = "images", required = false) MultipartFile[] images) throws UnauthorizedCredential {
+			@RequestPart(name = "images", required = false) MultipartFile[] images) throws Exception {
 		authService.assertSaleDepartment();
 
 		Optional<Product> persistence = baseRepository.findById(Product.class, model.getId());

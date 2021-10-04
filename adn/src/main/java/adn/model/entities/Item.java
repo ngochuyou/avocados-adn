@@ -6,6 +6,7 @@ package adn.model.entities;
 import static adn.application.Common.SHARED_TABLE_GENERATOR;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 import javax.persistence.Column;
 import javax.persistence.Embedded;
@@ -33,14 +34,14 @@ import adn.model.entities.metadata._Provider;
  */
 @javax.persistence.Entity
 @Table(name = "items")
-public class Item extends PermanentEntity implements AuditableResource<Long> {
+public class Item extends PermanentEntity implements AuditableResource<BigInteger> {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.TABLE, generator = SHARED_TABLE_GENERATOR)
 	@TableGenerator(name = SHARED_TABLE_GENERATOR, initialValue = Common.CROCKFORD_10A
 			- 1, allocationSize = 1, table = Common.SHARED_TABLE_GENERATOR_TABLENAME)
 	@Column(updatable = false)
-	private Long id;
+	private BigInteger id;
 
 	@Column(unique = true)
 	private String code;
@@ -79,11 +80,11 @@ public class Item extends PermanentEntity implements AuditableResource<Long> {
 	private ProductPrice price;
 
 	@Override
-	public Long getId() {
+	public BigInteger getId() {
 		return id;
 	}
 
-	public void setId(Long id) {
+	public void setId(BigInteger id) {
 		this.id = id;
 	}
 

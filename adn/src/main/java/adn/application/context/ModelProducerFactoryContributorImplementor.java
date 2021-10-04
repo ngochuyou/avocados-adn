@@ -186,14 +186,14 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		product
 			.credentials(any())
 				.fields(_Product.id, _Product.name, _Product.category,
-						_Product.images, _Product.description,
-						_Product.rating, _Product.items)
+						_Product.images, _Product.description, _Product.code,
+						_Product.rating, _Product.items, _Product.material)
 				.publish()
 			.credentials(SALE_CREDENTIAL, HEAD)
 				.fields(_Product.createdBy, _Product.createdDate,
 						_Product.lastModifiedBy, _Product.lastModifiedDate,
 						_Product.active, _Product.approvedBy,
-						_Product.approvedTimestamp)
+						_Product.approvedTimestamp, _Product.locked)
 				.publish();
 		// @formatter:on
 	}
@@ -203,7 +203,8 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		// @formatter:off
 		product
 			.credentials(any())
-				.fields(_Category.id, _Category.description, _Category.name)
+				.fields(_Category.id, _Category.description, _Category.name,
+						_Category.code)
 				.publish()
 			.credentials(SALE_CREDENTIAL, HEAD)
 				.fields(_Category.products, _Category.active)

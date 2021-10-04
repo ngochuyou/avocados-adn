@@ -66,6 +66,12 @@ public class EntityBuilderProvider implements ContextBuilder {
 			return DEFAULT_BUILDER_NAME;
 		}
 
+		@Override
+		public <E extends Entity> E buildPostValidationOnInsert(Serializable id, E model) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
 	};
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -129,7 +135,7 @@ public class EntityBuilderProvider implements ContextBuilder {
 
 				EntityBuilder<? extends DomainEntity> builder = builderMap.get(type);
 				EntityBuilder fixedBuilder;
-				
+
 				for (Class<?> interfaceType : ClassUtils.getAllInterfacesForClassAsSet(type)) {
 					if (fixedBuilderMap.containsKey(interfaceType)) {
 						fixedBuilder = fixedBuilderMap.get(interfaceType);
@@ -138,7 +144,7 @@ public class EntityBuilderProvider implements ContextBuilder {
 							builder = fixedBuilder.and(builder);
 							continue;
 						}
-						
+
 						builder = fixedBuilder;
 					}
 				}
@@ -193,6 +199,11 @@ public class EntityBuilderProvider implements ContextBuilder {
 			return build(persistence, entity);
 		}
 
+		@Override
+		public Entity buildPostValidationOnInsert(Serializable id, Entity model) {
+			return model;
+		}
+
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -228,6 +239,11 @@ public class EntityBuilderProvider implements ContextBuilder {
 			return (Entity) resource;
 		}
 
+		@Override
+		public Entity buildPostValidationOnInsert(Serializable id, Entity model) {
+			return model;
+		}
+
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -246,6 +262,11 @@ public class EntityBuilderProvider implements ContextBuilder {
 		@Override
 		public Entity buildUpdate(Serializable id, Entity entity, Entity persistence) {
 			return persistence;
+		}
+
+		@Override
+		public Entity buildPostValidationOnInsert(Serializable id, Entity model) {
+			return model;
 		}
 
 	}

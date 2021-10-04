@@ -128,21 +128,25 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 	@Override
 	public <T extends Entity, E extends T> Result<E> create(Serializable id, E entity, Class<E> type,
 			boolean flushOnFinish) {
-		id = resolveId(id, entity);
+		try {
+			id = resolveId(id, entity);
 
-		Session ss = getCurrentSession();
+			Session ss = getCurrentSession();
 
-		ss.setHibernateFlushMode(FlushMode.MANUAL);
+			ss.setHibernateFlushMode(FlushMode.MANUAL);
 
-		EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
+			EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
 
-		if (logger.isDebugEnabled()) {
-			logger.debug(String.format("Building entity for creation [%s#%s]", type.getName(), id));
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format("Building entity for creation [%s#%s]", type.getName(), id));
+			}
+
+			entity = entityBuilder.buildInsertion(id, entity);
+
+			return finish(ss, repository.insert(type, id, entity), flushOnFinish);
+		} catch (Exception e) {
+			return Result.failed(e.getMessage());
 		}
-
-		entity = entityBuilder.buildInsertion(id, entity);
-
-		return finish(ss, repository.insert(type, id, entity), flushOnFinish);
 	}
 
 	@Override
@@ -290,23 +294,27 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 	@Override
 	public <T extends Entity, E extends T> Result<E> update(Serializable id, E entity, Class<E> type,
 			boolean flushOnFinish) {
-		id = resolveId(id, entity);
+		try {
+			id = resolveId(id, entity);
 
-		Session ss = getCurrentSession();
+			Session ss = getCurrentSession();
 
-		ss.setHibernateFlushMode(FlushMode.MANUAL);
+			ss.setHibernateFlushMode(FlushMode.MANUAL);
 
-		E persistence = ss.load(type, id);
-		EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
+			E persistence = ss.load(type, id);
+			EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
 
-		if (logger.isDebugEnabled()) {
-			logger.debug(String.format("Building entity for update [%s#%s]", type.getName(), id));
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format("Building entity for update [%s#%s]", type.getName(), id));
+			}
+			// persistence takes effects during updateBuild,
+			// assigning it to the return of updateBuild is just for the sake of it
+			entityBuilder.buildUpdate(id, entity, persistence);
+
+			return finish(ss, repository.update(type, id, (E) ss.load(type, id)), flushOnFinish);
+		} catch (Exception e) {
+			return Result.failed(e.getMessage());
 		}
-		// persistence takes effects during updateBuild,
-		// assigning it to the return of updateBuild is just for the sake of it
-		entityBuilder.buildUpdate(id, entity, persistence);
-
-		return finish(ss, repository.update(type, id, (E) ss.load(type, id)), flushOnFinish);
 	}
 
 	protected Map.Entry<Integer, Long> resolveLimitOffset(Pageable paging) {
@@ -511,6 +519,7 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 		return readAllByAssociation(type, associatingType, associatingAttribute, associationProperty,
 				associationIdentifier, pageable, credential, sourceMetadata, null);
 	}
+
 	// @formatter:off
 	@Override
 	public <T extends Entity> List<Map<String, Object>> readAllByAssociation(
@@ -571,6 +580,7 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 			throw any;
 		}
 	}
+
 	// @formatter:on
 	protected <T extends Entity> SourceMetadata<T> optionallyValidate(Class<T> type, Credential credential,
 			SourceMetadata<T> sourceMetadata) throws NoSuchFieldException, UnauthorizedCredential {
@@ -587,10 +597,6 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 		sourceMetadata.setColumns(dynamicMapModelFactory.validateColumns(type, columns, credential));
 
 		return sourceMetadata;
-	}
-
-	protected void useManualSession() {
-		getCurrentSession().setHibernateFlushMode(FlushMode.MANUAL);
 	}
 
 }

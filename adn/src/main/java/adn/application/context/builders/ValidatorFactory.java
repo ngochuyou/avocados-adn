@@ -46,7 +46,7 @@ public class ValidatorFactory implements ContextBuilder {
 	private static final Validator<Entity> DEFAULT_VALIDATOR = new AbstractCompositeEntityValidator<>() {
 
 		private static final String NAME = "DEFAULT_VALIDATOR";
-		
+
 		@Override
 		public Result<Entity> isSatisfiedBy(Session session, Entity instance) {
 			return Result.success(instance);
@@ -147,14 +147,14 @@ public class ValidatorFactory implements ContextBuilder {
 
 		static {
 			NAME_PATTERN = Pattern.compile(
-					String.format("^[%s\\p{L}\\p{N}\\s\\.,_\\-@\"\'%%*]{%d,%d}$", StringHelper.VIETNAMESE_CHARACTERS,
+					String.format("^[%s\\p{L}\\p{N}\\s\\.,_\\-@\"\'%%*#+]{%d,%d}$", StringHelper.VIETNAMESE_CHARACTERS,
 							_NamedResource.MINIMUM_NAME_LENGTH, _NamedResource.MAXIMUM_NAME_LENGTH));
 		}
 
 		private static final String INVALID_NAME = String.format(
-				"Name length must vary between %d and %d. Can only contain alphabetic, numeric characters, %s",
-				_NamedResource.MINIMUM_NAME_LENGTH, _NamedResource.MAXIMUM_NAME_LENGTH,
-				Common.symbolNamesOf('\s', '.', ',', '_', '-', '@', '\"', '\'', '%', '*'));
+				"Name can only contain alphabetic, numeric, %s characters and %s",
+				Common.symbolNamesOf('\s', '.', ',', '_', '-', '@', '\"', '\'', '%', '*', '+', '#'),
+				Common.hasLength(null, _NamedResource.MINIMUM_NAME_LENGTH, _NamedResource.MAXIMUM_NAME_LENGTH));
 		private static final String TAKEN_NAME = "Name was taken";
 
 		private final GenericRepository genericRepository;

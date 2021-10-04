@@ -10,6 +10,8 @@ import java.util.stream.Collectors;
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 
+import adn.helpers.CollectionHelper;
+
 /**
  * @author Ngoc Huy
  *
@@ -21,7 +23,7 @@ public class StringListConverter implements AttributeConverter<List<String>, Str
 
 	@Override
 	public String convertToDatabaseColumn(List<String> attributes) {
-		return attributes == null ? "" : attributes.stream().collect(Collectors.joining(DELIMETER));
+		return CollectionHelper.isEmpty(attributes) ? null : attributes.stream().collect(Collectors.joining(DELIMETER));
 	}
 
 	@Override

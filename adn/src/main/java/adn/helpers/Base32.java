@@ -11,12 +11,12 @@ import java.math.BigInteger;
  * Some of this may apply to almost any format but there's much that won't such
  * as allowing both uppercase and lowercase forms of each digit.
  * </p>
- * See: {@link http://en.wikipedia.org/wiki/Base32}
- * </p>
- * Original post:
- * {@link https://stackoverflow.com/questions/22385467/crockford-base32-encoding-for-large-number-java-implementation}
+ * See: <a href="http://en.wikipedia.org/wiki/Base32">Wiki</a><br>
+ * <a href=
+ * "https://stackoverflow.com/questions/22385467/crockford-base32-encoding-for-large-number-java-implementation">Original
+ * post</a>
  * 
- * @author {@link https://stackoverflow.com/users/823393/oldcurmudgeon}
+ * @author <a href="https://stackoverflow.com/users/823393/oldcurmudgeon">oldcurmudgeon</a>
  */
 public class Base32 {
 

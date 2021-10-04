@@ -19,10 +19,15 @@ public abstract class FullyAuditedEntity<ID> extends PermanentEntity
 	private String name;
 
 	@Embedded
-	private AuditInformations auditInformations = new AuditInformations();
+	private AuditInformations auditInformations;
 
 	@Embedded
-	private ApprovalInformations approvalInformations = new ApprovalInformations();
+	private ApprovalInformations approvalInformations;
+
+	public FullyAuditedEntity() {
+		auditInformations = new AuditInformations();
+		approvalInformations = new ApprovalInformations();
+	}
 
 	@Override
 	public String getName() {

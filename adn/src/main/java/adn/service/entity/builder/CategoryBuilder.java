@@ -37,15 +37,12 @@ public class CategoryBuilder extends AbstractPermanentEntityBuilder<Category> {
 	}
 
 	@Override
-	public <E extends Category> E buildInsertion(Serializable id, E model) {
-		model = super.buildInsertion(id, model);
-
+	public <E extends Category> E buildPostValidationOnInsert(Serializable id, E model) {
 		ContextProvider.getCurrentSession().persist(model);
-
 		id = model.getId();
 
 		if (logger.isDebugEnabled()) {
-			logger.debug(String.format("Generating encrypted code for instance with id: [%s]", id));
+			logger.debug(String.format(CODE_GENERATION_MESSAGE, id));
 		}
 
 		model.setCode(crockfords.format(new BigInteger(id.toString())));

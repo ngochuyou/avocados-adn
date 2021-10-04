@@ -5,6 +5,7 @@ package adn.model.entities;
 
 import static adn.application.Common.SHARED_TABLE_GENERATOR;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import javax.persistence.Column;
@@ -35,14 +36,14 @@ import adn.model.entities.metadata._Product;
  */
 @Entity
 @Table(name = "products")
-public class Product extends FullyAuditedEntity<Long> {
+public class Product extends FullyAuditedEntity<BigInteger> {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.TABLE, generator = SHARED_TABLE_GENERATOR)
 	@TableGenerator(name = SHARED_TABLE_GENERATOR, initialValue = Common.CROCKFORD_10A
 			- 1, allocationSize = 1, table = Common.SHARED_TABLE_GENERATOR_TABLENAME)
 	@Column(updatable = false)
-	private Long id;
+	private BigInteger id;
 
 	@Column(unique = true)
 	private String code;
@@ -50,7 +51,7 @@ public class Product extends FullyAuditedEntity<Long> {
 	@Column(length = _Product.MAXIMUM_MATERIAL_LENGTH)
 	private String material;
 	// IDENTIFIER_LENGTH
-	@Column(length = _Product.MAXIMUM_IMAGES_LENGTH)
+	@Column(length = _Product.MAXIMUM_IMAGES_COLUMN_LENGTH)
 	@Convert(converter = StringListConverter.class)
 	private List<String> images;
 
@@ -72,11 +73,11 @@ public class Product extends FullyAuditedEntity<Long> {
 	private List<Item> items;
 
 	@Override
-	public Long getId() {
+	public BigInteger getId() {
 		return id;
 	}
 
-	public void setId(Long id) {
+	public void setId(BigInteger id) {
 		this.id = id;
 	}
 

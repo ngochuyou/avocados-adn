@@ -10,7 +10,7 @@ import org.hibernate.Session;
 import adn.application.Common;
 import adn.dao.generic.Result;
 import adn.model.entities.PermanentEntity;
-import adn.model.entities.metadata._FullyAuditedEntity;
+import adn.model.entities.metadata._PermanentEntity;
 
 /**
  * @author Ngoc Huy
@@ -25,7 +25,7 @@ public abstract class AbstractPermanentEntityValidator<T extends PermanentEntity
 		Result<T> result = super.isSatisfiedBy(session, id, instance);
 
 		if (instance.isActive() == null) {
-			result.bad().getMessages().put(_FullyAuditedEntity.active, EMPTY_ACTIVE_STATE);
+			result.bad().getMessages().put(_PermanentEntity.active, EMPTY_ACTIVE_STATE);
 		}
 
 		return result;

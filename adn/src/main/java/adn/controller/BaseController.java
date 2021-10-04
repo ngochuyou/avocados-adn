@@ -33,7 +33,7 @@ import adn.model.factory.authentication.dynamicmap.SourceMetadataFactory;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.model.factory.extraction.PojoEntityExtractorProvider;
 import adn.service.internal.GenericCRUDService;
-import adn.service.services.GenericPermanentEntityService;
+import adn.service.internal.Service.Status;
 
 /**
  * @author Ngoc Huy
@@ -63,9 +63,6 @@ public class BaseController {
 
 	@Autowired
 	protected ObjectMapper objectMapper;
-
-	@Autowired
-	protected GenericPermanentEntityService genericPermanentEntityService;
 
 	public static final long MAXIMUM_FILE_SIZE = 30 * 1024 * 1024;
 
@@ -142,8 +139,16 @@ public class BaseController {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(instance);
 	}
 
-	protected <T extends Entity> ResponseEntity<?> send(Result<T> result) throws UnauthorizedCredential {
-		return result.isOk() ? ResponseEntity.ok(produce(result.getInstance())) : sendBad(result.getMessages());
+	protected <T extends Entity> ResponseEntity<?> send(Result<T> result) throws Exception {
+		if (result.isOk()) {
+			return ResponseEntity.ok(produce(result.getInstance()));
+		}
+
+		if (result.getStatus() == Status.BAD) {
+			return sendBad(result.getMessages());
+		}
+
+		return fails(result.getMessages());
 	}
 
 	protected <T> ResponseEntity<?> makeStaleWhileRevalidate(T body, long maxAge, TimeUnit maxAgeDurationUnit,

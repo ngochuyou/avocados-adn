@@ -17,7 +17,6 @@ import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Product;
 import adn.model.entities.metadata._Product;
-import adn.service.services.ProductService;
 
 /**
  * @author Ngoc Huy
@@ -50,7 +49,7 @@ public class ProductValidator extends AbstractPermanentEntityValidator<Product> 
 			result.bad().getMessages().put(_Product.material, INVALID_MATERIAL);
 		}
 
-		if (instance.getImages() != null && instance.getImages().size() > ProductService.MAXIMUM_IMAGES_AMOUNT) {
+		if (instance.getImages() != null && instance.getImages().size() > _Product.MAXIMUM_IMAGES_AMOUNT) {
 			result.bad().getMessages().put(_Product.images, TOO_MANY_IMAGES);
 		}
 

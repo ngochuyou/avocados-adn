@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.service.resource.engine.persistence;
+package adn.service.resource.engine;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -21,7 +21,6 @@ import org.springframework.stereotype.Component;
 
 import adn.helpers.CollectionHelper;
 import adn.helpers.CollectionHelper.ArrayBuilder;
-import adn.service.resource.engine.Finder;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.query.UpdateQuery;
 import adn.service.resource.engine.template.ResourceTemplate;
@@ -34,7 +33,7 @@ import adn.service.resource.engine.tuple.ResourceTuplizer;
 @Component
 public class PersistentResourceContext {
 
-	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+	private static final Logger logger = LoggerFactory.getLogger(PersistentResourceContext.class);
 
 	private final Finder finder;
 	private final Map<String, Mutex> mutexMap = new MutexMap();
@@ -187,23 +186,13 @@ public class PersistentResourceContext {
 		ArrayBuilder<String> setStatement = CollectionHelper.from(setStatementColumnNames);
 		Stream<Function<File, Object>> extractingFunctions = Stream.of(template.getColumnNames()).map(columnName -> {
 			if (setStatement.contains(columnName)) {
-				return new Function<File, Object>() {
-					@Override
-					public Object apply(File t) {
-						// each time we invoke ArrayBuilder#contains, found index will be recored so we
-						// will use that index to locate the extracted value from the updatedValues
-						// array
-						return updatedValues[setStatement.getLastFoundIndex()];
-					}
-				};
+				// each time we invoke ArrayBuilder#contains, found index will be recored so we
+				// will use that index to locate the extracted value from the updatedValues
+				// array
+				return file -> updatedValues[setStatement.getLastFoundIndex()];
 			}
 
-			return new Function<File, Object>() {
-				@Override
-				public Object apply(File t) {
-					return tuplizer.getPropertyValue(t, template.getColumnIndex(columnName));
-				}
-			};
+			return file -> tuplizer.getPropertyValue(file, template.getColumnIndex(columnName));
 		});
 
 		Object[] extractedValues;

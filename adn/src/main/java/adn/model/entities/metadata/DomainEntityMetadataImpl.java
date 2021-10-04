@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -583,7 +585,7 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 
 		private ComponentPropertyGetter(Getter componentGetter, Class<?> componentType, String propertyName,
 				Class<?> propertyType) {
-			this.componentGetter = componentGetter;
+			this.componentGetter = Objects.requireNonNull(componentGetter);
 			componentPropertyGetter = StandardAccess.locateGetter(componentType, propertyName)
 					.orElseThrow(() -> new IllegalArgumentException(String.format(
 							"Unable to locate getter for a Component's property. Component type: [%s], property type: [%s]",
@@ -592,7 +594,7 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 
 		@Override
 		public Object get(Object owner) {
-			return componentPropertyGetter.get(componentGetter.get(owner));
+			return Optional.ofNullable(componentGetter.get(owner)).map(componentPropertyGetter::get).orElse(null);
 		}
 
 		@Override

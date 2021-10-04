@@ -3,6 +3,7 @@
  */
 package adn.dao.specific;
 
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -53,7 +54,7 @@ public class ProductProviderDetailRepository {
 	}
 
 	@SuppressWarnings("serial")
-	public Optional<ProductCost> findCurrent(UUID providerId, Long productId) {
+	public Optional<ProductCost> findCurrent(UUID providerId, BigInteger productId) {
 		return genericRepository.findOne(ProductCost.class, new Specification<ProductCost>() {
 			@Override
 			public Predicate toPredicate(Root<ProductCost> root, CriteriaQuery<?> query,
@@ -64,7 +65,7 @@ public class ProductProviderDetailRepository {
 	}
 
 	@SuppressWarnings("serial")
-	public Optional<ProductCost> findUnapproved(UUID providerId, Long productId) {
+	public Optional<ProductCost> findUnapproved(UUID providerId, BigInteger productId) {
 		return genericRepository.findOne(ProductCost.class, new Specification<ProductCost>() {
 			@Override
 			public Predicate toPredicate(Root<ProductCost> root, CriteriaQuery<?> query,
@@ -87,7 +88,7 @@ public class ProductProviderDetailRepository {
 	}
 
 	@SuppressWarnings("serial")
-	public boolean hasUnapproved(UUID providerId, Long productId) {
+	public boolean hasUnapproved(UUID providerId, BigInteger productId) {
 		return genericRepository.count(ProductCost.class, new Specification<ProductCost>() {
 			@Override
 			public Predicate toPredicate(Root<ProductCost> root, CriteriaQuery<?> query,
@@ -142,7 +143,7 @@ public class ProductProviderDetailRepository {
 	}
 
 	public static Predicate hasId(Root<ProductCost> root, CriteriaBuilder builder, UUID providerId,
-			Long productId) {
+			BigInteger productId) {
 		Path<Object> idPath = root.get(_ProductCost.id);
 		// @formatter:off
 		return builder.and(

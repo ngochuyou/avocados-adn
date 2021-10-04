@@ -3,15 +3,22 @@
  */
 package adn.service.entity.builder;
 
+import static adn.helpers.Base32.crockfords;
 import static adn.helpers.StringHelper.normalizeString;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import adn.application.context.ContextProvider;
 import adn.model.Generic;
 import adn.model.entities.Item;
+import adn.model.entities.constants.Status;
 
 /**
  * @author Ngoc Huy
@@ -21,6 +28,8 @@ import adn.model.entities.Item;
 @Component
 public class ItemBuilder extends AbstractPermanentEntityBuilder<Item> {
 
+	private static final Logger logger = LoggerFactory.getLogger(ItemBuilder.class);
+
 	@Override
 	protected <E extends Item> E mandatoryBuild(E target, E model) {
 		target = super.mandatoryBuild(target, model);
@@ -29,7 +38,7 @@ public class ItemBuilder extends AbstractPermanentEntityBuilder<Item> {
 		target.setNumericSize(model.getNumericSize());
 		target.setColor(normalizeString(model.getColor()));
 		target.setNote(normalizeString(model.getNote()));
-		target.setStatus(model.getStatus());
+		target.setStatus(Optional.ofNullable(model.getStatus()).orElse(Status.AVAILABLE));
 
 		return target;
 	}
@@ -40,6 +49,15 @@ public class ItemBuilder extends AbstractPermanentEntityBuilder<Item> {
 
 		if (model.getCost() != null) {
 			model.setCost(model.getCost().setScale(4, RoundingMode.HALF_UP));
+
+			ContextProvider.getCurrentSession().persist(model);
+			id = model.getId();
+
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format(CODE_GENERATION_MESSAGE, id));
+			}
+
+			model.setCode(crockfords.format((BigInteger) id));
 		}
 
 		return model;

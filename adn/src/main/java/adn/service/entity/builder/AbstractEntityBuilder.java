@@ -16,6 +16,8 @@ import adn.model.entities.Entity;
  */
 public abstract class AbstractEntityBuilder<T extends Entity> extends AbstractCompositeEntityBuilder<T> {
 
+	protected static final String CODE_GENERATION_MESSAGE = "Generating encrypted code for an entity with id: [%s]";
+	
 	protected <E extends T> E mandatoryBuild(E target, E model) {
 		return target;
 	}
@@ -42,6 +44,11 @@ public abstract class AbstractEntityBuilder<T extends Entity> extends AbstractCo
 	@Override
 	public <E extends T> E buildUpdate(Serializable id, E model, E persistence) {
 		return mandatoryBuild(persistence, model);
+	}
+
+	@Override
+	public <E extends T> E buildPostValidationOnInsert(Serializable id, E model) {
+		return model;
 	}
 
 }

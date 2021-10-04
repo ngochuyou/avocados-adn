@@ -4,6 +4,7 @@
 package adn.model.entities.id;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -24,7 +25,7 @@ import adn.model.entities.metadata._ProductCost;
 public class ProductCostId implements Serializable {
 
 	@Column(name = _ProductCost.$productId, nullable = false, updatable = false)
-	private Long productId;
+	private BigInteger productId;
 
 	@Column(name = _ProductCost.$providerId, nullable = false, updatable = false, columnDefinition = Common.MYSQL_UUID_COLUMN_DEFINITION)
 	private UUID providerId;
@@ -35,7 +36,7 @@ public class ProductCostId implements Serializable {
 
 	public ProductCostId() {}
 
-	public ProductCostId(Long productId, UUID providerId, LocalDateTime createdTimestamp) {
+	public ProductCostId(BigInteger productId, UUID providerId, LocalDateTime createdTimestamp) {
 		super();
 		this.productId = productId;
 		this.providerId = providerId;
@@ -50,11 +51,11 @@ public class ProductCostId implements Serializable {
 		this.createdTimestamp = approvedTimestamp;
 	}
 
-	public Long getProductId() {
+	public BigInteger getProductId() {
 		return productId;
 	}
 
-	public void setProductId(Long productId) {
+	public void setProductId(BigInteger productId) {
 		this.productId = productId;
 	}
 

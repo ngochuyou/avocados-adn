@@ -11,6 +11,8 @@ public class Constants {
 
 	private Constants() {}
 
+	public static final String CONFIG_PATH = "C:\\Users\\Ngoc Huy\\Documents\\workspace\\avocados-adn\\config\\";
+	
 	public static final String ROOT_PACKAGE = "adn";
 
 	public static final String ENTITY_PACKAGE = ROOT_PACKAGE + ".model.entities";

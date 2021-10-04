@@ -45,7 +45,7 @@ public class ServiceResult<T> {
 	}
 
 	public static Map<String, String> of(String result) {
-		return Map.of(Common.RESULT, result);
+		return Map.of(Common.MESSAGE, result);
 	}
 
 	public static <T> ServiceResult<T> status(Status status) {

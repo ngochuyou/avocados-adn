@@ -35,13 +35,18 @@ public abstract class AbstractCompositeEntityBuilder<T extends Entity> implement
 		}
 
 		@Override
-		public <E extends X> E buildInsertion(Serializable id, E entity) {
-			return next.buildInsertion(id, first.buildInsertion(id, entity));
+		public <E extends X> E buildInsertion(Serializable id, E model) {
+			return next.buildInsertion(id, first.buildInsertion(id, model));
 		}
 
 		@Override
-		public <E extends X> E buildUpdate(Serializable id, E entity, E persistence) {
-			return next.buildUpdate(id, entity, first.buildUpdate(id, entity, persistence));
+		public <E extends X> E buildUpdate(Serializable id, E model, E persistence) {
+			return next.buildUpdate(id, model, first.buildUpdate(id, model, persistence));
+		}
+		
+		@Override
+		public <E extends X> E buildPostValidationOnInsert(Serializable id, E model) {
+			return next.buildPostValidationOnInsert(id, first.buildPostValidationOnInsert(id, model));
 		}
 
 		@Override

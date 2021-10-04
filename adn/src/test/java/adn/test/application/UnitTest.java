@@ -4,9 +4,9 @@
 package adn.test.application;
 
 import java.io.IOException;
-import java.math.BigInteger;
-
-import adn.helpers.Base32;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * @author Ngoc Huy
@@ -15,13 +15,15 @@ import adn.helpers.Base32;
 public class UnitTest {
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, IOException {
-		long t1 = System.currentTimeMillis();
-
-		for (int i = 10; i < 900; i++) {
-			System.out.println(i + " " + Base32.crockfords.format(new BigInteger(String.valueOf(i))));
+		List<Integer> list = Arrays.asList(1, 2, 3, 4, 5);
+		Iterator<Integer> iterator = list.iterator();
+		int sum = iterator.next();
+		
+		while (iterator.hasNext()) {
+			sum += iterator.next();
 		}
-
-		System.out.println(System.currentTimeMillis() - t1);
+		
+		System.out.println(sum == list.stream().reduce(Integer::sum).get());
 	}
 
 }

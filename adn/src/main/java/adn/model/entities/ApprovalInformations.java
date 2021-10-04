@@ -25,10 +25,10 @@ import adn.model.entities.metadata._User;
 public class ApprovalInformations implements DomainComponentType, Serializable {
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = _ApprovableResource.$approvedBy, referencedColumnName = _User.$id, updatable = false)
+	@JoinColumn(name = _ApprovableResource.$approvedBy, referencedColumnName = _User.$id)
 	private Head approvedBy;
 
-	@Column(name = _ApprovableResource.$approvedTimestamp, updatable = false)
+	@Column(name = _ApprovableResource.$approvedTimestamp)
 	private LocalDateTime approvedTimestamp;
 
 	public Head getApprovedBy() {

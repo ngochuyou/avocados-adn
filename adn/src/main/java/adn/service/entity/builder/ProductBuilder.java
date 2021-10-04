@@ -8,17 +8,22 @@ import static adn.helpers.StringHelper.normalizeString;
 
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import org.hibernate.internal.util.collections.CollectionHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import adn.application.context.ContextProvider;
+import adn.dao.generic.GenericRepository;
 import adn.model.Generic;
+import adn.model.entities.Category;
 import adn.model.entities.Product;
+import adn.model.entities.metadata._Category;
 
 /**
  * @author Ngoc Huy
@@ -31,6 +36,15 @@ public class ProductBuilder extends AbstractPermanentEntityBuilder<Product> {
 	private static final Logger logger = LoggerFactory.getLogger(ProductBuilder.class);
 	private static final Character DELIMITER = '-';
 	private static final String CODE_TEMPLATE = String.format("%s%s%s", "%s", DELIMITER, "%s");
+	private static final String CATEGORY_NOT_FOUND = "Category not found";
+
+	private final GenericRepository genericRepository;
+
+	@Autowired
+	public ProductBuilder(GenericRepository genericRepository) {
+		super();
+		this.genericRepository = genericRepository;
+	}
 
 	@Override
 	protected <E extends Product> E mandatoryBuild(E target, E model) {
@@ -52,17 +66,27 @@ public class ProductBuilder extends AbstractPermanentEntityBuilder<Product> {
 
 		model.setLocked(Optional.ofNullable(model.isLocked()).orElse(Boolean.FALSE));
 
-		if (model.getCategory() != null) {
-			if (logger.isDebugEnabled()) {
-				ContextProvider.getCurrentSession().persist(model);
+		return model;
+	}
 
-				id = model.getId();
-				logger.debug(String.format("Generating code for product with id: [%s]", id));
+	@Override
+	public <E extends Product> E buildPostValidationOnInsert(Serializable id, E model) {
+		ContextProvider.getCurrentSession().persist(model);
+		id = model.getId();
 
-				model.setCode(String.format(CODE_TEMPLATE, model.getCategory().getCode(),
-						crockfords.format(new BigInteger(id.toString()))));
-			}
+		if (logger.isDebugEnabled()) {
+			logger.debug(String.format(CODE_GENERATION_MESSAGE, id));
 		}
+
+		Category category = model.getCategory();
+		Optional<Object[]> tuple = genericRepository.findById(Category.class, category.getId(),
+				Arrays.asList(_Category.code));
+
+		if (tuple.isEmpty()) {
+			throw new IllegalArgumentException(CATEGORY_NOT_FOUND);
+		}
+
+		model.setCode(String.format(CODE_TEMPLATE, tuple.get()[0], crockfords.format(new BigInteger(id.toString()))));
 
 		return model;
 	}

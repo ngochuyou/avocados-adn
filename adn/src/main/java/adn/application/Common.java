@@ -36,7 +36,7 @@ public class Common {
 	public static final String WHEN_APPROVED = "when resource is approved";
 	public static final String WHEN_UNAPPROVED = "when resource hasn't been approved yet";
 
-	public static final String RESULT = "result";
+	public static final String MESSAGE = "message";
 	public static final String ERROR = "error";
 
 	public static final Pageable DEFAULT_PAGEABLE = PageRequest.of(0, 10);
@@ -61,16 +61,16 @@ public class Common {
 		String lead = StringHelper.get(prefix, "must").orElse("must");
 
 		if (min != null && max != null) {
-			return String.format("%s has the length between %d and %d", lead, min, max);
+			return String.format("%s have the length between %d and %d", lead, min, max);
 		}
 
 		Function<Integer, String> plurality = (amount) -> amount > 1 ? "s" : "";
 
 		if (min == null) {
-			return String.format("%s has at most %d character%s", lead, max, plurality.apply(max));
+			return String.format("%s have at most %d character%s", lead, max, plurality.apply(max));
 		}
 
-		return String.format("%s has at least %d character%s", lead, min, plurality.apply(min));
+		return String.format("%s have at least %d character%s", lead, min, plurality.apply(min));
 	}
 
 	// @formatter:off
@@ -80,6 +80,7 @@ public class Common {
 			entry(')', "closing parenthesis"),
 			entry('\s', "space"),
 			entry(',', "comma"),
+			entry('-', "hyphen"),
 			entry('_', "underscore"),
 			entry('"', "quote"),
 			entry('\'', "apostrophe"),

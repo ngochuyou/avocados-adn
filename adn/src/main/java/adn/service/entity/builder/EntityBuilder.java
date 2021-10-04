@@ -5,8 +5,8 @@ package adn.service.entity.builder;
 
 import java.io.Serializable;
 
-import adn.model.entities.User;
 import adn.model.entities.Entity;
+import adn.model.entities.User;
 
 /**
  * An interface whose implementation manage {@link Entity} constraints,
@@ -26,21 +26,30 @@ public interface EntityBuilder<T extends Entity> {
 	 * is updating their password or not, then make the decision to hash/update that
 	 * password
 	 * 
-	 * @param entity
+	 * @param model
 	 * @return entity {@link Entity}
 	 */
-	<E extends T> E buildInsertion(Serializable id, E entity);
+	<E extends T> E buildInsertion(Serializable id, E model);
+
+	/**
+	 * Occurs only after the validation of an persist process {@link Entity}
+	 * succeeds
+	 * 
+	 * @param model
+	 * @return entity {@link Entity}
+	 */
+	<E extends T> E buildPostValidationOnInsert(Serializable id, E model);
 
 	/**
 	 * @see EntityBuilder#insertionBuild(Entity)
 	 * 
-	 * @param entity
+	 * @param model
 	 * @return persisted {@link Entity}
 	 */
-	<E extends T> E buildUpdate(Serializable id, E entity, E persistence);
+	<E extends T> E buildUpdate(Serializable id, E model, E persistence);
 
 	String getLoggableName();
-	
+
 	<E extends T> EntityBuilder<E> and(EntityBuilder<E> next);
 
 }

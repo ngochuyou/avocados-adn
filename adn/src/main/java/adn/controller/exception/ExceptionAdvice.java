@@ -3,7 +3,8 @@
  */
 package adn.controller.exception;
 
-import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
+import java.util.Map;
+
 import org.hibernate.ObjectNotFoundException;
 import org.springframework.beans.MethodInvocationException;
 import org.springframework.http.HttpHeaders;
@@ -15,6 +16,7 @@ import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import adn.application.Common;
@@ -30,23 +32,25 @@ import adn.service.internal.InvalidCriteriaException;
 @ControllerAdvice
 public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 
+	private static final Map<String, String> MAX_UPLOAD_SIZE_EXCEEDED = Map.of(Common.MESSAGE,
+			String.format("File size is too large, expect size to be less than %d MB",
+					BaseController.MAXIMUM_FILE_SIZE / (1024 * 1024)));
+
 	@ExceptionHandler(value = { AccessDeniedException.class })
 	public ResponseEntity<?> handleUnauthorized(AccessDeniedException ex, WebRequest request) {
-		return handleExceptionInternal(ex, Common.ACCESS_DENIED, new HttpHeaders(), HttpStatus.UNAUTHORIZED,
-				request);
+		return handleExceptionInternal(ex, Common.ACCESS_DENIED, new HttpHeaders(), HttpStatus.UNAUTHORIZED, request);
 	}
 
-	@ExceptionHandler(value = { FileSizeLimitExceededException.class })
-	public ResponseEntity<?> handleFileSizeLimitExceeded(FileSizeLimitExceededException ex, WebRequest request) {
-		return handleExceptionInternal(ex,
-				String.format("File size is too large, expect size to be less than %d MB",
-						BaseController.MAXIMUM_FILE_SIZE / (1024 * 1024)),
-				new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+	@ExceptionHandler(value = { MaxUploadSizeExceededException.class })
+	public ResponseEntity<?> handleFileSizeLimitExceeded(MaxUploadSizeExceededException ex, WebRequest request) {
+		return handleExceptionInternal(ex, MAX_UPLOAD_SIZE_EXCEEDED, new HttpHeaders(), HttpStatus.BAD_REQUEST,
+				request);
 	}
 
 	@ExceptionHandler(value = { NoSuchFieldException.class })
 	public ResponseEntity<?> handleUnknownColumnInFetch(NoSuchFieldException ex, WebRequest request) {
-		return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+		return handleExceptionInternal(ex, Map.of(Common.MESSAGE, ex.getMessage()), new HttpHeaders(),
+				HttpStatus.BAD_REQUEST, request);
 	}
 
 	@ExceptionHandler(value = { UnauthorisedDepartmentException.class })
@@ -72,8 +76,7 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 
 	@ExceptionHandler(value = { ObjectNotFoundException.class })
 	public ResponseEntity<?> handleObjectNotFoundException(ObjectNotFoundException ex, WebRequest request) {
-		return handleExceptionInternal(ex, Common.NOT_FOUND, new HttpHeaders(), HttpStatus.BAD_REQUEST,
-				request);
+		return handleExceptionInternal(ex, Common.NOT_FOUND, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
 	}
 
 	@Override

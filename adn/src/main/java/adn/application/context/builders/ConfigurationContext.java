@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.util.ResourceUtils;
 
+import adn.application.Constants;
 import adn.application.context.ContextProvider;
 import adn.application.context.internal.ContextBuilder;
 
@@ -37,7 +38,7 @@ public class ConfigurationContext implements ContextBuilder {
 		$$$ = new $$$$$$$$$$$$$$$$$$$$$$$$$$$$();
 
 		try {
-			File file = ResourceUtils.getFile(ContextBuilder.CONFIG_PATH + "SpevIDMKW.txt");
+			File file = ResourceUtils.getFile(Constants.CONFIG_PATH + "SpevIDMKW.txt");
 			List<String> $ = Files.readAllLines(file.toPath());
 
 			if ($.size() < 1) {
