@@ -6,7 +6,6 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -24,8 +23,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import adn.application.Common;
+import adn.application.Result;
 import adn.application.context.ContextProvider;
-import adn.dao.generic.Result;
 import adn.helpers.StringHelper;
 import adn.model.entities.User;
 import adn.service.UserRoleExtractor;
@@ -79,14 +78,13 @@ public class UserController extends BaseController {
 		try {
 			model = objectMapper.readValue(jsonPart, accountClass);
 		} catch (JsonProcessingException any) {
-			any.printStackTrace();
-			return ResponseEntity.badRequest().body(Common.INVALID_MODEL);
+			return bad(Common.INVALID_MODEL);
 		}
 
 		useManualSession();
 
-		if (baseRepository.countById(User.class, model.getId()) != 0) {
-			return ResponseEntity.status(HttpStatus.CONFLICT).body(Common.EXISTED);
+		if (genericRepository.countById(User.class, model.getId()) != 0) {
+			return conflict(Common.existed());
 		}
 
 		Result<User> insertResult = accountService.create(model.getId(), model, (Class<User>) accountClass, photo,
@@ -96,7 +94,7 @@ public class UserController extends BaseController {
 			return ResponseEntity.ok(produce(insertResult.getInstance(), (Class<User>) accountClass, principalRole));
 		}
 
-		return sendBad(insertResult.getMessages());
+		return bad(insertResult.getMessages());
 	}
 
 	@Transactional(readOnly = true)
@@ -111,16 +109,16 @@ public class UserController extends BaseController {
 
 		if (!StringHelper.hasLength(username)) {
 			if (authentication == null) {
-				return sendNotFound(Common.NOT_FOUND);
+				return notFound();
 			}
 
 			username = authentication.getName();
 		}
 
-		Optional<User> optional = baseRepository.findById(User.class, username);
+		Optional<User> optional = genericRepository.findById(User.class, username);
 
 		if (optional.isEmpty()) {
-			return sendNotFound(Common.NOT_FOUND);
+			return notFound();
 		}
 
 		return cacheUserPhoto(resourceService.directlyGetImageBytes(null, optional.get().getPhoto()));
@@ -148,7 +146,7 @@ public class UserController extends BaseController {
 			model = objectMapper.readValue(jsonPart, accountClass);
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
-			return ResponseEntity.badRequest().body(Common.INVALID_MODEL);
+			return bad(Common.INVALID_MODEL);
 		}
 
 		Role principalRole = ContextProvider.getPrincipalRole();
@@ -162,8 +160,8 @@ public class UserController extends BaseController {
 		User persistence;
 		// This entity will take effects as the handler progresses
 		// Only changes on this persisted entity will be committed
-		if ((persistence = baseRepository.findById(User.class, model.getId()).orElse(null)) == null) {
-			return sendNotFound(Common.NOT_FOUND);
+		if ((persistence = genericRepository.findById(User.class, model.getId()).orElse(null)) == null) {
+			return notFound();
 		}
 
 		Result<User> updateResult = accountService.update(persistence.getId(), model, (Class<User>) accountClass,
@@ -173,7 +171,7 @@ public class UserController extends BaseController {
 			return ResponseEntity.ok(produce(updateResult.getInstance(), (Class<User>) accountClass, principalRole));
 		}
 
-		return sendBad(updateResult.getStatus());
+		return bad(updateResult.getStatus());
 	}
 
 }

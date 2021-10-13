@@ -4,8 +4,10 @@
 package adn.controller;
 
 import static adn.application.context.ContextProvider.getPrincipalCredential;
+import static org.springframework.http.ResponseEntity.ok;
 
 import java.math.BigInteger;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,12 +31,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.Common;
+import adn.application.Result;
 import adn.application.context.ContextProvider;
 import adn.controller.query.impl.ProviderQuery;
-import adn.dao.generic.Result;
 import adn.model.entities.ProductCost;
 import adn.model.entities.Provider;
+import adn.model.entities.id.ProductCostId;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
+import adn.model.models.ProductCostModel;
 import adn.service.internal.ServiceResult;
 import adn.service.services.AuthenticationService;
 import adn.service.services.ProviderService;
@@ -47,7 +52,6 @@ import adn.service.services.ProviderService;
 public class RestProviderController extends BaseController {
 
 	private static final int COMMON_CACHE_MAXAGE = 1;
-//	private static final String SUCCESSFUL_APPROVAL = "Successfully approved";
 
 	private final ProviderService providerService;
 	private final AuthenticationService authService;
@@ -69,7 +73,7 @@ public class RestProviderController extends BaseController {
 		List<Map<String, Object>> rows = crudService.readAll(Provider.class, columns, paging,
 				ContextProvider.getPrincipalCredential());
 
-		return ResponseEntity.ok(rows);
+		return ok(rows);
 	}
 
 	@GetMapping("/{providerId}")
@@ -91,7 +95,7 @@ public class RestProviderController extends BaseController {
 	public ResponseEntity<?> getProvidersCount() {
 		authService.assertSaleDepartment();
 
-		return makeStaleWhileRevalidate(baseRepository.count(Provider.class), COMMON_CACHE_MAXAGE, TimeUnit.DAYS, 1,
+		return makeStaleWhileRevalidate(genericRepository.count(Provider.class), COMMON_CACHE_MAXAGE, TimeUnit.DAYS, 1,
 				TimeUnit.DAYS);
 	}
 
@@ -127,10 +131,10 @@ public class RestProviderController extends BaseController {
 		authService.assertSaleDepartment();
 
 		UUID id = model.getId();
-		Optional<Provider> optional = baseRepository.findById(Provider.class, id);
+		Optional<Provider> optional = genericRepository.findById(Provider.class, id);
 
 		if (optional.isEmpty()) {
-			return sendNotFound(Common.NOT_FOUND);
+			return notFound();
 		}
 
 		Result<Provider> result = crudService.update(id, model, Provider.class, true);
@@ -154,51 +158,50 @@ public class RestProviderController extends BaseController {
 	}
 
 	/*
-	 * ===========================ProductProviderDetail===========================
+	 * ===========================ProductCost===========================
 	 */
 
-	@PostMapping(path = "/product-detail")
+	@PostMapping(path = "/cost")
 	@Secured({ HEAD, PERSONNEL })
 	@Transactional
-	public ResponseEntity<?> createProductDetail(@RequestBody ProductCost model) throws Exception {
+	public ResponseEntity<?> createProductCost(@RequestBody ProductCostModel model) throws Exception {
 		authService.assertSaleDepartment();
 
-		ProductCost extractedModel = extractorProvider.getExtractor(ProductCost.class).extract(model);
-		Result<ProductCost> result = providerService.createProductCost(extractedModel, getPrincipalCredential(), true);
+		ProductCost newCost = extract(ProductCost.class, model, new ProductCost());
 
-		return send(result);
+		return send(providerService.createCost(newCost, getPrincipalCredential(), true));
 	}
 
-	@GetMapping(path = "/product-detail/count")
+	@GetMapping(path = "/cost/count")
 	@Secured({ HEAD, PERSONNEL })
 	@Transactional(readOnly = true)
-	public ResponseEntity<?> getProductDetailsCount() throws NoSuchFieldException, UnauthorizedCredential {
+	public ResponseEntity<?> getCostsCount() throws NoSuchFieldException, UnauthorizedCredential {
 		authService.assertSaleDepartment();
 
-		return makeStaleWhileRevalidate(baseRepository.count(ProductCost.class), 30, TimeUnit.SECONDS, 60,
+		return makeStaleWhileRevalidate(genericRepository.count(ProductCost.class), 30, TimeUnit.SECONDS, 60,
 				TimeUnit.SECONDS);
 	}
 
-	@GetMapping(path = "/product-detail/{productId}")
+//	@GetMapping(path = "/cost/{productId}")
+//	@Secured({ HEAD, PERSONNEL })
+//	@Transactional(readOnly = true)
+//	public ResponseEntity<?> getCostsByProduct(
+//			@PathVariable(name = "productId", required = true) String productId,
+//			@PageableDefault(size = 10) Pageable paging,
+//			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns)
+//			throws NoSuchFieldException, UnauthorizedCredential {
+//		authService.assertSaleDepartment();
+//
+//		List<Map<String, Object>> productDetails = providerService.readCostsByProduct(productId, columns,
+//				paging, getPrincipalCredential());
+//
+//		return makeStaleWhileRevalidate(productDetails, 90, TimeUnit.SECONDS, 5, TimeUnit.MINUTES);
+//	}
+
+	@GetMapping(path = "/cost")
 	@Secured({ HEAD, PERSONNEL })
 	@Transactional(readOnly = true)
-	public ResponseEntity<?> getProductDetailsByProduct(
-			@PathVariable(name = "productId", required = true) String productId,
-			@PageableDefault(size = 10) Pageable paging,
-			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns)
-			throws NoSuchFieldException, UnauthorizedCredential {
-		authService.assertSaleDepartment();
-
-		List<Map<String, Object>> productDetails = providerService.readProductDetailsByProduct(productId, columns,
-				paging, getPrincipalCredential());
-
-		return makeStaleWhileRevalidate(productDetails, 90, TimeUnit.SECONDS, 5, TimeUnit.MINUTES);
-	}
-
-	@GetMapping(path = "/product-detail")
-	@Secured({ HEAD, PERSONNEL })
-	@Transactional(readOnly = true)
-	public ResponseEntity<?> getProductDetailsList(
+	public ResponseEntity<?> getCostList(
 			@RequestParam(name = "columns", defaultValue = "") List<String> columns,
 			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
 		authService.assertSaleDepartment();
@@ -206,15 +209,25 @@ public class RestProviderController extends BaseController {
 		List<Map<String, Object>> productDetails = crudService.readAll(ProductCost.class, columns, paging,
 				getPrincipalCredential());
 
-		return ResponseEntity.ok(productDetails);
+		return ok(productDetails);
 	}
 
-	@PatchMapping(path = "/product-detail/approve")
+	@PatchMapping(path = "/cost/approve")
 	@Secured(HEAD)
 	@Transactional
-	public ResponseEntity<?> approveProductDetail(@RequestParam(name = "providerId", required = true) UUID providerId,
-			@RequestParam(name = "productId", required = true) BigInteger productId) throws Exception {
-		return send(providerService.approveProductDetail(providerId, productId, true));
+	public ResponseEntity<?> approveCost(@RequestParam(name = "provider") UUID providerId,
+			@RequestParam(name = "product") BigInteger productId,
+			@RequestParam(name = "applied") @DateTimeFormat(pattern = Common.COMMON_LDT_FORMAT) LocalDateTime appliedTimestamp,
+			@RequestParam(name = "dropped") @DateTimeFormat(pattern = Common.COMMON_LDT_FORMAT) LocalDateTime droppedTimestamp)
+			throws Exception {
+		ProductCostId costId = new ProductCostId(productId, providerId, appliedTimestamp, droppedTimestamp);
+		Optional<ProductCost> persistence = genericRepository.findById(ProductCost.class, costId);
+
+		if (persistence.isEmpty()) {
+			return notFound(Common.message(Common.notfound(costId)));
+		}
+
+		return send(genericService.approve(ProductCost.class, persistence.get().getId(), true));
 	}
 
 }

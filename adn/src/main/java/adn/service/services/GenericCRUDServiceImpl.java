@@ -3,8 +3,9 @@
  */
 package adn.service.services;
 
-import static adn.dao.generic.Result.bad;
-import static adn.dao.generic.Result.failed;
+import static adn.application.Result.bad;
+import static adn.application.Result.failed;
+import static adn.application.context.ContextProvider.getCurrentSession;
 import static adn.dao.generic.ResultBatch.bad;
 import static adn.dao.generic.ResultBatch.failed;
 import static adn.dao.generic.ResultBatch.ok;
@@ -20,7 +21,6 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -52,11 +52,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import adn.application.Result;
 import adn.application.context.ContextProvider;
 import adn.application.context.builders.EntityBuilderProvider;
 import adn.application.context.builders.ModelContextProvider;
 import adn.dao.generic.GenericRepositoryImpl;
-import adn.dao.generic.Result;
 import adn.dao.generic.ResultBatch;
 import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
@@ -88,9 +88,10 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 	public static final String EXECUTOR_NAME = "GenericCRUDServiceBatchExecutor";
 	private static final int MAXIMUM_BATCHSIZE_IN_SINGULAR_PROCESS = 100;
 	private static final int MAXIMUM_ELEMENTS_PER_PARALLEL_PROCESS = 50;
-	private static final int MAXIMUM_BATCH_SIZE = 1000;
+	static final int MAXIMUM_BATCH_SIZE = 1000;
+	static final String MAXIMUM_BATCH_SIZE_EXCEEDED = String.format("Maximum elements in one batch is %d",
+			MAXIMUM_BATCH_SIZE);
 	private static final String INVALID_CONSTRAINT = "Invalid constraint";
-	private static final Map<String, String> INVALID_CONSTRAINT_MESSAGE_SET = Map.of("constraint", INVALID_CONSTRAINT);
 
 	@Autowired
 	private BatchWorker batchWorker;
@@ -143,7 +144,16 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 
 			entity = entityBuilder.buildInsertion(id, entity);
 
-			return finish(ss, repository.insert(type, id, entity), flushOnFinish);
+			Result<E> validation = repository.validate(type, id, entity, ss);
+
+			if (!validation.isOk()) {
+				return validation;
+			}
+
+			entity = entityBuilder.buildPostValidationOnInsert(id, entity);
+			ss.save(entity);
+
+			return finish(ss, Result.ok(entity), flushOnFinish);
 		} catch (Exception e) {
 			return Result.failed(e.getMessage());
 		}
@@ -173,8 +183,7 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 		int size = entityBatch.size();
 
 		if (size > MAXIMUM_BATCH_SIZE) {
-			return ResultBatch.<E>bad(Collections.emptyList())
-					.setMessage(String.format("Maximum elements in one batch is %d", MAXIMUM_BATCH_SIZE));
+			return ResultBatch.bad(MAXIMUM_BATCH_SIZE_EXCEEDED);
 		}
 
 		int biggestFullBatchAmount = size / MAXIMUM_ELEMENTS_PER_PARALLEL_PROCESS;
@@ -188,16 +197,16 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 			int startIndex = i * MAXIMUM_ELEMENTS_PER_PARALLEL_PROCESS;
 			int endIndex = startIndex + MAXIMUM_ELEMENTS_PER_PARALLEL_PROCESS;
 
-			batchWorker.executeBatchCreate(session, idBatch, entityBatch, statusSet, resultSet, type, builder,
-					startIndex, endIndex, latch);
+			batchWorker.doCreateBatch(session, idBatch, entityBatch, statusSet, resultSet, type, builder, startIndex,
+					endIndex, latch);
 		});
 
 		if (amountInLastBatch != 0) {
 			int startIndex = biggestFullBatchAmount * MAXIMUM_ELEMENTS_PER_PARALLEL_PROCESS;
 			int endIndex = startIndex + amountInLastBatch;
 
-			batchWorker.executeBatchCreate(session, idBatch, entityBatch, statusSet, resultSet, type, builder,
-					startIndex, endIndex, latch);
+			batchWorker.doCreateBatch(session, idBatch, entityBatch, statusSet, resultSet, type, builder, startIndex,
+					endIndex, latch);
 		}
 
 		try {
@@ -213,7 +222,7 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 	private <T extends Entity, E extends T> ResultBatch<E> singularlyCreateBatch(Session session, Class<E> type,
 			EntityBuilder<E> builder, List<Serializable> idBatch, List<E> entityBatch, boolean flushOnFinish) {
 		if (logger.isDebugEnabled()) {
-			logger.debug(String.format("Executing singularly creation on a batch with entities of [%s] using [%s]",
+			logger.debug(String.format("Executing singularly creation on a batch with entities of type [%s] using [%s]",
 					type.getName(), builder.getClass().getName()));
 		}
 
@@ -221,19 +230,26 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 
 		return finish(session, IntStream.range(0, entityBatch.size()).mapToObj(index -> {
 			Serializable id = idBatch.get(index);
-			Result<E> result = repository.insert(type, id, builder.buildInsertion(id, entityBatch.get(index)));
+			E entity = builder.buildInsertion(id, entityBatch.get(index));
+			Result<E> validation = repository.validate(type, id, entity, session);
 
-			statusBatch.add(result.getStatus());
+			if (!validation.isOk()) {
+				return validation;
+			}
 
-			return result;
+			entity = builder.buildPostValidationOnInsert(id, entity);
+			session.save(entity);
+			statusBatch.add(validation.getStatus());
+
+			return Result.ok(entity);
 		}).collect(Collectors.toList()), statusBatch, flushOnFinish);
 	}
 
-	protected <E> Result<E> finish(Result<E> result, boolean flushOnFinish) {
+	<E> Result<E> finish(Result<E> result, boolean flushOnFinish) {
 		return finish(getCurrentSession(), result, flushOnFinish);
 	}
 
-	protected <E> Result<E> finish(Session ss, Result<E> result, boolean flushOnFinish) {
+	<E> Result<E> finish(Session ss, Result<E> result, boolean flushOnFinish) {
 		if (flushOnFinish) {
 			try {
 				if (result.isOk()) {
@@ -249,7 +265,7 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 				Throwable cause = any.getCause();
 
 				if (cause instanceof ConstraintViolationException) {
-					return bad(INVALID_CONSTRAINT_MESSAGE_SET);
+					return bad(INVALID_CONSTRAINT);
 				}
 
 				any.printStackTrace();
@@ -260,10 +276,14 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 		return result;
 	}
 
-	protected <E> ResultBatch<E> finish(Session ss, List<Result<E>> resultBatch, EnumSet<Status> statusBatch,
+	<E> ResultBatch<E> finish(List<Result<E>> resultBatch, EnumSet<Status> statusBatch, boolean flushOnFinish) {
+		return finish(getCurrentSession(), resultBatch, statusBatch, flushOnFinish);
+	}
+
+	<E> ResultBatch<E> finish(Session ss, List<Result<E>> resultBatch, EnumSet<Status> statusBatch,
 			boolean flushOnFinish) {
-		boolean hasFailed;
-		boolean isOk = !(hasFailed = statusBatch.contains(FAILED)) && !statusBatch.contains(BAD);
+		boolean hasFailed = statusBatch.contains(FAILED);
+		boolean isOk = !hasFailed && !statusBatch.contains(BAD);
 
 		if (flushOnFinish) {
 			try {
@@ -280,11 +300,11 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 				Throwable cause = any.getCause();
 
 				if (cause instanceof ConstraintViolationException) {
-					return ResultBatch.<E>bad(Arrays.asList(Result.bad(INVALID_CONSTRAINT_MESSAGE_SET)));
+					return ResultBatch.<E>bad(Arrays.asList(Result.bad(INVALID_CONSTRAINT)));
 				}
 
 				any.printStackTrace();
-				return ResultBatch.<E>failed(null).setMessage(any.getMessage());
+				return failed(resultBatch).setMessage(any.getMessage());
 			}
 		}
 
@@ -292,16 +312,16 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 	}
 
 	@Override
-	public <T extends Entity, E extends T> Result<E> update(Serializable id, E entity, Class<E> type,
+	public <T extends Entity, E extends T> Result<E> update(Serializable id, E model, Class<E> type,
 			boolean flushOnFinish) {
 		try {
-			id = resolveId(id, entity);
+			id = resolveId(id, model);
 
-			Session ss = getCurrentSession();
+			Session session = getCurrentSession();
 
-			ss.setHibernateFlushMode(FlushMode.MANUAL);
+			session.setHibernateFlushMode(FlushMode.MANUAL);
 
-			E persistence = ss.load(type, id);
+			E persistence = session.load(type, id);
 			EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
 
 			if (logger.isDebugEnabled()) {
@@ -309,24 +329,31 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 			}
 			// persistence takes effects during updateBuild,
 			// assigning it to the return of updateBuild is just for the sake of it
-			entityBuilder.buildUpdate(id, entity, persistence);
+			entityBuilder.buildUpdate(id, model, persistence);
 
-			return finish(ss, repository.update(type, id, (E) ss.load(type, id)), flushOnFinish);
+			Result<E> validation = repository.validate(type, id, persistence, session);
+
+			if (!validation.isOk()) {
+				return validation;
+			}
+
+			persistence = session.load(type, id);
+			session.save(persistence);
+
+			return finish(session, Result.ok(persistence), flushOnFinish);
 		} catch (Exception e) {
 			return Result.failed(e.getMessage());
 		}
 	}
 
-	protected Map.Entry<Integer, Long> resolveLimitOffset(Pageable paging) {
-		return Map.entry(paging.getPageSize(), Long.valueOf(paging.getPageNumber() * paging.getPageSize()));
-	}
-
 	@Component
 	public class BatchWorker {
 
+		private static final String EXECUTION_LOG_TEMPLATE = "Executing creation batch in [%s]";
+
 		@Async(GenericCRUDServiceImpl.EXECUTOR_NAME)
 		@Transactional
-		<T extends Entity> CompletableFuture<Void> executeBatchCreate(
+		<T extends Entity> CompletableFuture<Void> doCreateBatch(
 		// @formatter:off
 			final Session session,
 			final List<Serializable> idBatch,
@@ -337,27 +364,37 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 			final EntityBuilder<T> builder,
 			final int start,
 			final int end,
-			final CountDownLatch latch
-		// @formatter:on
-		) {
+			final CountDownLatch latch) {
+			// @formatter:on
 			if (logger.isDebugEnabled()) {
-				logger.debug(String.format("Executing creation batch in [%s]", Thread.currentThread().getName()));
+				logger.debug(String.format(EXECUTION_LOG_TEMPLATE, Thread.currentThread().getName()));
 			}
 
 			IntStream.range(start, end).forEach(index -> {
 				try {
 					Serializable id = idBatch.get(index);
-					Result<T> result = repository.insert(type, id, builder.buildInsertion(id, entityBatch.get(index)),
-							session);
+					T entity = builder.buildInsertion(id, entityBatch.get(index));
+					Result<T> validation = repository.validate(type, id, entity, session);
 
-					results[index] = result;
-					statusSet.add(result.getStatus());
+					if (!validation.isOk()) {
+						results[index] = validation;
+						statusSet.add(validation.getStatus());
+
+						return;
+					}
+
+					entity = builder.buildPostValidationOnInsert(id, entity);
+					session.save(entity);
+					results[index] = Result.ok(entity);
+					statusSet.add(Status.OK);
 				} catch (Exception any) {
 					any.printStackTrace();
 					results[index] = Result.failed(any.getMessage());
 					statusSet.add(Status.FAILED);
 				}
 			});
+
+			latch.countDown();
 
 			return new CompletableFuture<>();
 		}
@@ -582,7 +619,7 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 	}
 
 	// @formatter:on
-	protected <T extends Entity> SourceMetadata<T> optionallyValidate(Class<T> type, Credential credential,
+	<T extends Entity> SourceMetadata<T> optionallyValidate(Class<T> type, Credential credential,
 			SourceMetadata<T> sourceMetadata) throws NoSuchFieldException, UnauthorizedCredential {
 		List<String> columns = sourceMetadata.getColumns();
 

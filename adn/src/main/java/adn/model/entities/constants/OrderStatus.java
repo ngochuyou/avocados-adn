@@ -9,4 +9,6 @@ package adn.model.entities.constants;
  */
 public enum OrderStatus {
 
+	PENDING_PAYMENT, PAID, EXPIRED, DELIVERING, FINISHED
+	
 }

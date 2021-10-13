@@ -245,7 +245,7 @@ public class DynamicMapModelProducerFactoryImpl implements DynamicMapModelProduc
 
 		private void modifyFunction(SecuredPropertyImpl<?> property,
 				HandledBiFunction<Arguments<?>, Credential, ?, Exception> newFnc) {
-			logger.debug(String.format("Overring function [%s] with [%s]", property.getFunction(), newFnc));
+			logger.trace(String.format("Overring function [%s] with [%s]", property.getFunction(), newFnc));
 			property.setFunction(newFnc);
 		}
 

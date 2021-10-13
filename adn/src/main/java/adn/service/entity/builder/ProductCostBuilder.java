@@ -5,7 +5,6 @@ package adn.service.entity.builder;
 
 import java.io.Serializable;
 import java.math.RoundingMode;
-import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Component;
 
@@ -23,9 +22,6 @@ public class ProductCostBuilder extends AbstractPermanentEntityBuilder<ProductCo
 	@Override
 	public <E extends ProductCost> E buildInsertion(Serializable id, E model) {
 		model = super.buildInsertion(id, model);
-
-		model.getId().setCreatedTimestamp(LocalDateTime.now());
-		model.setDroppedTimestamp(null);
 
 		if (model.getCost() != null) {
 			model.setCost(model.getCost().setScale(4, RoundingMode.HALF_UP));

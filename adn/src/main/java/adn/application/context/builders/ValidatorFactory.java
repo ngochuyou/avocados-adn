@@ -3,10 +3,19 @@
  */
 package adn.application.context.builders;
 
+import static adn.application.Common.notEmpty;
+
 import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.chrono.ChronoLocalDate;
+import java.time.chrono.ChronoLocalDateTime;
+import java.time.temporal.Temporal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import org.hibernate.Session;
@@ -21,17 +30,19 @@ import org.springframework.util.ClassUtils;
 
 import adn.application.Common;
 import adn.application.Constants;
+import adn.application.Result;
 import adn.application.context.ContextProvider;
 import adn.application.context.internal.ContextBuilder;
 import adn.dao.generic.GenericRepository;
-import adn.dao.generic.Result;
 import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
 import adn.helpers.TypeHelper;
 import adn.model.Generic;
 import adn.model.entities.Entity;
 import adn.model.entities.NamedResource;
+import adn.model.entities.SpannedResource;
 import adn.model.entities.metadata._NamedResource;
+import adn.model.entities.metadata._SpannedResource;
 import adn.model.entities.validator.AbstractCompositeEntityValidator;
 import adn.model.entities.validator.Validator;
 
@@ -49,12 +60,12 @@ public class ValidatorFactory implements ContextBuilder {
 
 		@Override
 		public Result<Entity> isSatisfiedBy(Session session, Entity instance) {
-			return Result.success(instance);
+			return Result.ok(instance);
 		}
 
 		@Override
 		public Result<Entity> isSatisfiedBy(Session session, Serializable id, Entity instance) {
-			return Result.success(instance);
+			return Result.ok(instance);
 		}
 
 		@Override
@@ -64,7 +75,7 @@ public class ValidatorFactory implements ContextBuilder {
 
 	};
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public void buildAfterStartUp() {
 		Logger logger = LoggerFactory.getLogger(ValidatorFactory.class);
@@ -95,7 +106,9 @@ public class ValidatorFactory implements ContextBuilder {
 			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
 
-		final NamedResourceValidator namedResourceValidator = new NamedResourceValidator(ContextProvider.getBean(GenericRepository.class));
+		final Map<Class, Validator> fixedValidators = Map.of(
+				NamedResource.class, new NamedResourceValidator(ContextProvider.getBean(GenericRepository.class)),
+				SpannedResource.class, new SpannedResourceValidator());
 		
 		modelManager.getEntityTree()
 			.forEach(branch -> {
@@ -118,14 +131,16 @@ public class ValidatorFactory implements ContextBuilder {
 				}
 				
 				Validator<?> validator = validatorMap.get(type);
-
-				if (ClassUtils.getAllInterfacesForClassAsSet(type).contains(NamedResource.class)) {
-					if (!validator.equals(DEFAULT_VALIDATOR)) {
-						validatorMap.put(type, namedResourceValidator.and(validator));
-						return;
+				
+				for (Class<?> interfaceType: ClassUtils.getAllInterfacesForClassAsSet(type)) {
+					if (fixedValidators.containsKey(interfaceType)) {
+						if (!validator.equals(DEFAULT_VALIDATOR)) {
+							validatorMap.put(type, fixedValidators.get(interfaceType).and(validator));
+							return;
+						}
+						
+						validatorMap.put(type, fixedValidators.get(interfaceType));
 					}
-					
-					validatorMap.put(type, namedResourceValidator);
 				}
 			});
 		validatorMap.forEach((k, v) -> logger.debug(String.format("Registered %s for [%s] ", v.getLoggableName(), k.getName())));
@@ -165,11 +180,6 @@ public class ValidatorFactory implements ContextBuilder {
 		}
 
 		@Override
-		public Result isSatisfiedBy(Session session, Entity instance) {
-			return isSatisfiedBy(session, HibernateHelper.getIdentifier(instance), instance);
-		}
-
-		@Override
 		public Result isSatisfiedBy(Session session, Serializable id, Entity instance) {
 			NamedResource resource = (NamedResource) instance;
 
@@ -189,7 +199,102 @@ public class ValidatorFactory implements ContextBuilder {
 				return Result.bad(Map.of(_NamedResource.name, TAKEN_NAME));
 			}
 			// @formatter:on
-			return Result.success(instance);
+			return Result.ok(instance);
+		}
+
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static class SpannedResourceValidator extends AbstractCompositeEntityValidator {
+
+		private static final String UNSUPPORTED_TEMPORAL_TYPE_TEMPLATE = String.format("Unsupported %s type: [%s]",
+				Temporal.class.getSimpleName(), "%s");
+
+		private static final String MISSING_APPLIED_TIMESTAMP = notEmpty("Applied timestamp");
+		private static final String MISSING_DROPPED_TIMESTAMP = notEmpty("Dropped timestamp");
+		private static final String INVALID_TIMESTAMP = Common.sequential("Applied timestamp", "dropped timestamp");
+		// @formatter:off
+		private static final Map<Class<? extends Temporal>, Class<? extends Temporal>> CONSUMER_KEY_RESOLVERS = Map.of(
+				LocalDateTime.class, ChronoLocalDateTime.class,
+				LocalDate.class, ChronoLocalDate.class,
+				LocalTime.class, LocalTime.class);
+		private static final Map<Class<? extends Temporal>, SpanValidator> CONSUMERS;
+		
+		static {
+			Map<Class<? extends Temporal>, SpanValidator> consumers = new HashMap<>(0, 1f);
+			
+			consumers.put(ChronoLocalDateTime.class, (temporalType, resource, result, resultConsumer) -> {
+				ChronoLocalDateTime appliedTimestamp = (ChronoLocalDateTime) resource.getAppliedTimestamp();
+				ChronoLocalDateTime droppedTimestamp = (ChronoLocalDateTime) resource.getDroppedTimestamp();
+
+				if (appliedTimestamp.isAfter(droppedTimestamp)) {
+					resultConsumer.accept(result);
+				}
+			});
+			consumers.put(ChronoLocalDate.class, (temporalType, resource, result, resultConsumer) -> {
+				ChronoLocalDate appliedTimestamp = (ChronoLocalDate) resource.getAppliedTimestamp();
+				ChronoLocalDate droppedTimestamp = (ChronoLocalDate) resource.getDroppedTimestamp();
+
+				if (appliedTimestamp.isAfter(droppedTimestamp)) {
+					resultConsumer.accept(result);
+				}
+			});
+			consumers.put(LocalTime.class, (temporalType, resource, result, resultConsumer) -> {
+				LocalTime appliedTimestamp = (LocalTime) resource.getAppliedTimestamp();
+				LocalTime droppedTimestamp = (LocalTime) resource.getDroppedTimestamp();
+
+				if (appliedTimestamp.isAfter(droppedTimestamp)) {
+					resultConsumer.accept(result);
+				}
+			});
+			consumers.put(null, (temporalType, resource, result, resultConsumer) -> {
+				throw new IllegalArgumentException(String.format(UNSUPPORTED_TEMPORAL_TYPE_TEMPLATE, temporalType.getName()));
+			});
+			
+			CONSUMERS = Collections.unmodifiableMap(consumers);
+		}
+		// @formatter:on
+		@Override
+		public Result isSatisfiedBy(Session session, Serializable id, Entity instance) {
+			SpannedResource resource = (SpannedResource) instance;
+			Result result = Result.ok(instance);
+
+			boolean hasAppliedTimestamp = resource.getAppliedTimestamp() != null;
+
+			if (!hasAppliedTimestamp) {
+				result.bad(_SpannedResource.appliedTimestamp, MISSING_APPLIED_TIMESTAMP);
+			}
+
+			boolean hasDroppedTimestamp = resource.getDroppedTimestamp() != null;
+
+			if (!hasDroppedTimestamp) {
+				result.bad(_SpannedResource.droppedTimestamp, MISSING_DROPPED_TIMESTAMP);
+			}
+
+			if (hasAppliedTimestamp && hasDroppedTimestamp) {
+				assertSpan(resource, result);
+			}
+
+			return result;
+		}
+
+		private void assertSpan(SpannedResource resource, Result result) {
+			Class<? extends Temporal> temporalType = resource.getAppliedTimestamp().getClass();
+
+			CONSUMERS.get(CONSUMER_KEY_RESOLVERS.get(temporalType)).validate(temporalType, resource, result,
+					this::makeResultBad);
+		}
+
+		private void makeResultBad(Result result) {
+			result.bad(_SpannedResource.droppedTimestamp, INVALID_TIMESTAMP);
+			result.bad(_SpannedResource.appliedTimestamp, INVALID_TIMESTAMP);
+		}
+
+		private interface SpanValidator {
+
+			void validate(Class<? extends Temporal> temporalType, SpannedResource source, Result result,
+					Consumer<Result> resultConsumer);
+
 		}
 
 	}

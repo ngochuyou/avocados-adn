@@ -14,5 +14,7 @@ public interface _ApprovableResource {
 
 	String approvedBy = "approvedBy";
 	String $approvedBy = "approved_by";
+	
+	String approvalInformations = "approvalInformations";
 
 }

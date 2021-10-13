@@ -7,11 +7,14 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.util.StringUtils;
+
+import adn.application.Common;
 
 /**
  * @author Ngoc Huy
@@ -19,12 +22,15 @@ import org.springframework.util.StringUtils;
  */
 public class StringHelper extends StringUtils {
 
+	public static final String EMPTY_STRING = "";
+	public static final String COMMON_JOINER = ", ";
+
 	public static final String VIETNAMESE_CHARACTERS = "ÁáÀàẢảÃãẠạĂăẮắẰằẲẳẴẵẶặÂâẤấẦầẨẩẪẫẬậĐđÉéÈèẺẻẼẽẸẹÊêỂểẾếỀềỄễỆệÍíÌìỊịỈỉĨĩỊịÓóÒòỎỏÕõỌọÔôỐốỒồỔổỖỗỘộƠơỚớỜờỞởỠỡỢợÚùÙùỦủŨũỤụƯưỨứỪừỬửỮữỰựÝýỲỳỶỷỸỹỴỵ";
 
 	public static final String EMAIL_REGEX = "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])";
 
 	public static final String BCRYPT_REGEX = "^\\$2[ayb]\\$.{56}$";
-	public static final String WHITESPACE_CHARS = "" /* dummy empty string for homogeneity */
+	public static final String WHITESPACE_CHARS = EMPTY_STRING
 			+ "\\u0009" // CHARACTER TABULATION
 			+ "\\u000A" // LINE FEED (LF)
 			+ "\\u000B" // LINE TABULATION
@@ -109,7 +115,7 @@ public class StringHelper extends StringUtils {
 	}
 
 	public static String removeSpaces(String string) {
-		return hasLength(string) ? string.trim().replaceAll(WHITESPACE_CHAR_CLASS + "+", "") : string;
+		return hasLength(string) ? string.trim().replaceAll(WHITESPACE_CHAR_CLASS + "+", EMPTY_STRING) : string;
 	}
 
 	public static String toCamel(String s, CharSequence seperator) {
@@ -120,22 +126,22 @@ public class StringHelper extends StringUtils {
 
 			if (parts.length > 1) {
 				StringBuilder builder = new StringBuilder(
-						("" + parts[0].charAt(0)).toLowerCase() + parts[0].substring(1, parts[0].length()));
+						(EMPTY_STRING + parts[0].charAt(0)).toLowerCase() + parts[0].substring(1, parts[0].length()));
 
 				for (int i = 1; i < parts.length; i++) {
-					builder.append(("" + parts[i].charAt(0)).toUpperCase() + parts[i].substring(1, parts[i].length()));
+					builder.append((EMPTY_STRING + parts[i].charAt(0)).toUpperCase() + parts[i].substring(1, parts[i].length()));
 				}
 
 				return builder.toString();
 			}
 		}
 
-		return ("" + input.charAt(0)).toLowerCase() + input.substring(1);
+		return (EMPTY_STRING + input.charAt(0)).toLowerCase() + input.substring(1);
 	}
 
 	public static String getFirstWord(String str) {
 		for (int i = 0; i < str.length(); i++) {
-			if (("" + str.charAt(i)).matches(WHITESPACE_CHAR_CLASS)) {
+			if ((EMPTY_STRING + str.charAt(i)).matches(WHITESPACE_CHAR_CLASS)) {
 				return str.substring(0, i);
 			}
 		}
@@ -146,17 +152,25 @@ public class StringHelper extends StringUtils {
 	public static Optional<String> get(String in) {
 		return Optional.ofNullable(hasLength(in) ? in : null);
 	}
-	
+
 	public static Optional<String> get(String in, String append) {
-		return Optional.ofNullable(hasLength(in) ? String.format("%s %s", in, append) : null);
+		return Optional.ofNullable(hasLength(in) ? String.format(Common.COMMON_TEMPLATE, in, append) : null);
 	}
 
-	public static String join(String... strings) {
-		return Stream.of(strings).collect(Collectors.joining(", "));
+	public static String join(Object... strings) {
+		return join(COMMON_JOINER, strings);
+	}
+
+	public static String join(CharSequence joiner, Object... strings) {
+		return Stream.of(strings).map(Object::toString).collect(Collectors.joining(joiner));
 	}
 	
-	public static String join(CharSequence joiner, String... strings) {
-		return Stream.of(strings).collect(Collectors.joining(joiner));
+	public static String join(Collection<Object> elements) {
+		return join(COMMON_JOINER, elements);
+	}
+
+	public static String join(CharSequence joiner, Collection<Object> elements) {
+		return elements.stream().map(Object::toString).collect(Collectors.joining(joiner));
 	}
 
 }

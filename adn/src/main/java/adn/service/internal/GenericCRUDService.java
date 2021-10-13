@@ -8,14 +8,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
-import adn.application.context.ContextProvider;
-import adn.dao.generic.Result;
+import adn.application.Result;
 import adn.dao.generic.ResultBatch;
 import adn.model.entities.Entity;
 import adn.model.factory.authentication.Credential;
@@ -47,9 +44,6 @@ public interface GenericCRUDService extends Service {
 
 	<T extends Entity, E extends T> Result<E> update(Serializable id, E model, Class<E> type, boolean flushOnFinish);
 
-	default Session getCurrentSession() {
-		return ContextProvider.getApplicationContext().getBean(SessionFactory.class).getCurrentSession();
-	}
 	// @formatter:off
 	<T extends Entity> List<Map<String, Object>> readAllByAssociation(
 			Class<T> type,
@@ -77,7 +71,7 @@ public interface GenericCRUDService extends Service {
 			Class<? extends Entity> associatingType,
 			String associatingAttribute,
 			String associationProperty,
-			Serializable associationIdentifier,
+			Serializable associationValue,
 			Collection<String> columns,
 			Pageable pageable,
 			Credential credential,
@@ -89,7 +83,7 @@ public interface GenericCRUDService extends Service {
 			Class<? extends Entity> associatingType,
 			String associatingAttribute,
 			String associationProperty,
-			Serializable associationIdentifier,
+			Serializable associationValue,
 			Pageable pageable,
 			Credential credential,
 			SourceMetadata<T> sourceMetadata,

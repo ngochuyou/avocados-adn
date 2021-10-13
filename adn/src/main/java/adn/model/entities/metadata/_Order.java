@@ -13,6 +13,10 @@ public class _Order extends _PermanentEntity {
 
 	public static final String status = "status";
 
+	public static final String address = "address";
+
+	public static final String district = "district";
+
 	public static final String deliveryFee = "deliveryFee";
 
 	public static final String createdTimestamp = "createdTimestamp";

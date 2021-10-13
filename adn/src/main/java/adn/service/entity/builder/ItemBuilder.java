@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 import adn.application.context.ContextProvider;
 import adn.model.Generic;
 import adn.model.entities.Item;
-import adn.model.entities.constants.Status;
+import adn.model.entities.constants.ItemStatus;
 
 /**
  * @author Ngoc Huy
@@ -38,7 +38,7 @@ public class ItemBuilder extends AbstractPermanentEntityBuilder<Item> {
 		target.setNumericSize(model.getNumericSize());
 		target.setColor(normalizeString(model.getColor()));
 		target.setNote(normalizeString(model.getNote()));
-		target.setStatus(Optional.ofNullable(model.getStatus()).orElse(Status.AVAILABLE));
+		target.setStatus(Optional.ofNullable(model.getStatus()).orElse(ItemStatus.AVAILABLE));
 
 		return target;
 	}
@@ -49,16 +49,25 @@ public class ItemBuilder extends AbstractPermanentEntityBuilder<Item> {
 
 		if (model.getCost() != null) {
 			model.setCost(model.getCost().setScale(4, RoundingMode.HALF_UP));
-
-			ContextProvider.getCurrentSession().persist(model);
-			id = model.getId();
-
-			if (logger.isDebugEnabled()) {
-				logger.debug(String.format(CODE_GENERATION_MESSAGE, id));
-			}
-
-			model.setCode(crockfords.format((BigInteger) id));
 		}
+
+		if (model.getPrice() != null) {
+			model.setPrice(model.getPrice().setScale(4, RoundingMode.HALF_UP));
+		}
+
+		return model;
+	}
+
+	@Override
+	public <E extends Item> E buildPostValidationOnInsert(Serializable id, E model) {
+		ContextProvider.getCurrentSession().persist(model);
+		id = model.getId();
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(String.format(CODE_GENERATION_MESSAGE, id));
+		}
+
+		model.setCode(crockfords.format((BigInteger) id));
 
 		return model;
 	}

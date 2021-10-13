@@ -35,7 +35,7 @@ import adn.model.entities.AuditableResource;
 import adn.model.entities.Entity;
 import adn.model.entities.NamedResource;
 import adn.model.entities.Operator;
-import adn.service.entity.builder.AbstractCompositeEntityBuilder;
+import adn.service.entity.builder.EntityBuilderContract;
 import adn.service.entity.builder.EntityBuilder;
 import adn.service.services.AuthenticationService;
 
@@ -49,7 +49,7 @@ public class EntityBuilderProvider implements ContextBuilder {
 	private static final String DEFAULT_BUILDER_NAME = "DEFAULT_BUILDER";
 
 	private Map<Class<? extends Entity>, EntityBuilder<? extends Entity>> builderMap;
-	private static final EntityBuilder<Entity> DEFAULT_BUILDER = new AbstractCompositeEntityBuilder<Entity>() {
+	private static final EntityBuilder<Entity> DEFAULT_BUILDER = new EntityBuilderContract<Entity>() {
 
 		@Override
 		public <E extends Entity> E buildUpdate(Serializable id, E entity, E persistence) {
@@ -178,7 +178,7 @@ public class EntityBuilderProvider implements ContextBuilder {
 	}
 
 	@SuppressWarnings("rawtypes")
-	private class NamedResourceBuilder extends AbstractCompositeEntityBuilder {
+	private class NamedResourceBuilder extends EntityBuilderContract {
 
 		private Entity build(Entity target, Entity model) {
 			NamedResource targetedResource = (NamedResource) target;
@@ -207,7 +207,7 @@ public class EntityBuilderProvider implements ContextBuilder {
 	}
 
 	@SuppressWarnings("rawtypes")
-	private class AuditableResourceBuilder extends AbstractCompositeEntityBuilder {
+	private class AuditableResourceBuilder extends EntityBuilderContract {
 
 		private final AuthenticationService authService;
 
@@ -247,7 +247,7 @@ public class EntityBuilderProvider implements ContextBuilder {
 	}
 
 	@SuppressWarnings("rawtypes")
-	private class ApprovableResourceBuilder extends AbstractCompositeEntityBuilder {
+	private class ApprovableResourceBuilder extends EntityBuilderContract {
 
 		@Override
 		public Entity buildInsertion(Serializable id, Entity entity) {

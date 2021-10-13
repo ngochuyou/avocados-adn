@@ -28,9 +28,11 @@ public class _Item extends _PermanentEntity implements _AuditableResource {
 	public static final String cost = "cost";
 
 	public static final String product = "product";
-
+	public static final String $product = "product_id";
+	
 	public static final String provider = "provider";
-
+	public static final String $provider = "provider_id";
+	
 	public static final String price = "price";
 
 	public static final int MAXIMUM_NAMED_SIZE_LENGTH = 4;

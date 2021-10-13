@@ -7,6 +7,7 @@ import static adn.application.Common.SHARED_TABLE_GENERATOR;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Optional;
 
 import javax.persistence.Column;
 import javax.persistence.Embedded;
@@ -16,6 +17,7 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
@@ -23,9 +25,9 @@ import javax.persistence.TableGenerator;
 
 import adn.application.Common;
 import adn.model.entities.constants.NamedSize;
-import adn.model.entities.constants.Status;
+import adn.model.entities.constants.ItemStatus;
 import adn.model.entities.metadata._Item;
-import adn.model.entities.metadata._ProductPrice;
+import adn.model.entities.metadata._Product;
 import adn.model.entities.metadata._Provider;
 
 /**
@@ -33,51 +35,51 @@ import adn.model.entities.metadata._Provider;
  *
  */
 @javax.persistence.Entity
-@Table(name = "items")
+@Table(name = "items", indexes = @Index(columnList = _Item.$product))
 public class Item extends PermanentEntity implements AuditableResource<BigInteger> {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.TABLE, generator = SHARED_TABLE_GENERATOR)
 	@TableGenerator(name = SHARED_TABLE_GENERATOR, initialValue = Common.CROCKFORD_10A
-			- 1, allocationSize = 1, table = Common.SHARED_TABLE_GENERATOR_TABLENAME)
-	@Column(updatable = false)
+			- 1, table = Common.SHARED_TABLE_GENERATOR_TABLENAME)
+	@Column(updatable = false, columnDefinition = Common.MYSQL_BIGINT_COLUMN_DEFINITION)
 	private BigInteger id;
 
 	@Column(unique = true)
 	private String code;
 
-	@Enumerated
-	@Column(name = "named_size", length = _Item.MAXIMUM_NAMED_SIZE_LENGTH)
+	@Enumerated(EnumType.STRING)
+	@Column(length = _Item.MAXIMUM_NAMED_SIZE_LENGTH)
 	private NamedSize namedSize;
 
-	@Column(name = "numeric_size", columnDefinition = "TINYINT UNSIGNED")
+	@Column(columnDefinition = "TINYINT UNSIGNED")
 	private Integer numericSize;
 
-	@Column(name = "color", length = _Item.MAXIMUM_NAMED_COLOR_LENGTH, nullable = false)
+	@Column(length = _Item.MAXIMUM_NAMED_COLOR_LENGTH, nullable = false)
 	private String color;
 
 	private String note;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, columnDefinition = "VARCHAR(20)")
-	private Status status;
+	private ItemStatus status;
 
 	@Column(nullable = false, columnDefinition = Common.MYSQL_CURRENCY_COLUMN_DEFINITION)
 	private BigDecimal cost;
-
-	@ManyToOne(optional = false, fetch = FetchType.LAZY)
-	private Product product;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(referencedColumnName = _Provider.$id)
 	private Provider provider;
 
-	@Embedded
-	private AuditInformations auditInformations;
+	@Column(nullable = false, columnDefinition = Common.MYSQL_CURRENCY_COLUMN_DEFINITION)
+	private BigDecimal price;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(referencedColumnName = _ProductPrice.$id)
-	private ProductPrice price;
+	@JoinColumn(referencedColumnName = _Product.$id, columnDefinition = Common.MYSQL_BIGINT_COLUMN_DEFINITION)
+	private Product product;
+
+	@Embedded
+	private AuditInformations auditInformations;
 
 	@Override
 	public BigInteger getId() {
@@ -86,14 +88,6 @@ public class Item extends PermanentEntity implements AuditableResource<BigIntege
 
 	public void setId(BigInteger id) {
 		this.id = id;
-	}
-
-	public Product getProduct() {
-		return product;
-	}
-
-	public void setProduct(Product product) {
-		this.product = product;
 	}
 
 	public NamedSize getNamedSize() {
@@ -128,11 +122,11 @@ public class Item extends PermanentEntity implements AuditableResource<BigIntege
 		this.provider = provider;
 	}
 
-	public Status getStatus() {
+	public ItemStatus getStatus() {
 		return status;
 	}
 
-	public void setStatus(Status status) {
+	public void setStatus(ItemStatus status) {
 		this.status = status;
 	}
 
@@ -162,19 +156,31 @@ public class Item extends PermanentEntity implements AuditableResource<BigIntege
 
 	@Override
 	public AuditInformations getAuditInformations() {
+		if (auditInformations == null) {
+			auditInformations = new AuditInformations();
+		}
+
 		return auditInformations;
 	}
 
 	public void setAuditInformations(AuditInformations auditInformations) {
-		this.auditInformations = auditInformations;
+		this.auditInformations = Optional.ofNullable(auditInformations).orElse(new AuditInformations());
 	}
 
-	public ProductPrice getPrice() {
+	public BigDecimal getPrice() {
 		return price;
 	}
 
-	public void setPrice(ProductPrice price) {
+	public void setPrice(BigDecimal price) {
 		this.price = price;
+	}
+
+	public Product getProduct() {
+		return product;
+	}
+
+	public void setProduct(Product product) {
+		this.product = product;
 	}
 
 }

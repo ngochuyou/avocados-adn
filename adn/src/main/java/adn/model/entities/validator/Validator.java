@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 import org.hibernate.Session;
 
-import adn.dao.generic.Result;
+import adn.application.Result;
 import adn.model.entities.Entity;
 
 /**

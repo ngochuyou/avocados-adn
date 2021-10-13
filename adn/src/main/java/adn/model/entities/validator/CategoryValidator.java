@@ -9,7 +9,7 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
 import adn.application.Common;
-import adn.dao.generic.Result;
+import adn.application.Result;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Category;
@@ -37,7 +37,7 @@ public class CategoryValidator extends AbstractPermanentEntityValidator<Category
 
 		if (StringHelper.hasLength(instance.getDescription())
 				&& !_Category.DESCRIPTION_PATTERN.matcher(instance.getDescription()).matches()) {
-			result.bad().getMessages().put(_Category.description, INVALID_DESCRIPTION);
+			result.bad(_Category.description, INVALID_DESCRIPTION);
 		}
 
 		return result;

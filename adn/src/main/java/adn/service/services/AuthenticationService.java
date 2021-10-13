@@ -23,6 +23,7 @@ import adn.application.context.ContextProvider;
 import adn.application.context.builders.ConfigurationContext;
 import adn.application.context.builders.DepartmentScopeContext;
 import adn.controller.exception.UnauthorisedDepartmentException;
+import adn.model.entities.Customer;
 import adn.model.entities.Head;
 import adn.model.entities.Operator;
 import adn.model.entities.Personnel;
@@ -42,6 +43,10 @@ import io.jsonwebtoken.SignatureAlgorithm;
 @org.springframework.stereotype.Service
 public class AuthenticationService implements Service {
 
+	/**
+	 * 
+	 */
+	private static final String ROLE_MISMATCH_TEMPLATE = "Cannot resolve role [%s] to %s";
 	private static final String VERSION_KEY = "version";
 	private static final int EXPIRE_DAYS = 14;
 
@@ -190,9 +195,15 @@ public class AuthenticationService implements Service {
 	}
 	
 	public Head getHead() {
-		Assert.isTrue(getPrincipalRole() == HEAD, String.format("Cannot resolve role [%s] to %s", getPrincipalRole(), Head.class.getName()));
+		Assert.isTrue(getPrincipalRole() == HEAD, String.format(ROLE_MISMATCH_TEMPLATE, getPrincipalRole(), Head.class.getName()));
 		
 		return new Head(getPrincipalName());
+	}
+	
+	public Customer getCustomer() {
+		Assert.isTrue(getPrincipalRole() == Role.CUSTOMER, String.format(ROLE_MISMATCH_TEMPLATE, getPrincipalRole(), Customer.class.getName()));
+		
+		return new Customer(getPrincipalName());
 	}
 
 }

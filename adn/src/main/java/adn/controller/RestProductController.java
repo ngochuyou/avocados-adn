@@ -7,6 +7,7 @@ import static adn.application.context.ContextProvider.getPrincipalCredential;
 import static org.springframework.http.ResponseEntity.ok;
 
 import java.math.BigInteger;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,14 +34,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.Common;
+import adn.application.Result;
 import adn.controller.query.impl.ProductQuery;
 import adn.dao.generic.ResultBatch;
+import adn.helpers.CollectionHelper;
 import adn.model.entities.Category;
 import adn.model.entities.Item;
 import adn.model.entities.Product;
+import adn.model.entities.ProductPrice;
+import adn.model.entities.id.ProductPriceId;
 import adn.model.entities.metadata._Category;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
-import adn.model.models.StockDetailBatch;
+import adn.model.models.ItemBatch;
+import adn.model.models.ProductPriceModel;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Service.Status;
 import adn.service.services.AuthenticationService;
@@ -67,7 +73,7 @@ public class RestProductController extends ProductController {
 	@GetMapping("/count")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getProductCount() {
-		return makeStaleWhileRevalidate(baseRepository.count(Product.class), 2, TimeUnit.DAYS, 7, TimeUnit.DAYS);
+		return makeStaleWhileRevalidate(genericRepository.count(Product.class), 2, TimeUnit.DAYS, 7, TimeUnit.DAYS);
 	}
 
 	private String getProductNotFoundMessage(BigInteger productId) {
@@ -86,16 +92,12 @@ public class RestProductController extends ProductController {
 	@GetMapping
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getProducts(
-			@RequestParam(name = "category", required = false, defaultValue = "") Long categoryId,
-			@RequestParam(name = "by", required = false, defaultValue = "") String identifierName,
+			@RequestParam(name = "category", required = false, defaultValue = "") Long categoryIdentifier,
+			@RequestParam(name = "by", required = false, defaultValue = "") String categoryIdentifierName,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
-			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
-		if (categoryId != null) {
-			return ok(productService.readProductsByCategory(categoryId, identifierName, columns, paging,
-					getPrincipalCredential()));
-		}
-
-		return ok(crudService.readAll(Product.class, columns, paging, getPrincipalCredential()));
+			@PageableDefault(size = 10) Pageable paging) throws Exception {
+		return ok(productService.readOnSaleProducts(categoryIdentifier, categoryIdentifierName, columns, paging,
+				getPrincipalCredential()));
 	}
 
 	@PatchMapping("/approve/{productId}")
@@ -104,13 +106,32 @@ public class RestProductController extends ProductController {
 	public ResponseEntity<?> approveProduct(@PathVariable(name = "productId") BigInteger productId) throws Exception {
 		authService.assertSaleDepartment();
 
-		Optional<Product> persistence = baseRepository.findById(Product.class, productId);
+		Optional<Product> persistence = genericRepository.findById(Product.class, productId);
 
 		if (persistence.isEmpty()) {
-			return sendNotFound(Map.of(Common.MESSAGE, getProductNotFoundMessage(productId)));
+			return notFound(Map.of(Common.MESSAGE, getProductNotFoundMessage(productId)));
 		}
 
-		return send(productService.approveProduct(productId, true));
+		return send(genericService.approve(Product.class, productId, true));
+	}
+
+	@PatchMapping("/lockstate/{productId}/{lockState}")
+	@Transactional
+	@Secured({ HEAD, PERSONNEL })
+	public ResponseEntity<?> changeProductLockState(
+	// @formatter:off
+			@PathVariable(name = "productId") BigInteger productId,
+			@PathVariable(name = "lockState") boolean lockState) throws Exception {
+		// @formatter:on
+		authService.assertSaleDepartment();
+
+		Optional<Product> persistence = genericRepository.findById(Product.class, productId);
+
+		if (persistence.isEmpty()) {
+			return notFound(Map.of(Common.MESSAGE, getProductNotFoundMessage(productId)));
+		}
+
+		return send(productService.changeLockState(productId, lockState, true));
 	}
 
 	@GetMapping("/search")
@@ -119,11 +140,61 @@ public class RestProductController extends ProductController {
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
 			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
 		if (!query.hasCriteria()) {
-			return sendBad(Common.INVALID_SEARCH_CRITERIA);
+			return bad(Common.INVALID_SEARCH_CRITERIA);
 		}
 
 		return ResponseEntity.ok(productService.searchProduct(columns, paging, query, getPrincipalCredential()));
 	}
+
+	@PostMapping("/price")
+	@Secured({ HEAD, PERSONNEL })
+	@Transactional
+	public ResponseEntity<?> submitProductPrice(@RequestBody ProductPriceModel model) throws Exception {
+		authService.assertSaleDepartment();
+
+		ProductPrice price = extract(ProductPrice.class, model, new ProductPrice());
+
+		return send(productService.createProductPrice(price, true));
+	}
+
+	@PatchMapping("/price/approve")
+	@Secured(HEAD)
+	@Transactional
+	public ResponseEntity<?> approveProductPrice(@RequestParam(name = "product", required = true) BigInteger productId,
+			@RequestParam(name = "applied", required = true) @DateTimeFormat(pattern = Common.COMMON_LDT_FORMAT) LocalDateTime appliedTimestamp,
+			@RequestParam(name = "dropped", required = true) @DateTimeFormat(pattern = Common.COMMON_LDT_FORMAT) LocalDateTime droppedTimestamp)
+			throws Exception {
+		ProductPriceId persistenceId = new ProductPriceId(productId, appliedTimestamp, droppedTimestamp);
+		Optional<ProductPrice> persistence = genericRepository.findById(ProductPrice.class, persistenceId);
+
+		if (persistence.isEmpty()) {
+			return notFound(Common.notfound(persistenceId));
+		}
+
+		return send(genericService.approve(ProductPrice.class, persistenceId, true));
+	}
+
+//	@PatchMapping("/price")
+//	@Secured({ HEAD, PERSONNEL })
+//	@Transactional
+//	// @formatter:off
+//	public ResponseEntity<?> updateProductPrice(
+//			@RequestParam(name = "product", required = true) BigInteger productId,
+//			@RequestParam(name = "applied", required = true) LocalDateTime appliedTimestamp,
+//			@RequestParam(name = "dropped", required = true) LocalDateTime droppedTimestamp,
+//			@RequestBody ProductPriceModel model) {
+//	// @formatter:on
+//		authService.assertSaleDepartment();
+//
+//		ProductPriceId persistenceId = new ProductPriceId(productId, appliedTimestamp, droppedTimestamp);
+//		Optional<ProductPrice> persistence = genericRepository.findById(ProductPrice.class, persistenceId);
+//
+//		if (persistence.isEmpty()) {
+//			return notFound(Common.notfound(persistenceId));
+//		}
+//
+//		return null;
+//	}
 
 	@PostMapping("/category")
 	@Secured({ HEAD, PERSONNEL })
@@ -141,10 +212,10 @@ public class RestProductController extends ProductController {
 	public ResponseEntity<?> updateCategory(@RequestBody Category model) throws Exception {
 		authService.assertSaleDepartment();
 
-		Optional<Category> optional = baseRepository.findById(Category.class, model.getId());
+		Optional<Category> optional = genericRepository.findById(Category.class, model.getId());
 
 		if (optional.isEmpty()) {
-			return sendNotFound(String.format("Category %s not found", model.getId()));
+			return notFound(String.format("Category %s not found", model.getId()));
 		}
 
 		return send(crudService.update(optional.get().getId(), model, Category.class, true));
@@ -156,7 +227,7 @@ public class RestProductController extends ProductController {
 	public ResponseEntity<?> getCategoryList(@PageableDefault(size = 5) Pageable pageable,
 			@RequestParam(name = "columns", defaultValue = "") List<String> columns)
 			throws NoSuchFieldException, UnauthorizedCredential {
-		return send(crudService.readAll(Category.class, columns, pageable, getPrincipalCredential()), null);
+		return ok(crudService.readAll(Category.class, columns, pageable, getPrincipalCredential()));
 	}
 
 	@GetMapping("/category/all")
@@ -169,33 +240,38 @@ public class RestProductController extends ProductController {
 	@GetMapping("/category/count")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getCategoryCount() {
-		return makeStaleWhileRevalidate(baseRepository.count(Category.class), 1, TimeUnit.DAYS, 3, TimeUnit.DAYS);
+		return makeStaleWhileRevalidate(genericRepository.count(Category.class), 1, TimeUnit.DAYS, 3, TimeUnit.DAYS);
 	}
 
-	@PostMapping("/stockdetail")
+	@PostMapping("/item")
 	@Secured({ HEAD, PERSONNEL })
 	@Transactional
-	public ResponseEntity<?> createStockDetails(@RequestBody(required = true) StockDetailBatch batch) {
+	public ResponseEntity<?> createItemBatch(@RequestBody ItemBatch batch) {
 		authService.assertStockDepartment();
 
-		ResultBatch<Item> results = crudService.createBatch(batch.getDetails(), Item.class, true);
+		ResultBatch<Item> resultBatch = productService.createItemsBatch(batch.getItems(), true);
 
-		if (results.isOk()) {
-			return ResponseEntity.ok(results.getResults().stream().map(result -> {
+		if (resultBatch.isOk()) {
+			return ResponseEntity.ok(resultBatch.getResults().stream().map(result -> {
 				try {
-					return dynamicMapModelFactory.producePojo(result.getInstance(), null, getPrincipalCredential());
+					return produce(result.getInstance(), Item.class, getPrincipalCredential());
 				} catch (UnauthorizedCredential e) {
 					return e.getMessage();
 				}
 			}).collect(Collectors.toList()));
 		}
 
-		if (results.getStatus() == Status.BAD) {
-			return sendBad(
-					results.getResults().stream().map(result -> result.getMessages()).collect(Collectors.toList()));
+		if (resultBatch.getStatus() == Status.BAD) {
+			List<Result<Item>> results = resultBatch.getResults();
+			
+			if (!CollectionHelper.isEmpty(results)) {
+				return bad(results.stream().map(Result::getMessages).collect(Collectors.toList()));
+			}
+			
+			return bad(resultBatch.getMessage());
 		}
 
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Common.FAILED);
+		return fails(Common.error(resultBatch.getMessage()));
 	}
 
 }

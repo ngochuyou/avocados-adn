@@ -11,11 +11,11 @@ import adn.model.entities.Entity;
  * @author Ngoc Huy
  *
  */
-public abstract class AbstractCompositeEntityBuilder<T extends Entity> implements EntityBuilder<T> {
+public abstract class EntityBuilderContract<T extends Entity> implements EntityBuilder<T> {
 
 	@Override
 	public <E extends T> EntityBuilder<E> and(EntityBuilder<E> next) {
-		return new CompositeEntityBuilderImpl<>(this, next);
+		return new CompositeEntityBuilder<>(this, next);
 	}
 
 	@Override
@@ -23,12 +23,12 @@ public abstract class AbstractCompositeEntityBuilder<T extends Entity> implement
 		return this.getClass().getSimpleName();
 	}
 
-	private class CompositeEntityBuilderImpl<X extends T> extends AbstractCompositeEntityBuilder<X> {
+	private class CompositeEntityBuilder<X extends T> extends EntityBuilderContract<X> {
 
 		private final EntityBuilder<T> first;
 		private final EntityBuilder<X> next;
 
-		public CompositeEntityBuilderImpl(EntityBuilder<T> first, EntityBuilder<X> next) {
+		public CompositeEntityBuilder(EntityBuilder<T> first, EntityBuilder<X> next) {
 			super();
 			this.first = first;
 			this.next = next;

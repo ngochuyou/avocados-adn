@@ -15,7 +15,7 @@ public class _ProductCost extends _PermanentEntity implements _ApprovableResourc
 	public static final String providerId = "providerId";
 	public static final String $providerId = "provider_id";
 
-	public static final String createdTimestamp = "createdTimestamp";
+	public static final String appliedTimestamp = "appliedTimestamp";
 
 	public static final String product = "product";
 

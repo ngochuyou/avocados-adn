@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-import adn.dao.generic.Result;
+import adn.application.Result;
 import adn.helpers.CollectionHelper;
 import adn.model.entities.Product;
 import adn.service.internal.ResourceService;
@@ -79,10 +79,10 @@ public class ProductController extends BaseController {
 			@RequestPart(name = "images", required = false) MultipartFile[] images) throws Exception {
 		authService.assertSaleDepartment();
 
-		Optional<Product> persistence = baseRepository.findById(Product.class, model.getId());
+		Optional<Product> persistence = genericRepository.findById(Product.class, model.getId());
 
 		if (persistence.isEmpty()) {
-			return sendNotFound(String.format("Product %s not found", model.getId()));
+			return notFound(String.format("Product %s not found", model.getId()));
 		}
 
 		Result<Product> result = productService.updateProduct(model, CollectionHelper.from(images, MultipartFile.class),

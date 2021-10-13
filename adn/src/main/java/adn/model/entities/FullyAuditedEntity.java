@@ -3,6 +3,8 @@
  */
 package adn.model.entities;
 
+import java.util.Optional;
+
 import javax.persistence.Column;
 import javax.persistence.Embedded;
 import javax.persistence.MappedSuperclass;
@@ -19,15 +21,10 @@ public abstract class FullyAuditedEntity<ID> extends PermanentEntity
 	private String name;
 
 	@Embedded
-	private AuditInformations auditInformations;
+	private AuditInformations auditInformations = new AuditInformations();
 
 	@Embedded
 	private ApprovalInformations approvalInformations;
-
-	public FullyAuditedEntity() {
-		auditInformations = new AuditInformations();
-		approvalInformations = new ApprovalInformations();
-	}
 
 	@Override
 	public String getName() {
@@ -40,20 +37,28 @@ public abstract class FullyAuditedEntity<ID> extends PermanentEntity
 
 	@Override
 	public AuditInformations getAuditInformations() {
+		if (auditInformations == null) {
+			auditInformations = new AuditInformations();
+		}
+
 		return auditInformations;
 	}
 
 	@Override
 	public ApprovalInformations getApprovalInformations() {
+		if (approvalInformations == null) {
+			approvalInformations = new ApprovalInformations();
+		}
+
 		return approvalInformations;
 	}
 
 	public void setAuditInformations(AuditInformations auditInformations) {
-		this.auditInformations = auditInformations;
+		this.auditInformations = Optional.ofNullable(auditInformations).orElse(new AuditInformations());
 	}
 
 	public void setApprovalInformations(ApprovalInformations approvalInformations) {
-		this.approvalInformations = approvalInformations;
+		this.approvalInformations = Optional.ofNullable(approvalInformations).orElse(new ApprovalInformations());
 	}
 
 }

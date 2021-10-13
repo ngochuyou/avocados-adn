@@ -3,6 +3,8 @@
  */
 package adn.model.entities;
 
+import java.util.Optional;
+
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -42,11 +44,15 @@ public class Personnel extends Operator implements AuditableResource<String> {
 
 	@Override
 	public AuditInformations getAuditInformations() {
+		if (auditInformations == null) {
+			auditInformations = new AuditInformations();
+		}
+
 		return auditInformations;
 	}
 
 	public void setAuditInformations(AuditInformations auditInformations) {
-		this.auditInformations = auditInformations;
+		this.auditInformations = Optional.ofNullable(auditInformations).orElse(new AuditInformations());
 	}
 
 }

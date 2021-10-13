@@ -13,14 +13,8 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.persistence.Tuple;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
 import javax.transaction.Transactional;
 
-import org.hibernate.Session;
-import org.hibernate.query.criteria.internal.path.AbstractPathImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -45,8 +39,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
-import adn.model.entities.Product;
-import adn.model.entities.metadata._Product;
 import adn.security.SecurityConfiguration;
 import adn.service.resource.model.models.UserPhoto;
 
@@ -123,23 +115,8 @@ public class ApplicationIntegrationTest {
 		// @formatter:on
 	}
 
-//	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Test
 	@Transactional
-	public void test() {
-		Session session = ContextProvider.getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<Tuple> query = builder.createTupleQuery();
-		Root<Product> root = query.from(Product.class);
-
-		AbstractPathImpl<?> path = (AbstractPathImpl<?>) root.get("approvalInformations").get(_Product.approvedBy);
-
-		while (path != null) {
-			System.out.println(path.getAttribute().getName());
-			path = (AbstractPathImpl<?>) path.getParentPath();
-		}
-		
-		System.out.println("out");
-	}
+	public void test() {}
 
 }

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package adn.dao.generic;
+package adn.application;
 
 import static adn.service.internal.Service.Status.BAD;
 import static adn.service.internal.Service.Status.FAILED;
@@ -10,7 +10,6 @@ import static adn.service.internal.Service.Status.OK;
 import java.util.HashMap;
 import java.util.Map;
 
-import adn.application.Common;
 import adn.service.internal.Service.Status;
 
 /**
@@ -58,6 +57,12 @@ public class Result<T> {
 		this.status = BAD;
 		return this;
 	}
+	
+	public Result<T> bad(String key, String message) {
+		this.status = BAD;
+		messages.put(key, message);
+		return this;
+	}
 
 	public Result<T> setInstance(T instance) {
 		this.instance = instance;
@@ -72,12 +77,16 @@ public class Result<T> {
 		return this.status == OK;
 	}
 
-	public static <T> Result<T> success(T instance) {
+	public static <T> Result<T> ok(T instance) {
 		return new Result<T>(OK, instance, new HashMap<>());
 	}
 
 	public static <T> Result<T> bad(Map<String, String> messageSet) {
 		return new Result<T>(BAD, null, messageSet);
+	}
+	
+	public static <T> Result<T> bad(String message) {
+		return bad(Map.of(Common.MESSAGE, message));
 	}
 
 	public static <T> Result<T> failed(String error) {

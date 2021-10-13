@@ -19,7 +19,7 @@ import java.util.Set;
 public class CollectionHelper {
 
 	private CollectionHelper() {}
-	
+
 	public static final String[] EMPTY_STRING_ARRAY = new String[0];
 
 	@SuppressWarnings("rawtypes")

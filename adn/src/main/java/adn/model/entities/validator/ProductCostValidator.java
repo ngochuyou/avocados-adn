@@ -13,7 +13,7 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
 import adn.application.Common;
-import adn.dao.generic.Result;
+import adn.application.Result;
 import adn.model.Generic;
 import adn.model.entities.ProductCost;
 import adn.model.entities.metadata._ProductCost;
@@ -36,15 +36,15 @@ public class ProductCostValidator extends AbstractPermanentEntityValidator<Produ
 		Result<ProductCost> result = super.isSatisfiedBy(session, id, instance);
 
 		if (instance.getProduct() == null) {
-			result.bad().getMessages().put(_ProductCost.product, EMPTY_PRODUCT);
+			result.bad(_ProductCost.product, EMPTY_PRODUCT);
 		}
 
 		if (instance.getProvider() == null) {
-			result.bad().getMessages().put(_ProductCost.provider, EMPTY_PROVIDER);
+			result.bad(_ProductCost.provider, EMPTY_PROVIDER);
 		}
 
 		if (instance.getCost() == null || instance.getCost().compareTo(BigDecimal.ZERO) < 0) {
-			result.bad().getMessages().put(_ProductCost.cost, INVALID_COST);
+			result.bad(_ProductCost.cost, INVALID_COST);
 		}
 
 		return result;

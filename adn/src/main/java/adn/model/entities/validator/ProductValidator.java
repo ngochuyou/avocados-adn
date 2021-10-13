@@ -12,7 +12,7 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
 import adn.application.Common;
-import adn.dao.generic.Result;
+import adn.application.Result;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Product;
@@ -46,20 +46,20 @@ public class ProductValidator extends AbstractPermanentEntityValidator<Product> 
 
 		if (StringHelper.hasLength(instance.getMaterial())
 				&& !_Product.MATERIAL_PATTERN.matcher(instance.getMaterial()).matches()) {
-			result.bad().getMessages().put(_Product.material, INVALID_MATERIAL);
+			result.bad(_Product.material, INVALID_MATERIAL);
 		}
 
 		if (instance.getImages() != null && instance.getImages().size() > _Product.MAXIMUM_IMAGES_AMOUNT) {
-			result.bad().getMessages().put(_Product.images, TOO_MANY_IMAGES);
+			result.bad(_Product.images, TOO_MANY_IMAGES);
 		}
 
 		if (StringHelper.hasLength(instance.getDescription())
 				&& !_Product.DESCRIPTION_PATTERN.matcher(instance.getDescription()).matches()) {
-			result.bad().getMessages().put(_Product.description, INVALID_DESCRIPTION);
+			result.bad(_Product.description, INVALID_DESCRIPTION);
 		}
 
 		if (instance.getCategory() == null) {
-			result.bad().getMessages().put(_Product.category, MISSING_CATEGORY);
+			result.bad(_Product.category, MISSING_CATEGORY);
 		}
 
 		return result;

@@ -17,17 +17,14 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.TableGenerator;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import adn.application.Common;
 import adn.model.entities.converters.StringListConverter;
 import adn.model.entities.metadata._Category;
-import adn.model.entities.metadata._Item;
 import adn.model.entities.metadata._Product;
 
 /**
@@ -42,7 +39,7 @@ public class Product extends FullyAuditedEntity<BigInteger> {
 	@GeneratedValue(strategy = GenerationType.TABLE, generator = SHARED_TABLE_GENERATOR)
 	@TableGenerator(name = SHARED_TABLE_GENERATOR, initialValue = Common.CROCKFORD_10A
 			- 1, allocationSize = 1, table = Common.SHARED_TABLE_GENERATOR_TABLENAME)
-	@Column(updatable = false)
+	@Column(updatable = false, columnDefinition = Common.MYSQL_BIGINT_COLUMN_DEFINITION)
 	private BigInteger id;
 
 	@Column(unique = true)
@@ -67,10 +64,6 @@ public class Product extends FullyAuditedEntity<BigInteger> {
 	@ManyToOne(optional = false, fetch = FetchType.LAZY)
 	@JoinColumn(name = "category_id", referencedColumnName = _Category.$id)
 	private Category category;
-
-	@JsonIgnore
-	@OneToMany(mappedBy = _Item.product, fetch = FetchType.LAZY)
-	private List<Item> items;
 
 	@Override
 	public BigInteger getId() {
@@ -121,14 +114,6 @@ public class Product extends FullyAuditedEntity<BigInteger> {
 		this.rating = rating;
 	}
 
-	public List<Item> getStockDetails() {
-		return items;
-	}
-
-	public void setStockDetails(List<Item> stockDetails) {
-		this.items = stockDetails;
-	}
-
 	public String getMaterial() {
 		return material;
 	}
@@ -144,14 +129,6 @@ public class Product extends FullyAuditedEntity<BigInteger> {
 
 	public void setLocked(Boolean locked) {
 		this.locked = locked;
-	}
-
-	public List<Item> getItems() {
-		return items;
-	}
-
-	public void setItems(List<Item> items) {
-		this.items = items;
 	}
 
 }

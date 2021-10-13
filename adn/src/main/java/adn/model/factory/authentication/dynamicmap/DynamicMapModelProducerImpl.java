@@ -263,7 +263,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 							entityType.getName()));
 					e.printStackTrace();
 
-					return entry(aliasMap.get(column), e.getMessage());
+					return entry(aliasMap.get(column), null);
 				}
 			})
 			// @formatter:off
@@ -319,11 +319,16 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 	@Override
 	public <E extends T> List<Map<String, Object>> produceBatchedSource(BatchedSource<E> source, Credential credential)
 			throws UnauthorizedCredential {
+		List<Object[]> batch = source.getSource();
+
+		if (batch == null) {
+			return new ArrayList<>();
+		}
+
 		SourceMetadata<E> metadata = source.getMetadata();
 		String evaluation = credential.evaluate();
 		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = producingFunctions
 				.get(evaluation);
-		List<Object[]> batch = source.getSource();
 		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
 
 		if (!metadata.hasAssociation()) {
@@ -377,12 +382,17 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 	@Override
 	public <E extends T> List<Map<String, Object>> produceBatchedPojo(BatchedPojoSource<E> source,
 			Credential credential) throws UnauthorizedCredential {
+		List<E> batch = source.getSource();
+
+		if (CollectionHelper.isEmpty(batch)) {
+			return new ArrayList<>();
+		}
+
 		SourceMetadata<E> metadata = source.getMetadata();
 		String evaluation = credential.evaluate();
 		Map<String, HandledBiFunction<Arguments<?>, Credential, ?, Exception>> functions = producingFunctions
 				.get(evaluation);
 		String[] columns = hasLengthOrNonLazy(metadata.getColumns());
-		List<E> batch = source.getSource();
 
 		if (!metadata.hasAssociation()) {
 			return IntStream.range(0, batch.size())

@@ -1,7 +1,8 @@
 package adn.service.services;
 
-import static adn.dao.generic.Result.bad;
-import static adn.dao.generic.Result.success;
+import static adn.application.Result.bad;
+import static adn.application.Result.ok;
+import static adn.application.context.ContextProvider.getCurrentSession;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -15,8 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
 
 import adn.application.Common;
+import adn.application.Result;
 import adn.application.context.ContextProvider;
-import adn.dao.generic.Result;
 import adn.model.entities.Customer;
 import adn.model.entities.Head;
 import adn.model.entities.Personnel;
@@ -75,7 +76,7 @@ public class UserService implements Service, ObservableDomainEntityService<User>
 			MultipartFile photo, boolean flushOnFinish) {
 		id = crudService.resolveId(id, account);
 
-		Session ss = crudService.getCurrentSession();
+		Session ss = getCurrentSession();
 
 		ss.setHibernateFlushMode(FlushMode.MANUAL);
 
@@ -103,7 +104,7 @@ public class UserService implements Service, ObservableDomainEntityService<User>
 			MultipartFile photo, boolean flushOnFinish) {
 		id = crudService.resolveId(id, account);
 
-		Session ss = crudService.getCurrentSession();
+		Session ss = getCurrentSession();
 
 		ss.setHibernateFlushMode(FlushMode.MANUAL);
 
@@ -145,7 +146,7 @@ public class UserService implements Service, ObservableDomainEntityService<User>
 	}
 
 	public Result<User> deactivateAccount(String id, boolean flushOnFinish) {
-		Session ss = crudService.getCurrentSession();
+		Session ss = getCurrentSession();
 
 		ss.setHibernateFlushMode(FlushMode.MANUAL);
 
@@ -158,7 +159,7 @@ public class UserService implements Service, ObservableDomainEntityService<User>
 		account.setActive(Boolean.FALSE);
 		// use Hibernate dirty check to flush here, we don't have to call update from
 		// repository to avoid unnecessary Specification validation
-		return crudService.finish(ss, success(account), flushOnFinish);
+		return crudService.finish(ss, ok(account), flushOnFinish);
 	}
 
 	private ServiceResult<String> updateOrUploadPhoto(User persistence, MultipartFile multipartPhoto) {

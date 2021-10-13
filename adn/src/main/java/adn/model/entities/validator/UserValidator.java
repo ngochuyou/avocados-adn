@@ -16,8 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import adn.application.Common;
+import adn.application.Result;
 import adn.dao.generic.GenericRepository;
-import adn.dao.generic.Result;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.User;
@@ -67,41 +67,41 @@ public class UserValidator<T extends User> extends AbstractPermanentEntityValida
 		Result<T> result = super.isSatisfiedBy(session, id, instance);
 
 		if (!_User.USERNAME_PATTERN.matcher(instance.getId()).matches()) {
-			result.bad().getMessages().put(_User._id, INVALID_USERNAME);
+			result.bad(_User._id, INVALID_USERNAME);
 		}
 
 		if (!StringHelper.isEmail(instance.getEmail())) {
-			result.bad().getMessages().put(_User.email, INVALID_EMAIL);
+			result.bad(_User.email, INVALID_EMAIL);
 		} else {
 			// @formatter:off
 			if (genericRepository.count(User.class,
 					(root, query, builder) -> builder.and(
 							builder.equal(root.get(_User.email), instance.getEmail()),
 							builder.notEqual(root.get(_User.id), instance.getId()))) != 0) {
-				result.bad().getMessages().put(_User.email, TAKEN_EMAIL);
+				result.bad(_User.email, TAKEN_EMAIL);
 			}
 			// @formatter:on
 		}
 
 		if (!NAME_PATTERN.matcher(instance.getFirstName()).matches()) {
-			result.bad().getMessages().put(_User.firstName, INVALID_FIRSTNAME);
+			result.bad(_User.firstName, INVALID_FIRSTNAME);
 		}
 
 		if (!NAME_PATTERN.matcher(instance.getLastName()).matches()) {
-			result.bad().getMessages().put(_User.lastName, INVALID_LASTNAME);
+			result.bad(_User.lastName, INVALID_LASTNAME);
 		}
 
 		if (!StringHelper.isBCrypt(instance.getPassword())) {
-			result.bad().getMessages().put(_User.password, INVALID_PASSWORD);
+			result.bad(_User.password, INVALID_PASSWORD);
 		}
 
 		if (instance.getRole() == null) {
-			result.bad().getMessages().put(_User.role, MISSING_ROLE);
+			result.bad(_User.role, MISSING_ROLE);
 		}
 
 		if (!StringHelper.hasLength(instance.getPhone())
 				|| !StringHelper.isAcceptablePhoneNumber(instance.getPhone())) {
-			result.bad().getMessages().put(_User.phone, INVALID_PHONE);
+			result.bad(_User.phone, INVALID_PHONE);
 		}
 
 		return result;

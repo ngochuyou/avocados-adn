@@ -25,6 +25,11 @@ public class Customer extends User {
 	public Customer() {
 		setRole(Role.CUSTOMER);
 	}
+	
+	public Customer(String id) {
+		this();
+		setId(id);
+	}
 
 	public Float getPrestigePoint() {
 		return prestigePoint;

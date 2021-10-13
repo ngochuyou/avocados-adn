@@ -13,9 +13,11 @@ import adn.model.factory.authentication.EntityExtractor;
 public interface PojoEntityExtractor<T extends DomainEntity, M extends DomainEntity> extends EntityExtractor<T, M> {
 
 	@Override
-	T extract(M model);
+	<E extends T, N extends M> E extract(N model);
 
 	@Override
-	T extract(M source, T target);
+	<E extends T, N extends M> E extract(N source, E target);
 
+	<E extends T, N extends M> PojoEntityExtractor<E, N> and(PojoEntityExtractor<E, N> next);
+	
 }

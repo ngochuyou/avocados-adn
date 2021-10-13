@@ -47,7 +47,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
-import adn.application.context.builders.EntityBuilderProvider;
+import adn.application.Result;
 import adn.application.context.builders.ModelContextProvider;
 import adn.application.context.builders.ValidatorFactory;
 import adn.application.context.internal.ContextBuilder;
@@ -73,20 +73,25 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 	private final SessionFactory sessionFactory;
 	private final ValidatorFactory validatorFactory;
 	private final ModelContextProvider modelContext;
-	private final EntityBuilderProvider entityBuilderProvider;
-
 	private Map<Class<? extends Entity>, Map<String, BiFunction<String, Root<? extends Entity>, Path<?>>>> selectorMap;
 	private Map<Class<? extends Entity>, BiFunction<Root<? extends Entity>, CriteriaBuilder, Predicate>> mandatoryPredicateMap;
 
+	public static final String POSITIONAL_PARAM_PREFIX = "?";
+	public static final String SELECT_ALL_CHARACTER = "*";
+	private static final String VALIDATION_LOG_TEMPLATE = "Validating [%s#%s] using [%s]";
+
 	@Autowired
 	public GenericRepositoryImpl(SessionFactory sessionFactory, ValidatorFactory specificationFactory,
-			ModelContextProvider modelContext, EntityBuilderProvider entityBuilderProvider) {
+			ModelContextProvider modelContext) {
 		this.sessionFactory = sessionFactory;
 		this.validatorFactory = specificationFactory;
 		this.modelContext = modelContext;
-		this.entityBuilderProvider = entityBuilderProvider;
 	}
 
+	public static String positionalParam(int pos) {
+		return POSITIONAL_PARAM_PREFIX + pos;
+	}
+	
 	@Override
 	@SuppressWarnings("unchecked")
 	public void buildAfterStartUp() throws Exception {
@@ -194,18 +199,12 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 
 	// @formatter:on
 	@Override
-	public <T extends Entity> Optional<T> findById(Class<T> clazz, Serializable id) {
-		return Optional.ofNullable(getCurrentSession().get(clazz, id));
+	public <T extends Entity> Optional<T> findById(Class<T> type, Serializable id) {
+		return findOne(type, hasId(type, id));
 	}
 
-	@SuppressWarnings("serial")
 	private static <T extends Entity> Specification<T> hasId(Class<T> type, Serializable id) {
-		return new Specification<T>() {
-			@Override
-			public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
-				return builder.equal(root.get(getIdentifierPropertyName(type)), id);
-			}
-		};
+		return (root, query, builder) -> builder.equal(root.get(getIdentifierPropertyName(type)), id);
 	}
 
 	@Override
@@ -279,64 +278,75 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		return count(type, hasId(type, id));
 	}
 
-	Session getCurrentSession() {
+	private Session getCurrentSession() {
 		return sessionFactory.getCurrentSession();
 	}
 
-	<T extends Entity, E extends T> Result<E> validate(Session session, Serializable id, E instance, Class<E> type) {
+	@Override
+	public <T extends Entity, E extends T> Result<E> validate(Class<E> type, Serializable id, E model) {
+		return validate(type, id, model, getCurrentSession());
+	}
+
+	@Override
+	public <T extends Entity, E extends T> Result<E> validate(Class<E> type, Serializable id, E instance,
+			Session session) {
 		Validator<E> validator = validatorFactory.getValidator(type);
 
 		if (logger.isDebugEnabled()) {
-			logger.debug(
-					String.format("Validating [%s#%s] using [%s]", type.getName(), id, validator.getLoggableName()));
+			logger.debug(String.format(VALIDATION_LOG_TEMPLATE, type.getName(), id, validator.getLoggableName()));
 		}
 
 		return validator.isSatisfiedBy(session, id, instance);
 	}
 
-	@Override
-	public <T extends Entity, E extends T> Result<E> insert(Class<E> type, Serializable id, E persistence) {
-		return insert(type, id, persistence, getCurrentSession());
-	}
-
-	@Override
-	public <T extends Entity, E extends T> Result<E> insert(Class<E> type, Serializable id, E persistence,
-			Session session) {
-		// validate the persisted entity
-		Result<E> result = validate(session, id, persistence, type);
-
-		if (result.isOk()) {
-			persistence = entityBuilderProvider.getBuilder(type).buildPostValidationOnInsert(id, persistence);
-			session.save(persistence);
-
-			return result;
-		}
-
-		session.evict(persistence);
-
-		return result;
-	}
-
-	@Override
-	public <T extends Entity, E extends T> Result<E> update(Class<E> type, Serializable id, E persistence) {
-		return update(type, id, persistence, getCurrentSession());
-	}
-
-	@Override
-	public <T extends Entity, E extends T> Result<E> update(Class<E> type, Serializable id, E persistence,
-			Session session) {
-		Result<E> result = validate(session, id, persistence, type);
-
-		if (result.isOk()) {
-			session.update(persistence);
-
-			return result;
-		}
-
-		session.evict(persistence);
-
-		return result;
-	}
+//	@Override
+//	public <T extends Entity, E extends T> Result<E> insert(Class<E> type, Serializable id, E persistence) {
+//		return insert(type, id, persistence, getCurrentSession());
+//	}
+//
+//	@Override
+//	public <T extends Entity, E extends T> Result<E> insert(Class<E> type, Serializable id, E persistence,
+//			Session session) {
+//		// validate the persisted entity
+//		Result<E> result = validate(type, id, persistence, session);
+//
+//		if (result.isOk()) {
+//			try {
+//				persistence = entityBuilderProvider.getBuilder(type).buildPostValidationOnInsert(id, persistence);
+//			} catch (Exception e) {
+//				return Result.failed(e.getMessage());
+//			}
+//
+//			session.save(persistence);
+//
+//			return result;
+//		}
+//
+//		session.evict(persistence);
+//
+//		return result;
+//	}
+//
+//	@Override
+//	public <T extends Entity, E extends T> Result<E> update(Class<E> type, Serializable id, E persistence) {
+//		return update(type, id, persistence, getCurrentSession());
+//	}
+//
+//	@Override
+//	public <T extends Entity, E extends T> Result<E> update(Class<E> type, Serializable id, E persistence,
+//			Session session) {
+//		Result<E> result = validate(type, id, persistence, session);
+//
+//		if (result.isOk()) {
+//			session.update(persistence);
+//
+//			return result;
+//		}
+//
+//		session.evict(persistence);
+//
+//		return result;
+//	}
 
 	@Override
 	public <E extends Entity> Optional<E> findOne(Class<E> type, Specification<E> spec) {

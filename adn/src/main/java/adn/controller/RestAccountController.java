@@ -26,8 +26,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.Common;
+import adn.application.Result;
 import adn.application.context.ContextProvider;
-import adn.dao.generic.Result;
 import adn.helpers.StringHelper;
 import adn.helpers.Utils;
 import adn.model.entities.User;
@@ -74,7 +74,7 @@ public class RestAccountController extends UserController {
 
 			return doObtainAccount(username, columns);
 		} catch (NoSuchFieldException ssee) {
-			return sendBad(ssee.getMessage());
+			return bad(ssee.getMessage());
 		}
 	}
 
@@ -85,7 +85,7 @@ public class RestAccountController extends UserController {
 		try {
 			return doObtainAccount(username, columns);
 		} catch (NoSuchFieldException ssee) {
-			return sendBad(ssee.getMessage());
+			return bad(ssee.getMessage());
 		}
 	}
 
@@ -95,8 +95,8 @@ public class RestAccountController extends UserController {
 	public ResponseEntity<?> deactivateAccount(@PathVariable(name = "username", required = true) String username) {
 		authService.assertPersonnelDepartment();
 
-		if (baseRepository.countById(User.class, username) == 0) {
-			return sendNotFound(Common.NOT_FOUND);
+		if (genericRepository.countById(User.class, username) == 0) {
+			return notFound(Common.notfound());
 		}
 
 		Result<User> result = accountService.deactivateAccount(username, true);
@@ -105,7 +105,7 @@ public class RestAccountController extends UserController {
 			return send(String.format("Deactivated %s", username), null);
 		}
 
-		return sendBad(result.getMessages());
+		return bad(result.getMessages());
 	}
 
 	protected ResponseEntity<?> obtainPrincipal(Collection<String> requestedColumns)
@@ -113,10 +113,10 @@ public class RestAccountController extends UserController {
 		String username = ContextProvider.getPrincipalName();
 
 		if (requestedColumns.size() == 0) {
-			Optional<User> optional = baseRepository.findById(User.class, username);
+			Optional<User> optional = genericRepository.findById(User.class, username);
 
 			if (optional.isEmpty()) {
-				return sendNotFound(Common.NOT_FOUND);
+				return notFound();
 			}
 
 			User account = optional.get();
@@ -133,7 +133,7 @@ public class RestAccountController extends UserController {
 		Map<String, Object> cols = crudService.readById(username, User.class, requestedColumns, owner());
 
 		if (cols == null) {
-			return sendNotFound(Common.NOT_FOUND);
+			return notFound();
 		}
 
 		if (((Role) cols.get(_User.role)) == Role.PERSONNEL) {
@@ -148,10 +148,10 @@ public class RestAccountController extends UserController {
 		Role principalRole = ContextProvider.getPrincipalRole();
 
 		if (requestedColumns.size() == 0) {
-			Optional<User> optional = baseRepository.findById(User.class, username);
+			Optional<User> optional = genericRepository.findById(User.class, username);
 
 			if (optional.isEmpty()) {
-				return sendNotFound(Common.NOT_FOUND);
+				return notFound(Common.notfound());
 			}
 
 			User account = optional.get();
@@ -185,7 +185,7 @@ public class RestAccountController extends UserController {
 				getPrincipalCredential());
 
 		if (fetchedRow == null) {
-			return sendNotFound(Common.NOT_FOUND);
+			return notFound(Common.notfound());
 		}
 
 		if (principalRole.equals(Role.PERSONNEL) && authService.isPersonnelDepartment()) {

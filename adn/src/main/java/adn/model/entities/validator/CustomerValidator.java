@@ -9,8 +9,8 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
 import adn.application.Common;
+import adn.application.Result;
 import adn.dao.generic.GenericRepository;
-import adn.dao.generic.Result;
 import adn.model.Generic;
 import adn.model.entities.Customer;
 import adn.model.entities.metadata._Customer;
@@ -35,11 +35,11 @@ public class CustomerValidator extends UserValidator<Customer> {
 		Result<Customer> result = super.isSatisfiedBy(session, id, instance);
 
 		if (instance.getPrestigePoint() < 0) {
-			result.bad().getMessages().put(_Customer.prestigePoint, NEGATIVE_POINT);
+			result.bad(_Customer.prestigePoint, NEGATIVE_POINT);
 		}
 
 		if (instance.isSubscribed() == null) {
-			result.bad().getMessages().put(_Customer.subscribed, MISSING_SUBSCRIPTION);
+			result.bad(_Customer.subscribed, MISSING_SUBSCRIPTION);
 		}
 
 		return result;

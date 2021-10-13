@@ -7,7 +7,8 @@ import java.io.Serializable;
 
 import org.hibernate.Session;
 
-import adn.dao.generic.Result;
+import adn.application.Result;
+import adn.helpers.HibernateHelper;
 import adn.model.entities.Entity;
 import adn.service.internal.Service.Status;
 
@@ -20,6 +21,11 @@ public abstract class AbstractCompositeEntityValidator<T extends Entity> impleme
 	@Override
 	public <E extends T> Validator<E> and(Validator<E> next) {
 		return new CompositeEntityValidatorImpl<>(this, next);
+	}
+
+	@Override
+	public Result<T> isSatisfiedBy(Session session, T instance) {
+		return isSatisfiedBy(session, HibernateHelper.getIdentifier(instance), instance);
 	}
 
 	private class CompositeEntityValidatorImpl<E extends T> extends AbstractCompositeEntityValidator<E> {

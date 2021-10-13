@@ -14,9 +14,9 @@ import adn.model.entities.Entity;
  * @author Ngoc Huy
  *
  */
-public abstract class AbstractEntityBuilder<T extends Entity> extends AbstractCompositeEntityBuilder<T> {
+public abstract class AbstractEntityBuilder<T extends Entity> extends EntityBuilderContract<T> {
 
-	protected static final String CODE_GENERATION_MESSAGE = "Generating encrypted code for an entity with id: [%s]";
+	public static final String CODE_GENERATION_MESSAGE = "Generating encrypted code for an entity with id: [%s]";
 	
 	protected <E extends T> E mandatoryBuild(E target, E model) {
 		return target;

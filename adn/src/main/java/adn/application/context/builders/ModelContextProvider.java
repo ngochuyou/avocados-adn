@@ -19,8 +19,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
@@ -48,8 +46,6 @@ public class ModelContextProvider implements ContextBuilder {
 	private ModelInheritanceTree<Model> modelTree;
 
 	private Map<Class<? extends DomainEntity>, Set<Class<? extends DomainEntity>>> relationMap;
-	private Map<Class<? extends DomainEntity>, Class<? extends DomainEntity>> defaultModelMap;
-
 	private Map<Class<? extends DomainEntity>, DomainEntityMetadata<? extends DomainEntity>> metadataMap;
 
 	@Override
@@ -61,8 +57,8 @@ public class ModelContextProvider implements ContextBuilder {
 		logger.debug("---------------------------------------");
 		initializeRelationMap();
 		logger.debug("---------------------------------------");
-		initializeDefaultModelMap();
-		logger.debug("---------------------------------------");
+//		initializeDefaultModelMap();
+//		logger.debug("---------------------------------------");
 		initializeMetadataMap();
 		logger.info("Finished building " + this.getClass());
 	}
@@ -134,8 +130,8 @@ public class ModelContextProvider implements ContextBuilder {
 			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
 		this.modelTree.forEach(tree -> {
-			logger.debug(String.format("[%s] added to Model tree %s", tree.getNode().getName(), (tree.getParent() == null ? " as super root"
-							: String.format(" with root [%s]", tree.getParent().getNode().getName()))));
+			logger.debug(String.format("[%s] added to Model tree %s", tree.getNode().getName(), (tree.getParent() == null ? "as super root"
+							: String.format("with root [%s]", tree.getParent().getNode().getName()))));
 		});
 		// @formatter:on
 	}
@@ -200,13 +196,14 @@ public class ModelContextProvider implements ContextBuilder {
 
 			if (relationMap.get(relatedClass) == null) {
 				relationMap.put(relatedClass, Set.of(clazz));
-			} else {
-				Set<Class<? extends DomainEntity>> set = relationMap.get(relatedClass).stream()
-						.collect(Collectors.toSet());
-
-				set.add(clazz);
-				relationMap.put(relatedClass, set);
+				return;
 			}
+
+			Set<Class<? extends DomainEntity>> set = relationMap.get(relatedClass).stream()
+					.collect(Collectors.toSet());
+
+			set.add(clazz);
+			relationMap.put(relatedClass, set);
 		});
 		entityTree.forEach(branch -> {
 			if (relationMap.get(branch.getNode()) == null) {
@@ -220,40 +217,40 @@ public class ModelContextProvider implements ContextBuilder {
 		this.relationMap = Collections.unmodifiableMap(relationMap);
 	}
 
-	@SuppressWarnings("unchecked")
-	private void initializeDefaultModelMap() {
-		Map<Class<? extends DomainEntity>, Class<? extends DomainEntity>> defaultModelMap = new HashMap<>();
-
-		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
-		// @formatter:off
-		scanner.addIncludeFilter(new AssignableTypeFilter(Model.class));
-		scanner.findCandidateComponents(Constants.MODEL_PACKAGE)
-			.forEach(bean -> {
-				try {
-					Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(bean.getBeanClassName());
-					Order order = clazz.getDeclaredAnnotation(Order.class);
-	
-					if (order == null || order.value() != Ordered.HIGHEST_PRECEDENCE) {
-						return;
-					}
-	
-					defaultModelMap.put((Class<? extends adn.model.entities.Entity>) clazz.getDeclaredAnnotation(Generic.class).entityGene(), clazz);
-				} catch (Exception e) {
-					e.printStackTrace();
-					SpringApplication.exit(ContextProvider.getApplicationContext());
-				}
-			});
-		entityTree.forEach(branch -> {
-			if (defaultModelMap.get(branch.getNode()) == null) {
-				defaultModelMap.put(branch.getNode(), branch.getNode());
-			}
-		});
-		// @formatter:on
-		defaultModelMap.forEach((k, v) -> logger
-				.debug(String.format("[%s] is default for [%s]", v.getName(), k.equals(v) ? "itself" : k.getName())));
-
-		this.defaultModelMap = Collections.unmodifiableMap(defaultModelMap);
-	}
+//	@SuppressWarnings("unchecked")
+//	private void initializeDefaultModelMap() {
+//		Map<Class<? extends DomainEntity>, Class<? extends DomainEntity>> defaultModelMap = new HashMap<>();
+//
+//		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+//		// @formatter:off
+//		scanner.addIncludeFilter(new AssignableTypeFilter(Model.class));
+//		scanner.findCandidateComponents(Constants.MODEL_PACKAGE)
+//			.forEach(bean -> {
+//				try {
+//					Class<? extends Model> clazz = (Class<? extends Model>) Class.forName(bean.getBeanClassName());
+//					Order order = clazz.getDeclaredAnnotation(Order.class);
+//	
+//					if (order == null || order.value() != Ordered.HIGHEST_PRECEDENCE) {
+//						return;
+//					}
+//	
+//					defaultModelMap.put((Class<? extends adn.model.entities.Entity>) clazz.getDeclaredAnnotation(Generic.class).entityGene(), clazz);
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//					SpringApplication.exit(ContextProvider.getApplicationContext());
+//				}
+//			});
+//		entityTree.forEach(branch -> {
+//			if (defaultModelMap.get(branch.getNode()) == null) {
+//				defaultModelMap.put(branch.getNode(), branch.getNode());
+//			}
+//		});
+//		// @formatter:on
+//		defaultModelMap.forEach((k, v) -> logger
+//				.debug(String.format("[%s] is default for [%s]", v.getName(), k.equals(v) ? "itself" : k.getName())));
+//
+//		this.defaultModelMap = Collections.unmodifiableMap(defaultModelMap);
+//	}
 
 	public ModelInheritanceTree<DomainEntity> getEntityTree() {
 		return entityTree;
@@ -273,10 +270,6 @@ public class ModelContextProvider implements ContextBuilder {
 
 	public void setRelationMap(Map<Class<? extends DomainEntity>, Set<Class<? extends DomainEntity>>> relationMap) {
 		this.relationMap = relationMap;
-	}
-
-	public Class<? extends DomainEntity> getModelClass(Class<? extends adn.model.entities.Entity> entityClass) {
-		return this.defaultModelMap.get(entityClass);
 	}
 
 	@SuppressWarnings("unchecked")

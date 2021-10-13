@@ -7,7 +7,7 @@ package adn.model.entities.constants;
  * @author Ngoc Huy
  *
  */
-public enum Status {
+public enum ItemStatus {
 
 	AVAILABLE, SOLD, UNAVAILABLE
 	

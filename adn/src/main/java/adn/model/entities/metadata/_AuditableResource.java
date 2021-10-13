@@ -21,4 +21,6 @@ public interface _AuditableResource {
 	String lastModifiedBy = "lastModifiedBy";
 	String $lastModifiedBy = "last_modified_by";
 
+	String auditInformations = "auditInformations";
+	
 }

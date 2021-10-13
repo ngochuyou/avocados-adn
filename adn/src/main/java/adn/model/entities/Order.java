@@ -10,6 +10,7 @@ import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -47,7 +48,7 @@ public class Order extends PermanentEntity {
 	@GeneratedValue(strategy = GenerationType.TABLE, generator = SHARED_TABLE_GENERATOR)
 	@TableGenerator(name = SHARED_TABLE_GENERATOR, initialValue = Common.CROCKFORD_1A
 			- 1, allocationSize = 1, table = Common.SHARED_TABLE_GENERATOR_TABLENAME)
-	@Column(updatable = false)
+	@Column(updatable = false, columnDefinition = Common.MYSQL_BIGINT_COLUMN_DEFINITION)
 	private BigInteger id;
 
 	@Column(unique = true)
@@ -57,11 +58,17 @@ public class Order extends PermanentEntity {
 	@Column(nullable = false)
 	private OrderStatus status;
 
-	@Column(name = "delivery_fee", columnDefinition = Common.MYSQL_CURRENCY_COLUMN_DEFINITION)
+	@Column
+	private String address;
+
+	@ManyToOne
+	private District district;
+
+	@Column(columnDefinition = Common.MYSQL_CURRENCY_COLUMN_DEFINITION)
 	private BigDecimal deliveryFee;
 
 	@CreationTimestamp
-	@Column(name = "created_timestamp", nullable = false, updatable = false)
+	@Column(nullable = false, updatable = false)
 	private LocalDateTime createdTimestamp;
 
 	@ManyToOne(optional = false, fetch = FetchType.LAZY)
@@ -69,7 +76,7 @@ public class Order extends PermanentEntity {
 	private Customer customer;
 
 	@UpdateTimestamp
-	@Column(name = "updated_timestamp", nullable = false)
+	@Column(nullable = false)
 	private LocalDateTime updatedTimestamp;
 
 	@ManyToOne(optional = false, fetch = FetchType.LAZY)
@@ -80,7 +87,7 @@ public class Order extends PermanentEntity {
 	@JoinColumn(name = "handled_by", referencedColumnName = _Operator.$id, updatable = false)
 	private Operator handledBy;
 	// @formatter:off
-	@ManyToMany
+	@ManyToMany(cascade = CascadeType.MERGE)
 	@JoinTable(
 			name = "order_details",
 			joinColumns = @JoinColumn(name = "order_id", referencedColumnName = _Order.$id),
@@ -165,6 +172,22 @@ public class Order extends PermanentEntity {
 
 	public void setItems(List<Item> items) {
 		this.items = items;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
+	}
+
+	public District getDistrict() {
+		return district;
+	}
+
+	public void setDistrict(District district) {
+		this.district = district;
 	}
 
 }

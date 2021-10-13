@@ -8,7 +8,7 @@ import java.io.Serializable;
 import org.hibernate.Session;
 
 import adn.application.Common;
-import adn.dao.generic.Result;
+import adn.application.Result;
 import adn.model.entities.PermanentEntity;
 import adn.model.entities.metadata._PermanentEntity;
 
@@ -25,7 +25,7 @@ public abstract class AbstractPermanentEntityValidator<T extends PermanentEntity
 		Result<T> result = super.isSatisfiedBy(session, id, instance);
 
 		if (instance.isActive() == null) {
-			result.bad().getMessages().put(_PermanentEntity.active, EMPTY_ACTIVE_STATE);
+			result.bad(_PermanentEntity.active, EMPTY_ACTIVE_STATE);
 		}
 
 		return result;

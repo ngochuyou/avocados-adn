@@ -20,17 +20,24 @@ import adn.application.context.builders.DynamicMapModelProducerFactoryImpl.Model
 import adn.helpers.Utils;
 import adn.model.entities.Category;
 import adn.model.entities.Customer;
+import adn.model.entities.Item;
+import adn.model.entities.Order;
 import adn.model.entities.Personnel;
 import adn.model.entities.Product;
 import adn.model.entities.ProductCost;
+import adn.model.entities.ProductPrice;
 import adn.model.entities.Provider;
 import adn.model.entities.User;
 import adn.model.entities.id.ProductCostId;
+import adn.model.entities.id.ProductPriceId;
 import adn.model.entities.metadata._Category;
 import adn.model.entities.metadata._Customer;
+import adn.model.entities.metadata._Item;
+import adn.model.entities.metadata._Order;
 import adn.model.entities.metadata._Personnel;
 import adn.model.entities.metadata._Product;
 import adn.model.entities.metadata._ProductCost;
+import adn.model.entities.metadata._ProductPrice;
 import adn.model.entities.metadata._Provider;
 import adn.model.entities.metadata._User;
 import adn.model.factory.authentication.Credential;
@@ -45,51 +52,11 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 
 	@Override
 	public void contribute(ModelProducerFactoryBuilder builder) {
-		// @formatter:off
 		user(builder);
 		provider(builder);
 		category(builder);
 		product(builder);
-//			.type(Factor.class)
-//				.roles(personnels)
-//					.fields("deactivatedDate").use(localDateTimeFormatter)
-//					.anyFields().publish()
-//				.roles(HEAD).publish()
-//			.type(Provider.class)
-//				.roles(personnels).departments(sale()).publish()
-//				.roles(HEAD).publish()
-//			.type(Category.class)
-//				.roles(allRoles).fields("id", "name", "active").publish()
-//				.roles(personnels).departments(sale()).publish()
-//				.roles(HEAD).publish()
-//			.type(Product.class)
-//				.roles(allRoles)
-//					.fields("id", "name", "price", "category", "images", "description", "rating").publish()
-//					.anyFields().mask()
-//				.roles(personnels).departments(sale())
-//					.fields("updatedTimestamp", "createdTimestamp").use(localDateTimeFormatter)
-//					.anyFields().publish()
-//				.roles(HEAD).publish()
-//			.type(StockDetail.class)
-//				.roles(allRoles)
-//					.fields("id", "product", "size", "numericSize", "color", "material", "status", "active", "description").publish()
-//					.anyFields().mask()
-//				.roles(personnels).departments(sale())
-//					.fields("stockedBy", "soldBy", "provider").publish()
-//					.fields("stockedTimestamp", "updatedTimestamp").use(localDateTimeFormatter)
-//				.roles(HEAD).publish()
-//			.type(Provider.class)
-//				.roles(personnels).departments(stock(), sale()).publish()
-//				.fields("deactivatedDate").use(localDateTimeFormatter)
-//				.roles(HEAD).publish()
-//			.type(Department.class)
-//				.roles(personnels).departments(personnel()).publish()
-//				.roles(HEAD).publish()
-//			.type(ProductProviderDetail.class)
-//				.roles(personnels).departments(sale()).publish()
-//				.fields("appliedTimestamp", "droppedTimestamp").use(localDateTimeFormatter)
-//				.roles(HEAD).publish();
-		// @formatter:on
+		order(builder);
 	}
 
 	private void user(ModelProducerFactoryBuilder builder) {
@@ -137,7 +104,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 				.fields(_ProductCost.cost,
 						_ProductCost.productId, _ProductCost.providerId, 
 						_ProductCost.product, _ProductCost.provider,
-						_ProductCost.createdTimestamp)
+						_ProductCost.appliedTimestamp)
 				.publish()
 				.fields(_ProductCost.id)
 					.useFunction((args, credential) -> {
@@ -146,7 +113,8 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 						return Map.of(
 								_ProductCost.productId, id.getProductId(),
 								_ProductCost.providerId, id.getProviderId(),
-								_ProductCost.createdTimestamp, Utils.ldt(id.getCreatedTimestamp())
+								_ProductCost.appliedTimestamp, Utils.ldt(id.getAppliedTimestamp()),
+								_ProductCost.droppedTimestamp, Utils.ldt(id.getDroppedTimestamp())
 							);
 					})
 			.credentials(SALE_CREDENTIAL, HEAD)
@@ -180,6 +148,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		return and(operator(), from(owner()));
 	}
 
+	@SuppressWarnings("unchecked")
 	private void product(ModelProducerFactoryBuilder builder) {
 		WithType<Product> product = builder.type(Product.class);
 		// @formatter:off
@@ -195,13 +164,45 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 						_Product.active, _Product.approvedBy,
 						_Product.approvedTimestamp, _Product.locked)
 				.publish();
+		
+		WithType<ProductPrice> price = builder.type(ProductPrice.class);
+		
+		price
+			.credentials(any())
+				.fields(_ProductPrice.price).publish()
+			.credentials(SALE_CREDENTIAL, HEAD)
+				.fields(_ProductPrice.productId, _ProductPrice.appliedTimestamp,
+						_ProductPrice.droppedTimestamp, _ProductPrice.approvedBy, _ProductPrice.approvedTimestamp,
+						_ProductPrice.product).publish()
+				.fields(_ProductPrice.id)
+					.useFunction((args, credential) -> {
+						ProductPriceId id = (ProductPriceId) args.getSource();
+						
+						return Map.of(
+								_ProductPrice.productId, id.getProductId(),
+								_ProductPrice.appliedTimestamp, Utils.ldt(id.getAppliedTimestamp()),
+								_ProductPrice.droppedTimestamp, Utils.ldt(id.getDroppedTimestamp())
+							);
+					});
+		
+		WithType<Item> item = builder.type(Item.class);
+
+		item
+			.credentials(any())
+				.fields(_Item.id, _Item.code, _Item.namedSize,
+						_Item.numericSize, _Item.color, _Item.status,
+						_Item.price, _Item.product).publish()
+			.credentials(CUSTOMER_SERVICE_CREDENTIAL, STOCK_CREDENTIAL, HEAD)
+				.fields(_Item.note, _Item.cost, _Item.provider, _Item.auditInformations,
+						_Item.createdDate, _Item.createdBy,
+						_Item.lastModifiedDate, _Item.lastModifiedBy).publish();
 		// @formatter:on
 	}
 
 	private void category(ModelProducerFactoryBuilder builder) {
-		WithType<Category> product = builder.type(Category.class);
+		WithType<Category> category = builder.type(Category.class);
 		// @formatter:off
-		product
+		category
 			.credentials(any())
 				.fields(_Category.id, _Category.description, _Category.name,
 						_Category.code)
@@ -212,4 +213,18 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		// @formatter:on
 	}
 
+	private void order(ModelProducerFactoryBuilder builder) {
+		WithType<Order> order = builder.type(Order.class);
+		// @formatter:off
+		order
+			.credentials(CUSTOMER, HEAD, CUSTOMER_SERVICE_CREDENTIAL)
+				.fields(_Order.id, _Order.code, _Order.status,
+						_Order.address, _Order.district, _Order.deliveryFee,
+						_Order.customer, _Order.updatedBy, _Order.updatedTimestamp,
+						_Order.items, _Order.createdTimestamp).publish()
+			.credentials(HEAD, CUSTOMER_SERVICE_CREDENTIAL)
+				.fields(_Order.handledBy).publish();
+		// @formatter:on
+	}
+	
 }

@@ -12,6 +12,7 @@ import javax.persistence.Tuple;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
+import org.hibernate.StaleStateException;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
 import org.hibernate.id.IdentifierGenerator;
@@ -31,9 +32,10 @@ import adn.model.entities.Entity;
 public class HibernateHelper {
 
 	public static final String UNKNOWN_COLUMNS = "Unknown columns found";
-	public static final String HIBERNATE_SEQUENCE_TABLE_NAME = "hibernate_sequences";
+	public static final String HIBERNATE_SEQUENCE_TABLE_NAME = "id_generators";
 	public static final String HIBERNATE_SEQUENCE_PK = "sequence_name";
-	public static final String HIBERNATE_SEQUENCE_VAL = "sequence_next_hi_value";
+	public static final String HIBERNATE_SEQUENCE_VAL = "next_val";
+	public static final String ID_GENERATOR_UPDATE_FAILED_TEMPLATE = "Unable to update next value for id generator of table %s";
 
 	private HibernateHelper() {}
 
@@ -102,17 +104,31 @@ public class HibernateHelper {
 	}
 
 	// @formatter:off
-	private static final String AUTO_INCREMENT_SELECT_TEMPLATE = String.format("SELECT %s FROM %s WHERE %s = '%s'",
+	private static final String GENERATED_ID_SELECT_TEMPLATE = String.format("SELECT %s FROM %s WHERE %s = '%s' FOR UPDATE",
 			HIBERNATE_SEQUENCE_VAL, HIBERNATE_SEQUENCE_TABLE_NAME, HIBERNATE_SEQUENCE_PK, "%s");
+	private static final String GENERATED_ID_PARAMETER_NAME = "nextVal";
+	private static final String TABLE_NAME_PARAMETER_NAME = "tableName";
+	private static final String GENERATED_ID_UPDATE_TEMPLATE = String.format("UPDATE %s SET %s = :%s WHERE %s = :%s",
+			HIBERNATE_SEQUENCE_TABLE_NAME, HIBERNATE_SEQUENCE_VAL, GENERATED_ID_PARAMETER_NAME,
+			HIBERNATE_SEQUENCE_PK, TABLE_NAME_PARAMETER_NAME);
 	// @formatter:on
 	public static <T extends Entity> BigInteger getNextAutoIncrementedValue(Class<T> type) {
 		AbstractEntityPersister persister = (AbstractEntityPersister) getEntityPersister(type);
 		@SuppressWarnings("unchecked")
 		NativeQuery<BigInteger> query = ContextProvider.getCurrentSession()
-				.createNativeQuery(String.format(AUTO_INCREMENT_SELECT_TEMPLATE, persister.getTableName()));
+				.createNativeQuery(String.format(GENERATED_ID_SELECT_TEMPLATE, persister.getTableName()));
 
-		return query.getResultStream().findFirst().orElseThrow(() -> new AssertionError(
+		return query.getResultStream().findFirst().orElseThrow(() -> new StaleStateException(
 				String.format("Unable to get AUTO_INCREMENT identifier of entity type: [%s]", type.getName())));
+	}
+
+	public static <T extends Entity> int updateNextAutoIncrementedValue(Class<T> type, BigInteger nextVal) {
+		AbstractEntityPersister persister = (AbstractEntityPersister) getEntityPersister(type);
+		@SuppressWarnings("unchecked")
+		NativeQuery<Integer> query = ContextProvider.getCurrentSession()
+				.createNativeQuery(String.format(GENERATED_ID_UPDATE_TEMPLATE, nextVal, persister.getTableName()));
+		
+		return query.executeUpdate();
 	}
 
 }

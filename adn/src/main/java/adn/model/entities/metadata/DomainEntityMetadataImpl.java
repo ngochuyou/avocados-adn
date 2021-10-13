@@ -402,6 +402,8 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 					nonLazyProperties.add(propertyName);
 				}
 			}
+			
+			optionalAssociations.add(propertyName);
 		}
 	}
 	
@@ -480,6 +482,7 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 		if (DomainEntity.class.isAssignableFrom(genericType)) {
 			associationClassMap.put(propertyName, (Class<? extends DomainEntity>) genericType);
 			associationTypeMap.put(propertyName, AssociationType.COLLECTION);
+			optionalAssociations.add(propertyName);
 			return;
 		}
 		

@@ -18,6 +18,7 @@ import org.apache.catalina.Context;
 import org.apache.tomcat.util.http.LegacyCookieProcessor;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
+import org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy;
 import org.springframework.boot.web.embedded.tomcat.TomcatContextCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
@@ -73,6 +74,8 @@ public class WebConfiguration implements WebMvcConfigurer {
 
 		sessionFactory.setDataSource(dataSource);
 		sessionFactory.setPackagesToScan(new String[] { Constants.ENTITY_PACKAGE });
+		// snake_case for columns
+		sessionFactory.setPhysicalNamingStrategy(new SpringPhysicalNamingStrategy());
 
 		Properties properties = new Properties();
 
@@ -83,7 +86,8 @@ public class WebConfiguration implements WebMvcConfigurer {
 //		properties.put("hibernate.hbm2ddl.auto", "create-drop");
 		properties.put("hibernate.hbm2ddl.auto", "update");
 		properties.put("hibernate.flush_mode", "MANUAL");
-		properties.put("hibernate.jdbc.batch_size", 500);
+		properties.put("hibernate.order_inserts", true);
+		properties.put("hibernate.order_updates", true);
 		sessionFactory.setHibernateProperties(properties);
 
 		return sessionFactory;

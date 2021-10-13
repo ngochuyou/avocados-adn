@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
+import adn.application.Result;
 import adn.model.entities.Entity;
 
 /**
@@ -52,12 +53,16 @@ public interface GenericRepository {
 
 	<E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec, Sort sort);
 
-	<T extends Entity, E extends T> Result<E> insert(Class<E> type, Serializable id, E model);
+//	<T extends Entity, E extends T> Result<E> insert(Class<E> type, Serializable id, E model);
+//
+//	<T extends Entity, E extends T> Result<E> insert(Class<E> type, Serializable id, E model, Session session);
+//
+//	<T extends Entity, E extends T> Result<E> update(Class<E> type, Serializable id, E model);
+//
+//	<T extends Entity, E extends T> Result<E> update(Class<E> type, Serializable id, E model, Session session);
 
-	<T extends Entity, E extends T> Result<E> insert(Class<E> type, Serializable id, E model, Session session);
-
-	<T extends Entity, E extends T> Result<E> update(Class<E> type, Serializable id, E model);
-
-	<T extends Entity, E extends T> Result<E> update(Class<E> type, Serializable id, E model, Session session);
-
+	<T extends Entity, E extends T> Result<E> validate(Class<E> type, Serializable id, E model);
+	
+	<T extends Entity, E extends T> Result<E> validate(Class<E> type, Serializable id, E model, Session session);
+	
 }

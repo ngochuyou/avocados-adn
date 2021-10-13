@@ -3,6 +3,8 @@
  */
 package adn.service.services;
 
+import static adn.application.context.ContextProvider.getCurrentSession;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import adn.dao.generic.Result;
+import adn.application.Result;
 import adn.model.entities.Category;
 import adn.service.DomainEntityServiceObserver;
 import adn.service.ObservableDomainEntityService;
@@ -38,7 +40,7 @@ public class CategoryService implements adn.service.internal.Service, Observable
 			observers.values().forEach(observer -> observer.notifyCreation(category));
 		}
 
-		return crudService.finish(crudService.getCurrentSession(), result, flushOnFinish);
+		return crudService.finish(getCurrentSession(), result, flushOnFinish);
 	}
 
 	@Override

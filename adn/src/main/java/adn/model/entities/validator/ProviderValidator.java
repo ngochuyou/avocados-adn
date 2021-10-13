@@ -12,7 +12,7 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
 import adn.application.Common;
-import adn.dao.generic.Result;
+import adn.application.Result;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Provider;
@@ -52,26 +52,26 @@ public class ProviderValidator extends AbstractPermanentEntityValidator<Provider
 
 		if (!StringHelper.hasLength(instance.getAddress())
 				|| !_Provider.ADDRESS_PATTERN.matcher(instance.getAddress()).matches()) {
-			result.bad().getMessages().put(_Provider.address, INVALID_ADDRESS);
+			result.bad(_Provider.address, INVALID_ADDRESS);
 		}
 
 		if (StringHelper.hasLength(instance.getWebsite())
 				&& instance.getWebsite().length() > _Provider.WEBSITE_MAX_LENGTH) {
-			result.bad().getMessages().put(_Provider.website, WEBSITE_LENGTH_EXCEEDED);
+			result.bad(_Provider.website, WEBSITE_LENGTH_EXCEEDED);
 		}
 
 		if (!StringHelper.isEmail(instance.getEmail())) {
-			result.bad().getMessages().put(_Provider.email, INVALID_EMAIL);
+			result.bad(_Provider.email, INVALID_EMAIL);
 		}
 
 		List<String> phoneNumbers = instance.getPhoneNumbers();
 
 		if (phoneNumbers == null || phoneNumbers.isEmpty()) {
-			result.bad().getMessages().put(_Provider.phoneNumbers, MISSING_PHONENUMERS);
+			result.bad(_Provider.phoneNumbers, MISSING_PHONENUMERS);
 		} else {
 			if (phoneNumbers.stream().map(phoneNumber -> phoneNumber.length()).reduce(0,
 					(left, right) -> left + right) > _Provider.PHONENUMBERS_MAX_LENGTH) {
-				result.bad().getMessages().put(_Provider.phoneNumbers, TOO_MANY_PHONE_NUMBERS);
+				result.bad(_Provider.phoneNumbers, TOO_MANY_PHONE_NUMBERS);
 			} else {
 				phoneNumbers.forEach(number -> {
 					if (!StringHelper.isAcceptablePhoneNumber(number)) {
@@ -86,7 +86,7 @@ public class ProviderValidator extends AbstractPermanentEntityValidator<Provider
 
 		if (StringHelper.hasLength(instance.getRepresentatorName())
 				&& !_Provider.REPRESENTATOR_NAME_PATTERN.matcher(instance.getRepresentatorName()).matches()) {
-			result.bad().getMessages().put(_Provider.representatorName, INVALID_REPRESENTATOR_NAME);
+			result.bad(_Provider.representatorName, INVALID_REPRESENTATOR_NAME);
 		}
 
 		return result;

@@ -70,13 +70,15 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
 					HttpStatus.BAD_REQUEST, request);
 		}
 
+		ex.printStackTrace();
+		
 		return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR,
 				request);
 	}
 
 	@ExceptionHandler(value = { ObjectNotFoundException.class })
 	public ResponseEntity<?> handleObjectNotFoundException(ObjectNotFoundException ex, WebRequest request) {
-		return handleExceptionInternal(ex, Common.NOT_FOUND, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+		return handleExceptionInternal(ex, Common.notfound(), new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
 	}
 
 	@Override

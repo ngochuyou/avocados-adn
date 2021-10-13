@@ -5,6 +5,7 @@ package adn.model.entities;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import javax.persistence.Column;
 import javax.persistence.Embedded;
@@ -27,26 +28,23 @@ import adn.model.entities.metadata._Provider;
  */
 @javax.persistence.Entity
 @Table(name = "product_costs")
-public class ProductCost extends PermanentEntity implements ApprovableResource {
+public class ProductCost extends PermanentEntity implements ApprovableResource, SpannedResource<LocalDateTime> {
 
 	@EmbeddedId
 	private ProductCostId id;
 
 	@ManyToOne(optional = false, fetch = FetchType.LAZY)
-	@JoinColumn(name = _ProductCost.$productId, referencedColumnName = _Product.$id, nullable = false, updatable = false)
+	@JoinColumn(name = _ProductCost.$productId, referencedColumnName = _Product.$id, columnDefinition = Common.MYSQL_BIGINT_COLUMN_DEFINITION, nullable = false)
 	@MapsId(_ProductCost.productId)
 	private Product product;
 
 	@ManyToOne(optional = false, fetch = FetchType.LAZY)
-	@JoinColumn(name = _ProductCost.$providerId, referencedColumnName = _Provider.$id, columnDefinition = Common.MYSQL_UUID_COLUMN_DEFINITION, updatable = false, nullable = false)
+	@JoinColumn(name = _ProductCost.$providerId, referencedColumnName = _Provider.$id, columnDefinition = Common.MYSQL_UUID_COLUMN_DEFINITION, updatable = false)
 	@MapsId(_ProductCost.providerId)
 	private Provider provider;
 
 	@Column(columnDefinition = Common.MYSQL_CURRENCY_COLUMN_DEFINITION, nullable = false, updatable = false)
 	private BigDecimal cost;
-
-	@Column(name = "dropped_timestamp", updatable = false)
-	private LocalDateTime droppedTimestamp;
 
 	@Embedded
 	private ApprovalInformations approvalInformations;
@@ -75,14 +73,6 @@ public class ProductCost extends PermanentEntity implements ApprovableResource {
 		this.provider = provider;
 	}
 
-	public LocalDateTime getDroppedTimestamp() {
-		return droppedTimestamp;
-	}
-
-	public void setDroppedTimestamp(LocalDateTime droppedTimestamp) {
-		this.droppedTimestamp = droppedTimestamp;
-	}
-
 	public BigDecimal getCost() {
 		return cost;
 	}
@@ -93,11 +83,25 @@ public class ProductCost extends PermanentEntity implements ApprovableResource {
 
 	@Override
 	public ApprovalInformations getApprovalInformations() {
+		if (approvalInformations == null) {
+			approvalInformations = new ApprovalInformations();
+		}
+
 		return approvalInformations;
 	}
 
 	public void setApprovalInformations(ApprovalInformations approvalInformations) {
-		this.approvalInformations = approvalInformations;
+		this.approvalInformations = Optional.ofNullable(approvalInformations).orElse(new ApprovalInformations());
+	}
+	
+	@Override
+	public LocalDateTime getAppliedTimestamp() {
+		return Optional.ofNullable(id).map(ProductCostId::getAppliedTimestamp).orElse(null);
+	}
+	
+	@Override
+	public LocalDateTime getDroppedTimestamp() {
+		return Optional.ofNullable(id).map(ProductCostId::getDroppedTimestamp).orElse(null);
 	}
 
 }

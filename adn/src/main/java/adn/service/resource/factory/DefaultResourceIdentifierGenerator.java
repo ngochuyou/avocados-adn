@@ -5,7 +5,7 @@ package adn.service.resource.factory;
 
 import java.io.Serializable;
 import java.sql.SQLException;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.Properties;
@@ -39,7 +39,7 @@ public class DefaultResourceIdentifierGenerator implements IdentifierGenerator, 
 	public Serializable generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
 		Resource instance = (Resource) object;
 		StringBuilder builder = new StringBuilder(
-				String.valueOf(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond()))
+				String.valueOf(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()))
 						.append(IDENTIFIER_PARTS_SEPERATOR);
 
 		builder.append(RandomStringUtils

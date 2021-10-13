@@ -9,8 +9,8 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
 import adn.application.Common;
+import adn.application.Result;
 import adn.dao.generic.GenericRepository;
-import adn.dao.generic.Result;
 import adn.model.Generic;
 import adn.model.entities.Personnel;
 import adn.model.entities.metadata._Personnel;
@@ -34,7 +34,7 @@ public class PersonnelValidator extends UserValidator<Personnel> {
 		Result<Personnel> result = super.isSatisfiedBy(session, id, instance);
 
 		if (instance.getDepartment() == null) {
-			result.bad().getMessages().put(_Personnel.department, MISSING_DEPARTMENT);
+			result.bad(_Personnel.department, MISSING_DEPARTMENT);
 		}
 
 		return result;

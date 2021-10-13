@@ -5,21 +5,20 @@ package adn.model.entities;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.Optional;
 
 import javax.persistence.Column;
 import javax.persistence.Embedded;
+import javax.persistence.EmbeddedId;
 import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.MapsId;
 import javax.persistence.Table;
 
-import org.hibernate.annotations.GenericGenerator;
-
 import adn.application.Common;
-import adn.model.entities.metadata._Product;
+import adn.model.entities.id.ProductPriceId;
+import adn.model.entities.metadata._ProductPrice;
 
 /**
  * @author Ngoc Huy
@@ -27,32 +26,27 @@ import adn.model.entities.metadata._Product;
  */
 @javax.persistence.Entity
 @Table(name = "product_prices")
-public class ProductPrice extends PermanentEntity implements ApprovableResource {
+public class ProductPrice extends PermanentEntity implements ApprovableResource, SpannedResource<LocalDateTime> {
 
-	@Id
-	@GeneratedValue(generator = "uuid")
-	@GenericGenerator(name = "uuid", strategy = "uuid2")
-	@Column(columnDefinition = Common.MYSQL_UUID_COLUMN_DEFINITION, updatable = false)
-	private UUID id;
+	@EmbeddedId
+	private ProductPriceId id;
 
-	@Column(nullable = false, updatable = false, columnDefinition = Common.MYSQL_CURRENCY_COLUMN_DEFINITION)
+	@ManyToOne(optional = false, fetch = FetchType.LAZY)
+	@JoinColumn(name = _ProductPrice.$productId, referencedColumnName = _ProductPrice.$id, nullable = false, columnDefinition = Common.MYSQL_BIGINT_COLUMN_DEFINITION)
+	@MapsId(_ProductPrice.productId)
+	private Product product;
+
+	@Column(nullable = false, columnDefinition = Common.MYSQL_CURRENCY_COLUMN_DEFINITION)
 	private BigDecimal price;
-
-	@Column(updatable = false, name = "dropped_timestamp")
-	private LocalDateTime droppedTimestamp;
 
 	@Embedded
 	private ApprovalInformations approvalInformations;
 
-	@ManyToOne(optional = false, fetch = FetchType.LAZY)
-	@JoinColumn(referencedColumnName = _Product.$id, updatable = false)
-	private Product product;
-
-	public UUID getId() {
+	public ProductPriceId getId() {
 		return id;
 	}
 
-	public void setId(UUID id) {
+	public void setId(ProductPriceId id) {
 		this.id = id;
 	}
 
@@ -64,21 +58,17 @@ public class ProductPrice extends PermanentEntity implements ApprovableResource 
 		this.price = price;
 	}
 
-	public LocalDateTime getDroppedTimestamp() {
-		return droppedTimestamp;
-	}
-
-	public void setDroppedTimestamp(LocalDateTime droppedTimestamp) {
-		this.droppedTimestamp = droppedTimestamp;
-	}
-
 	@Override
 	public ApprovalInformations getApprovalInformations() {
+		if (approvalInformations == null) {
+			approvalInformations = new ApprovalInformations();
+		}
+
 		return approvalInformations;
 	}
 
 	public void setApprovalInformations(ApprovalInformations approvalInformations) {
-		this.approvalInformations = approvalInformations;
+		this.approvalInformations = Optional.ofNullable(approvalInformations).orElse(new ApprovalInformations());
 	}
 
 	public Product getProduct() {
@@ -87,6 +77,16 @@ public class ProductPrice extends PermanentEntity implements ApprovableResource 
 
 	public void setProduct(Product product) {
 		this.product = product;
+	}
+
+	@Override
+	public LocalDateTime getAppliedTimestamp() {
+		return Optional.ofNullable(id).map(ProductPriceId::getAppliedTimestamp).orElse(null);
+	}
+
+	@Override
+	public LocalDateTime getDroppedTimestamp() {
+		return Optional.ofNullable(id).map(ProductPriceId::getDroppedTimestamp).orElse(null);
 	}
 
 }
