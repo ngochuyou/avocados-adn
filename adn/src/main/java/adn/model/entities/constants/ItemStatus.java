@@ -9,6 +9,6 @@ package adn.model.entities.constants;
  */
 public enum ItemStatus {
 
-	AVAILABLE, SOLD, UNAVAILABLE
+	AVAILABLE, SOLD, RESERVED, UNAVAILABLE
 	
 }

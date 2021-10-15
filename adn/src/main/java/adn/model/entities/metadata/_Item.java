@@ -35,6 +35,8 @@ public class _Item extends _PermanentEntity implements _AuditableResource {
 	
 	public static final String price = "price";
 
+	public static final String orders = "orders";
+	
 	public static final int MAXIMUM_NAMED_SIZE_LENGTH = 4;
 	public static final int MAXIMUM_NAMED_COLOR_LENGTH = 50;
 	public static final int MAXIMUM_STATUS_LENGTH = 20;

@@ -9,7 +9,9 @@ import static adn.service.internal.Service.Status.OK;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import adn.helpers.StringHelper;
 import adn.service.internal.Service.Status;
 
 /**
@@ -57,7 +59,7 @@ public class Result<T> {
 		this.status = BAD;
 		return this;
 	}
-	
+
 	public Result<T> bad(String key, String message) {
 		this.status = BAD;
 		messages.put(key, message);
@@ -77,6 +79,12 @@ public class Result<T> {
 		return this.status == OK;
 	}
 
+	public String getMessagesAsString() {
+		return messages.entrySet().stream()
+				.map(entry -> String.format(Common.COMMON_TEMPLATE, entry.getKey(), entry.getValue()))
+				.collect(Collectors.joining(StringHelper.COMMON_JOINER));
+	}
+
 	public static <T> Result<T> ok(T instance) {
 		return new Result<T>(OK, instance, new HashMap<>());
 	}
@@ -84,7 +92,7 @@ public class Result<T> {
 	public static <T> Result<T> bad(Map<String, String> messageSet) {
 		return new Result<T>(BAD, null, messageSet);
 	}
-	
+
 	public static <T> Result<T> bad(String message) {
 		return bad(Map.of(Common.MESSAGE, message));
 	}

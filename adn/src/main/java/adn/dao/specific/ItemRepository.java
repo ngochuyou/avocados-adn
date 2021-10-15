@@ -3,26 +3,16 @@
  */
 package adn.dao.specific;
 
-import static adn.application.Common.COMMA;
-
 import java.math.BigInteger;
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import javax.persistence.LockModeType;
-
-import org.hibernate.Session;
-import org.hibernate.query.Query;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.hibernate.SessionFactory;
+import org.hibernate.SharedSessionContract;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import adn.application.context.ContextProvider;
-import adn.dao.generic.GenericRepositoryImpl;
-import adn.helpers.HibernateHelper;
+import adn.application.Result;
+import adn.dao.generic.GenericRepository;
 import adn.model.entities.Item;
 import adn.model.entities.constants.ItemStatus;
 import adn.model.entities.metadata._Item;
@@ -34,47 +24,24 @@ import adn.model.entities.metadata._Item;
 @Repository
 public class ItemRepository {
 
-	private static final Logger logger = LoggerFactory.getLogger(ItemRepository.class);
-
-	private final String findItemsAndLockTemplate;
+	private final GenericRepository genericRepository;
+	private final SessionFactory sessionFactory;
 
 	@Autowired
-	public ItemRepository() {
+	public ItemRepository(GenericRepository genericRepository, SessionFactory sessionFactory) {
 		super();
-		// @formatter:off
-		findItemsAndLockTemplate = String.format("SELECT %s FROM %s WHERE %s IN (%s)",
-				"%s", HibernateHelper.getEntityName(Item.class), _Item.id, "%s");
-		// @formatter:on
+		this.genericRepository = genericRepository;
+		this.sessionFactory = sessionFactory;
 	}
 
-	public List<Object[]> findAllItemsAndLock(List<BigInteger> itemIds, Collection<String> columns) {
-		Session session = ContextProvider.getCurrentSession();
-		String hql = String.format(findItemsAndLockTemplate, columns.stream().collect(Collectors.joining(COMMA)),
-				IntStream.range(1, itemIds.size() + 1).mapToObj(GenericRepositoryImpl::positionalParam)
-						.collect(Collectors.joining(COMMA)));
-		Query<Object[]> query = session.createQuery(hql, Object[].class);
-
-		IntStream.range(0, itemIds.size()).forEach(index -> query.setParameter(index + 1, itemIds.get(index)));
-		query.setLockMode(LockModeType.PESSIMISTIC_WRITE);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug(query.getQueryString());
-		}
-
-		return query.list();
+	public Result<Integer> updateItemsStatus(List<BigInteger> itemIds, ItemStatus status) {
+		return updateItemsStatus(itemIds, status, sessionFactory.getCurrentSession());
 	}
 
-	public int updateItemsStatus(List<BigInteger> itemIds, ItemStatus status) {
-		Session session = ContextProvider.getCurrentSession();
-		String hql = String.format("UPDATE %s SET %s = :%s WHERE %s IN (%s)", HibernateHelper.getEntityName(Item.class),
-				_Item.status, _Item.status, _Item.id, IntStream.range(1, itemIds.size() + 1)
-						.mapToObj(GenericRepositoryImpl::positionalParam).collect(Collectors.joining(COMMA)));
-		Query<?> query = session.createQuery(hql);
-
-		IntStream.range(0, itemIds.size()).forEach(index -> query.setParameter(index + 1, itemIds.get(index)));
-		query.setParameter(_Item.status, status);
-
-		return query.executeUpdate();
+	public Result<Integer> updateItemsStatus(List<BigInteger> itemIds, ItemStatus status,
+			SharedSessionContract session) {
+		return genericRepository.update(Item.class, (root, query, builder) -> query.set(root.get(_Item.status), status),
+				(root, query, builder) -> builder.in(root.get(_Item.id)).value(itemIds), session);
 	}
 
 }

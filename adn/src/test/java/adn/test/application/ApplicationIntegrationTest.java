@@ -3,18 +3,27 @@
  */
 package adn.test.application;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.File;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.persistence.Tuple;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.Root;
 import javax.transaction.Transactional;
 
+import org.hibernate.Session;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.Query;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -39,6 +48,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
+import adn.model.entities.Item;
+import adn.model.entities.Order;
+import adn.model.entities.metadata._Item;
+import adn.model.entities.metadata._Order;
 import adn.security.SecurityConfiguration;
 import adn.service.resource.model.models.UserPhoto;
 
@@ -102,21 +115,43 @@ public class ApplicationIntegrationTest {
 				ObjectMapper mapper = ContextProvider.getApplicationContext().getBean(ObjectMapper.class);
 				String[] statusSet = mapper.readValue(res.getContentAsString(), String[].class);
 				
-				assertThat(
+				assertTrue(
 					Stream
 						.of(statusSet)
 						.map(status -> { System.out.println(status); return status; })
 						.filter(status -> status.startsWith(HttpStatus.OK.toString()))
 						.count() == amount
-				).isTrue();
+				);
 				
 				logger.trace("Successfully retrieved " + statusSet.length + " files");
 			});
 		// @formatter:on
 	}
 
+	@Autowired
+	private SessionFactoryImplementor sfi;
+	
 	@Test
 	@Transactional
-	public void test() {}
+	public void test() {
+		Session session = sfi.getCurrentSession();
+		CriteriaBuilder builder = sfi.getCriteriaBuilder();
+		CriteriaQuery<Tuple> cq = builder.createTupleQuery();
+		Root<Item> root = cq.from(Item.class);
+		Join<Item, Order> join = root.join(_Item.orders);
+		
+		cq.multiselect(root.get(_Item.id))
+			.where(builder.equal(join.get(_Order.id), new BigInteger("61")));
+		
+		Query<Tuple> query = session.createQuery(cq);
+		
+		System.out.println(query.getQueryString());
+		
+		for (Tuple tuple: query.getResultList()) {
+			Object[] cols = tuple.toArray();
+			
+			System.out.println(cols[0]);
+		}
+	}
 
 }

@@ -20,9 +20,11 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.persistence.LockModeType;
 import javax.persistence.Tuple;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Order;
@@ -33,6 +35,7 @@ import javax.persistence.criteria.Selection;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.SharedSessionContract;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.Query;
 import org.hibernate.tuple.entity.EntityMetamodel;
@@ -73,6 +76,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 	private final SessionFactory sessionFactory;
 	private final ValidatorFactory validatorFactory;
 	private final ModelContextProvider modelContext;
+
 	private Map<Class<? extends Entity>, Map<String, BiFunction<String, Root<? extends Entity>, Path<?>>>> selectorMap;
 	private Map<Class<? extends Entity>, BiFunction<Root<? extends Entity>, CriteriaBuilder, Predicate>> mandatoryPredicateMap;
 
@@ -91,7 +95,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 	public static String positionalParam(int pos) {
 		return POSITIONAL_PARAM_PREFIX + pos;
 	}
-	
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public void buildAfterStartUp() throws Exception {
@@ -196,20 +200,16 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 
 		return selectors;
 	}
-
 	// @formatter:on
-	@Override
-	public <T extends Entity> Optional<T> findById(Class<T> type, Serializable id) {
-		return findOne(type, hasId(type, id));
+
+	private Session getCurrentSession() {
+		return sessionFactory.getCurrentSession();
 	}
 
 	private static <T extends Entity> Specification<T> hasId(Class<T> type, Serializable id) {
+		// id will always directly be in the type so there's no need to resolve it's
+		// path
 		return (root, query, builder) -> builder.equal(root.get(getIdentifierPropertyName(type)), id);
-	}
-
-	@Override
-	public <T extends Entity> Optional<Object[]> findById(Class<T> type, Serializable id, Collection<String> columns) {
-		return findOne(type, columns, hasId(type, id));
 	}
 
 	public <T extends Entity> List<Selection<?>> resolveSelect(Class<T> type, Root<T> root,
@@ -220,301 +220,13 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		return columns.stream().map(column -> selectors.get(column).apply(column, root)).collect(Collectors.toList());
 	}
 
-	@Override
-	public <T extends Entity> List<T> findAll(Class<T> type, Pageable paging) {
-		Session session = getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<T> cq = builder.createQuery(type);
-		Root<T> root = cq.from(type);
-
-		cq.where(resolvePredicate(type, root, cq, builder, null));
-
-		Query<T> hql = resolveFetchQuery(session, cq, root, builder, paging);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug(hql.getQueryString());
-		}
-
-		return hql.list();
-	}
-
-	private <T extends Entity, E> Query<E> resolveFetchQuery(Session session, CriteriaQuery<E> query, Root<T> root,
-			CriteriaBuilder builder, Pageable paging) {
+	private <T extends Entity, E> Query<E> resolveFetchQuery(SharedSessionContract session, CriteriaQuery<E> query,
+			Root<T> root, CriteriaBuilder builder, Pageable paging) {
 		return resolvePagedQuery(session, query.orderBy(resolveSort(root, builder, paging.getSort())), paging);
 	}
 
-	@Override
-	public <T extends Entity> List<Object[]> findAll(Class<T> type, Collection<String> columns, Pageable paging) {
-		Session session = getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<Tuple> cq = builder.createTupleQuery();
-		Root<T> root = cq.from(type);
-
-		cq.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, cq, builder, null));
-
-		Query<Tuple> hql = resolveFetchQuery(session, cq, root, builder, paging);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug(hql.getQueryString());
-		}
-
-		return toRows(hql.list());
-	}
-
-	@Override
-	public <T extends Entity> long count(Class<T> type) {
-		Session session = getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<Long> criteriaQuery = builder.createQuery(Long.class);
-		Root<T> root = criteriaQuery.from(type);
-
-		criteriaQuery.select(builder.count(root)).where(resolvePredicate(type, root, criteriaQuery, builder, null));
-
-		return session.createQuery(criteriaQuery).getSingleResult();
-	}
-
-	@Override
-	public <T extends Entity> long countById(Class<T> type, Serializable id) {
-		return count(type, hasId(type, id));
-	}
-
-	private Session getCurrentSession() {
-		return sessionFactory.getCurrentSession();
-	}
-
-	@Override
-	public <T extends Entity, E extends T> Result<E> validate(Class<E> type, Serializable id, E model) {
-		return validate(type, id, model, getCurrentSession());
-	}
-
-	@Override
-	public <T extends Entity, E extends T> Result<E> validate(Class<E> type, Serializable id, E instance,
-			Session session) {
-		Validator<E> validator = validatorFactory.getValidator(type);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug(String.format(VALIDATION_LOG_TEMPLATE, type.getName(), id, validator.getLoggableName()));
-		}
-
-		return validator.isSatisfiedBy(session, id, instance);
-	}
-
-//	@Override
-//	public <T extends Entity, E extends T> Result<E> insert(Class<E> type, Serializable id, E persistence) {
-//		return insert(type, id, persistence, getCurrentSession());
-//	}
-//
-//	@Override
-//	public <T extends Entity, E extends T> Result<E> insert(Class<E> type, Serializable id, E persistence,
-//			Session session) {
-//		// validate the persisted entity
-//		Result<E> result = validate(type, id, persistence, session);
-//
-//		if (result.isOk()) {
-//			try {
-//				persistence = entityBuilderProvider.getBuilder(type).buildPostValidationOnInsert(id, persistence);
-//			} catch (Exception e) {
-//				return Result.failed(e.getMessage());
-//			}
-//
-//			session.save(persistence);
-//
-//			return result;
-//		}
-//
-//		session.evict(persistence);
-//
-//		return result;
-//	}
-//
-//	@Override
-//	public <T extends Entity, E extends T> Result<E> update(Class<E> type, Serializable id, E persistence) {
-//		return update(type, id, persistence, getCurrentSession());
-//	}
-//
-//	@Override
-//	public <T extends Entity, E extends T> Result<E> update(Class<E> type, Serializable id, E persistence,
-//			Session session) {
-//		Result<E> result = validate(type, id, persistence, session);
-//
-//		if (result.isOk()) {
-//			session.update(persistence);
-//
-//			return result;
-//		}
-//
-//		session.evict(persistence);
-//
-//		return result;
-//	}
-
-	@Override
-	public <E extends Entity> Optional<E> findOne(Class<E> type, Specification<E> spec) {
-		Session session = getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<E> query = builder.createQuery(type);
-		Root<E> root = query.from(type);
-
-		query.where(resolvePredicate(type, root, query, builder, spec));
-
-		Query<E> hql = session.createQuery(query);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug(hql.getQueryString());
-		}
-
-		return hql.getResultStream().findFirst();
-	}
-
-	@Override
-	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec) {
-		Session session = getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<E> query = builder.createQuery(type);
-		Root<E> root = query.from(type);
-
-		query.where(resolvePredicate(type, root, query, builder, spec));
-
-		Query<E> hql = session.createQuery(query);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug(hql.getQueryString());
-		}
-
-		return hql.list();
-	}
-
-	@Override
-	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec, Pageable pageable) {
-		Session session = getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<E> query = builder.createQuery(type);
-		Root<E> root = query.from(type);
-
-		query.where(resolvePredicate(type, root, query, builder, spec));
-
-		Query<E> hql = resolvePagedQuery(session, query, pageable);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug(hql.getQueryString());
-		}
-
-		return hql.list();
-	}
-
-	@Override
-	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec, Sort sort) {
-		Session session = getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<E> query = builder.createQuery(type);
-		Root<E> root = query.from(type);
-
-		query.where(resolvePredicate(type, root, query, builder, spec)).orderBy(resolveSort(root, builder, sort));
-
-		Query<E> hql = session.createQuery(query);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug(hql.getQueryString());
-		}
-
-		return hql.list();
-	}
-
-	@Override
-	public <E extends Entity> long count(Class<E> type, Specification<E> spec) {
-		Session session = getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<Long> query = builder.createQuery(Long.class);
-		Root<E> root = query.from(type);
-
-		query.select(builder.count(root)).where(resolvePredicate(type, root, query, builder, spec));
-
-		Query<Long> hql = session.createQuery(query);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug(hql.getQueryString());
-		}
-
-		return hql.getSingleResult();
-	}
-
-	@Override
-	public <E extends Entity> Optional<Object[]> findOne(Class<E> type, Collection<String> columns,
-			Specification<E> spec) {
-		Session session = getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<Tuple> query = builder.createTupleQuery();
-		Root<E> root = query.from(type);
-
-		query.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, query, builder, spec));
-
-		Query<Tuple> hql = session.createQuery(query);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug(hql.getQueryString());
-		}
-
-		return hql.getResultStream().findFirst().map(Tuple::toArray);
-	}
-
-	@Override
-	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec) {
-		Session session = getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<Tuple> query = builder.createQuery(Tuple.class);
-		Root<E> root = query.from(type);
-
-		query.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, query, builder, spec));
-
-		Query<Tuple> hql = session.createQuery(query);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug(hql.getQueryString());
-		}
-
-		return toRows(hql.list());
-	}
-
-	@Override
-	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec,
+	public <E> Query<E> resolvePagedQuery(SharedSessionContract session, CriteriaQuery<E> criteriaQuery,
 			Pageable pageable) {
-		Session session = getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<Tuple> query = builder.createQuery(Tuple.class);
-		Root<E> root = query.from(type);
-
-		query.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, query, builder, spec));
-
-		Query<Tuple> hql = resolvePagedQuery(session, query, pageable);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug(hql.getQueryString());
-		}
-
-		return toRows(hql.list());
-	}
-
-	@Override
-	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec,
-			Sort sort) {
-		Session session = getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<Tuple> query = builder.createQuery(Tuple.class);
-		Root<E> root = query.from(type);
-
-		query.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, query, builder, spec))
-				.orderBy(resolveSort(root, builder, sort));
-
-		Query<Tuple> hql = session.createQuery(query);
-
-		if (logger.isDebugEnabled()) {
-			logger.debug(hql.getQueryString());
-		}
-
-		return toRows(hql.list());
-	}
-
-	public <E> Query<E> resolvePagedQuery(Session session, CriteriaQuery<E> criteriaQuery, Pageable pageable) {
 		Query<E> query = session.createQuery(criteriaQuery);
 
 		query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
@@ -547,6 +259,516 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		}
 
 		return predicate;
+	}
+
+	private CriteriaBuilder getCriteriaBuilder() {
+		return sessionFactory.getCriteriaBuilder();
+	}
+
+	@Override
+	public <T extends Entity> Optional<T> findById(Class<T> type, Serializable id) {
+		return findById(type, id, LockModeType.NONE);
+	}
+
+	@Override
+	public <T extends Entity> Optional<T> findById(Class<T> type, Serializable id, LockModeType lockMode) {
+		return findById(type, id, lockMode, getCurrentSession());
+	}
+
+	@Override
+	public <T extends Entity> Optional<Object[]> findById(Class<T> type, Serializable id, Collection<String> columns) {
+		return findById(type, id, columns, LockModeType.NONE);
+	}
+
+	@Override
+	public <T extends Entity> Optional<Object[]> findById(Class<T> type, Serializable id, Collection<String> columns,
+			LockModeType lockMode) {
+		return findOne(type, columns, hasId(type, id), lockMode, getCurrentSession());
+	}
+
+	@Override
+	public <T extends Entity> List<T> findAll(Class<T> type, Pageable paging) {
+		return findAll(type, paging, LockModeType.NONE);
+	}
+
+	@Override
+	public <T extends Entity> List<T> findAll(Class<T> type, Pageable paging, LockModeType lockMode) {
+		return findAll(type, paging, lockMode, getCurrentSession());
+	}
+
+	@Override
+	public <T extends Entity> List<Object[]> findAll(Class<T> type, Collection<String> columns, Pageable paging) {
+		return findAll(type, columns, paging, LockModeType.NONE);
+	}
+
+	@Override
+	public <T extends Entity> List<Object[]> findAll(Class<T> type, Collection<String> columns, Pageable paging,
+			LockModeType lockMode) {
+		return findAll(type, columns, paging, lockMode, getCurrentSession());
+	}
+
+	@Override
+	public <T extends Entity> long count(Class<T> type) {
+		return count(type, getCurrentSession());
+	}
+
+	@Override
+	public <T extends Entity> long countById(Class<T> type, Serializable id) {
+		return count(type, hasId(type, id));
+	}
+
+	@Override
+	public <E extends Entity> Optional<E> findOne(Class<E> type, Specification<E> spec) {
+		return findOne(type, spec, LockModeType.NONE);
+	}
+
+	@Override
+	public <E extends Entity> Optional<E> findOne(Class<E> type, Specification<E> spec, LockModeType lockMode) {
+		return findOne(type, spec, lockMode, getCurrentSession());
+	}
+
+	@Override
+	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec) {
+		return findAll(type, spec, LockModeType.NONE);
+	}
+
+	@Override
+	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec, LockModeType lockMode) {
+		return findAll(type, spec, lockMode, getCurrentSession());
+	}
+
+	@Override
+	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec, Pageable pageable) {
+		return findAll(type, spec, pageable, LockModeType.NONE);
+	}
+
+	@Override
+	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec, Pageable pageable,
+			LockModeType lockMode) {
+		return findAll(type, spec, pageable, lockMode, getCurrentSession());
+	}
+
+	@Override
+	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec, Sort sort) {
+		return findAll(type, spec, sort, LockModeType.NONE);
+	}
+
+	@Override
+	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec, Sort sort, LockModeType lockMode) {
+		return findAll(type, spec, sort, lockMode, getCurrentSession());
+	}
+
+	@Override
+	public <E extends Entity> long count(Class<E> type, Specification<E> spec) {
+		return count(type, spec, getCurrentSession());
+	}
+
+	@Override
+	public <E extends Entity> Optional<Object[]> findOne(Class<E> type, Collection<String> columns,
+			Specification<E> spec) {
+		return findOne(type, columns, spec, LockModeType.NONE);
+	}
+
+	@Override
+	public <E extends Entity> Optional<Object[]> findOne(Class<E> type, Collection<String> columns,
+			Specification<E> spec, LockModeType lockMode) {
+		return findOne(type, columns, spec, lockMode, getCurrentSession());
+	}
+
+	@Override
+	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec) {
+		return findAll(type, columns, spec, LockModeType.NONE);
+	}
+
+	@Override
+	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec,
+			LockModeType lockMode) {
+		return findAll(type, columns, spec, lockMode, getCurrentSession());
+	}
+
+	@Override
+	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec,
+			Pageable pageable) {
+		return findAll(type, columns, spec, pageable, LockModeType.NONE);
+	}
+
+	@Override
+	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec,
+			Pageable pageable, LockModeType lockMode) {
+		return findAll(type, columns, spec, pageable, lockMode, getCurrentSession());
+	}
+
+	@Override
+	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec,
+			Sort sort) {
+		return findAll(type, columns, spec, sort, LockModeType.NONE);
+	}
+
+	@Override
+	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec,
+			Sort sort, LockModeType lockMode) {
+		return findAll(type, columns, spec, sort, lockMode, getCurrentSession());
+	}
+
+	@Override
+	public <T extends Entity> List<T> findAll(Class<T> type, Pageable paging, SharedSessionContract session) {
+		return findAll(type, paging, LockModeType.NONE, session);
+	}
+
+	@Override
+	public <T extends Entity> List<T> findAll(Class<T> type, Pageable paging, LockModeType lockMode,
+			SharedSessionContract session) {
+		CriteriaBuilder builder = getCriteriaBuilder();
+		CriteriaQuery<T> cq = builder.createQuery(type);
+		Root<T> root = cq.from(type);
+
+		cq.where(resolvePredicate(type, root, cq, builder, null));
+
+		Query<T> hql = resolveFetchQuery(session, cq, root, builder, paging);
+
+		hql.setLockMode(lockMode);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(hql.getQueryString());
+		}
+
+		return hql.list();
+	}
+
+	@Override
+	public <T extends Entity> List<Object[]> findAll(Class<T> type, Collection<String> columns, Pageable paging,
+			SharedSessionContract session) {
+		return findAll(type, columns, paging, LockModeType.NONE, session);
+	}
+
+	@Override
+	public <T extends Entity> List<Object[]> findAll(Class<T> type, Collection<String> columns, Pageable paging,
+			LockModeType lockMode, SharedSessionContract session) {
+		CriteriaBuilder builder = getCriteriaBuilder();
+		CriteriaQuery<Tuple> cq = builder.createTupleQuery();
+		Root<T> root = cq.from(type);
+
+		cq.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, cq, builder, null));
+
+		Query<Tuple> hql = resolveFetchQuery(session, cq, root, builder, paging);
+
+		hql.setLockMode(lockMode);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(hql.getQueryString());
+		}
+
+		return toRows(hql.list());
+	}
+
+	@Override
+	public <T extends Entity> Optional<T> findById(Class<T> clazz, Serializable id, SharedSessionContract session) {
+		return findById(clazz, id, LockModeType.NONE, session);
+	}
+
+	@Override
+	public <T extends Entity> Optional<T> findById(Class<T> type, Serializable id, LockModeType lockMode,
+			SharedSessionContract session) {
+		return findOne(type, hasId(type, id), lockMode, session);
+	}
+
+	@Override
+	public <T extends Entity> Optional<Object[]> findById(Class<T> clazz, Serializable id, Collection<String> columns,
+			SharedSessionContract session) {
+		return findById(clazz, id, columns, LockModeType.NONE, session);
+	}
+
+	@Override
+	public <T extends Entity> Optional<Object[]> findById(Class<T> type, Serializable id, Collection<String> columns,
+			LockModeType lockMode, SharedSessionContract session) {
+		return findOne(type, columns, hasId(type, id), lockMode, session);
+	}
+
+	@Override
+	public <T extends Entity> long count(Class<T> type, SharedSessionContract session) {
+		CriteriaBuilder builder = getCriteriaBuilder();
+		CriteriaQuery<Long> criteriaQuery = builder.createQuery(Long.class);
+		Root<T> root = criteriaQuery.from(type);
+
+		criteriaQuery.select(builder.count(root)).where(resolvePredicate(type, root, criteriaQuery, builder, null));
+
+		return session.createQuery(criteriaQuery).getSingleResult();
+	}
+
+	@Override
+	public <T extends Entity> long countById(Class<T> type, Serializable id, SharedSessionContract session) {
+		return count(type, hasId(type, id), session);
+	}
+
+	@Override
+	public <E extends Entity> Optional<E> findOne(Class<E> type, Specification<E> spec, SharedSessionContract session) {
+		return findOne(type, spec, LockModeType.NONE, session);
+	}
+
+	@Override
+	public <E extends Entity> Optional<E> findOne(Class<E> type, Specification<E> spec, LockModeType lockMode,
+			SharedSessionContract session) {
+		CriteriaBuilder builder = getCriteriaBuilder();
+		CriteriaQuery<E> query = builder.createQuery(type);
+		Root<E> root = query.from(type);
+
+		query.where(resolvePredicate(type, root, query, builder, spec));
+
+		Query<E> hql = session.createQuery(query);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(hql.getQueryString());
+		}
+
+		hql.setLockMode(lockMode);
+
+		return hql.getResultStream().findFirst();
+	}
+
+	@Override
+	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec, SharedSessionContract session) {
+		return findAll(type, spec, LockModeType.NONE, session);
+	}
+
+	@Override
+	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec, LockModeType lockMode,
+			SharedSessionContract session) {
+		CriteriaBuilder builder = getCriteriaBuilder();
+		CriteriaQuery<E> query = builder.createQuery(type);
+		Root<E> root = query.from(type);
+
+		query.where(resolvePredicate(type, root, query, builder, spec));
+
+		Query<E> hql = session.createQuery(query);
+
+		hql.setLockMode(lockMode);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(hql.getQueryString());
+		}
+
+		return hql.list();
+	}
+
+	@Override
+	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec, Pageable pageable,
+			SharedSessionContract session) {
+		return findAll(type, spec, pageable, LockModeType.NONE, session);
+	}
+
+	@Override
+	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec, Pageable pageable,
+			LockModeType lockMode, SharedSessionContract session) {
+		CriteriaBuilder builder = getCriteriaBuilder();
+		CriteriaQuery<E> query = builder.createQuery(type);
+		Root<E> root = query.from(type);
+
+		query.where(resolvePredicate(type, root, query, builder, spec));
+
+		Query<E> hql = resolvePagedQuery(session, query, pageable);
+
+		hql.setLockMode(lockMode);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(hql.getQueryString());
+		}
+
+		return hql.list();
+	}
+
+	@Override
+	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec, Sort sort,
+			SharedSessionContract session) {
+		return findAll(type, spec, sort, LockModeType.NONE, session);
+	}
+
+	@Override
+	public <E extends Entity> List<E> findAll(Class<E> type, Specification<E> spec, Sort sort, LockModeType lockMode,
+			SharedSessionContract session) {
+		CriteriaBuilder builder = getCriteriaBuilder();
+		CriteriaQuery<E> query = builder.createQuery(type);
+		Root<E> root = query.from(type);
+
+		query.where(resolvePredicate(type, root, query, builder, spec)).orderBy(resolveSort(root, builder, sort));
+
+		Query<E> hql = session.createQuery(query);
+
+		hql.setLockMode(lockMode);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(hql.getQueryString());
+		}
+
+		return hql.list();
+	}
+
+	@Override
+	public <E extends Entity> long count(Class<E> type, Specification<E> spec, SharedSessionContract session) {
+		CriteriaBuilder builder = getCriteriaBuilder();
+		CriteriaQuery<Long> query = builder.createQuery(Long.class);
+		Root<E> root = query.from(type);
+
+		query.select(builder.count(root)).where(resolvePredicate(type, root, query, builder, spec));
+
+		Query<Long> hql = session.createQuery(query);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(hql.getQueryString());
+		}
+
+		return hql.getSingleResult();
+	}
+
+	@Override
+	public <E extends Entity> Optional<Object[]> findOne(Class<E> type, Collection<String> columns,
+			Specification<E> spec, SharedSessionContract session) {
+		return findOne(type, columns, spec, LockModeType.NONE, session);
+	}
+
+	@Override
+	public <E extends Entity> Optional<Object[]> findOne(Class<E> type, Collection<String> columns,
+			Specification<E> spec, LockModeType lockMode, SharedSessionContract session) {
+		CriteriaBuilder builder = getCriteriaBuilder();
+		CriteriaQuery<Tuple> query = builder.createTupleQuery();
+		Root<E> root = query.from(type);
+
+		query.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, query, builder, spec));
+
+		Query<Tuple> hql = session.createQuery(query);
+
+		hql.setLockMode(lockMode);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(hql.getQueryString());
+		}
+
+		return hql.getResultStream().findFirst().map(Tuple::toArray);
+	}
+
+	@Override
+	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec,
+			SharedSessionContract session) {
+		return findAll(type, columns, spec, LockModeType.NONE, session);
+	}
+
+	@Override
+	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec,
+			LockModeType lockMode, SharedSessionContract session) {
+		CriteriaBuilder builder = getCriteriaBuilder();
+		CriteriaQuery<Tuple> query = builder.createQuery(Tuple.class);
+		Root<E> root = query.from(type);
+
+		query.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, query, builder, spec));
+
+		Query<Tuple> hql = session.createQuery(query);
+
+		hql.setLockMode(lockMode);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(hql.getQueryString());
+		}
+
+		return toRows(hql.list());
+	}
+
+	@Override
+	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec,
+			Pageable pageable, SharedSessionContract session) {
+		return findAll(type, columns, spec, pageable, LockModeType.NONE, session);
+	}
+
+	@Override
+	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec,
+			Pageable pageable, LockModeType lockMode, SharedSessionContract session) {
+		CriteriaBuilder builder = getCriteriaBuilder();
+		CriteriaQuery<Tuple> query = builder.createQuery(Tuple.class);
+		Root<E> root = query.from(type);
+
+		query.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, query, builder, spec));
+
+		Query<Tuple> hql = resolvePagedQuery(session, query, pageable);
+
+		hql.setLockMode(lockMode);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(hql.getQueryString());
+		}
+
+		return toRows(hql.list());
+	}
+
+	@Override
+	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec,
+			Sort sort, SharedSessionContract session) {
+		return findAll(type, columns, spec, sort, LockModeType.NONE, session);
+	}
+
+	@Override
+	public <E extends Entity> List<Object[]> findAll(Class<E> type, Collection<String> columns, Specification<E> spec,
+			Sort sort, LockModeType lockMode, SharedSessionContract session) {
+		CriteriaBuilder builder = getCriteriaBuilder();
+		CriteriaQuery<Tuple> query = builder.createQuery(Tuple.class);
+		Root<E> root = query.from(type);
+
+		query.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, query, builder, spec))
+				.orderBy(resolveSort(root, builder, sort));
+
+		Query<Tuple> hql = session.createQuery(query);
+
+		hql.setLockMode(lockMode);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(hql.getQueryString());
+		}
+
+		return toRows(hql.list());
+	}
+
+	@Override
+	public <T extends Entity, E extends T> Result<E> validate(Class<E> type, Serializable id, E model) {
+		return validate(type, id, model, getCurrentSession());
+	}
+
+	@Override
+	public <T extends Entity, E extends T> Result<E> validate(Class<E> type, Serializable id, E instance,
+			Session session) {
+		Validator<E> validator = validatorFactory.getValidator(type);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(String.format(VALIDATION_LOG_TEMPLATE, type.getName(), id, validator.getLoggableName()));
+		}
+
+		return validator.isSatisfiedBy(session, id, instance);
+	}
+
+	@Override
+	public <T extends Entity> Result<Integer> update(Class<T> type,
+			UpdateQuerySetStatementBuilder<T> setStatementBuilder, UpdateQueryWhereStatementBuilder<T> spec) {
+		return update(type, setStatementBuilder, spec, getCurrentSession());
+	}
+
+	@Override
+	public <T extends Entity> Result<Integer> update(Class<T> type,
+			UpdateQuerySetStatementBuilder<T> setStatementBuilder, UpdateQueryWhereStatementBuilder<T> spec,
+			SharedSessionContract session) {
+		try {
+			CriteriaBuilder builder = getCriteriaBuilder();
+			CriteriaUpdate<T> criteriaUpdate = builder.createCriteriaUpdate(type);
+			Root<T> root = criteriaUpdate.from(type);
+
+			setStatementBuilder.build(root, criteriaUpdate, builder).where(spec.build(root, criteriaUpdate, builder));
+
+			Query<?> query = session.createQuery(criteriaUpdate);
+
+			if (logger.isDebugEnabled()) {
+				logger.debug(query.getQueryString());
+			}
+
+			return Result.ok(query.executeUpdate());
+		} catch (Exception any) {
+			any.printStackTrace();
+			return Result.<Integer>failed(any.getMessage()).setInstance(0);
+		}
 	}
 
 }

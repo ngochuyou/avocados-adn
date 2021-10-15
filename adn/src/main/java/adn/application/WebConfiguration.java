@@ -33,6 +33,7 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.TransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -55,6 +56,7 @@ import adn.service.services.GenericCRUDServiceImpl;
 @EnableTransactionManagement
 @EnableSpringDataWebSupport
 @EnableAsync
+@EnableScheduling
 public class WebConfiguration implements WebMvcConfigurer {
 
 	@Bean

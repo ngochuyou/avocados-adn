@@ -7,6 +7,7 @@ import static adn.application.Common.SHARED_TABLE_GENERATOR;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Optional;
 
 import javax.persistence.Column;
@@ -19,14 +20,17 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.TableGenerator;
 
 import adn.application.Common;
-import adn.model.entities.constants.NamedSize;
 import adn.model.entities.constants.ItemStatus;
+import adn.model.entities.constants.NamedSize;
 import adn.model.entities.metadata._Item;
+import adn.model.entities.metadata._Order;
 import adn.model.entities.metadata._Product;
 import adn.model.entities.metadata._Provider;
 
@@ -80,7 +84,14 @@ public class Item extends PermanentEntity implements AuditableResource<BigIntege
 
 	@Embedded
 	private AuditInformations auditInformations;
-
+	// @formatter:off
+	@ManyToMany(fetch = FetchType.LAZY)
+	@JoinTable(
+			name = "order_details",
+			joinColumns = @JoinColumn(name = "item_id", referencedColumnName = _Item.$id),
+			inverseJoinColumns = @JoinColumn(name = "order_id", referencedColumnName = _Order.$id))
+	private List<Order> orders;
+	// @formatter:on
 	@Override
 	public BigInteger getId() {
 		return id;
