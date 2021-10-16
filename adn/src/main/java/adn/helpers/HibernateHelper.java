@@ -21,6 +21,9 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.SingleTableEntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.query.NativeQuery;
+import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
+import org.hibernate.query.criteria.internal.compile.RenderingContext;
+import org.hibernate.query.criteria.internal.expression.function.BasicFunctionExpression;
 
 import adn.application.context.ContextProvider;
 import adn.model.entities.Entity;
@@ -127,8 +130,28 @@ public class HibernateHelper {
 		@SuppressWarnings("unchecked")
 		NativeQuery<Integer> query = ContextProvider.getCurrentSession()
 				.createNativeQuery(String.format(GENERATED_ID_UPDATE_TEMPLATE, nextVal, persister.getTableName()));
-		
+
 		return query.executeUpdate();
+	}
+
+	public static class MySQLUnit {
+
+		public static final UnitExpression SECOND = new UnitExpression(null, String.class, "SECOND");
+
+		@SuppressWarnings("serial")
+		private static class UnitExpression extends BasicFunctionExpression<String> implements Serializable {
+
+			public UnitExpression(CriteriaBuilderImpl criteriaBuilder, Class<String> javaType, String functionName) {
+				super(criteriaBuilder, javaType, functionName);
+			}
+
+			@Override
+			public String render(RenderingContext renderingContext) {
+				return getFunctionName();
+			}
+
+		}
+
 	}
 
 }

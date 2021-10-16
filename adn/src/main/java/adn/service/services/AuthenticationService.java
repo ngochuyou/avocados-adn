@@ -43,9 +43,6 @@ import io.jsonwebtoken.SignatureAlgorithm;
 @org.springframework.stereotype.Service
 public class AuthenticationService implements Service {
 
-	/**
-	 * 
-	 */
 	private static final String ROLE_MISMATCH_TEMPLATE = "Cannot resolve role [%s] to %s";
 	private static final String VERSION_KEY = "version";
 	private static final int EXPIRE_DAYS = 14;
@@ -153,6 +150,18 @@ public class AuthenticationService implements Service {
 		UUID principalDepartment = getPrincipalDepartment();
 
 		assertDepartment(principalDepartment, DepartmentScopeContext.personnel());
+
+		return principalDepartment;
+	}
+	
+	public UUID assertCustomerServiceDepartment() {
+		if (getPrincipalRole() == HEAD) {
+			return unknown();
+		}
+
+		UUID principalDepartment = getPrincipalDepartment();
+
+		assertDepartment(principalDepartment, DepartmentScopeContext.customerService());
 
 		return principalDepartment;
 	}

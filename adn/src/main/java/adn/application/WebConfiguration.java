@@ -35,6 +35,7 @@ import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.transaction.TransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.util.ResourceUtils;
@@ -45,6 +46,7 @@ import org.springframework.web.servlet.view.JstlView;
 
 import adn.service.internal.Role;
 import adn.service.services.GenericCRUDServiceImpl;
+import adn.service.services.OrderService;
 
 /**
  * @author Ngoc Huy
@@ -88,6 +90,7 @@ public class WebConfiguration implements WebMvcConfigurer {
 //		properties.put("hibernate.hbm2ddl.auto", "create-drop");
 		properties.put("hibernate.hbm2ddl.auto", "update");
 		properties.put("hibernate.flush_mode", "MANUAL");
+		properties.put("hibernate.jdbc.batch_size", 50);
 		properties.put("hibernate.order_inserts", true);
 		properties.put("hibernate.order_updates", true);
 		sessionFactory.setHibernateProperties(properties);
@@ -106,6 +109,16 @@ public class WebConfiguration implements WebMvcConfigurer {
 		executor.initialize();
 
 		return executor;
+	}
+
+	@Bean(name = OrderService.SCHEDULER_NAME)
+	public ThreadPoolTaskScheduler threadPoolTaskScheduler() {
+		ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
+
+		taskScheduler.setPoolSize(4);
+		taskScheduler.setThreadNamePrefix("order-expiration-scheduler-");
+
+		return taskScheduler;
 	}
 
 	@Bean

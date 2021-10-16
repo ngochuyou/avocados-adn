@@ -124,7 +124,7 @@ public class BootEntry {
 			secondBatchBuilders.add(builderClass);
 		}
 
-		secondBatchBuilders.stream().forEach(builderClass -> scannedBuilderClasses.remove(builderClass));
+		secondBatchBuilders.stream().forEach(scannedBuilderClasses::remove);
 
 		Assert.isTrue(scannedBuilderClasses.isEmpty(), String.format(
 				"scannedBuilderClasses was supposed to be empty, %d builders remaining", scannedBuilderClasses.size()));

@@ -307,7 +307,7 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 				AvailableSettings.STATEMENT_BATCH_SIZE, (settingMap) -> {
 					traceSetting(AvailableSettings.STATEMENT_BATCH_SIZE, 0);
 					settingMap.put(AvailableSettings.STATEMENT_BATCH_SIZE, 0);
-				}				
+				}
 		);
 		// @formatter:on
 		cfgService.getSettings().entrySet().stream().forEach(e -> {

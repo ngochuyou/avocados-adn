@@ -94,10 +94,6 @@ public class StringHelper extends StringUtils {
 		return sb.toString();
 	}
 
-	public static boolean isLetters(String string) {
-		return hasLength(string) && string.matches("^[\\p{L}]+$");
-	}
-
 	public static boolean isEmail(String email) {
 		return hasLength(email) && email.matches(StringHelper.EMAIL_REGEX);
 	}
@@ -112,10 +108,6 @@ public class StringHelper extends StringUtils {
 
 	public static String normalizeString(String string) {
 		return hasLength(string) ? string.trim().replaceAll(WHITESPACE_CHAR_CLASS + "+", " ") : string;
-	}
-
-	public static String removeSpaces(String string) {
-		return hasLength(string) ? string.trim().replaceAll(WHITESPACE_CHAR_CLASS + "+", EMPTY_STRING) : string;
 	}
 
 	public static String toCamel(String s, CharSequence seperator) {
@@ -140,7 +132,9 @@ public class StringHelper extends StringUtils {
 	}
 
 	public static String getFirstWord(String str) {
-		for (int i = 0; i < str.length(); i++) {
+		int length = str.length();
+		
+		for (int i = 0; i < length; i++) {
 			if ((EMPTY_STRING + str.charAt(i)).matches(WHITESPACE_CHAR_CLASS)) {
 				return str.substring(0, i);
 			}
@@ -157,12 +151,12 @@ public class StringHelper extends StringUtils {
 		return Optional.ofNullable(hasLength(in) ? String.format(Common.COMMON_TEMPLATE, in, append) : null);
 	}
 
-	public static String join(Object... strings) {
-		return join(COMMON_JOINER, strings);
+	public static String join(Object... objs) {
+		return join(COMMON_JOINER, objs);
 	}
 
-	public static String join(CharSequence joiner, Object... strings) {
-		return Stream.of(strings).map(Object::toString).collect(Collectors.joining(joiner));
+	public static String join(CharSequence joiner, Object... objs) {
+		return Stream.of(objs).map(Object::toString).collect(Collectors.joining(joiner));
 	}
 	
 	public static String join(Collection<Object> elements) {
