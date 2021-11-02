@@ -9,6 +9,7 @@ import static java.util.Map.entry;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -24,6 +25,10 @@ import adn.helpers.StringHelper;
  */
 public class Common {
 
+	/**
+	 * 
+	 */
+	private static final String UNKNOWN_ERROR = "Unknown error";
 	private static final String RESOURCE = "Resource";
 	public static final String LOCKED = String.format("%s was locked", RESOURCE);
 	public static final String INVALID_MODEL = "INVALID MODEL";
@@ -46,6 +51,7 @@ public class Common {
 	public static final String WHEN_APPROVED = "when resource is approved";
 	public static final String WHEN_UNAPPROVED = "when resource hasn't been approved";
 	private static final String NOT_FUTURE = "must not be in the future";
+	private static final String NOT_PAST = "must not be in the past";
 	private static final String NOT_NEGATIVE = "must not be negative";
 	private static final String NOT_EMPTY = "must not be empty";
 
@@ -56,6 +62,10 @@ public class Common {
 
 	public static String notFuture(Object... prefix) {
 		return String.format(COMMON_TEMPLATE, join(prefix), NOT_FUTURE);
+	}
+	
+	public static String notPast(Object... prefix) {
+		return String.format(COMMON_TEMPLATE, join(prefix), NOT_PAST);
 	}
 
 	public static String notEmpty(Object... prefix) {
@@ -106,19 +116,19 @@ public class Common {
 
 		return String.format(NOT_FOUND_TEMPLATE, join(names));
 	}
-	
+
 	public static Map<String, String> message(String message) {
-		return Map.of(MESSAGE, message);
+		return Map.of(MESSAGE, Optional.ofNullable(message).orElse(StringHelper.EMPTY_STRING));
 	}
-	
+
 	public static Map<String, String> error(String error) {
-		return Map.of(ERROR, error);
+		return Map.of(ERROR, Optional.ofNullable(error).orElse(UNKNOWN_ERROR));
 	}
 
 	public static final String COMMA = ",";
 	public static final String DOT = ".";
 	public static final String QUESTION_MARK = "?";
-	
+
 	// @formatter:off
 	private static final Map<Character, String> SYMBOL_NAMES = Map.ofEntries(
 			entry('.', "period"),
@@ -156,8 +166,8 @@ public class Common {
 	public static final String COMMON_LDT_FORMAT = "yyyy-MM-dd HH:mm:ss";
 	public static final DateTimeFormatter COMMON_LDT_FORMATTER = DateTimeFormatter.ofPattern(COMMON_LDT_FORMAT);
 	public static final String COMMON_LD_FORMAT = "yyyy-MM-dd";
-	public static final DateTimeFormatter COMMON_LD_FORMATTER = DateTimeFormatter.ofPattern(COMMON_LDT_FORMAT);
-	
+	public static final DateTimeFormatter COMMON_LD_FORMATTER = DateTimeFormatter.ofPattern(COMMON_LD_FORMAT);
+
 	public static final int MYSQL_TEXT_MAX_LENGTH = 65535;
 
 	public static final String SHARED_TABLE_GENERATOR = "SHARED_TABLE_GENERATOR";

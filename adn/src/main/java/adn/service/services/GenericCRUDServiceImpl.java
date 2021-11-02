@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -65,6 +66,7 @@ import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.DynamicMapModelProducerFactory;
 import adn.model.factory.authentication.SourceMetadata;
+import adn.model.factory.authentication.dynamicmap.SourceMetadataFactory;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.entity.builder.EntityBuilder;
 import adn.service.internal.GenericCRUDService;
@@ -155,6 +157,7 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 
 			return finish(ss, Result.ok(entity), flushOnFinish);
 		} catch (Exception e) {
+			e.printStackTrace();
 			return Result.failed(e.getMessage());
 		}
 	}
@@ -537,6 +540,21 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 		}
 
 		return resolveReadResults(type, rows, credential, sourceMetadata);
+	}
+
+	@Override
+	public <T extends Entity> List<Map<String, Object>> readAll(Class<T> type, Collection<String> requestedColumns,
+			Credential credential, Function<SourceMetadata<T>, List<Object[]>> sourceProducer)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		SourceMetadata<T> metadata = optionallyValidate(type, credential,
+				SourceMetadataFactory.unknownArrayCollection(type, list(requestedColumns)));
+		List<Object[]> rows = sourceProducer.apply(metadata);
+
+		if (rows.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		return resolveReadResults(type, rows, credential, metadata);
 	}
 
 	@Override

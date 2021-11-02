@@ -107,22 +107,22 @@ public abstract class AbstractSpannedResourceRepository<T extends Temporal, E ex
 	// @formatter:on
 	@Override
 	public Optional<E> findCurrent(Specification<E> specification) {
-		return genericRepository.findOne(entityType, specification.and(getSpecificationForCurrent()));
+		return genericRepository.findOne(entityType, specification.and(getCurrentSpecification()));
 	}
 
 	@Override
 	public Optional<Object[]> findCurrent(Collection<String> columns, Specification<E> specification) {
-		return genericRepository.findOne(entityType, columns, specification.and(getSpecificationForCurrent()));
+		return genericRepository.findOne(entityType, columns, specification.and(getCurrentSpecification()));
 	}
 
 	@Override
 	public List<E> findAllCurrents(Specification<E> specification) {
-		return genericRepository.findAll(entityType, specification.and(getSpecificationForCurrent()));
+		return genericRepository.findAll(entityType, specification.and(getCurrentSpecification()));
 	}
 
 	@Override
 	public List<Object[]> findAllCurrents(Collection<String> columns, Specification<E> specification) {
-		return genericRepository.findAll(entityType, columns, specification.and(getSpecificationForCurrent()));
+		return genericRepository.findAll(entityType, columns, specification.and(getCurrentSpecification()));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -175,7 +175,7 @@ public abstract class AbstractSpannedResourceRepository<T extends Temporal, E ex
 	}
 
 	@SuppressWarnings("unchecked")
-	private Specification<E> getSpecificationForCurrent() {
+	protected Specification<E> getCurrentSpecification() {
 		Comparable now = currentTemporalSupplier.get();
 		// @formatter:off
 		return (root, query, builder) -> builder.between(builder.literal(now), 

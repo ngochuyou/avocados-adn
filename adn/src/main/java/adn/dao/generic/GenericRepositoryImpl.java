@@ -49,6 +49,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Repository;
 
 import adn.application.Result;
 import adn.application.context.builders.ModelContextProvider;
@@ -67,7 +68,7 @@ import adn.service.internal.InvalidCriteriaException;
  * @author Ngoc Huy
  *
  */
-@org.springframework.stereotype.Repository
+@Repository
 @Primary
 public class GenericRepositoryImpl implements GenericRepository, ContextBuilder {
 
@@ -144,7 +145,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 			selectorMap.put(type, selectors);
 			mandatoryPredicateMap.put(type,
 					(root, builder) -> PermanentEntity.class.isAssignableFrom(type)
-							? builder.isTrue(root.get(_PermanentEntity.active))
+							? builder.equal(root.get(_PermanentEntity.active), true)
 							: builder.conjunction());
 		});
 
@@ -240,7 +241,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 				: builder.desc(root.get(order.getProperty()))).collect(Collectors.toList());
 	}
 
-	private <E extends Entity, R> Predicate resolvePredicate(Class<E> entityType, Root<E> root,
+	public <E extends Entity, R> Predicate resolvePredicate(Class<E> entityType, Root<E> root,
 			CriteriaQuery<R> criteriaQuery, CriteriaBuilder builder, Specification<E> specification) {
 		return builder.and(mandatoryPredicateMap.get(entityType).apply(root, builder),
 				resolveRequestedPredicate(root, criteriaQuery, builder, specification));

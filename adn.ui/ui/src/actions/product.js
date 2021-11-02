@@ -1,5 +1,5 @@
 import { $fetch, fjson, asBlob } from '../fetch';
-import { normalize, join } from '../utils';
+import { hasLength, normalize, join, formatServerDatetime } from '../utils';
 
 export function fetchCategoryList({ page = 0, size = 10, columns = [] }) {
 	return fjson(`/rest/product/category/list?page=${page}&size=${size}&columns=${join(columns)}`);
@@ -160,49 +160,140 @@ export async function updateProduct(model = null) {
 
 export function getProductListByCategory({
 	columns = [], identifier = null, identifierName = "",
-	page = 0, size = 18
+	page = 0, size = 18, internal = false
 }) {
 	if (identifier == null || identifier.length === 0) {
 		return [null, "Category identifier was empty"];
+	}
+
+	if (internal) {
+		return fjson(`/rest/product/internal?category=${identifier}&by=${identifierName}&columns=${join(columns)}`);	
 	}
 
 	return fjson(`/rest/product?category=${identifier}&by=${identifierName}&columns=${join(columns)}`);
 }
 
 export function getProductList({
-	columns = [], page = 0, size = 18
+	ids = [], columns = [], page = 0, size = 18,
+	internal = false
 }) {
-	return fjson(`/rest/product?columns=${join(columns)}&page=${page}&size=${size}`);
+	if (internal) {
+		return fjson(`/rest/product/internal?columns=${join(columns)}&page=${page}&size=${size}`);
+	}
+
+	return fjson(`/rest/product?ids=${join(ids)}&columns=${join(columns)}&page=${page}&size=${size}`);
 }
 
-export function searchProduct({ productId = "", productName = "", columns = [], size = 1000 }) {
-	if (productId.length === 0 && productName.length === 0) {
+export function searchProduct({
+	productName = "", columns = [], size = 1000,
+	internal = false
+}) {
+	if (!hasLength(productName)) {
 		return [[], null];
 	}
 	
-	return fjson(`/rest/product/search?id.like=${normalize(productId)}&name.like=${normalize(productName)}&columns=${join(columns)}&size=${size}`);
+	const query = `name.like=${normalize(productName)}&columns=${join(columns)}&size=${size}`;
+
+	if (internal) {
+		return fjson(`/rest/product/search/internal?${query}`);
+	}
+
+	return fjson(`/rest/product/search?${query}`);
 }
 
-export function createStockDetails(batch = []) {
+export function submitItemsBatch(batch = []) {
 	if (!Array.isArray(batch) || batch.length === 0) {
 		return [null, "Invalid batch"];
 	}
 
-	return fjson(`/rest/product/stockdetail`, {
+	return fjson(`/rest/product/items`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify({
-			details: batch
+			items: batch
 		})
 	});
 }
 
 export function obtainProduct({ id = null, columns = [] }) {
-	if (id == null || id.length === 0) {
+	if (!hasLength(id)) {
 		return [null, "Product ID was null"];
 	}
 
 	return fjson(`/rest/product/${id}?columns=${join(columns)}`);
+}
+
+export function getProductPrices(ids = []) {
+	if (!Array.isArray(ids)) {
+		return [null, "Invalid ids"];
+	}
+
+	return fjson(`/rest/product/price?ids=${join(ids)}`);
+}
+
+export function getProductPrice({
+	productId = null, columns = []
+}) {
+	if (isNaN(productId)) {
+		return [null, "Invalid Product ID"];
+	}
+
+	return fjson(`/rest/product/price/${productId}?columns=${join(columns)}`);
+}
+
+export function approveProductPrice({
+	productId = null,
+	appliedTimestamp = null,
+	droppedTimestamp = null
+}) {
+	if (productId == null) {
+		return [null, "Product ID was empty"];
+	}
+
+	if (appliedTimestamp == null) {
+		return [null, "Applied timestamp was empty"];
+	}
+
+	if (droppedTimestamp == null) {
+		return [null, "Dropped timestamp was empty"];
+	}
+
+	return fjson(`/rest/product/price/approve?product=${productId}&applied=${appliedTimestamp}&dropped=${droppedTimestamp}`, {
+		method: 'PATCH'
+	});
+}
+
+export function submitProductPrice(model) {
+	if (model == null) {
+		return [null, "Model was null"];
+	}
+
+	return fjson(`/rest/product/price`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			...model,
+			appliedTimestamp: formatServerDatetime(model.appliedTimestamp),
+			droppedTimestamp: formatServerDatetime(model.droppedTimestamp)
+		})
+	});
+}
+
+export function getItemsList({
+	productId = null,
+	columns = []
+}) {
+	if (!hasLength(productId)) {
+		return [null, "Product ID was empty"];
+	}
+
+	if (!hasLength(columns)) {
+		return [null, "Requested columns were empty"];
+	}
+
+	return fjson(`/rest/product/items?productId=${productId}&columns=${join(columns)}`);
 }

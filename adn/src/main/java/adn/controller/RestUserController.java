@@ -44,20 +44,16 @@ import adn.service.services.AuthenticationService;
  *
  */
 @RestController
-@RequestMapping("/rest/account")
-public class RestAccountController extends UserController {
-
-	private final AuthenticationService authService;
-
+@RequestMapping("/rest/user")
+public class RestUserController extends UserController {
 	// @formatter:off
 	@Autowired
-	public RestAccountController(
+	public RestUserController(
 			final UserService accountService,
 			final AuthenticationService authService,
 			final UserRoleExtractor roleExtractor,
 			final ResourceService resourceService) {
-		super(accountService, roleExtractor, resourceService);
-		this.authService = authService;
+		super(accountService, roleExtractor, resourceService, authService);
 	}
 	// @formatter:on
 	@GetMapping

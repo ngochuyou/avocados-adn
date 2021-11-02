@@ -2,7 +2,7 @@ import { server } from "./config/default.json";
 
 const url = server.url;
 
-export async function $fetch(endpoint = null, options = {}) {
+export async function $fetch(endpoint = null, options = {}, credentials = true) {
 	if (endpoint == null) {
 		return [null, "Endpoint was null"];
 	}
@@ -14,7 +14,7 @@ export async function $fetch(endpoint = null, options = {}) {
 				...options.headers,
 				'Authorization': 'JWTBearer',
 			},
-			credentials: 'include'
+			credentials: credentials ? 'include' : 'omit'
 		});
 
 		return [res, null];

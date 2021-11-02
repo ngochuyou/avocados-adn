@@ -3,7 +3,7 @@
  */
 package adn.controller.query.impl;
 
-import adn.controller.query.filter.StringFilter;
+import adn.controller.query.filter.BigIntFilter;
 import adn.helpers.CollectionHelper;
 import adn.model.entities.Product;
 
@@ -17,13 +17,13 @@ public class ProductQuery extends AbstractFactorQuery<Product> {
 		super(Product.class, CollectionHelper.emptyHashSet());
 	}
 
-	private StringFilter id;
+	private BigIntFilter id;
 
-	public StringFilter getId() {
+	public BigIntFilter getId() {
 		return id;
 	}
 
-	public void setId(StringFilter id) {
+	public void setId(BigIntFilter id) {
 		this.id = id;
 	}
 

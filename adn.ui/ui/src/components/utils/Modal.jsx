@@ -40,7 +40,8 @@ export function CenterModal({
 	close = () => null,
 	onKeyDown = () => null,
 	footerCloseBtn = true,
-	width
+	width,
+	className = ""
 }) {
 	const [containerClassName, setContainerClassName] = useState('fade-in');
 	const onClose = () => {
@@ -51,7 +52,7 @@ export function CenterModal({
 	return (
 		<div
 			className={`uk-modal uk-open uk-display-block ${containerClassName}`}
-			uk-modal="" style={{ maxHeight: "100vh", overflow: "hidden", zIndex: 20 }}
+			uk-modal="" style={{ maxHeight: "100vh", overflow: "hidden", zIndex: 999 }}
 			tabIndex={10} onKeyDown={onKeyDown}
 		>
 			<button
@@ -60,7 +61,7 @@ export function CenterModal({
 				onClick={onClose} style={{color: "white"}}
 			></button>
 			<div
-				className="uk-modal-dialog uk-width-2xlarge uk-padding-small"
+				className={`uk-modal-dialog uk-width-2xlarge uk-padding-small ${className}`}
 				style={{
 					maxHeight: "90vh",
 					overflow: "auto",

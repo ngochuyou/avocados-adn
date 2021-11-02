@@ -27,8 +27,6 @@ import adn.service.services.AuthenticationService;
 @Generic(entityGene = Order.class)
 public class OrderBuilder extends AbstractPermanentEntityBuilder<Order> {
 
-//	private static final Logger logger = LoggerFactory.getLogger(OrderBuilder.class);
-
 	private final AuthenticationService authService;
 
 	@Autowired
@@ -48,6 +46,7 @@ public class OrderBuilder extends AbstractPermanentEntityBuilder<Order> {
 		}
 
 		target.setItems(model.getItems().stream().filter(Objects::nonNull).collect(Collectors.toList()));
+		target.setNote(StringHelper.normalizeString(model.getNote()));
 
 		return target;
 	}
@@ -62,19 +61,8 @@ public class OrderBuilder extends AbstractPermanentEntityBuilder<Order> {
 		Customer customer = authService.getCustomer();
 
 		model.setCustomer(customer);
-		model.setUpdatedBy(customer);
-		model.setHandledBy(null);
 
 		return model;
-	}
-
-	@Override
-	public <E extends Order> E buildUpdate(Serializable id, E model, E persistence) {
-		persistence = super.buildUpdate(id, model, persistence);
-
-		persistence.setUpdatedBy(authService.getCustomer());
-
-		return persistence;
 	}
 
 //	@Override

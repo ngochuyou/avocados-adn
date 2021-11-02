@@ -19,6 +19,7 @@ import adn.model.Generic;
 import adn.model.entities.User;
 import adn.model.entities.constants.Gender;
 import adn.model.entities.metadata._User;
+import adn.service.internal.Role;
 import adn.service.services.UserService;
 
 /**
@@ -37,7 +38,7 @@ public class UserBuilder<T extends User> extends AbstractPermanentEntityBuilder<
 	protected <E extends T> E mandatoryBuild(E target, E model) {
 		target = super.mandatoryBuild(target, model);
 		// we assumes identifier will always be set before
-		target.setEmail(model.getEmail().trim());
+		target.setEmail(get(model.getEmail()).map(email -> email.trim()).orElse(null));
 		target.setPhone(normalizeString(model.getPhone()));
 		target.setAddress(normalizeString(model.getAddress()));
 		target.setLastName(get(normalizeString(model.getLastName())).orElse(UserService.UNKNOWN_USER_LASTNAME));
@@ -60,6 +61,10 @@ public class UserBuilder<T extends User> extends AbstractPermanentEntityBuilder<
 		}
 
 		model.setPassword(passwordEncoder.encode(model.getPassword()));
+
+		if (model.getRole() == Role.CUSTOMER) {
+			model.setLocked(false);
+		}
 
 		return model;
 	}

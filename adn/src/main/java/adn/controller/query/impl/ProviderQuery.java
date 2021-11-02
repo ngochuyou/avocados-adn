@@ -6,7 +6,7 @@ package adn.controller.query.impl;
 import java.util.HashSet;
 import java.util.Set;
 
-import adn.controller.query.filter.UUIDFilter;
+import adn.controller.query.filter.StringFilter;
 import adn.model.entities.Provider;
 import adn.model.entities.metadata._Provider;
 
@@ -18,7 +18,7 @@ public class ProviderQuery extends AbstractPermanentEntityQuery<Provider> {
 
 	private static final HashSet<String> ASSOCIATION_COLUMNS = new HashSet<>(Set.of(_Provider.productCosts));
 
-	private UUIDFilter id;
+	private StringFilter name;
 
 	private ProductProviderDetailQuery productDetails;
 
@@ -26,12 +26,12 @@ public class ProviderQuery extends AbstractPermanentEntityQuery<Provider> {
 		super(Provider.class, ASSOCIATION_COLUMNS);
 	}
 
-	public UUIDFilter getId() {
-		return id;
+	public StringFilter getName() {
+		return name;
 	}
 
-	public void setId(UUIDFilter id) {
-		this.id = id;
+	public void setName(StringFilter name) {
+		this.name = name;
 	}
 
 	public ProductProviderDetailQuery getProductDetails() {
@@ -45,7 +45,7 @@ public class ProviderQuery extends AbstractPermanentEntityQuery<Provider> {
 
 	@Override
 	public boolean hasCriteria() {
-		return super.hasCriteria() || id != null;
+		return super.hasCriteria() || name != null;
 	}
 
 }

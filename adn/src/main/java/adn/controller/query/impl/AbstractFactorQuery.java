@@ -19,8 +19,8 @@ import adn.model.entities.metadata._AuditableResource;
  */
 public abstract class AbstractFactorQuery<T extends FullyAuditedEntity<?>> extends AbstractPermanentEntityQuery<T> {
 
-	private static final Set<String> ASSOCIATION_COLUMNS = Set.of(_AuditableResource.createdBy, _AuditableResource.lastModifiedBy,
-			_ApprovableResource.approvedBy);
+	private static final Set<String> ASSOCIATION_COLUMNS = Set.of(_AuditableResource.createdBy,
+			_AuditableResource.lastModifiedBy, _ApprovableResource.approvedBy);
 
 	public AbstractFactorQuery(Class<T> entityType, HashSet<String> associationColumns) {
 		super(entityType, new HashSet<>(Stream.of(associationColumns, ASSOCIATION_COLUMNS).flatMap(set -> set.stream())

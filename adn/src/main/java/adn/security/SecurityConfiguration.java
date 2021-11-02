@@ -35,7 +35,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import adn.application.Constants;
 import adn.helpers.StringHelper;
-import adn.model.entities.metadata._Product;
 import adn.security.context.OnMemoryUserContext;
 import adn.security.jwt.JwtRequestFilter;
 import adn.security.jwt.JwtUsernamePasswordAuthenticationFilter;
@@ -70,15 +69,21 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private OnMemoryUserContext onMemUserContext;
 
+	@Autowired
+	private AuthenticationFailureHandlerImpl authenticationFailureHandler;
+
 	private static final int CLIENT_PORT = 3000;
 	public static final String TESTUNIT_PREFIX = "/testunit";
 	// @formatter:off
 	private static final String[] PUBLIC_ENDPOINTS = {
-			"/account/photo\\GET",
-			"/product/image/**\\GET",
-			"/rest/product/category/all\\GET",
-			"/rest/product\\GET",
-			String.format("/rest/product/{productId:^[A-Z0-9-]{%d}$}\\GET", _Product.MAXIMUM_CODE_LENGTH)
+		"/user\\POST",
+		"/user/photo\\GET",
+		"/product/image/**\\GET",
+		"/rest/product/category/all\\GET",
+		"/rest/product\\GET",
+		"/rest/product/price\\GET",
+		"/rest/product/{productId:^[0-9]+$}\\GET",
+		"/rest/product/items\\GET"
 	};
 	// @formatter:on
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -140,7 +145,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 			.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
 			.addFilterAfter(jwtLogoutFilter, JwtRequestFilter.class)
 			.exceptionHandling()
-				.authenticationEntryPoint(new AuthenticationFailureHandler());
+				.authenticationEntryPoint(authenticationFailureHandler);
 		// @formatter:on
 	}
 
@@ -185,7 +190,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	@Bean
 	public AbstractAuthenticationProcessingFilter jwtUsernamePasswordAuthenticationFilter() throws Exception {
 		AbstractAuthenticationProcessingFilter jwtAuthFilter = new JwtUsernamePasswordAuthenticationFilter(authService,
-				onMemUserContext);
+				onMemUserContext, authenticationFailureHandler);
 
 		jwtAuthFilter.setAuthenticationManager(authenticationManager());
 

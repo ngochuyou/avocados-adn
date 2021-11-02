@@ -117,7 +117,7 @@ public class ResourcePersisterImpl<D> extends SingleTableEntityPersister
 			LocalStorageConnection connection = (LocalStorageConnection) delegate;
 			// @formatter:off
 			logger.trace(String.format("Registering template [%s]", getEntityName()));
-			connection.getStorage().registerTemplate(String.format("%s%s%s", getTableName(), ResourceManagerFactory.DTYPE_SEPERATOR, StringHelper.get((String) getDiscriminatorValue()).orElse("")),
+			connection.getStorage().registerTemplate(String.format("%s%s%s", getTableName(), ResourceManagerFactory.DTYPE_SEPERATOR, StringHelper.get((String) getDiscriminatorValue()).orElse(StringHelper.EMPTY_STRING)),
 					determineDirectoryName(getMappedClass()),
 					columnNames,
 					columnTypes,

@@ -3,7 +3,7 @@ import { useProduct } from '../../hooks/product-hooks';
 import { useProvider } from '../../hooks/provider-hooks';
 
 import { getProductList, searchProduct } from '../../actions/product';
-import { fetchProviderList, searchProvider, createProductDetail } from '../../actions/provider';
+import { fetchProviderList, searchProvider } from '../../actions/provider';
 
 import { SET_ERROR, MODIFY_MODEL } from '../../actions/common';
 
@@ -75,7 +75,7 @@ function FormContextProvider({ children }) {
 }
 
 const FETCHED_PRODUCT_COLUMNS = [
-	"id", "name", "images"
+	"id", "code", "name", "images"
 ];
 const FETCHED_PROVIDER_COLUMNS = [
 	"id", "name", "email",
@@ -109,7 +109,7 @@ function LeftPanel() {
 	} = useFormContext();
 	const [alert, setAlert] = useState(null);
 	const {
-		store: { elements: { map: products } } 
+		store: { elements: products } 
 	} = useProduct();
 	const {
 		store: { elements: { map: providers } } 
@@ -171,18 +171,18 @@ function LeftPanel() {
 			return;
 		}
 
-		const [, err] = await createProductDetail(model);
+		// const [, err] = await createProductDetail(model);
 
-		if (err) {
-			console.log(err);
+		// if (err) {
+		// 	console.log(err);
 
-			const { result } = err;
+		// 	const { result } = err;
 
-			setAlert(result);
-			return;
-		}
+		// 	setAlert(result);
+		// 	return;
+		// }
 
-		setAlert("Submitted for approval");
+		// setAlert("Submitted for approval");
 	};
 
 	return (
@@ -322,26 +322,17 @@ function ProductPicker({
 	onSelect = () => null
 }) {
 	const {
-		store: {
-			elements: {
-				map: products,
-				wasInit: wasStoreInit
-			},
-		},
-		push
+		store: { product: { elements: products } },
+		setProducts
 	} = useProduct();
 	const [view, setView] = useState(null);
 	const [searchDisabled, setSearchDisabled] = useState(false);
 
 	useEffect(() => {
 		const doFetch = async () => {
-			if (wasStoreInit) {
-				return;
-			}
-
 			const [res, err] = await getProductList({
 				columns: FETCHED_PRODUCT_COLUMNS,
-				page: 0, size: 20
+				page: 0, size: 20, internal: true
 			});
 
 			if (err) {
@@ -349,11 +340,11 @@ function ProductPicker({
 				return;
 			}
 
-			push(res);
+			setProducts(res);
 		};
 
 		doFetch();
-	}, [wasStoreInit, push]);
+	}, [setProducts]);
 
 	if (!visible) {
 		return null;
@@ -370,10 +361,10 @@ function ProductPicker({
 		onSelect(productId);
 
 		if (view != null) {
-			setView(null);	
+			setView(null);
 		}
 	};
-	const lookUpCurrentStore = (keyword) => Object.values(products).filter(product => product.id.toLowerCase().includes(keyword) || product.name.toLowerCase().includes(keyword));
+	const lookUpCurrentStore = (keyword) => Object.values(products).filter(product => product.name.toLowerCase().includes(keyword));
 	const onSearchInputEntered = async (keyword) => {
 		if (keyword.length === 0) {
 			return;
@@ -383,13 +374,12 @@ function ProductPicker({
 
 		const lowerCasedKeyWord = keyword.toLowerCase();
 		const [res, err] = await searchProduct({
-			productId: lowerCasedKeyWord,
 			productName: lowerCasedKeyWord,
 			columns: FETCHED_PRODUCT_COLUMNS
 		});
 
 		if (err) {
-			console.error();
+			console.error(err);
 			setView(lookUpCurrentStore(lowerCasedKeyWord));
 			setSearchDisabled(false);
 			return;
@@ -398,7 +388,7 @@ function ProductPicker({
 		const view = [];
 
 		for (let product of Object.values(products)) {
-			if (product.name.toLowerCase().includes(lowerCasedKeyWord) || product.id.toLowerCase().includes(lowerCasedKeyWord)) {
+			if (product.name.toLowerCase().includes(lowerCasedKeyWord)) {
 				view.push(product);
 			}
 		}
@@ -412,7 +402,7 @@ function ProductPicker({
 		});
 
 		setView(view);
-		push(res);
+		setProducts(res);
 		setTimeout(() => setSearchDisabled(false), 500);
 	};
 	const onSearchInputChange = (keyword) => {
@@ -436,7 +426,7 @@ function ProductPicker({
 					onChange={onSearchInputChange}
 					onEntered={onSearchInputEntered}
 					onSearchBtnClick={onSearchInputEntered}
-					dd="Press Enter when finishing your keyword"
+					dd="Press Enter after finishing your keyword"
 					disabled={searchDisabled}
 				/>
 			</div>

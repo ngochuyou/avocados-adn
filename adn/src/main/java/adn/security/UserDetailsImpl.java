@@ -1,9 +1,12 @@
 package adn.security;
 
+import java.time.ZoneId;
 import java.util.Collection;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 
 import adn.application.context.builders.CredentialFactory;
@@ -20,6 +23,7 @@ public class UserDetailsImpl extends User {
 	private final Role role;
 	private final long version;
 	private final Credential credential;
+
 	// @formatter:off
 	public UserDetailsImpl(
 			String username,
@@ -48,6 +52,12 @@ public class UserDetailsImpl extends User {
 		this.role = role;
 		this.version = version;
 		this.credential = CredentialFactory.partional(role, departmentId);
+	}
+
+	public UserDetailsImpl(adn.model.entities.User user) {
+		this(user.getId(), user.getPassword(), user.isLocked(),
+				Set.of(new SimpleGrantedAuthority("ROLE_" + user.getRole())), user.getRole(),
+				user.getUpdatedDate().atZone(ZoneId.systemDefault()).toEpochSecond());
 	}
 
 	public Role getRole() {

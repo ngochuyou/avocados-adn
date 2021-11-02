@@ -6,18 +6,23 @@ package adn.controller;
 import static adn.application.context.ContextProvider.getPrincipalCredential;
 import static org.springframework.http.ResponseEntity.ok;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -35,15 +40,22 @@ import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.Common;
 import adn.application.Result;
+import adn.application.context.builders.DepartmentScopeContext;
 import adn.controller.query.impl.ProductQuery;
 import adn.dao.generic.ResultBatch;
+import adn.dao.specific.ProductPriceRepository;
+import adn.dao.specific.ProductRepository;
 import adn.helpers.CollectionHelper;
 import adn.model.entities.Category;
 import adn.model.entities.Item;
 import adn.model.entities.Product;
 import adn.model.entities.ProductPrice;
+import adn.model.entities.constants.ItemStatus;
 import adn.model.entities.id.ProductPriceId;
 import adn.model.entities.metadata._Category;
+import adn.model.entities.metadata._Item;
+import adn.model.entities.metadata._Product;
+import adn.model.entities.metadata._ProductPrice;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.model.models.ItemBatch;
 import adn.model.models.ProductPriceModel;
@@ -52,6 +64,7 @@ import adn.service.internal.Service.Status;
 import adn.service.services.AuthenticationService;
 import adn.service.services.CategoryService;
 import adn.service.services.ProductService;
+import adn.service.services.SpecificationFactory;
 
 /**
  * @author Ngoc Huy
@@ -62,22 +75,26 @@ import adn.service.services.ProductService;
 public class RestProductController extends ProductController {
 
 	private final CategoryService categoryService;
+	private final ProductPriceRepository priceRepository;
+	private final ProductRepository productRepository;
+
+	private static final Map<String, String> ITEMS_BATCH_WAS_EMPTY = Common.message("Item batch was empty");
 
 	@Autowired
 	public RestProductController(AuthenticationService authService, ProductService productService,
-			ResourceService resourceService, CategoryService categoryService) {
+			ResourceService resourceService, CategoryService categoryService, ProductPriceRepository priceRepository,
+			ProductRepository productRepository) {
 		super(authService, productService, resourceService);
 		this.categoryService = categoryService;
+		this.priceRepository = priceRepository;
+		this.productRepository = productRepository;
 	}
 
 	@GetMapping("/count")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getProductCount() {
-		return makeStaleWhileRevalidate(genericRepository.count(Product.class), 2, TimeUnit.DAYS, 7, TimeUnit.DAYS);
-	}
-
-	private String getProductNotFoundMessage(BigInteger productId) {
-		return String.format("Product %s not found", productId);
+		return makeStaleWhileRevalidate(genericRepository.count(Product.class), 1, TimeUnit.MINUTES, 5,
+				TimeUnit.MINUTES);
 	}
 
 	@GetMapping("/{productId}")
@@ -85,18 +102,41 @@ public class RestProductController extends ProductController {
 	public ResponseEntity<?> obtainProduct(@PathVariable(name = "productId", required = true) BigInteger productId,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns)
 			throws NoSuchFieldException, UnauthorizedCredential {
-		return send(crudService.readById(productId, Product.class, columns, getPrincipalCredential()),
-				getProductNotFoundMessage(productId));
+		Map<String, Object> result = crudService.readById(productId, Product.class, columns, getPrincipalCredential());
+
+		return makeStaleWhileRevalidate(
+				Optional.<Object>ofNullable(result)
+						.orElse(Common.notfound(String.format(Common.COMMON_TEMPLATE, "Product", productId))),
+				5, TimeUnit.SECONDS, 7, TimeUnit.SECONDS);
 	}
 
 	@GetMapping
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getProducts(
-			@RequestParam(name = "category", required = false, defaultValue = "") Long categoryIdentifier,
-			@RequestParam(name = "by", required = false, defaultValue = "") String categoryIdentifierName,
+			@RequestParam(name = "ids", required = false, defaultValue = "") List<BigInteger> productIds,
+			@RequestParam(name = "category", required = false) Serializable categoryIdentifier,
+			@RequestParam(name = "by", required = false) String categoryIdentifierName,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
 			@PageableDefault(size = 10) Pageable paging) throws Exception {
+		if (!CollectionHelper.isEmpty(productIds)) {
+			return ok(crudService.readAll(Product.class, columns,
+					(root, query, builder) -> builder.in(root.get(_Product.id)).value(productIds), paging,
+					getPrincipalCredential()));
+		}
+
 		return ok(productService.readOnSaleProducts(categoryIdentifier, categoryIdentifierName, columns, paging,
+				getPrincipalCredential()));
+	}
+
+	@GetMapping("/internal")
+	@Transactional(readOnly = true)
+	@Secured({ HEAD, PERSONNEL })
+	public ResponseEntity<?> getInternalProducts(
+			@RequestParam(name = "category", required = false) Serializable categoryIdentifier,
+			@RequestParam(name = "by", required = false) String categoryIdentifierName,
+			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
+			@PageableDefault(size = 10) Pageable paging) throws Exception {
+		return ok(productService.readAllProducts(categoryIdentifier, categoryIdentifierName, columns, paging,
 				getPrincipalCredential()));
 	}
 
@@ -109,10 +149,11 @@ public class RestProductController extends ProductController {
 		Optional<Product> persistence = genericRepository.findById(Product.class, productId);
 
 		if (persistence.isEmpty()) {
-			return notFound(Map.of(Common.MESSAGE, getProductNotFoundMessage(productId)));
+			return notFound(Map.of(Common.MESSAGE,
+					Common.notfound(String.format(Common.COMMON_TEMPLATE, "Product", productId))));
 		}
 
-		return send(genericService.approve(Product.class, productId, true));
+		return sendAndProduce(genericService.approve(Product.class, productId, true));
 	}
 
 	@PatchMapping("/lockstate/{productId}/{lockState}")
@@ -128,22 +169,72 @@ public class RestProductController extends ProductController {
 		Optional<Product> persistence = genericRepository.findById(Product.class, productId);
 
 		if (persistence.isEmpty()) {
-			return notFound(Map.of(Common.MESSAGE, getProductNotFoundMessage(productId)));
+			return notFound(Map.of(Common.MESSAGE,
+					Common.notfound(String.format(Common.COMMON_TEMPLATE, "Product", productId))));
 		}
 
-		return send(productService.changeLockState(productId, lockState, true));
+		return sendAndProduce(productService.changeLockState(productId, lockState, true));
 	}
+
+	private static final Specification<Product> PRODUCT_IS_NOT_LOCKED = (root, query, builder) -> builder
+			.equal(root.get(_Product.locked), false);
 
 	@GetMapping("/search")
 	@Transactional(readOnly = true)
-	public ResponseEntity<?> searchForProducts(ProductQuery query,
+	public ResponseEntity<?> searchForProducts(ProductQuery restQuery,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
 			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
-		if (!query.hasCriteria()) {
+		if (!restQuery.hasCriteria()) {
 			return bad(Common.INVALID_SEARCH_CRITERIA);
 		}
 
-		return ResponseEntity.ok(productService.searchProduct(columns, paging, query, getPrincipalCredential()));
+		List<Map<String, Object>> rows = crudService.readAll(Product.class, columns,
+				SpecificationFactory.hasNameLike(restQuery).and(PRODUCT_IS_NOT_LOCKED), getPrincipalCredential());
+
+		return makeStaleWhileRevalidate(rows, 5, TimeUnit.SECONDS, 7, TimeUnit.SECONDS);
+	}
+
+	@GetMapping("/search/internal")
+	@Transactional(readOnly = true)
+	@Secured({ HEAD, PERSONNEL })
+	public ResponseEntity<?> searchForInternalProducts(ProductQuery restQuery,
+			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
+			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
+		if (!restQuery.hasCriteria()) {
+			return bad(Common.message(Common.INVALID_SEARCH_CRITERIA));
+		}
+
+		authService.assertDepartment(DepartmentScopeContext.customerService(), DepartmentScopeContext.sale(),
+				DepartmentScopeContext.stock());
+
+		List<Map<String, Object>> rows = crudService.readAll(Product.class, columns,
+				SpecificationFactory.hasNameLike(restQuery), getPrincipalCredential());
+
+		return makeStaleWhileRevalidate(rows, 5, TimeUnit.SECONDS, 7, TimeUnit.SECONDS);
+	}
+
+	@GetMapping("/price")
+	@Transactional(readOnly = true)
+	public ResponseEntity<?> getProductPrices(@RequestParam(name = "ids") List<BigInteger> productIds)
+			throws Exception {
+		List<Object[]> prices = priceRepository.findAllCurrents(productIds,
+				Arrays.asList(_ProductPrice.productId, _ProductPrice.price));
+
+		return makeStaleWhileRevalidate(prices.stream().collect(HashMap<Object, Object>::new,
+				(map, cols) -> map.put(cols[0], cols[1]), HashMap::putAll), 1, TimeUnit.MINUTES, 5, TimeUnit.MINUTES);
+	}
+
+	@GetMapping("/price/{productId}")
+	@Transactional(readOnly = true)
+	public ResponseEntity<?> getProductPrice(@PathVariable(name = "productId") BigInteger productId,
+			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
+			@PageableDefault Pageable paging) throws Exception {
+		return makeStaleWhileRevalidate(
+				crudService.readAll(ProductPrice.class, columns,
+						(root, query, builder) -> builder.equal(root.get(_ProductPrice.id).get(_ProductPrice.productId),
+								productId),
+						paging, getPrincipalCredential()),
+				5, TimeUnit.SECONDS, 7, TimeUnit.SECONDS);
 	}
 
 	@PostMapping("/price")
@@ -154,7 +245,7 @@ public class RestProductController extends ProductController {
 
 		ProductPrice price = extract(ProductPrice.class, model, new ProductPrice());
 
-		return send(productService.createProductPrice(price, true));
+		return sendAndProduce(productService.createProductPrice(price, true));
 	}
 
 	@PatchMapping("/price/approve")
@@ -171,7 +262,7 @@ public class RestProductController extends ProductController {
 			return notFound(Common.notfound(persistenceId));
 		}
 
-		return send(genericService.approve(ProductPrice.class, persistenceId, true));
+		return sendAndProduce(genericService.approve(ProductPrice.class, persistenceId, true));
 	}
 
 //	@PatchMapping("/price")
@@ -203,7 +294,7 @@ public class RestProductController extends ProductController {
 		authService.assertSaleDepartment();
 		// we dont't have to check for id here since it will be overridden by
 		// IdentifierGenerator and service layer
-		return send(categoryService.createCategory(category, true));
+		return sendAndProduce(categoryService.createCategory(category, true));
 	}
 
 	@PutMapping("/category")
@@ -218,7 +309,7 @@ public class RestProductController extends ProductController {
 			return notFound(String.format("Category %s not found", model.getId()));
 		}
 
-		return send(crudService.update(optional.get().getId(), model, Category.class, true));
+		return sendAndProduce(crudService.update(optional.get().getId(), model, Category.class, true));
 	}
 
 	@GetMapping("/category/list")
@@ -243,13 +334,19 @@ public class RestProductController extends ProductController {
 		return makeStaleWhileRevalidate(genericRepository.count(Category.class), 1, TimeUnit.DAYS, 3, TimeUnit.DAYS);
 	}
 
-	@PostMapping("/item")
+	@PostMapping("/items")
 	@Secured({ HEAD, PERSONNEL })
 	@Transactional
 	public ResponseEntity<?> createItemBatch(@RequestBody ItemBatch batch) {
 		authService.assertStockDepartment();
 
-		ResultBatch<Item> resultBatch = productService.createItemsBatch(batch.getItems(), true);
+		Collection<Item> items = batch.getItems();
+
+		if (CollectionHelper.isEmpty(items)) {
+			return bad(ITEMS_BATCH_WAS_EMPTY);
+		}
+
+		ResultBatch<Item> resultBatch = productService.createItemsBatch(items, true);
 
 		if (resultBatch.isOk()) {
 			return ResponseEntity.ok(resultBatch.getResults().stream().map(result -> {
@@ -263,15 +360,34 @@ public class RestProductController extends ProductController {
 
 		if (resultBatch.getStatus() == Status.BAD) {
 			List<Result<Item>> results = resultBatch.getResults();
-			
+
 			if (!CollectionHelper.isEmpty(results)) {
 				return bad(results.stream().map(Result::getMessages).collect(Collectors.toList()));
 			}
-			
+
 			return bad(resultBatch.getMessage());
 		}
 
 		return fails(Common.error(resultBatch.getMessage()));
+	}
+
+	private static final String QUANTITY = "quantity";
+
+	@GetMapping(value = "/items")
+	@Transactional(readOnly = true)
+	public ResponseEntity<?> getItemsList(@RequestParam(name = "productId") BigInteger productId,
+			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		int countColumnsIndex = columns.size();
+		List<Object[]> rows = productRepository.findItemsByProduct(productId, columns,
+				(root, query, builder) -> builder.equal(root.get(_Item.status), ItemStatus.AVAILABLE), true);
+		List<Map<String, Object>> items = crudService.readAll(Item.class, columns, getPrincipalCredential(),
+				(metadata) -> rows);
+
+		IntStream.range(0, rows.size())
+				.forEach(index -> items.get(index).put(QUANTITY, rows.get(index)[countColumnsIndex]));
+
+		return makeStaleWhileRevalidate(items, 5, TimeUnit.SECONDS, 7, TimeUnit.SECONDS);
 	}
 
 }

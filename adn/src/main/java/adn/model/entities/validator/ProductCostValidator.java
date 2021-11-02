@@ -4,7 +4,6 @@
 package adn.model.entities.validator;
 
 import static adn.application.Common.notEmpty;
-import static adn.helpers.StringHelper.normalizeString;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -28,8 +27,8 @@ public class ProductCostValidator extends AbstractPermanentEntityValidator<Produ
 
 	private static final String EMPTY_PRODUCT = notEmpty("Product information");
 	private static final String EMPTY_PROVIDER = notEmpty("Provider information");
-	private static final String INVALID_COST = normalizeString(
-			String.format("%s and %s", notEmpty("Cost amount"), Common.notNegative()));
+	private static final String INVALID_COST = String.format("%s and %s", notEmpty("Cost amount"),
+			Common.notNegative());
 
 	@Override
 	public Result<ProductCost> isSatisfiedBy(Session session, Serializable id, ProductCost instance) {

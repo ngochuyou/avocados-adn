@@ -1,4 +1,7 @@
-import { isString, hasLength, isEmpty, join, result } from '../utils';
+import {
+	isString, /*hasLength*/ isEmpty, join, result,
+	formatServerDatetime
+} from '../utils';
 import { fjson } from '../fetch';
 
 export function fetchProviderList({ page = 0, size = 10, columns = [] }) {
@@ -55,62 +58,105 @@ export function updateProvider(model) {
 	});
 }
 
-export function getProductDetailList({ columns = "", page = 0, size = 10 }) {
-	return fjson(`/rest/provider/product-detail?columns=${join(columns)}&page=${page}&size=${size}`);
+// export function getProductCosts({ productIds = [] }) {
+// 	if (!hasLength(productIds)) {
+// 		return [[], null];
+// 	}
+
+// 	return fjson(`/rest/provider/cost?products=${join(productIds)}`);
+// }
+
+// export function getProductCostsCount(productId) {
+// 	if (productId == null) {
+// 		return [null, "Product ID was empty"];
+// 	}
+
+// 	return fjson(`/rest/provider/cost/count?product=${productId}`);
+// }
+
+export function getProductCostsByProduct({
+	productId = null,
+	columns = [],
+	page = 0, size = 20
+}) {
+	if (productId == null) {
+		return [null, "Product ID was null"];
+	}
+
+	return fjson(`/rest/provider/cost/${productId}?columns=${join(columns)}`);
 }
 
-export function getProductDetailsCount() {
-	return fjson(`/rest/provider/product-detail/count`);
-}
+// export function getProductDetailList({ columns = "", page = 0, size = 10 }) {
+// 	return fjson(`/rest/provider/cost?columns=${join(columns)}&page=${page}&size=${size}`);
+// }
 
-export function createProductDetail(model) {
+// export function getProductDetailsCount() {
+// 	return fjson(`/rest/provider/cost/count`);
+// }
+
+export function createProductCost(model) {
 	if (model == null) {
 		return [null, result("Model was null")];
 	}
 
-	return fjson(`/rest/provider/product-detail`, {
+	return fjson(`/rest/provider/cost`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		body: JSON.stringify(model)
+		body: JSON.stringify({
+			...model,
+			appliedTimestamp: formatServerDatetime(model.appliedTimestamp),
+			droppedTimestamp: formatServerDatetime(model.droppedTimestamp)
+		})
 	});
 }
 
-export function getProductDetailsByProduct({
-	productId = null, columns = [],
-	page = 0, size = 10
+// export function getProductDetailsByProduct({
+// 	productId = null, columns = [],
+// 	page = 0, size = 10
+// }) {
+// 	if (!isString(productId) || !hasLength(productId)) {
+// 		return [null, result("Product ID was empty")];
+// 	}
+
+// 	return fjson(`/rest/provider/cost/${productId}?columns=${join(columns)}&page=${page}&size=${size}`);
+// }
+
+export function approveProductCost({
+	productId = null,
+	providerId = null,
+	appliedTimestamp = null,
+	droppedTimestamp = null
 }) {
-	if (!isString(productId) || !hasLength(productId)) {
-		return [null, result("Product ID was empty")];
+	if (productId == null) {
+		return [null, "Product ID was empty"];
 	}
 
-	return fjson(`/rest/provider/product-detail/${productId}?columns=${join(columns)}&page=${page}&size=${size}`);
-}
-
-export function approveProductDetail({
-	productId = null, providerId = null
-}) {
-	if (!isString(productId) || !hasLength(productId)) {
-		return [null, result("Product code was empty")];
+	if (providerId == null) {
+		return [null, "Provider ID was empty"];
 	}
 
-	if (!isString(providerId) || !hasLength(providerId)) {
-		return [null, result("Provider ID was empty")];
+	if (appliedTimestamp == null) {
+		return [null, "Applied timestamp was empty"];
 	}
 
-	return fjson(`/rest/provider/product-detail/approve?productId=${productId}&providerId=${providerId}`, {
+	if (droppedTimestamp == null) {
+		return [null, "Dropped timestamp was empty"];
+	}
+
+	return fjson(`/rest/provider/cost/approve?product=${productId}&provider=${providerId}&applied=${appliedTimestamp}&dropped=${droppedTimestamp}`, {
 		method: 'PATCH'
 	});
 }
 
-export function getProvidersOfProduct({
-	productId = null, columns = [],
-	page = 0, size = 1000
-}) {
-	if (!isString(productId) || !hasLength(productId)) {
-		return [null, result("Product code was empty")];
-	}
+// export function getProvidersOfProduct({
+// 	productId = null, columns = [],
+// 	page = 0, size = 1000
+// }) {
+// 	if (!isString(productId) || !hasLength(productId)) {
+// 		return [null, result("Product code was empty")];
+// 	}
 
-	return fjson(`/rest/provider/current/${productId}?columns=${join(columns)}&page=${page}&size=${size}`);
-}
+// 	return fjson(`/rest/provider/current/${productId}?columns=${join(columns)}&page=${page}&size=${size}`);
+// }

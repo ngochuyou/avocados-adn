@@ -105,10 +105,11 @@ public class SyntheticPojoEntityExtractor<T extends Entity, M extends Model> ext
 
 			IntStream.range(0, entityNodeAccessors.size()).forEach(index -> {
 				PropertyAccess accessor = entityNodeAccessors.get(index);
-				Object val = Optional.ofNullable(accessor.getGetter().get(destination.getValue()))
+				Object internalDestination = destination.getValue();
+				Object val = Optional.ofNullable(accessor.getGetter().get(internalDestination))
 						.orElse(entityNodeInstantiators.get(index).instantiate());
 
-				accessor.getSetter().set(destination.getValue(), val, null);
+				accessor.getSetter().set(internalDestination, val, null);
 				destination.setValue(val);
 			});
 

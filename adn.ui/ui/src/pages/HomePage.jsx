@@ -1,14 +1,18 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useParams, useHistory } from 'react-router-dom';
 
 import { getAllCategories } from '../actions/product';
-import { SET_LIST } from '../actions/common';
+import { getProductListByCategory, getProductPrices } from '../actions/product';
 
 import { SourcedImage } from '../components/utils/Gallery'
+import ProductList from '../components/product/ProductList'
+import Navbar from '../components/utils/Navbar';
 
-const CATEGORY_STORE = {
-	elements: []
-}
+import { useProduct } from '../hooks/product-hooks';
+
+import { routes } from '../config/default';
+
+import { hasLength } from '../utils';
 
 const PRODUCT_STORE = {
 	elements: [
@@ -35,76 +39,24 @@ const PRODUCT_STORE = {
 	]
 }
 
-const Context = createContext();
-
-const useGlobalContext = () => useContext(Context);
-
-function ContextProvider({ children }) {
-	const [categoryStore, dispatchCategoryStore] = useReducer(
-		(oldState, { type = null, payload = null } = {}) => {
-			const dispatcher = cactegoryDispatchers[type];
-
-			return dispatcher == null ? oldState : dispatcher(payload, oldState);
-		}, { ...CATEGORY_STORE }
-	);
-	useEffect(() => {
-		const doFetch = async () => {
-			const [categories, fetchCategoriesErr] = await getAllCategories();
-
-			if (fetchCategoriesErr) {
-				console.error(fetchCategoriesErr);
-				return;
-			}
-
-			dispatchCategoryStore({
-				type: SET_LIST,
-				payload: categories
-			});
-		};
-
-		doFetch();
-	}, []);
-
-	return (
-		<Context.Provider value={{
-			categoryStore, dispatchCategoryStore
-		}}>
-			{ children }
-		</Context.Provider>
-	);
-}
-
-const cactegoryDispatchers = {
-	SET_LIST: (payload, oldState) => {
-		if (!Array.isArray(payload)) {
-			return oldState;
-		}
-
-		return {
-			...oldState,
-			elements: payload
-		};
-	}
-}
-
 export default function HomePage() {
 	return (
-		<ContextProvider>
-			<Main />
-		</ContextProvider>
+		<div>
+			<Navbar
+				className="uk-background-default"
+			/>
+			<Head />
+			<Body />
+		</div>
 	);
 }
 
-function Main() {
-	const {
-		categoryStore: { elements }
-	} = useGlobalContext();
-
+function Head() {
 	return (
-		<div>
+		<header>
 			{/*<div uk-slideshow="autoplay: false; autoplay-interval: 2000; pause-on-hover: false">*/}
-			<div uk-slideshow="animation: scale; autoplay: true; autoplay-interval: 2000; pause-on-hover: false">
-				<ul className="uk-slideshow-items" uk-height-viewport="min-height: 300">
+			<div uk-slideshow="animation: scale; autoplay: false; autoplay-interval: 2000; pause-on-hover: false">
+				<ul className="uk-slideshow-items" uk-height-viewport="offset-top: true; min-height: 300">
 				{
 					PRODUCT_STORE.elements.map(model => (
 						<li key={model.id}>
@@ -125,7 +77,7 @@ function Main() {
 					uk-slidenav-next="" uk-slideshow-item="next"
 				></button>
 			</div>
-			<div className="uk-position-top">
+			{/*<div className="uk-position-top">
 				<nav className="uk-navbar-container uk-navbar-transparent" uk-navbar="">
 					<div className="uk-navbar-left">
 						<ul className="uk-navbar-nav">
@@ -174,15 +126,13 @@ function Main() {
 							}
 							<li className="uk-nav-divider"></li>
 						</ul>
-
 					</div>
 				</div>
-			</div>
-			<div>
+			</div>*/}
+			{/*<div>
 				<div id="offcanvas-dashboard" uk-offcanvas="flip: true; mode: reveal; overlay: true">
 					<div className="uk-offcanvas-bar uk-flex uk-flex-column">
-
-						<ul className="uk-nav uk-nav-primary uk-nav-center uk-margin-auto-vertical">
+						<ul className="uk-nav uk-nav-primary uk-nav-center uk-margin-auto-vertical">*/}
 							{/*<li className="uk-active"><a href="#">Active</a></li>
 							<li className="uk-parent">
 								<a href="#">Parent</a>
@@ -196,11 +146,139 @@ function Main() {
 							<li><a href="#"><span className="uk-margin-small-right" uk-icon="icon: thumbnails"></span> Item</a></li>
 							<li className="uk-nav-divider"></li>
 							<li><a href="#"><span className="uk-margin-small-right" uk-icon="icon: trash"></span> Item</a></li>*/}
-						</ul>
-
+						{/*</ul>
 					</div>
 				</div>
+			</div>*/}
+		</header>
+	);
+}
+
+function Body() {
+	return (
+		<main className="uk-position-relative">
+			<div
+				className="uk-grid-collapse uk-grid-match"
+				uk-grid=""
+			>
+				<div className="uk-width-1-4 uk-padding-small">
+					<SideNav />
+				</div>
+				<div className="uk-width-3-4 uk-position-relative" uk-height-viewport="" uk-overflow-auto="">
+					<ProductListView />
+				</div>
 			</div>
+		</main>
+	);
+};
+
+export const FETCHED_PRODUCT_COLUMNS = ["id", "name", "rating", "images"]
+
+function SideNav() {
+	const {
+		store: {
+			category: { elements: categories }
+		},
+		setCategories, setProducts,
+		mergePrices
+	} = useProduct();
+	const { category } = useParams();
+	const { push } = useHistory();
+
+	useEffect(() => {
+		const doFetch = async () => {
+			const [res, err] = await getAllCategories();
+
+			if (err) {
+				console.error(err);
+				return;
+			}
+
+			setCategories(res);
+		};
+
+		doFetch();
+	}, [setCategories]);
+
+	useEffect(() => {
+		if (!hasLength(category)) {
+			if (!hasLength(categories)) {
+				return;
+			}
+
+			push(`${routes.home.url}/${categories[0].name}`);
+			return;
+		}
+
+		const doFetch = async () => {
+			let [res, err] = await getProductListByCategory({
+				identifierName: "name",
+				identifier: category,
+				columns: FETCHED_PRODUCT_COLUMNS
+			});
+
+			if (err) {
+				console.error(err);
+				return;
+			}
+
+			setProducts(res);
+
+			[res, err] = await getProductPrices(res.map(product => product.id));
+
+			if (err) {
+				console.error(err);
+				return;
+			}
+
+			mergePrices(res);
+		};
+
+		doFetch();
+	}, [category, categories, setProducts, mergePrices, push]);
+
+	const onSelectCategory = (category) => push(`${routes.home.url}/${category.name}`);
+	
+	return (
+		<div>
+			<ul className="uk-nav uk-nav-center uk-nav-primary uk-margin-auto-vertical">
+				<li className="uk-nav-header uk-text-bold">Categories</li>
+				{
+					categories.map(category => (
+						<li
+							key={category.id} className="uk-margin pointer noselect"
+							onClick={() => onSelectCategory(category)}
+						>
+							<div className="uk-transition-toggle">
+								<div
+									className="uk-transition-scale-up"
+									style={{ opacity: "1" }}
+								>{category.name}</div>
+							</div>
+						</li>
+					))
+				}
+				<li className="uk-nav-divider"></li>
+			</ul>
+		</div>
+	);
+}
+
+function ProductListView() {
+	const {
+		store: {
+			product: { elements: products }
+		}
+	} = useProduct();
+	const { push } = useHistory();
+	const { productView: { url: productViewUrl } } = routes;
+
+	return (
+		<div className="uk-padding-small">
+			<ProductList
+				onItemClick={(p) => push(`${productViewUrl}/${p.id}`)}
+				list={Object.values(products)}
+			/>
 		</div>
 	);
 }

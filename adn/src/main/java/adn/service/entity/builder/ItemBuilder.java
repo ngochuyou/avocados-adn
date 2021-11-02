@@ -51,10 +51,6 @@ public class ItemBuilder extends AbstractPermanentEntityBuilder<Item> {
 			model.setCost(model.getCost().setScale(4, RoundingMode.HALF_UP));
 		}
 
-		if (model.getPrice() != null) {
-			model.setPrice(model.getPrice().setScale(4, RoundingMode.HALF_UP));
-		}
-
 		return model;
 	}
 

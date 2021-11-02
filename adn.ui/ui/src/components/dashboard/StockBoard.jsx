@@ -10,8 +10,8 @@ import {
 	SET_VIEW, PUSH_LIST, MODIFY_MODEL, POP_LIST, TOGGLE_MODAL_VISION,
 	CLEAR_LIST, SET_LIST
 } from '../../actions/common';
-import { searchProduct, createStockDetails } from '../../actions/product';
-import { getProvidersOfProduct } from '../../actions/provider';
+import { searchProduct, submitItemsBatch } from '../../actions/product';
+import { fetchProviderList, searchProvider } from '../../actions/provider';
 
 import { DomainImage } from '../utils/Gallery';
 import { FixedAddButton } from '../utils/Button';
@@ -36,14 +36,13 @@ const IMPORT_STORE = {
 	form: {
 		model: {
 			product: null,
-			size: StockDetail.NamedSize[0],
+			namedSize: StockDetail.NamedSize[0],
 			numericSize: StockDetail.MINIMUM_NUMERIC_SIZE,
 			color: "#000000",
-			material: "",
 			provider: null,
 			status: StockDetail.Status[0],
-			active: true,
-			description: "",
+			cost: 1000,
+			note: "",
 			quantity: 1
 		},
 		elements: [],
@@ -280,7 +279,8 @@ export default function StockBoard() {
 function Body() {
 	const { layoutStore, dispatchImportStore } = useGlobalContext();
 	useEffect(() => {
-		const elements = JSON.parse(localStorage[FORM_ELEMENTS_STORAGE_NAME]);
+		const savedBatch = localStorage[FORM_ELEMENTS_STORAGE_NAME];
+		const elements = savedBatch == null ? [] : JSON.parse(savedBatch);
 
 		dispatchImportStore({
 			type: SET_LIST,
@@ -410,7 +410,8 @@ function ImportBoard() {
 	};
 	const doSubmitBatch = async () => {
 		const elements = formElements.flatMap(element => spread(element.quantity, element));
-		const [, err] = await createStockDetails(elements);
+
+		const [, err] = await submitItemsBatch(elements);
 
 		if (err) {
 			console.error(err);
@@ -556,8 +557,8 @@ function ImportBoard() {
 											<div className="uk-grid-collapse uk-child-width-1-2" uk-grid="">
 												<div>
 													<select
-														className="uk-select" value={model.size}
-														uk-tooltip="Size" name="size"
+														className="uk-select" value={model.namedSize}
+														uk-tooltip="Size" name="namedSize"
 														onChange={(event) => onModelChange(index, event)}
 													>
 													{
@@ -581,22 +582,23 @@ function ImportBoard() {
 									<div className="uk-width-expand">
 										<div className="uk-margin-small">
 											<input
-												uk-tooltip="Description"
-												type="text" className="uk-input" placeholder="Description"
-												maxLength={StockDetail.MAXIMUM_DESCRIPTION_LENGTH}
-												name="description" onChange={(event) => onModelChange(index, event)}
+												uk-tooltip="Notes"
+												type="text" className="uk-input" placeholder="Notes"
+												maxLength={StockDetail.MAXIMUM_NOTES_LENGTH}
+												name="note" onChange={(event) => onModelChange(index, event)}
 											/>
 										</div>
 										<div className="uk-grid-collapse uk-child-width-1-2" uk-grid="">
 											<div>
-												<select
-													className="uk-select" value={model.active}
-													uk-tooltip="Active" name="active"
+												<input
+													className="uk-input"
+													type="number" step="0.0001"
+													placeholder="Cost"
+													name="cost"
 													onChange={(event) => onModelChange(index, event)}
-												>
-													<option key={true} value={true} className="uk-text-success">Active</option>
-													<option key={false} value={false} className="uk-text-muted">Inactive</option>
-												</select>
+													uk-tooltip="Cost"
+													value={model.cost}
+												/>
 											</div>
 											<div>
 												<select
@@ -665,12 +667,12 @@ function ImportBoard() {
 	);
 }
 
-const SEARCHED_PRODUCT_COLUMNS = ["id", "name", "images", "active"];
+const SEARCHED_PRODUCT_COLUMNS = ["id", "name", "images", "locked"];
 const SEARCHED_PRODUCT_AMOUNT = 100;
-const SEARCHED_PROVIDER_COLUMNS = ["id", "name", "email", "representatorName", "active"];
+const SEARCHED_PROVIDER_COLUMNS = ["id", "name", "email", "representatorName"];
 const SET_PICKER_VIEW = "SET_PICKER_VIEW";
 const PUSH_PICKER_ELEMENTS = "PUSH_PICKER_ELEMENTS";
-const VALIDATED_STOCKDETAIL_COLUMNS = ["product", "provider", "size", "status", "numericSize", "quantity"];
+const VALIDATED_STOCKDETAIL_COLUMNS = ["product", "provider", "namedSize", "status", "numericSize", "quantity"];
 const FORM_ELEMENTS_STORAGE_NAME = "importBatchElements";
 const STOCKDETAIL_ITEM_ANCHOR_PREFIX = "stockdetail-item-";
 
@@ -686,9 +688,11 @@ function ProductPicker() {
 	const [containerClassName, setContainerClassName] = useState('fade-in');
 	const [isFetching, toggleFetching] = useReducer((isFetching) => !isFetching, false);
 	const searchInputRef = useRef(null);
+
 	useEffect(() => {
 		searchInputRef.current.focus();
 	}, []);
+
 	const closeProductPicker = () => {
 		setContainerClassName('fade-out uk-modal');
 		setTimeout(() => {
@@ -723,7 +727,7 @@ function ProductPicker() {
 			type: SET_PICKER_VIEW,
 			payload: {
 				name: PRODUCT_PICKER,
-				list: Object.values(elements).filter(product => product.name.toLowerCase().includes(value) || product.id.toLowerCase().includes(value))
+				list: Object.values(elements).filter(product => product.name.toLowerCase().includes(value))
 			}
 		});
 	};
@@ -737,9 +741,10 @@ function ProductPicker() {
 
 			const { target: { value } } = event;
 			const [res, err] = await searchProduct({
-				productId: value, productName: value,
+				productName: value,
 				columns: SEARCHED_PRODUCT_COLUMNS,
-				size: SEARCHED_PRODUCT_AMOUNT
+				size: SEARCHED_PRODUCT_AMOUNT,
+				internal: true
 			});
 
 			if (err) {
@@ -842,9 +847,9 @@ function ProductPicker() {
 											<div className="uk-text-lead">{product.id}</div>
 											<div className="uk-text-muted">{product.name}</div>
 											{
-												product.active ?
-												<div className="uk-text-success">ACTIVE</div> :
-												<div className="uk-text-muted">INACTIVE</div>
+												product.locked ?
+												<div className="uk-text-muted">LOCKED</div> :
+												<div className="uk-text-success">ACTIVE</div>
 											}
 										</div>
 									</div>
@@ -872,12 +877,13 @@ function ProviderPicker() {
 	} = useGlobalContext();
 	const [containerClassName, setContainerClassName] = useState('fade-in');
 	const searchInputRef = useRef(null);
+	const [isFetching, toggleFetching] = useReducer((isFetching) => !isFetching, false);
 
 	useEffect(() => {
 		const doFetch = async () => {
-			const [res, err] = await getProvidersOfProduct({
-				productId,
-				columns: SEARCHED_PROVIDER_COLUMNS
+			const [res, err] = await fetchProviderList({
+				columns: SEARCHED_PROVIDER_COLUMNS,
+				size: 20
 			});
 
 			if (err) {
@@ -902,7 +908,7 @@ function ProviderPicker() {
 		};
 
 		doFetch();
-	}, [productId, dispatchImportStore]);
+	}, [dispatchImportStore]);
 	useEffect(() => {
 		searchInputRef.current.focus();
 	}, []);
@@ -945,6 +951,45 @@ function ProviderPicker() {
 			}
 		});
 	};
+	const onSearchInputKeyDown = async (event) => {
+		if (event.keyCode === 13) {
+			if (isFetching) {
+				return;
+			}
+
+			toggleFetching();
+
+			const { target: { value } } = event;
+			const [res, err] = await searchProvider({
+				name: value.toLowerCase(),
+				columns: SEARCHED_PROVIDER_COLUMNS,
+				internal: true
+			});
+
+			if (err) {
+				console.error(err);
+				toggleFetching();
+				return;
+			}
+
+			dispatchImportStore({
+				type: PUSH_PICKER_ELEMENTS,
+				payload: {
+					name: PROVIDER_PICKER,
+					list: res
+				}
+			});
+			dispatchImportStore({
+				type: SET_PICKER_VIEW,
+				payload: {
+					name: PROVIDER_PICKER,
+					list: res
+				}
+			});
+			toggleFetching();
+			return;
+		}
+	};
 	const onModalKeyDown = (event) => {
 		if (event.keyCode === 27) {
 			closeProviderPicker();
@@ -982,7 +1027,9 @@ function ProviderPicker() {
 						<input
 							ref={searchInputRef}
 							type="search" placeholder="Provider name"
-							className="uk-input uk-border-pill" onChange={onSearchInputChange}
+							className="uk-input uk-border-pill"
+							onChange={onSearchInputChange}
+							onKeyDown={onSearchInputKeyDown}
 						/>
 					</div>
 					<section
@@ -1000,19 +1047,7 @@ function ProviderPicker() {
 								className="uk-box-shadow-hover-small uk-padding-small pointer"
 								onClick={() => onPick(provider)}
 							>	
-								<div
-									uk-grid=""
-									className="uk-grid-small uk-child-width-1-2"
-								>
-									<div className="uk-text-lead colors">{provider.name}</div>
-									<div className="uk-text-small uk-position-relative">
-									{
-										provider.active ?
-										<div className="uk-text-success uk-position-center">ACTIVE</div> :
-										<div className="uk-text-muted uk-position-center">INACTIVE</div>
-									}
-									</div>
-								</div>
+								<div className="uk-text-lead colors">{provider.name}</div>
 								<div
 									className="uk-text-truncate uk-margin-small-top"
 									uk-tooltip={provider.email}
@@ -1028,13 +1063,13 @@ function ProviderPicker() {
 	);
 }
 
-function ViewBoard() {
-	return (
-		<section>
-			view
-		</section>
-	);
-}
+// function ViewBoard() {
+// 	return (
+// 		<section>
+// 			view
+// 		</section>
+// 	);
+// }
 
 function Nav() {
 	const {
@@ -1045,16 +1080,6 @@ function Nav() {
 	return (
 		<div>
 			<ul className="uk-box-shadow-small uk-child-width-expand" id="nav" uk-tab="" uk-height-match="">
-				<li className={view.type === ViewBoard ? "uk-active" : ""}>
-					<a
-						href="#nav"
-						style={{height: "30px"}}
-						onClick={() => dispatchLayoutStore({
-							type: SET_VIEW,
-							payload: <ViewBoard />
-						})}
-					>VIEW</a>
-				</li>
 				<li className={view.type === ImportBoard ? "uk-active" : ""}>
 					<a
 						href="#nav"

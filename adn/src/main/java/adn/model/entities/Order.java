@@ -32,9 +32,7 @@ import adn.application.Common;
 import adn.model.entities.constants.OrderStatus;
 import adn.model.entities.metadata._Customer;
 import adn.model.entities.metadata._Item;
-import adn.model.entities.metadata._Operator;
 import adn.model.entities.metadata._Order;
-import adn.model.entities.metadata._User;
 
 /**
  * @author Ngoc Huy
@@ -58,10 +56,10 @@ public class Order extends PermanentEntity {
 	@Column(nullable = false)
 	private OrderStatus status;
 
-	@Column
+	@Column(nullable = false)
 	private String address;
 
-	@ManyToOne
+	@ManyToOne(optional = false)
 	private District district;
 
 	@Column(columnDefinition = Common.MYSQL_CURRENCY_COLUMN_DEFINITION)
@@ -79,19 +77,14 @@ public class Order extends PermanentEntity {
 	@Column(nullable = false)
 	private LocalDateTime updatedTimestamp;
 
-	@ManyToOne(optional = false, fetch = FetchType.LAZY)
-	@JoinColumn(name = "updated_by", referencedColumnName = _User.$id, nullable = false)
-	private User updatedBy;
-
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "handled_by", referencedColumnName = _Operator.$id, updatable = false)
-	private Operator handledBy;
+	@Column(length = _Order.MAXIMUM_NOTE_LENGTH)
+	private String note;
 	// @formatter:off
 	@ManyToMany(cascade = CascadeType.MERGE)
 	@JoinTable(
-			name = "order_details",
-			joinColumns = @JoinColumn(name = "order_id", referencedColumnName = _Order.$id),
-			inverseJoinColumns = @JoinColumn(name = "item_id", referencedColumnName = _Item.$id))
+			name = _Order.jnOrderDetails,
+			joinColumns = @JoinColumn(name = _Order.jnOrderDetailsId, referencedColumnName = _Order.$id),
+			inverseJoinColumns = @JoinColumn(name = _Item.jnOrderDetailsId, referencedColumnName = _Item.$id))
 	private List<Item> items;
 	// @formatter:on
 	public BigInteger getId() {
@@ -150,22 +143,6 @@ public class Order extends PermanentEntity {
 		this.updatedTimestamp = updatedTimestamp;
 	}
 
-	public User getUpdatedBy() {
-		return updatedBy;
-	}
-
-	public void setUpdatedBy(User updatedBy) {
-		this.updatedBy = updatedBy;
-	}
-
-	public Operator getHandledBy() {
-		return handledBy;
-	}
-
-	public void setHandledBy(Operator handledBy) {
-		this.handledBy = handledBy;
-	}
-
 	public List<Item> getItems() {
 		return items;
 	}
@@ -188,6 +165,14 @@ public class Order extends PermanentEntity {
 
 	public void setDistrict(District district) {
 		this.district = district;
+	}
+
+	public String getNote() {
+		return note;
+	}
+
+	public void setNote(String note) {
+		this.note = note;
 	}
 
 }

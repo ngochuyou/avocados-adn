@@ -1,11 +1,12 @@
 export function ConfirmModal({
+	background = "backgroundf",
 	message = "Are you sure?",
 	onYes = () => null,
 	onNo = () => null
 }) {
 	return (
 		<div
-			className="uk-position-fixed uk-position-center backgroundf uk-padding"
+			className={`uk-position-fixed uk-position-center ${background} uk-padding`}
 			style={{zIndex: "990"}}
 		>
 			<p className="uk-text-large uk-text-center">{message}</p>

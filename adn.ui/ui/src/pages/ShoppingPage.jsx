@@ -7,7 +7,7 @@ import {
 	SET_LIST, SET_INDIVIDUAL_VIEW_TARGET
 } from '../actions/common';
 
-import Navbar from '../components/product/Navbar';
+// import Navbar from '../components/product/Navbar';
 import ProductList from '../components/product/ProductList';
 import {
 	useShopping, FETCHED_PRODUCT_COLUMNS
@@ -84,9 +84,9 @@ function Main() {
 
 	return (
 		<div className="uk-background-muted">
-			<Navbar
+			{/*<Navbar
 				background="uk-background-default"
-			/>
+			/>*/}
 			<Body />
 		</div>
 	);

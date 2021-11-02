@@ -2,8 +2,11 @@ package adn.controller;
 
 import static adn.helpers.HibernateHelper.useManualSession;
 import static java.util.concurrent.TimeUnit.DAYS;
+import static org.springframework.http.ResponseEntity.ok;
 
 import java.util.Optional;
+
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -25,11 +28,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import adn.application.Common;
 import adn.application.Result;
 import adn.application.context.ContextProvider;
+import adn.application.context.builders.CredentialFactory;
 import adn.helpers.StringHelper;
 import adn.model.entities.User;
 import adn.service.UserRoleExtractor;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Role;
+import adn.service.services.AuthenticationService;
 import adn.service.services.UserService;
 
 @Controller
@@ -37,9 +42,10 @@ import adn.service.services.UserService;
 public class UserController extends BaseController {
 
 	protected final UserService accountService;
-	protected final UserRoleExtractor roleExtractor;
-
 	protected final ResourceService resourceService;
+	protected final AuthenticationService authService;
+
+	protected final UserRoleExtractor roleExtractor;
 
 	protected final static String MISSING_ROLE = "USER ROLE IS MISSING";
 	protected final static int PHOTO_CACHE_CONTROL_MAX_AGE = 3; // days
@@ -48,8 +54,9 @@ public class UserController extends BaseController {
 	public UserController(
 			final UserService accountService,
 			final UserRoleExtractor roleExtractor,
-			final ResourceService resourceService) {
+			final ResourceService resourceService, AuthenticationService authService) {
 		this.accountService = accountService;
+		this.authService = authService;
 		this.roleExtractor = roleExtractor;
 		this.resourceService = resourceService;
 	}
@@ -59,17 +66,18 @@ public class UserController extends BaseController {
 	@Transactional
 	@PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
 	public @ResponseBody ResponseEntity<?> createUser(@RequestPart(name = "model", required = true) String jsonPart,
-			@RequestPart(name = "photo", required = false) MultipartFile photo) throws Exception {
+			@RequestPart(name = "photo", required = false) MultipartFile photo, HttpServletResponse response)
+			throws Exception {
 		Role modelRole = roleExtractor.extractRole(jsonPart);
 
 		if (modelRole == null) {
-			return ResponseEntity.badRequest().body(MISSING_ROLE);
+			return bad(Common.message(MISSING_ROLE));
 		}
 
 		Role principalRole = ContextProvider.getPrincipalRole();
 
 		if (!principalRole.canModify(modelRole)) {
-			return unauthorize(Common.ACCESS_DENIED);
+			return bad(Common.message(Common.ACCESS_DENIED));
 		}
 
 		Class<? extends User> accountClass = accountService.getClassFromRole(modelRole);
@@ -91,7 +99,12 @@ public class UserController extends BaseController {
 				true);
 
 		if (insertResult.isOk()) {
-			return ResponseEntity.ok(produce(insertResult.getInstance(), (Class<User>) accountClass, principalRole));
+			if (modelRole == Role.CUSTOMER) {
+				return ResponseEntity
+						.ok(produce(insertResult.getInstance(), (Class<User>) accountClass, CredentialFactory.owner()));
+			}
+
+			return ok(produce(insertResult.getInstance(), (Class<User>) accountClass, principalRole));
 		}
 
 		return bad(insertResult.getMessages());

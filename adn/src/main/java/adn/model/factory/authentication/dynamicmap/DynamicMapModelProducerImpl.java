@@ -250,7 +250,7 @@ public class DynamicMapModelProducerImpl<T extends DomainEntity> implements Dyna
 			) {
 		// @formatter:on
 		try {
-			int span = values.length;
+			int span = columns.length;
 
 			return IntStream.range(0, span).mapToObj(index -> {
 				String column = columns[index];

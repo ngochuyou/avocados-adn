@@ -102,3 +102,7 @@
 .color-inherit {
 	color: inherit !important;
 }
+
+.uk-icon.heart path {
+	fill:  white;
+}

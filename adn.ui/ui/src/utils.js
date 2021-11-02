@@ -127,7 +127,7 @@ class AsIf {
 
 	then(callback = () => null) {
 		this.callbackWhenTrue = callback;
-
+		
 		return this;
 	}
 
@@ -159,6 +159,13 @@ const MONTH_NAMES = [
 	"Nov", "Dec"
 ];
 
+const NUMERIC_MONTH_NAMES = [
+	"01", "02", "03",
+	"04", "05", "06", "07",
+	"08", "09", "10",
+	"11", "12"
+];
+
 const HOURS_NAMES = [
 	"00", "01", "02", "03", "04",
 	"05", "06", "07", "08",
@@ -177,14 +184,34 @@ const MINUTE_AND_SECOND_NAMES = [
 	'51', '52', '53', '54', '55', '56', '57', '58', '59'
 ];
 
-export const formatDatetime = (datetime) => {
-	if (!isString(datetime)) {
+export const formatServerDatetime = (datetime) => {
+	if (!(datetime instanceof Date) && !isString(datetime)) {
 		return null;
 	}
 
-	const instant = new Date(datetime);
+	const instant = datetime instanceof Date ? datetime : new Date(datetime);
 
-	return `${DAY_NAMES[instant.getDay()]} ${DATE_NAMES[instant.getDate()]} ${MONTH_NAMES[instant.getMonth()]} ${instant.getFullYear()} at ${HOURS_NAMES[instant.getHours()]}:${MINUTE_AND_SECOND_NAMES[instant.getMinutes()]}`;
+	return `${instant.getFullYear()}-${NUMERIC_MONTH_NAMES[instant.getMonth()]}-${DATE_NAMES[instant.getDate()]} ${HOURS_NAMES[instant.getHours()]}:${MINUTE_AND_SECOND_NAMES[instant.getMinutes()]}:${MINUTE_AND_SECOND_NAMES[instant.getSeconds()]}`;
+}
+
+export const formatDatetime = (datetime) => {
+	if (!(datetime instanceof Date) && !isString(datetime)) {
+		return null;
+	}
+
+	const instant = datetime instanceof Date ? datetime : new Date(datetime);
+
+	return `${DAY_NAMES[instant.getDay()]} ${DATE_NAMES[instant.getDate()]} ${MONTH_NAMES[instant.getMonth()]} ${instant.getFullYear()} at ${HOURS_NAMES[instant.getHours()]}:${MINUTE_AND_SECOND_NAMES[instant.getMinutes()]}:${MINUTE_AND_SECOND_NAMES[instant.getSeconds()]}`;
+}
+
+export const formatDate = (date) => {
+	if (!(date instanceof Date) && !isString(date)) {
+		return null;
+	}
+
+	const instant = date instanceof Date ? date : new Date(date);
+
+	return `${DAY_NAMES[instant.getDay()]} ${DATE_NAMES[instant.getDate()]} ${MONTH_NAMES[instant.getMonth()]} ${instant.getFullYear()}`;
 }
 
 export const result = (message) => { return { result: message } };
@@ -210,3 +237,77 @@ class Optional {
 }
 
 export const optional = (opt) => new Optional(opt);
+
+export const atom = (array, identifier = "id") => Object.fromEntries(array.map(ele => [ele[identifier], ele]));
+
+export const mtokeys = (map) => Object.entries(map).map(ele => ele[0]);
+
+export const locateBookmarks = () => {
+	const bookmarks = JSON.parse(asIf(localStorage.bookmarks == null).then(() => "{}").else(() => localStorage.bookmarks));
+
+	mergeBookmarks(bookmarks);
+
+	return bookmarks;
+};
+
+export const mergeBookmarks = (newBookmarks) => {
+	try {
+		localStorage.bookmarks = JSON.stringify(asIf(newBookmarks == null).then(() => {}).else(() => newBookmarks));
+	} catch(err) {
+		console.error(err);
+		delete localStorage.bookmarks;
+	}
+};
+
+const isDate = (val) => Object.prototype.toString.call(val) === '[object Date]';
+
+export const now = () => new Date();
+
+export const datetimeLocalString = (date) => {
+	if (isDate(date)) {
+		let isoString = date.toISOString();
+
+		return isoString.substring(0, isoString.length - 5);
+	}
+
+	if (isString(date)) {
+		return date.substring(0, date.length - 5);
+	}
+
+	throw new Error();
+}
+
+export const isPast = timestamp => {
+	const current = now();
+
+	if (isDate(timestamp)) {
+		return timestamp < current;
+	}
+
+	if (isString(timestamp)) {
+		return new Date(timestamp) < current;
+	}
+
+	throw new Error("Invalid date");
+}
+
+export class ErrorTracker {
+	#hasError;
+
+	constructor() {
+		this.hasError = false;
+	}
+
+	add(next = null) {
+		if (this.hasError) {
+			return next;
+		}
+
+		this.hasError = next != null;
+		return next;
+	}
+
+	foundError() {
+		return this.hasError;
+	}
+}

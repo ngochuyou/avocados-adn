@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -100,6 +101,10 @@ public interface GenericCRUDService extends Service {
 	<T extends Entity> List<Map<String, Object>> readAll(Class<T> type, Collection<String> requestedColumns,
 			Specification<T> spec, Credential credential) throws NoSuchFieldException, UnauthorizedCredential;
 
+	<T extends Entity> List<Map<String, Object>> readAll(Class<T> type, Collection<String> requestedColumns,
+			Credential credential, Function<SourceMetadata<T>, List<Object[]>> sourceSupplier)
+			throws NoSuchFieldException, UnauthorizedCredential;
+
 	<T extends Entity> List<Map<String, Object>> readAll(Class<T> type, Specification<T> spec, Credential credential,
 			SourceMetadata<T> sourceMetadata) throws NoSuchFieldException, UnauthorizedCredential;
 
@@ -127,4 +132,5 @@ public interface GenericCRUDService extends Service {
 
 	<T extends Entity> Map<String, Object> readById(Serializable id, Class<T> type, Credential credential,
 			SourceMetadata<T> sourceMetadata) throws NoSuchFieldException, UnauthorizedCredential;
+
 }

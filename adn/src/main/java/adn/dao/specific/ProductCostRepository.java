@@ -121,6 +121,11 @@ public class ProductCostRepository extends AbstractLocalDateTimeSpannedResourceR
 		};
 	}
 
+	public List<Object[]> findAllCurrentsByProducts(Collection<BigInteger> productIds, Collection<String> columns) {
+		return findAllCurrents(columns, (root, query, builder) -> builder
+				.in(root.get(_ProductCost.id).get(_ProductCost.productId)).value(productIds));
+	}
+
 //	public List<Object[]> findAllCurrents(Collection<BigInteger> productIds, Collection<UUID> providerIds, Collection<String> columns) {
 //		return findAllCurrents(columns, (root, query, builder) -> builder);
 //	}

@@ -15,8 +15,10 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.TableGenerator;
 
@@ -26,13 +28,15 @@ import adn.application.Common;
 import adn.model.entities.converters.StringListConverter;
 import adn.model.entities.metadata._Category;
 import adn.model.entities.metadata._Product;
+import adn.model.entities.metadata._ProductCost;
+import adn.model.entities.metadata._ProductPrice;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Entity
-@Table(name = "products")
+@Table(name = "products", indexes = @Index(columnList = _Product.indexName))
 public class Product extends FullyAuditedEntity<BigInteger> {
 
 	@Id
@@ -64,6 +68,12 @@ public class Product extends FullyAuditedEntity<BigInteger> {
 	@ManyToOne(optional = false, fetch = FetchType.LAZY)
 	@JoinColumn(name = "category_id", referencedColumnName = _Category.$id)
 	private Category category;
+
+	@OneToMany(mappedBy = _ProductCost.product)
+	private List<ProductCost> costs;
+
+	@OneToMany(mappedBy = _ProductPrice.product)
+	private List<ProductPrice> prices;
 
 	@Override
 	public BigInteger getId() {
@@ -129,6 +139,26 @@ public class Product extends FullyAuditedEntity<BigInteger> {
 
 	public void setLocked(Boolean locked) {
 		this.locked = locked;
+	}
+
+	public Boolean getLocked() {
+		return locked;
+	}
+
+	public List<ProductCost> getCosts() {
+		return costs;
+	}
+
+	public List<ProductPrice> getPrices() {
+		return prices;
+	}
+
+	public void setPrices(List<ProductPrice> prices) {
+		this.prices = prices;
+	}
+
+	public void setCosts(List<ProductCost> costs) {
+		this.costs = costs;
 	}
 
 }

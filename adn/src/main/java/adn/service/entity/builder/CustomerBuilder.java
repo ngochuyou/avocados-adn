@@ -23,7 +23,6 @@ public class CustomerBuilder extends UserBuilder<Customer> {
 	protected <E extends Customer> E mandatoryBuild(E target, E model) {
 		target = super.mandatoryBuild(target, model);
 
-		target.setPrestigePoint(model.getPrestigePoint());
 		target.setSubscribed(Optional.ofNullable(model.isSubscribed()).orElse(Boolean.FALSE));
 
 		return target;
@@ -33,7 +32,7 @@ public class CustomerBuilder extends UserBuilder<Customer> {
 	public <E extends Customer> E buildInsertion(Serializable id, E model) {
 		model = super.buildInsertion(id, model);
 
-		model.setLocked(Boolean.TRUE);
+		model.setPrestigePoint(0f);
 
 		return model;
 	}

@@ -98,12 +98,13 @@ public class AuthenticationService implements Service {
 		return (id.equals(username) && Long.valueOf((int) extractedVersion) == version && !isTokenExpired(token));
 	}
 
-	public Cookie createSessionCookie(String value, String path, boolean secured) {
+	public Cookie createSessionCookie(String value, String path, boolean secured, int maxAge) {
 		Cookie c = new Cookie(ConfigurationContext.getJwtCookieName(), value);
 
 		c.setPath(path);
 		c.setSecure(secured);
 		c.setHttpOnly(true);
+		c.setMaxAge(maxAge);
 
 		return c;
 	}

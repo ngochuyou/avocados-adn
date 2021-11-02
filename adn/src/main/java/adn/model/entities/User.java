@@ -38,11 +38,11 @@ public class User extends PermanentEntity {
 	@JsonProperty("username")
 	private String id;
 
-	@Column(nullable = false)
 	private String email;
 
 	private String address;
 
+	@Column(nullable = false)
 	private String phone;
 
 	@Column(name = "last_name")

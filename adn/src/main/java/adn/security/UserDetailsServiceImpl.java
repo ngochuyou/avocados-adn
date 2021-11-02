@@ -33,6 +33,7 @@ import adn.service.services.DepartmentService;
 public class UserDetailsServiceImpl implements UserDetailsService {
 
 	public static final String NAME = "applicationUserDetailsService";
+	public static final ZoneId ZONE = ZoneId.systemDefault();
 
 	@Autowired
 	private GenericRepository repo;
@@ -42,7 +43,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
 	private static final List<String> ATTRIBUTES = Arrays.asList(_User.id, _User.password, _User.role,
 			_User.updatedDate, _User.locked, _User.active);
-	public static final ZoneId ZONE = ZoneId.systemDefault();
 
 	@Transactional(readOnly = true)
 	@Override

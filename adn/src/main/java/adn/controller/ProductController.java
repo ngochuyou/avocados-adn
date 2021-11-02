@@ -69,7 +69,7 @@ public class ProductController extends BaseController {
 
 		Result<Product> result = productService.createProduct(model, images, true);
 
-		return send(result);
+		return sendAndProduce(result);
 	}
 
 	@PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -88,7 +88,7 @@ public class ProductController extends BaseController {
 		Result<Product> result = productService.updateProduct(model, CollectionHelper.from(images, MultipartFile.class),
 				true);
 
-		return send(result);
+		return sendAndProduce(result);
 	}
 
 }

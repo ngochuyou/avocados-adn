@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import adn.dao.generic.GenericRepository;
@@ -22,6 +23,9 @@ import adn.model.entities.metadata._ProductPrice;
  */
 @Repository
 public class ProductPriceRepository extends AbstractLocalDateTimeSpannedResourceRepository<ProductPrice> {
+
+	private static final Specification<ProductPrice> PRICE_IS_APPROVED = (root, query, builder) -> builder
+			.isNotNull(root.get(_ProductPrice.approvalInformations).get(_ProductPrice.approvedTimestamp));
 
 	public ProductPriceRepository(GenericRepository genericRepository) {
 		super(ProductPrice.class, genericRepository,
@@ -42,6 +46,11 @@ public class ProductPriceRepository extends AbstractLocalDateTimeSpannedResource
 				(root, query, builder) -> builder.equal(root.get(_ProductPrice.id).get(_ProductPrice.productId), productId),
 				appliedTimestamp, droppedTimestamp);
 		// @formatter:on
+	}
+
+	@Override
+	protected Specification<ProductPrice> getCurrentSpecification() {
+		return PRICE_IS_APPROVED.and(super.getCurrentSpecification());
 	}
 
 }

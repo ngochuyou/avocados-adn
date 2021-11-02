@@ -79,9 +79,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		
 		builder.type(Personnel.class)
 			.credentials(HEAD, PERSONNEL_CREDENTIAL, owner())
-				.fields(_Personnel.createdBy, _Personnel.department).publish()
-			.credentials(personnel())
-				.fields(_Personnel.department).publish();
+				.fields(_Personnel.createdBy, _Personnel.department).publish();
 		// @formatter:on
 	}
 
@@ -124,30 +122,6 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		// @formatter:on
 	}
 
-	private Credential[] from(Credential... credentials) {
-		return credentials;
-	}
-
-	private Credential[] and(Credential[]... credentialsSets) {
-		return Stream.of(credentialsSets).flatMap(credentials -> Stream.of(credentials)).toArray(Credential[]::new);
-	}
-
-	private Credential[] personnel() {
-		return CredentialFactory.allPersonnelsCredentials().toArray(Credential[]::new);
-	}
-
-	private Credential[] any() {
-		return and(operator(), from(ANONYMOUS, CUSTOMER));
-	}
-
-	private Credential[] operator() {
-		return and(personnel(), from(HEAD));
-	}
-
-	private Credential[] authorized() {
-		return and(operator(), from(owner()));
-	}
-
 	@SuppressWarnings("unchecked")
 	private void product(ModelProducerFactoryBuilder builder) {
 		WithType<Product> product = builder.type(Product.class);
@@ -156,7 +130,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 			.credentials(any())
 				.fields(_Product.id, _Product.name, _Product.category,
 						_Product.images, _Product.description, _Product.code,
-						_Product.rating, _Product.items, _Product.material)
+						_Product.rating, _Product.material)
 				.publish()
 			.credentials(SALE_CREDENTIAL, HEAD)
 				.fields(_Product.createdBy, _Product.createdDate,
@@ -173,7 +147,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 			.credentials(SALE_CREDENTIAL, HEAD)
 				.fields(_ProductPrice.productId, _ProductPrice.appliedTimestamp,
 						_ProductPrice.droppedTimestamp, _ProductPrice.approvedBy, _ProductPrice.approvedTimestamp,
-						_ProductPrice.product).publish()
+						_ProductPrice.product, _ProductPrice.active).publish()
 				.fields(_ProductPrice.id)
 					.useFunction((args, credential) -> {
 						ProductPriceId id = (ProductPriceId) args.getSource();
@@ -191,7 +165,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 			.credentials(any())
 				.fields(_Item.id, _Item.code, _Item.namedSize,
 						_Item.numericSize, _Item.color, _Item.status,
-						_Item.price, _Item.product).publish()
+						_Item.product).publish()
 			.credentials(CUSTOMER_SERVICE_CREDENTIAL, STOCK_CREDENTIAL, HEAD)
 				.fields(_Item.note, _Item.cost, _Item.provider, _Item.auditInformations,
 						_Item.createdDate, _Item.createdBy,
@@ -220,11 +194,33 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 			.credentials(CUSTOMER, HEAD, CUSTOMER_SERVICE_CREDENTIAL)
 				.fields(_Order.id, _Order.code, _Order.status,
 						_Order.address, _Order.district, _Order.deliveryFee,
-						_Order.customer, _Order.updatedBy, _Order.updatedTimestamp,
-						_Order.items, _Order.createdTimestamp).publish()
-			.credentials(HEAD, CUSTOMER_SERVICE_CREDENTIAL)
-				.fields(_Order.handledBy).publish();
+						_Order.customer, _Order.updatedTimestamp,
+						_Order.note, _Order.items, _Order.createdTimestamp).publish();
 		// @formatter:on
+	}
+
+	private Credential[] from(Credential... credentials) {
+		return credentials;
+	}
+
+	private Credential[] and(Credential[]... credentialsSets) {
+		return Stream.of(credentialsSets).flatMap(Stream::of).toArray(Credential[]::new);
+	}
+
+	private Credential[] personnel() {
+		return CredentialFactory.allPersonnelsCredentials().toArray(Credential[]::new);
+	}
+
+	private Credential[] any() {
+		return and(operator(), from(ANONYMOUS, CUSTOMER));
+	}
+
+	private Credential[] operator() {
+		return and(personnel(), from(HEAD));
+	}
+
+	private Credential[] authorized() {
+		return and(operator(), from(owner()));
 	}
 	
 }

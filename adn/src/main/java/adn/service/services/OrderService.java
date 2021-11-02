@@ -25,6 +25,7 @@ import org.hibernate.StatelessSession;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.TaskScheduler;
@@ -37,7 +38,6 @@ import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
 import adn.helpers.Utils;
 import adn.model.entities.Item;
-import adn.model.entities.Operator;
 import adn.model.entities.Order;
 import adn.model.entities.constants.ItemStatus;
 import adn.model.entities.constants.OrderStatus;
@@ -60,7 +60,7 @@ public class OrderService implements Service {
 	private final SessionFactoryImplementor sessionFactory;
 	private final GenericRepository genericRepository;
 	private final GenericCRUDServiceImpl genericCRUDService;
-	private final AuthenticationService authService;
+//	private final AuthenticationService authService;
 
 	private final TaskScheduler taskScheduler;
 
@@ -78,21 +78,22 @@ public class OrderService implements Service {
 	private static final String UNABLE_TO_PROCESS_ITEMS = "Unable to process some of the items";
 	private static final String UNABLE_TO_UPDATE_ORDER_STATUS = "Unable to update order status";
 
-	private volatile static Duration ORDER_EXPIRATION_TIME = Duration.ofDays(2);
+	private volatile static Duration ORDER_EXPIRATION_TIME = Duration.ofSeconds(5);
 
 	// @formatter:off
+	@Autowired
 	public OrderService(
 			GenericCRUDServiceImpl genericCRUDService,
 			@Qualifier(SCHEDULER_NAME) TaskScheduler taskScheduler,
 			SessionFactoryImplementor sessionFactory,
-			GenericRepository genericRepository,
-			AuthenticationService authService) {
+			GenericRepository genericRepository/*,
+			AuthenticationService authService*/) {
 		super();
 		this.sessionFactory = sessionFactory;
 		this.genericCRUDService = genericCRUDService;
 		this.genericRepository = genericRepository;
 		this.taskScheduler = taskScheduler;
-		this.authService = authService;
+//		this.authService = authService;
 	}
 	// @formatter:on
 	public Result<Order> createOrder(Order order, boolean flushOnFinish) {
@@ -194,13 +195,16 @@ public class OrderService implements Service {
 			return Result.failed(UNABLE_TO_PROCESS_ITEMS);
 		}
 
-		Result<Integer> orderUpdate = genericRepository.update(Order.class, (root, query, builder) -> {
-			Operator operator = authService.getOperator();
+		return updateStatus(orderId, OrderStatus.PAID, flushOnFinish);
+	}
 
-			return query.set(root.get(_Order.status), OrderStatus.PAID)
-					.set(root.get(_Order.updatedTimestamp), LocalDateTime.now())
-					.set(root.get(_Order.updatedBy), operator).set(root.get(_Order.handledBy), operator);
-		}, (root, query, builder) -> builder.equal(root.get(_Order.id), orderId));
+	public Result<Integer> updateStatus(BigInteger orderId, OrderStatus requestedStatus, boolean flushOnFinish) {
+		HibernateHelper.useManualSession();
+
+		Result<Integer> orderUpdate = genericRepository.update(Order.class,
+				(root, query, builder) -> query.set(root.get(_Order.status), requestedStatus)
+						.set(root.get(_Order.updatedTimestamp), LocalDateTime.now()),
+				(root, query, builder) -> builder.equal(root.get(_Order.id), orderId));
 
 		if (!orderUpdate.isOk()) {
 			return Result.failed(UNABLE_TO_UPDATE_ORDER_STATUS);

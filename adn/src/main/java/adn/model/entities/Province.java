@@ -15,7 +15,7 @@ import javax.persistence.Table;
  */
 @javax.persistence.Entity
 @Table(name = "provinces")
-public class Province extends Entity implements NamedResource {
+public class Province extends PermanentEntity implements NamedResource {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -9,10 +9,13 @@ import static adn.helpers.HibernateHelper.useManualSession;
 import static adn.helpers.Utils.localDateTime;
 import static adn.helpers.Utils.Entry.uncheckedEntry;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -24,6 +27,8 @@ import java.util.stream.Stream;
 
 import org.hibernate.LockMode;
 import org.hibernate.Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -31,27 +36,36 @@ import org.springframework.web.multipart.MultipartFile;
 
 import adn.application.Common;
 import adn.application.Result;
+import adn.application.context.ContextProvider;
 import adn.application.context.builders.EntityBuilderProvider;
 import adn.application.context.builders.ValidatorFactory;
-import adn.controller.query.impl.ProductQuery;
+import adn.dao.generic.GenericRepository;
 import adn.dao.generic.ResultBatch;
 import adn.dao.specific.ProductCostRepository;
 import adn.dao.specific.ProductPriceRepository;
+import adn.dao.specific.ProductRepository;
+import adn.helpers.CollectionHelper;
 import adn.helpers.StringHelper;
 import adn.helpers.Utils;
 import adn.helpers.Utils.Entry;
 import adn.helpers.Utils.Wrapper;
 import adn.model.entities.Category;
+import adn.model.entities.Customer;
 import adn.model.entities.Item;
 import adn.model.entities.Product;
 import adn.model.entities.ProductPrice;
+import adn.model.entities.constants.ItemStatus;
 import adn.model.entities.id.ProductPriceId;
+import adn.model.entities.metadata._Item;
 import adn.model.entities.metadata._Product;
 import adn.model.entities.metadata._ProductCost;
 import adn.model.entities.metadata._ProductPrice;
 import adn.model.entities.validator.Validator;
 import adn.model.factory.authentication.Credential;
+import adn.model.factory.authentication.SourceMetadata;
+import adn.model.factory.authentication.dynamicmap.SourceMetadataFactory;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
+import adn.model.models.CartItem;
 import adn.service.entity.builder.EntityBuilder;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Service;
@@ -64,35 +78,38 @@ import adn.service.internal.ServiceResult;
 @org.springframework.stereotype.Service
 public class ProductService implements Service {
 
-//	private static final Logger logger = LoggerFactory.getLogger(ProductService.class);
+	private static final Logger logger = LoggerFactory.getLogger(ProductService.class);
 
 	private final ResourceService resourceService;
 	private final GenericCRUDServiceImpl crudService;
 	private final ValidatorFactory validatorFactory;
+	private final EntityBuilderProvider entityBuilderProvider;
+	private final GenericRepository genericRepository;
 	private final ProductPriceRepository productPriceRepository;
 	private final ProductCostRepository productCostRepository;
-	private final EntityBuilderProvider entityBuilderProvider;
+	private final ProductRepository productRepository;
 
 	private static final String MAXIMUM_IMAGES_AMOUNT_EXCEEDED = String.format("Cannot upload more than %d files",
-			_Product.MAXIMUM_IMAGES_AMOUNT);
-	private static final Specification<Product> PRODUCT_IS_NOT_LOCKED = (root, query, builder) -> builder
-			.isFalse(root.get(_Product.locked));
+			_Product.MAXIMUM_IMAGES_AMOUNT);;
 	private static final String UNMODIFIED_LOCK_STATE_TEMPLATE = "Product was already %s";
 	private static final String OVERLAPPED_PRICE_TEMPLATE = "Price for product %s from %s to %s has already exsited";
 	private static final String COSTS_NOT_FOUND_TEMPLATE = "Some of the following product costs were not found: %s";
-	private static final String PRICES_NOT_FOUND_TEMPLATE = "Some of the following product prices were not found: %s";
+	private static final String NOT_ENOUGH_ITEMS_TEMPLATE = "Not enough items for %s, requested %d items, only %d left";
 
 	@Autowired
 	public ProductService(ResourceService resourceService, GenericCRUDServiceImpl curdService,
 			ProductPriceRepository productPriceRepository, EntityBuilderProvider entityBuilderProvider,
-			ValidatorFactory validatorFactory, ProductCostRepository productCostRepository) {
+			ValidatorFactory validatorFactory, ProductCostRepository productCostRepository,
+			ProductRepository productRepository, GenericRepository genericRepository) {
 		super();
 		this.resourceService = resourceService;
 		this.crudService = curdService;
 		this.validatorFactory = validatorFactory;
+		this.genericRepository = genericRepository;
 		this.productPriceRepository = productPriceRepository;
 		this.productCostRepository = productCostRepository;
 		this.entityBuilderProvider = entityBuilderProvider;
+		this.productRepository = productRepository;
 	}
 
 	public Result<Product> createProduct(Product product, MultipartFile[] images, boolean flushOnFinish) {
@@ -189,6 +206,21 @@ public class ProductService implements Service {
 		return crudService.finish(Result.ok(product), flushOnFinish);
 	}
 
+	public List<Map<String, Object>> readAllProducts(Collection<String> columns, Pageable paging, Credential credential)
+			throws Exception {
+		return readAllProducts(null, null, columns, paging, credential);
+	}
+
+	public List<Map<String, Object>> readAllProducts(Serializable categoryIdentifier, String categoryIdentifierName,
+			Collection<String> columns, Pageable paging, Credential credential) throws Exception {
+		if (categoryIdentifierName == null) {
+			return crudService.readAll(Product.class, columns, paging, credential);
+		}
+
+		return crudService.readAllByAssociation(Product.class, Category.class, _Product.category,
+				categoryIdentifierName, categoryIdentifier, columns, paging, credential);
+	}
+
 	// @formatter:off
 	public List<Map<String, Object>> readOnSaleProducts(
 			Collection<String> columns,
@@ -198,25 +230,21 @@ public class ProductService implements Service {
 	}
 
 	public List<Map<String, Object>> readOnSaleProducts(
-			Long categoryIdentifier,
+			Serializable categoryIdentifier,
 			String categoryIdentifierName,
 			Collection<String> columns,
 			Pageable paging,
 			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		if (categoryIdentifier != null) {
-			return crudService.readAllByAssociation(
-					Product.class,
-					Category.class,
-					_Product.category,
-					categoryIdentifierName,
-					categoryIdentifier,
-					columns,
-					paging,
-					credential,
-					PRODUCT_IS_NOT_LOCKED);
+		SourceMetadata<Product> metadata = crudService.optionallyValidate(Product.class, credential, SourceMetadataFactory.unknownArrayCollection(Product.class, CollectionHelper.list(columns)));
+		List<Object[]> rows = categoryIdentifierName == null ?
+				productRepository.findOnSaleProducts(metadata.getColumns(), paging) :
+					productRepository.findOnSaleProducts(metadata.getColumns(), paging, (root, query, builder) -> builder.equal(root.get(_Product.category).get(categoryIdentifierName), categoryIdentifier));
+
+		if (rows.isEmpty()) {
+			return new ArrayList<>();
 		}
 
-		return crudService.readAll(Product.class, columns, PRODUCT_IS_NOT_LOCKED, paging, credential);
+		return crudService.resolveReadResults(Product.class, rows, credential, metadata);
 	}
 	// @formatter:on
 
@@ -241,12 +269,7 @@ public class ProductService implements Service {
 	private static final List<String> FETCHED_COST_COLUMNS = Arrays.asList(
 			StringHelper.join(Common.DOT, _ProductCost.id, _ProductCost.productId),
 			StringHelper.join(Common.DOT, _ProductCost.id, _ProductCost.providerId), _ProductCost.cost);
-	// provide only the attribute name since GenericRepository will resolve it's
-	// full path
-	private static final List<String> FETCHED_PRICE_COLUMNS = Arrays.asList(_ProductPrice.productId,
-			_ProductPrice.price);
 	private static final String MISSING_COST_TEMPLATE = "Product %d from Provider %s";
-	private static final String MISSING_PRICE_TEMPLATE = "Product %d";
 
 	public ResultBatch<Item> createItemsBatch(Collection<Item> batch, boolean flushOnFinish) {
 		if (batch.size() > GenericCRUDServiceImpl.MAXIMUM_BATCH_SIZE) {
@@ -310,21 +333,6 @@ public class ProductService implements Service {
 					.map(row -> Map.entry(uncheckedEntry((BigInteger) row[0], (UUID) row[1]), (BigDecimal) row[2]))
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 		}
-		/* ========================Prices fetch======================== */
-		List<Object[]> prices = productPriceRepository.findAllCurrents(tobeFetchedPrices, FETCHED_PRICE_COLUMNS);
-
-		if (prices.size() != tobeFetchedPrices.size()) {
-			Set<BigInteger> fetchedPrices = prices.stream().map(row -> (BigInteger) row[0]).collect(Collectors.toSet());
-
-			return ResultBatch.failed(String.format(PRICES_NOT_FOUND_TEMPLATE,
-					tobeFetchedPrices.stream().filter(productId -> !fetchedPrices.contains(productId))
-							.map(productId -> String.format(MISSING_PRICE_TEMPLATE, productId))
-							.collect(Collectors.joining(StringHelper.COMMON_JOINER))));
-		}
-
-		Map<BigInteger, BigDecimal> priceMap = prices.stream()
-				.map(row -> Map.entry((BigInteger) row[0], (BigDecimal) row[1]))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		EnumSet<Status> finalStatusSet = EnumSet.noneOf(Status.class);
 		// unwrap
 		Map<Utils.Entry<BigInteger, UUID>, BigDecimal> costMap = costMapWrapper.getValue();
@@ -333,8 +341,6 @@ public class ProductService implements Service {
 			try {
 				Item item = result.getInstance();
 				BigInteger productId = item.getProduct().getId();
-
-				item.setPrice(priceMap.get(productId));
 
 				if (item.getCost() == null) {
 					item.setCost(costMap.get(uncheckedEntry(productId, item.getProvider().getId())));
@@ -345,6 +351,7 @@ public class ProductService implements Service {
 
 				return Result.ok(item);
 			} catch (Exception e) {
+				e.printStackTrace();
 				finalStatusSet.add(Status.FAILED);
 				return Result.<Item>failed(e.getMessage());
 			}
@@ -353,24 +360,61 @@ public class ProductService implements Service {
 		return crudService.finish(session, resultBatch, finalStatusSet, flushOnFinish);
 	}
 
-	public List<Map<String, Object>> searchProduct(Collection<String> requestedColumns, Pageable pageable,
-			ProductQuery restQuery, Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		return crudService.readAll(Product.class, requestedColumns,
-				SpecificationUtils.hasNameLike(restQuery).or(hasIdLike(restQuery)), pageable, credential);
-	}
-
-	private static Specification<Product> hasIdLike(ProductQuery restQuery) {
-		return (root, query, builder) -> {
-			if (restQuery.getId() == null || !StringHelper.hasLength(restQuery.getId().getLike())) {
-				return null;
-			}
-
-			return builder.like(root.get("id"), restQuery.getId().getLike());
-		};
-	}
-
 	private enum LockState {
 		locked, unlocked
+	}
+
+	private static final Specification<Item> ITEM_IS_AVAILABLE = (root, query, builder) -> builder
+			.equal(root.get(_Item.status), ItemStatus.AVAILABLE);
+
+	public Result<Void> updateCart(List<CartItem> cartItems, boolean flushOnFinish) {
+		useManualSession();
+
+		if (cartItems.isEmpty()) {
+			doUpdateCart(Collections.emptyList());
+
+			return Result.ok(null);
+		}
+
+		Result<Void> result = new Result<>(null);
+		List<Item> fetchedItems = cartItems.stream().flatMap(cartItem -> {
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format("Fetching items for %s", cartItem));
+			}
+			// @formatter:off
+			List<Item> items = genericRepository
+					.findAll(
+							Item.class,
+							Arrays.asList(_Item.id),
+							ITEM_IS_AVAILABLE.and((root, query, builder) -> builder.and(
+									builder.equal(root.get(_Item.product).get(_Product.id), cartItem.getProductId()),
+									builder.equal(root.get(_Item.color), cartItem.getColor()),
+									builder.equal(root.get(_Item.namedSize), cartItem.getNamedSize()))),
+							Pageable.ofSize(cartItem.getQuantity()))
+					.stream().map(row -> new Item((BigInteger) row[0])).collect(Collectors.toList());
+			// @formatter:on
+			if (items.size() < cartItem.getQuantity()) {
+				result.bad(cartItem.toString(),
+						String.format(NOT_ENOUGH_ITEMS_TEMPLATE, cartItem, cartItem.getQuantity(), items.size()));
+				return Stream.of();
+			}
+
+			return items.stream();
+		}).collect(Collectors.toList());
+
+		if (!result.isOk()) {
+			return result;
+		}
+
+		doUpdateCart(fetchedItems);
+
+		return crudService.finish(result, flushOnFinish);
+	}
+
+	private void doUpdateCart(List<Item> items) {
+		Customer customer = getCurrentSession().load(Customer.class, ContextProvider.getPrincipalName());
+
+		customer.setCart(items);
 	}
 
 }

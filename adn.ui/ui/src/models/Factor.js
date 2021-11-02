@@ -61,14 +61,12 @@ export class Product extends Factor {
 
 		const {
 			id = "",
-			price = 0.0,
 			category = {},
 			images = [],
 			description = ""
 		} = props;
 
 		this.id = id;
-		this.price = price;
 		this.category = category;
 		this.images = images;
 		this.description = description;
@@ -76,11 +74,6 @@ export class Product extends Factor {
 
 	static validator = {
 		...Factor.validator,
-		price: (price) => {
-			const ok = !isNaN(price) && price >= 0;
-
-			return [ok, !ok ? "Price must start from 0" : null]
-		},
 		category: (category) => {
 			const ok = category != null && typeof category === 'object';
 

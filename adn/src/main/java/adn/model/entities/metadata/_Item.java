@@ -32,10 +32,16 @@ public class _Item extends _PermanentEntity implements _AuditableResource {
 	
 	public static final String provider = "provider";
 	public static final String $provider = "provider_id";
-	
-	public static final String price = "price";
 
 	public static final String orders = "orders";
+	
+	public static final String jnOrderDetails = "order_details";
+	public static final String jnOrderDetailsId = "item_id";
+	
+	public static final String jnCart = "carts";
+	public static final String jnCartId = "item_id";
+		
+	public static final String indexName = "color, namedSize, status";
 	
 	public static final int MAXIMUM_NAMED_SIZE_LENGTH = 4;
 	public static final int MAXIMUM_NAMED_COLOR_LENGTH = 50;

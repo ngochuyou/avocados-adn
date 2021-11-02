@@ -29,6 +29,7 @@ import javax.persistence.TableGenerator;
 import adn.application.Common;
 import adn.model.entities.constants.ItemStatus;
 import adn.model.entities.constants.NamedSize;
+import adn.model.entities.metadata._Customer;
 import adn.model.entities.metadata._Item;
 import adn.model.entities.metadata._Order;
 import adn.model.entities.metadata._Product;
@@ -39,13 +40,13 @@ import adn.model.entities.metadata._Provider;
  *
  */
 @javax.persistence.Entity
-@Table(name = "items", indexes = @Index(columnList = _Item.$product))
+@Table(name = "items", indexes = @Index(columnList = _Item.indexName))
 public class Item extends PermanentEntity implements AuditableResource<BigInteger> {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.TABLE, generator = SHARED_TABLE_GENERATOR)
 	@TableGenerator(name = SHARED_TABLE_GENERATOR, initialValue = Common.CROCKFORD_10A
-			- 1, table = Common.SHARED_TABLE_GENERATOR_TABLENAME)
+			- 1, table = Common.SHARED_TABLE_GENERATOR_TABLENAME, allocationSize = 100)
 	@Column(updatable = false, columnDefinition = Common.MYSQL_BIGINT_COLUMN_DEFINITION)
 	private BigInteger id;
 
@@ -75,9 +76,6 @@ public class Item extends PermanentEntity implements AuditableResource<BigIntege
 	@JoinColumn(referencedColumnName = _Provider.$id)
 	private Provider provider;
 
-	@Column(nullable = false, columnDefinition = Common.MYSQL_CURRENCY_COLUMN_DEFINITION)
-	private BigDecimal price;
-
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(referencedColumnName = _Product.$id, columnDefinition = Common.MYSQL_BIGINT_COLUMN_DEFINITION)
 	private Product product;
@@ -87,11 +85,27 @@ public class Item extends PermanentEntity implements AuditableResource<BigIntege
 	// @formatter:off
 	@ManyToMany(fetch = FetchType.LAZY)
 	@JoinTable(
-			name = "order_details",
-			joinColumns = @JoinColumn(name = "item_id", referencedColumnName = _Item.$id),
-			inverseJoinColumns = @JoinColumn(name = "order_id", referencedColumnName = _Order.$id))
+			name = _Item.jnOrderDetails,
+			joinColumns = @JoinColumn(name = _Item.jnOrderDetailsId, referencedColumnName = _Item.$id),
+			inverseJoinColumns = @JoinColumn(name = _Order.jnOrderDetailsId, referencedColumnName = _Order.$id))
 	private List<Order> orders;
+
+	@ManyToMany(fetch = FetchType.LAZY)
+	@JoinTable(name = _Item.jnCart,
+			joinColumns = @JoinColumn(name = _Item.jnCartId, referencedColumnName = _Item.$id),
+			inverseJoinColumns = @JoinColumn(name = _Customer.jnCartId, referencedColumnName = _Customer.$id))
+	private List<Customer> cart;
 	// @formatter:on
+
+	public Item(BigInteger id) {
+		super();
+		this.id = id;
+	}
+
+	public Item() {
+		super();
+	}
+
 	@Override
 	public BigInteger getId() {
 		return id;
@@ -178,20 +192,28 @@ public class Item extends PermanentEntity implements AuditableResource<BigIntege
 		this.auditInformations = Optional.ofNullable(auditInformations).orElse(new AuditInformations());
 	}
 
-	public BigDecimal getPrice() {
-		return price;
-	}
-
-	public void setPrice(BigDecimal price) {
-		this.price = price;
-	}
-
 	public Product getProduct() {
 		return product;
 	}
 
 	public void setProduct(Product product) {
 		this.product = product;
+	}
+
+	public List<Order> getOrders() {
+		return orders;
+	}
+
+	public void setOrders(List<Order> orders) {
+		this.orders = orders;
+	}
+
+	public List<Customer> getCart() {
+		return cart;
+	}
+
+	public void setCart(List<Customer> cart) {
+		this.cart = cart;
 	}
 
 }

@@ -1,6 +1,6 @@
 {
 	"server": {
-		"url": "http://192.168.100.10:8080",
+		"url": "http://192.168.100.7:8080",
 		"auth" : {
 			"token_url": "/auth/token"
 		},
@@ -26,23 +26,26 @@
 				"url": "/dashboard/provider",
 				"list": {
 					"mapping": "/dashboard/provider/list",
-					"url": "/dashboard/provider/list",
-					"name": "list"
+					"url": "/dashboard/provider/list"
 				},
-				"new": {
-					"mapping": "/dashboard/provider/new",
-					"url": "/dashboard/provider/new",
-					"name": "new"
+				"creation": {
+					"mapping": "/dashboard/provider/creation",
+					"url": "/dashboard/provider/creation"
 				},
-				"costSubmit": {
-					"mapping": "/dashboard/provider/cost-submit",
-					"url": "/dashboard/provider/cost-submit",
-					"name": "cost-submit"
+				"costs": {
+					"mapping": "/dashboard/provider/costs/:productId?",
+					"url": "/dashboard/provider/costs"
+				}
+			},
+			"product": {
+				"mapping": "/dashboard/product/:view?",
+				"creation": {
+					"mapping": "/dashboard/product/creation",
+					"url": "/dashboard/product/creation"
 				},
-				"costList": {
-					"mapping": "/dashboard/provider/cost-list",
-					"url": "/dashboard/provider/cost-list",
-					"name": "cost-list"
+				"prices": {
+					"mapping": "/dashboard/product/prices/:productId?",
+					"url": "/dashboard/product/prices"
 				}
 			}
 		},
@@ -51,12 +54,20 @@
 			"url": "/shop"
 		},
 		"productView": {
-			"mapping": "/product/:id",
-			"url": "/product"
+			"mapping": "/p/:productId",
+			"url": "/p"
 		},
 		"notfound": {
 			"mapping": "/notfound",
 			"url": "/notfound"
+		},
+		"home": {
+			"mapping": "/:category?",
+			"url": ""
+		},
+		"favorites": {
+			"mapping": "/favorites",
+			"url": "/favorites"
 		}
 	}
 }

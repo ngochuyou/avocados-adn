@@ -134,7 +134,7 @@ public class BaseController {
 	}
 
 	@SuppressWarnings("unchecked")
-	protected <T extends DomainEntity> ResponseEntity<?> send(Result<T> result) throws Exception {
+	protected <T extends DomainEntity> ResponseEntity<?> sendAndProduce(Result<T> result) throws Exception {
 		if (result.isOk()) {
 			T instance = result.getInstance();
 
@@ -150,6 +150,18 @@ public class BaseController {
 		}
 
 		return fails(result.getMessages());
+	}
+
+	protected ResponseEntity<?> send(Result<?> result) {
+		return send(result, result.getInstance());
+	}
+
+	protected ResponseEntity<?> send(Result<?> result, Object bodyIfSuccess) {
+		if (result.isOk()) {
+			return ResponseEntity.ok(bodyIfSuccess);
+		}
+
+		return result.getStatus() == Status.BAD ? bad(result.getMessages()) : fails(result.getMessages());
 	}
 
 	protected <T> ResponseEntity<?> makeStaleWhileRevalidate(T body, long maxAge, TimeUnit maxAgeDurationUnit,

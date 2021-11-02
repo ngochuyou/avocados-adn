@@ -33,7 +33,7 @@ public class UserValidator<T extends User> extends AbstractPermanentEntityValida
 	// @formatter:off
 	private static final String INVALID_USERNAME = String.format(
 			"Username can only contain alphabetic, numeric, %s characters and %s",
-			symbolNamesOf('.', '_', '@', '#', '$', '%', '-', '\'', '+', '=', '>', '<'),
+			symbolNamesOf('.', '-', '_', '@', '#', '$', '\'', '!', '*', '&'),
 			hasLength(null, _User.MINIMUM_USERNAME_LENGTH, _User.MAXIMUM_USERNAME_LENGTH));
 	private static final String INVALID_EMAIL = invalid("email");
 	private static final String TAKEN_EMAIL = "Email was taken";
@@ -70,17 +70,21 @@ public class UserValidator<T extends User> extends AbstractPermanentEntityValida
 			result.bad(_User._id, INVALID_USERNAME);
 		}
 
-		if (!StringHelper.isEmail(instance.getEmail())) {
-			result.bad(_User.email, INVALID_EMAIL);
-		} else {
-			// @formatter:off
-			if (genericRepository.count(User.class,
-					(root, query, builder) -> builder.and(
-							builder.equal(root.get(_User.email), instance.getEmail()),
-							builder.notEqual(root.get(_User.id), instance.getId()))) != 0) {
-				result.bad(_User.email, TAKEN_EMAIL);
+		String email = instance.getEmail();
+
+		if (StringHelper.hasLength(email)) {
+			if (!StringHelper.isEmail(email)) {
+				result.bad(_User.email, INVALID_EMAIL);
+			} else {
+				// @formatter:off
+				if (genericRepository.count(User.class,
+						(root, query, builder) -> builder.and(
+								builder.equal(root.get(_User.email), email),
+								builder.notEqual(root.get(_User.id), instance.getId()))) != 0) {
+					result.bad(_User.email, TAKEN_EMAIL);
+				}
+				// @formatter:on
 			}
-			// @formatter:on
 		}
 
 		if (!NAME_PATTERN.matcher(instance.getFirstName()).matches()) {

@@ -15,6 +15,7 @@ import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.stereotype.Component;
 
 import adn.application.context.ContextProvider;
+import adn.application.context.internal.ContextBuilder;
 import adn.helpers.TypeHelper;
 import adn.model.DomainEntity;
 import adn.model.Generic;
@@ -28,7 +29,7 @@ import adn.model.models.Model;
 
 @Component(EntityExtractorProviderImpl.NAME)
 @Primary
-public class EntityExtractorProviderImpl implements PojoEntityExtractorProvider {
+public class EntityExtractorProviderImpl implements PojoEntityExtractorProvider, ContextBuilder {
 
 	public static final String NAME = "entityExtractorProviderImpl";
 	private static final String ENTITY_EXTRACTOR_PACKAGE = "adn.model.factory.extraction";

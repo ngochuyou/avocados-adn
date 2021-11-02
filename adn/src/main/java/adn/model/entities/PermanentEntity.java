@@ -8,6 +8,8 @@ import javax.persistence.MappedSuperclass;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import adn.model.entities.metadata._PermanentEntity;
+
 /**
  * @author Ngoc Huy
  *
@@ -18,7 +20,7 @@ public abstract class PermanentEntity extends Entity {
 	@Column(nullable = false)
 	private Boolean active;
 
-	@JsonProperty("active")
+	@JsonProperty(_PermanentEntity.active)
 	public Boolean isActive() {
 		return active;
 	}

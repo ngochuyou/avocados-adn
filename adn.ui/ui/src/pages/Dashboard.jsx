@@ -1,6 +1,7 @@
 import { useContext, createContext, useState } from 'react';
 import { Link, Route } from 'react-router-dom';
 
+import { ContextProvider as NavbarContextProvider } from '../components/dashboard/Navbar';
 import { useAuth } from '../hooks/authentication-hooks';
 
 import { profile, routes } from '../config/default';
@@ -34,63 +35,64 @@ export default function Dashboard() {
 	const { principal } = useAuth();
 	const {
 		dashboard: {
-			provider: {
-				mapping: providerMapping
-			}
+			provider: { mapping: providerMapping },
+			product: { mapping: productMapping }
 		}
 	} = routes;
 
 	if (profile.mode === 'DEV' || (principal && (principal.role === Account.Role.HEAD || principal.role === Account.Role.PERSONNEL))) {
 		return (
-			<SidebarContextProvider>
-				<div className="uk-grid-collapse" uk-grid="">
-					<div className="uk-width-1-5 backgroundf uk-position-relative" uk-height-viewport="expand: true">
-						<Sidebar />
-					</div>
-					<div className="uk-width-4-5 max-height-view uk-overflow-auto">
-						<div>
-							<StockScope>
-								<Route
-									path="/dashboard/stock"
-									render={props => (
-										<StockBoard
-											{ ...props }
-										/>
-									)}
-								/>
-							</StockScope>
-							<SaleScope>
-								<Route
-									path={`${providerMapping}`}
-									render={props => (
-										<ProviderBoard
-											{ ...props }
-										/>
-									)}
-								/>
-								<Route
-									path="/dashboard/product"
-									render={props => (
-										<ProductBoard
-											{ ...props }
-										/>
-									)}
-								/>
-							</SaleScope>
-							<PersonnelScope>
-								<Route
-									path="/dashboard/department"
-									render={props => (
-										<DepartmentBoard
-											{ ...props }
-										/>
-									)}
-								/>
-							</PersonnelScope>
+			<NavbarContextProvider>
+				<SidebarContextProvider>
+					<div className="uk-grid-collapse" uk-grid="">
+						<div className="uk-width-1-5 backgroundf uk-position-relative" uk-height-viewport="expand: true">
+							<Sidebar />
+						</div>
+						<div className="uk-width-4-5 max-height-view uk-overflow-auto">
+							<div>
+								<StockScope>
+									<Route
+										path="/dashboard/stock"
+										render={props => (
+											<StockBoard
+												{ ...props }
+											/>
+										)}
+									/>
+								</StockScope>
+								<SaleScope>
+									<Route
+										path={`${providerMapping}`}
+										render={props => (
+											<ProviderBoard
+												{ ...props }
+											/>
+										)}
+									/>
+									<Route
+										path={`${productMapping}`}
+										render={props => (
+											<ProductBoard
+												{ ...props }
+											/>
+										)}
+									/>
+								</SaleScope>
+								<PersonnelScope>
+									<Route
+										path="/dashboard/department"
+										render={props => (
+											<DepartmentBoard
+												{ ...props }
+											/>
+										)}
+									/>
+								</PersonnelScope>
+							</div>
 						</div>
 					</div>
-				</div>
-			</SidebarContextProvider>
+				</SidebarContextProvider>
+			</NavbarContextProvider>
 		);
 	}
 
@@ -103,10 +105,12 @@ function Sidebar() {
 		dashboard: {
 			provider: {
 				mapping: providerBoardMapping,
-				list: { mapping: providerListMapping },
-				new: { mapping: submitProviderMapping },
-				costSubmit: { mapping: submitProductCostMapping },
-				costList: { mapping: productCostsMapping },
+				costs: { url: productCostsUrl }
+			},
+			product: {
+				mapping: productBoardMapping,
+				prices: { url: productPricesUrl },
+				creation: { url: productCreationUrl }
 			}
 		}
 	} = routes;
@@ -126,11 +130,25 @@ function Sidebar() {
 					</li>
 				</StockScope>
 				<SaleScope>
-					<li>
+					<li className="uk-parent">
 						<Link
-							to="/dashboard/product"
-							className="uk-link-reset"
+							to={productBoardMapping}
+							className="uk-link-reset uk-parent"
 						>Product</Link>
+						<ul className="uk-nav-sub">
+							<li>
+								<Link
+									to={productCreationUrl}
+									className="uk-link-reset uk-parent"
+								>Create Product</Link>
+							</li>
+							<li>
+								<Link
+									to={productPricesUrl}
+									className="uk-link-reset uk-parent"
+								>Prices</Link>
+							</li>
+						</ul>
 					</li>
 					<li className="uk-parent">
 						<Link
@@ -140,27 +158,9 @@ function Sidebar() {
 						<ul className="uk-nav-sub">
 							<li>
 								<Link
-									to={providerListMapping}
+									to={productCostsUrl}
 									className="uk-link-reset uk-parent"
-								>Provider list</Link>
-							</li>
-							<li>
-								<Link
-									to={submitProviderMapping}
-									className="uk-link-reset uk-parent"
-								>New Provider</Link>
-							</li>
-							<li>
-								<Link
-									to={submitProductCostMapping}
-									className="uk-link-reset uk-parent"
-								>Submit Product cost</Link>
-							</li>
-							<li>
-								<Link
-									to={productCostsMapping}
-									className="uk-link-reset uk-parent"
-								>Product costs</Link>
+								>Costs</Link>
 							</li>
 						</ul>
 					</li>

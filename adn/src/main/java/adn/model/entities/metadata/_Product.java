@@ -29,12 +29,18 @@ public class _Product extends _FullyAuditedEntity {
 
 	public static final String category = "category";
 
-	public static final String items = "items";
+	public static final String costs = "costs";
+	
+	public static final String prices = "prices";
+	
+	public static final String indexName = "active, locked";
+
 	// _Category.CODE_LENGTH + DELIMITER
 	public static final int MAXIMUM_CODE_LENGTH = 255;
 	public static final int MAXIMUM_MATERIAL_LENGTH = 50;
 	public static final int MAXIMUM_IMAGES_AMOUNT = 20;
-	public static final int MAXIMUM_IMAGES_COLUMN_LENGTH = MAXIMUM_IMAGES_AMOUNT * DefaultResourceIdentifierGenerator.IDENTIFIER_LENGTH;
+	public static final int MAXIMUM_IMAGES_COLUMN_LENGTH = MAXIMUM_IMAGES_AMOUNT
+			* DefaultResourceIdentifierGenerator.IDENTIFIER_LENGTH;
 	// @formatter:off
 	public static final Pattern MATERIAL_PATTERN = Pattern.compile(
 			String.format(
