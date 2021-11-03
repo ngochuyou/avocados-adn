@@ -75,9 +75,8 @@ public class UserBuilder<T extends User> extends AbstractPermanentEntityBuilder<
 		// leave out model's password if there's no need of password editing
 		if (StringHelper.hasLength(model.getPassword())) {
 			persistence.setPassword(passwordEncoder.encode(model.getPassword()));
+			persistence.setUpdatedDate(LocalDateTime.now());
 		}
-
-		persistence.setUpdatedDate(LocalDateTime.now());
 
 		return persistence;
 	}

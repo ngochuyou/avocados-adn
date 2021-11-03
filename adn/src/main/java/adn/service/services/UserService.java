@@ -3,26 +3,55 @@ package adn.service.services;
 import static adn.application.Result.bad;
 import static adn.application.Result.ok;
 import static adn.application.context.ContextProvider.getCurrentSession;
+import static adn.application.context.ContextProvider.getPrincipalName;
+import static adn.helpers.HibernateHelper.useManualSession;
 
 import java.io.Serializable;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Subquery;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.multipart.MultipartFile;
 
 import adn.application.Common;
 import adn.application.Result;
 import adn.application.context.ContextProvider;
+import adn.dao.generic.GenericRepository;
+import adn.dao.specific.UserRepository;
 import adn.model.entities.Customer;
 import adn.model.entities.Head;
+import adn.model.entities.Item;
 import adn.model.entities.Personnel;
+import adn.model.entities.Product;
 import adn.model.entities.User;
+import adn.model.entities.constants.ItemStatus;
+import adn.model.entities.metadata._Customer;
+import adn.model.entities.metadata._Item;
+import adn.model.entities.metadata._Product;
 import adn.model.entities.metadata._User;
+import adn.model.factory.authentication.Credential;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
+import adn.model.models.CartItem;
 import adn.service.DomainEntityServiceObserver;
 import adn.service.ObservableDomainEntityService;
 import adn.service.internal.ResourceService;
@@ -33,14 +62,19 @@ import adn.service.internal.ServiceResult;
 @org.springframework.stereotype.Service
 public class UserService implements Service, ObservableDomainEntityService<User> {
 
+	private static final Logger logger = LoggerFactory.getLogger(ProductService.class);
+
 	public static final String UNKNOWN_USER_FIRSTNAME = "APP";
 	public static final String UNKNOWN_USER_LASTNAME = "USER";
 	protected static final String INVALID_ROLE = "Invalid role";
+	private static final String NOT_ENOUGH_ITEMS_TEMPLATE = "Not enough items for %s, requested %d items, only %d left";
 
 	private final Map<String, DomainEntityServiceObserver<User>> observers = new HashMap<>(0);
 
-	protected final GenericCRUDServiceImpl crudService;
-	protected final ResourceService resourceService;
+	private final GenericCRUDServiceImpl crudService;
+	private final ResourceService resourceService;
+	private final GenericRepository genericRepository;
+	private final UserRepository userRepository;
 	// @formatter:off
 	private final Map<Role, Class<? extends User>> roleClassMap = Map.of(
 			Role.HEAD, Head.class,
@@ -51,11 +85,12 @@ public class UserService implements Service, ObservableDomainEntityService<User>
 	public static final String DEFAULT_ACCOUNT_PHOTO_NAME = "1619973416467_0c46022.png";
 	// keep this constructor
 	@Autowired
-	public UserService(
-			ResourceService resourceService,
-			GenericCRUDServiceImpl crudService) {
+	public UserService(ResourceService resourceService,
+			GenericCRUDServiceImpl crudService, UserRepository userRepository, GenericRepository genericRepository) {
 		this.resourceService = resourceService;
 		this.crudService = crudService;
+		this.genericRepository = genericRepository;
+		this.userRepository = userRepository;
 	}
 	// @formatter:on
 	@SuppressWarnings("unchecked")
@@ -189,4 +224,149 @@ public class UserService implements Service, ObservableDomainEntityService<User>
 		observers.put(observer.getId(), observer);
 	}
 
+	public List<Map<String, Object>> readCustomerCart(List<String> productColumns, List<String> itemColumns,
+			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
+		Map<BigInteger, BigInteger> cart = userRepository
+				.findCustomerCart(getPrincipalName(), (root, query, builder) -> {
+					Join<Customer, Item> itemJoin = root.join(_Customer.cart);
+
+					return Arrays.asList(itemJoin.get(_Item.id), itemJoin.join(_Item.product).get(_Product.id));
+				}).stream().collect(Collectors.toMap(pair -> (BigInteger) pair[0], pair -> (BigInteger) pair[1]));
+
+		if (cart.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		List<Map<String, Object>> producedItems = crudService.readAll(Item.class, itemColumns, credential,
+				(metadata) -> genericRepository.findAll(Item.class, metadata.getColumns(),
+						(root, query, builder) -> builder.in(root.get(_Item.id)).value(cart.keySet())));
+		Map<BigInteger, Map<String, Object>> productsMap = crudService
+				.readAll(Product.class, productColumns, credential,
+						(metadata) -> genericRepository.findAll(Product.class, metadata.getColumns(),
+								(root, query, builder) -> builder.in(root.get(_Product.id))
+										.value(new HashSet<>(cart.values()))))
+				.stream().collect(HashMap<BigInteger, Map<String, Object>>::new,
+						(map, model) -> map.put((BigInteger) model.get(_Product.id), model), HashMap::putAll);
+
+		producedItems.stream().forEach(item -> {
+			item.put(_Item.product, productsMap.get(cart.get(item.get(_Item.id))));
+		});
+
+		return producedItems;
+	}
+
+	private static final Specification<Item> ITEM_IS_AVAILABLE = (root, query, builder) -> builder
+			.equal(root.get(_Item.status), ItemStatus.AVAILABLE);
+
+	public Result<Void> updateCart(String customerId, List<CartItem> cartItems, boolean flushOnFinish) {
+		useManualSession();
+
+		if (cartItems.isEmpty()) {
+			doUpdateCart(Collections.emptySet(), customerId);
+
+			return Result.ok(null);
+		}
+
+		Result<Void> result = new Result<>(null);
+		Set<Item> fetchedItems = cartItems.stream().flatMap(cartItem -> {
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format("Fetching items for %s", cartItem));
+			}
+			// @formatter:off
+			Set<Item> items = genericRepository
+					.findAll(
+							Item.class,
+							Arrays.asList(_Item.id),
+							ITEM_IS_AVAILABLE.and((root, query, builder) -> builder.and(
+									builder.equal(root.get(_Item.product).get(_Product.id), cartItem.getProductId()),
+									builder.equal(root.get(_Item.color), cartItem.getColor()),
+									builder.equal(root.get(_Item.namedSize), cartItem.getNamedSize()))),
+							Pageable.ofSize(cartItem.getQuantity()))
+					.stream().map(row -> new Item((BigInteger) row[0])).collect(Collectors.toSet());
+			// @formatter:on
+			if (items.size() < cartItem.getQuantity()) {
+				result.bad(cartItem.toString(),
+						String.format(NOT_ENOUGH_ITEMS_TEMPLATE, cartItem, cartItem.getQuantity(), items.size()));
+				return Stream.of();
+			}
+
+			return items.stream();
+		}).collect(Collectors.toSet());
+
+		if (!result.isOk()) {
+			return result;
+		}
+
+		doUpdateCart(fetchedItems, customerId);
+
+		return crudService.finish(result, flushOnFinish);
+	}
+
+	private void doUpdateCart(Set<Item> items, String customerId) {
+		Customer customer = getCurrentSession().load(Customer.class, customerId);
+
+		customer.setCart(items);
+	}
+
+	public Result<List<BigInteger>> addToCart(CartItem cartItem, String customerId) {
+		// @formatter:off
+		Set<Item> items = genericRepository
+				.findAll(
+						Item.class,
+						Arrays.asList(_Item.id),
+						ITEM_IS_AVAILABLE.and((root, query, builder) -> {
+							Subquery<BigInteger> subQuery = query.subquery(BigInteger.class);
+							Root<Customer> customerRoot = subQuery.from(Customer.class);
+							Join<Customer, Item> cartJoin = customerRoot.join(_Customer.cart);
+							
+							subQuery.select(cartJoin.get(_Item.id))
+								.where(builder.and(
+										builder.equal(customerRoot.get(_Customer.id), customerId),
+										builder.equal(cartJoin.get(_Item.product).get(_Product.id), cartItem.getProductId())));
+
+							return builder.and(
+									builder.equal(root.get(_Item.product).get(_Product.id), cartItem.getProductId()),
+									Optional.ofNullable(cartItem.getColor())
+										.map(color -> builder.equal(root.get(_Item.color), color))
+										.orElse(builder.conjunction()),
+									Optional.ofNullable(cartItem.getNamedSize())
+										.map(size -> builder.equal(root.get(_Item.namedSize), size))
+										.orElse(builder.conjunction()),
+									// we have to use root here
+									builder.not(builder.in(root.get(_Item.id)).value(subQuery)));
+						}),
+						Pageable.ofSize(cartItem.getQuantity()))
+				.stream().map(row -> new Item((BigInteger) row[0])).collect(Collectors.toSet());
+		// @formatter:on
+		if (items.size() < cartItem.getQuantity()) {
+			return Result.bad(String.format(NOT_ENOUGH_ITEMS_TEMPLATE, cartItem, cartItem.getQuantity(), items.size()));
+		}
+
+		Set<Item> cart = userRepository
+				.findCustomerCart(customerId,
+						(root, query, builder) -> Arrays.asList(root.join(_Customer.cart).get(_Item.id)))
+				.stream().map(row -> new Item((BigInteger) row[0])).collect(Collectors.toSet());
+
+		cart.addAll(items);
+		doUpdateCart(cart, customerId);
+
+		return Result.ok(items.stream().map(Item::getId).collect(Collectors.toList()));
+	}
+
+	public Result<Void> removeFromCart(List<BigInteger> itemIds, String customerId) {
+		try {
+			// @formatter:off
+			doUpdateCart(userRepository
+					.findCustomerCart(customerId, (root, query, builder) -> Arrays.asList(root.join(_Customer.cart).get(_Item.id)))
+						.stream()
+						.map(row -> new Item((BigInteger) row[0]))
+						.filter(item -> !itemIds.contains(item.getId()))
+						.collect(Collectors.toSet()),
+					customerId);
+			// @formatter:on
+			return Result.ok(null);
+		} catch (Exception e) {
+			return Result.failed(e.getMessage());
+		}
+	}
 }

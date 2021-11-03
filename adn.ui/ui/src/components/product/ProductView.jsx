@@ -1,15 +1,19 @@
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
+import Account from '../../models/Account';
+
 import { useProduct, useCart } from '../../hooks/product-hooks';
+import { useAuth } from '../../hooks/authentication-hooks';
 
 import { getProductPrices, obtainProduct, getItemsList } from '../../actions/product';
+import { addCart } from '../../actions/account';
 
 import Navbar from '../utils/Navbar';
 import { DomainProductImage } from '../utils/Gallery'
 import Rating from '../utils/Rating.jsx';
 
-import { formatVND, hasLength, asIf } from '../../utils';
+import { asIf, formatVND, hasLength } from '../../utils';
 
 export default function ProductView() {
 	const { productId } = useParams();
@@ -20,6 +24,7 @@ export default function ProductView() {
 		mergeProducts, mergePrices
 	} = useProduct();
 	const { addItem } = useCart();
+	const { principal } = useAuth();
 
 	useEffect(() => {
 		if (!hasLength(productId)) {
@@ -71,7 +76,7 @@ export default function ProductView() {
 
 	const product = productMap[productId];
 
-	if (product == null) {
+	if (product == null || product.items == null) {
 		return (
 			<div>
 				<Navbar />
@@ -80,6 +85,24 @@ export default function ProductView() {
 				</h3>
 			</div>
 		);
+	}
+
+	const addToCart = async (product, color, namedSize) => {
+		const [addedItemIds, err] = await addCart({
+			productId: product.id,
+			color, namedSize,
+			quantity: 1
+		});
+
+		if (err) {
+			console.error(err);
+			return;
+		}
+		// we're only adding one item
+		addItem([{
+			id: addedItemIds[0],
+			product, color, namedSize
+		}]);
 	}
 
 	return (
@@ -146,7 +169,7 @@ export default function ProductView() {
 								</span>
 							</div>
 							<div className="uk-margin">
-								<table className="uk-table uk-text-center">
+								<table className="uk-table uk-table-middle uk-text-center">
 									<thead>
 										<tr>
 											<th>Color</th>
@@ -157,13 +180,12 @@ export default function ProductView() {
 									</thead>
 									<tbody>
 									{
-										asIf(product.items != null)
-										.then(() => product.items.map((item, key) => (
+										product.items.map((item, key) => (
 											<tr key={key}>
 												<td>
 													<div
 														style={{height: "40px", width: "40px"}}
-														className="uk-box-shadow-large"
+														className="uk-box-shadow-large uk-border-circle uk-overflow-hidden"
 													>
 														<div
 															style={{backgroundColor: item.color}}
@@ -178,15 +200,19 @@ export default function ProductView() {
 													<label className="uk-label backgroundf">{`${item.quantity} left`}</label>
 												</td>
 												<td uk-tooltip="Add to your cart">
-													<button
-														onClick={() => addItem(product, item.color, item.namedSize)}
-														uk-icon="icon: cart"
-														className="uk-icon-button"
-													></button>
+												{
+													asIf(principal != null && principal.role === Account.Role.CUSTOMER)
+													.then(() => (
+														<button
+															onClick={() => addToCart(product, item.color, item.namedSize)}
+															uk-icon="icon: cart"
+															className="uk-icon-button"
+														></button>
+													)).else()
+												}
 												</td>
 											</tr>
-										)))
-										.else(() => <tr><td className="uk-text-small uk-text-muted">Nothing found</td></tr>)
+										))
 									}
 									</tbody>
 								</table>

@@ -36,6 +36,11 @@ public class Result<T> {
 		this.instance = instance;
 		this.messages = messageSet;
 	}
+	
+	public <E> Result(Result<E> other, T instance) {
+		this.status = other.status;
+		this.messages = other.messages;
+	}
 
 	public Result<T> success() {
 		this.status = OK;

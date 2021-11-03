@@ -1,7 +1,7 @@
 import { useEffect, createContext, useContext, useCallback } from 'react';
 import { useDispatch } from './hooks';
 
-import { hasLength, isString, isObj, locateBookmarks, mergeBookmarks, atom } from '../utils';
+import { hasLength, isObj, locateBookmarks, mergeBookmarks, atom } from '../utils';
 
 const GlobalProductContext = createContext();
 
@@ -207,8 +207,6 @@ const CART_STORE = {
 const SET_CART_ITEMS = "SET_CART_ITEMS";
 const ADD_CART_ITEM = "ADD_CART_ITEM";
 
-const identifyItem = (product, color, namedSize) => `${product.id}-${color}-${namedSize}`;
-
 const CART_DISPATCHERS = {
 	SET_CART_ITEMS: (payload, oldState) => {
 		if (Array.isArray(payload)) {
@@ -221,33 +219,13 @@ const CART_DISPATCHERS = {
 		}
 	},
 	ADD_CART_ITEM: (payload, oldState) => {
-		const { product, color, namedSize } = payload;
-		let items = { ...oldState.items };
-		const itemId = identifyItem(product, color, namedSize);
+		const items = {...oldState.items};
 
-		if (items[itemId] != null) {
-			return {
-				...oldState,
-				items: {
-					...items,
-					[itemId]: {
-						...items[itemId],
-						quantity: items[itemId].quantity + 1
-					}
-				}
-			};
-		}
+		payload.forEach(item => items[item.id] = item);
 
 		return {
 			...oldState,
-			items: {
-				...items,
-				[itemId]: {
-					productId: product.id,
-					color, namedSize,
-					quantity: 1
-				}
-			}
+			items
 		};
 	}
 };
@@ -266,18 +244,17 @@ export function GlobalCartContextProvider({ children }) {
 		});
 	}, [dispatch]);
 
-	const addItem = useCallback((product, color, namedSize) => {
-		if (!isObj(product) || !isString(color) || !isString(namedSize)) {
-			console.error("Invalid params");
+	const addItem = useCallback((items) => {
+		if (!Array.isArray(items)) {
 			return;
 		}
 
 		dispatch({
 			type: ADD_CART_ITEM,
-			payload: { product, color, namedSize }
+			payload: items
 		});
 	}, [dispatch]);
-
+	console.log(store.items);
 	return (
 		<GlobalCartContext.Provider value={{
 			store, setItems, addItem

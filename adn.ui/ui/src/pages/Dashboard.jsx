@@ -96,7 +96,7 @@ export default function Dashboard() {
 		);
 	}
 
-	return <AccessDenied message="Unauthorized role" />
+	return <AccessDenied message="Unauthorized role" />;
 }
 
 function Sidebar() {

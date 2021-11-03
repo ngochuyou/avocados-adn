@@ -53,6 +53,10 @@
 			"mapping": "/shop/:categoryName?",
 			"url": "/shop"
 		},
+		"cart": {
+			"mapping": "/cart",
+			"url": "/cart"
+		},
 		"productView": {
 			"mapping": "/p/:productId",
 			"url": "/p"

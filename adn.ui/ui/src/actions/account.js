@@ -1,6 +1,6 @@
 import { $fetch, fjson, asBlob } from '../fetch';
 
-// import { join } from '../utils';
+import { hasLength, join } from '../utils';
 
 export const fetchAccount = (username = null, columns = []) => {
 	if (username == null) {
@@ -89,4 +89,45 @@ export function updateCart(items) {
 		},
 		body: JSON.stringify(items)
 	});
+}
+
+export function addCart({
+	productId = null,
+	color = null,
+	namedSize = null,
+	quantity = null
+}) {
+	if (isNaN(productId)) {
+		return [null, "Product ID was null"];
+	}
+
+	if (isNaN(quantity)) {
+		return [null, "Invalid quantity"];
+	}
+
+	return fjson(`/rest/customer/cart/add?productId=${productId}&color=${encodeURIComponent(color)}&namedSize=${namedSize}&quantity=${quantity}`, {
+		method: 'PUT',
+		encode: false
+	});
+}
+
+export function subtractCart(itemIds = []) {
+	if (!hasLength(itemIds)) {
+		return [[], null];
+	}
+
+	if (!Array.isArray(itemIds)) {
+		return [null, "Invalid item IDs"];
+	}
+
+	return fjson(`/rest/customer/cart/remove?items=${join(itemIds)}`, {
+		method: 'PUT'
+	});
+}
+
+export function getCart({
+	productColumns = [],
+	itemColumns = []
+}) {
+	return fjson(`/rest/customer/cart?productColumns=${productColumns}&itemColumns=${itemColumns}`);
 }

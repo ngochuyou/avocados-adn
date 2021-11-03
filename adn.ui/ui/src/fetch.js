@@ -8,7 +8,7 @@ export async function $fetch(endpoint = null, options = {}, credentials = true) 
 	}
 	
 	try {
-		const res = await fetch(`${url}${encodeURI(endpoint)}`, {
+		const res = await fetch(`${url}${options.encode === true ? encodeURI(endpoint) : endpoint}`, {
 			...options,
 			headers: {
 				...options.headers,
@@ -23,7 +23,7 @@ export async function $fetch(endpoint = null, options = {}, credentials = true) 
 	}
 }
 
-export async function fjson(endpoint = null, options = {}) {
+export async function fjson(endpoint = null, options = {}, encode = true) {
 	const { headers } = options;
 	const [res, err] = await $fetch(endpoint, {
 		...options,

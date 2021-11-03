@@ -15,7 +15,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -27,19 +26,14 @@ import java.util.stream.Stream;
 
 import org.hibernate.LockMode;
 import org.hibernate.Session;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.multipart.MultipartFile;
 
 import adn.application.Common;
 import adn.application.Result;
-import adn.application.context.ContextProvider;
 import adn.application.context.builders.EntityBuilderProvider;
 import adn.application.context.builders.ValidatorFactory;
-import adn.dao.generic.GenericRepository;
 import adn.dao.generic.ResultBatch;
 import adn.dao.specific.ProductCostRepository;
 import adn.dao.specific.ProductPriceRepository;
@@ -50,13 +44,10 @@ import adn.helpers.Utils;
 import adn.helpers.Utils.Entry;
 import adn.helpers.Utils.Wrapper;
 import adn.model.entities.Category;
-import adn.model.entities.Customer;
 import adn.model.entities.Item;
 import adn.model.entities.Product;
 import adn.model.entities.ProductPrice;
-import adn.model.entities.constants.ItemStatus;
 import adn.model.entities.id.ProductPriceId;
-import adn.model.entities.metadata._Item;
 import adn.model.entities.metadata._Product;
 import adn.model.entities.metadata._ProductCost;
 import adn.model.entities.metadata._ProductPrice;
@@ -65,7 +56,6 @@ import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.SourceMetadata;
 import adn.model.factory.authentication.dynamicmap.SourceMetadataFactory;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
-import adn.model.models.CartItem;
 import adn.service.entity.builder.EntityBuilder;
 import adn.service.internal.ResourceService;
 import adn.service.internal.Service;
@@ -78,13 +68,10 @@ import adn.service.internal.ServiceResult;
 @org.springframework.stereotype.Service
 public class ProductService implements Service {
 
-	private static final Logger logger = LoggerFactory.getLogger(ProductService.class);
-
 	private final ResourceService resourceService;
 	private final GenericCRUDServiceImpl crudService;
 	private final ValidatorFactory validatorFactory;
 	private final EntityBuilderProvider entityBuilderProvider;
-	private final GenericRepository genericRepository;
 	private final ProductPriceRepository productPriceRepository;
 	private final ProductCostRepository productCostRepository;
 	private final ProductRepository productRepository;
@@ -94,18 +81,16 @@ public class ProductService implements Service {
 	private static final String UNMODIFIED_LOCK_STATE_TEMPLATE = "Product was already %s";
 	private static final String OVERLAPPED_PRICE_TEMPLATE = "Price for product %s from %s to %s has already exsited";
 	private static final String COSTS_NOT_FOUND_TEMPLATE = "Some of the following product costs were not found: %s";
-	private static final String NOT_ENOUGH_ITEMS_TEMPLATE = "Not enough items for %s, requested %d items, only %d left";
 
 	@Autowired
 	public ProductService(ResourceService resourceService, GenericCRUDServiceImpl curdService,
 			ProductPriceRepository productPriceRepository, EntityBuilderProvider entityBuilderProvider,
 			ValidatorFactory validatorFactory, ProductCostRepository productCostRepository,
-			ProductRepository productRepository, GenericRepository genericRepository) {
+			ProductRepository productRepository) {
 		super();
 		this.resourceService = resourceService;
 		this.crudService = curdService;
 		this.validatorFactory = validatorFactory;
-		this.genericRepository = genericRepository;
 		this.productPriceRepository = productPriceRepository;
 		this.productCostRepository = productCostRepository;
 		this.entityBuilderProvider = entityBuilderProvider;
@@ -362,59 +347,6 @@ public class ProductService implements Service {
 
 	private enum LockState {
 		locked, unlocked
-	}
-
-	private static final Specification<Item> ITEM_IS_AVAILABLE = (root, query, builder) -> builder
-			.equal(root.get(_Item.status), ItemStatus.AVAILABLE);
-
-	public Result<Void> updateCart(List<CartItem> cartItems, boolean flushOnFinish) {
-		useManualSession();
-
-		if (cartItems.isEmpty()) {
-			doUpdateCart(Collections.emptyList());
-
-			return Result.ok(null);
-		}
-
-		Result<Void> result = new Result<>(null);
-		List<Item> fetchedItems = cartItems.stream().flatMap(cartItem -> {
-			if (logger.isDebugEnabled()) {
-				logger.debug(String.format("Fetching items for %s", cartItem));
-			}
-			// @formatter:off
-			List<Item> items = genericRepository
-					.findAll(
-							Item.class,
-							Arrays.asList(_Item.id),
-							ITEM_IS_AVAILABLE.and((root, query, builder) -> builder.and(
-									builder.equal(root.get(_Item.product).get(_Product.id), cartItem.getProductId()),
-									builder.equal(root.get(_Item.color), cartItem.getColor()),
-									builder.equal(root.get(_Item.namedSize), cartItem.getNamedSize()))),
-							Pageable.ofSize(cartItem.getQuantity()))
-					.stream().map(row -> new Item((BigInteger) row[0])).collect(Collectors.toList());
-			// @formatter:on
-			if (items.size() < cartItem.getQuantity()) {
-				result.bad(cartItem.toString(),
-						String.format(NOT_ENOUGH_ITEMS_TEMPLATE, cartItem, cartItem.getQuantity(), items.size()));
-				return Stream.of();
-			}
-
-			return items.stream();
-		}).collect(Collectors.toList());
-
-		if (!result.isOk()) {
-			return result;
-		}
-
-		doUpdateCart(fetchedItems);
-
-		return crudService.finish(result, flushOnFinish);
-	}
-
-	private void doUpdateCart(List<Item> items) {
-		Customer customer = getCurrentSession().load(Customer.class, ContextProvider.getPrincipalName());
-
-		customer.setCart(items);
 	}
 
 }

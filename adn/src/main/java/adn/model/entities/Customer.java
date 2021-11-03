@@ -3,7 +3,7 @@
  */
 package adn.model.entities;
 
-import java.util.List;
+import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -36,7 +36,7 @@ public class Customer extends User {
 	@JoinTable(name = _Customer.jnCart,
 			joinColumns = @JoinColumn(name = _Customer.jnCartId, referencedColumnName = _Customer.$id),
 			inverseJoinColumns = @JoinColumn(name = _Item.jnCartId, referencedColumnName = _Item.$id))
-	private List<Item> cart;
+	private Set<Item> cart;
 	// @formatter:on
 	public Customer() {
 		setRole(Role.CUSTOMER);
@@ -64,11 +64,11 @@ public class Customer extends User {
 		this.subscribed = subscribed;
 	}
 
-	public List<Item> getCart() {
+	public Set<Item> getCart() {
 		return cart;
 	}
 
-	public void setCart(List<Item> cart) {
+	public void setCart(Set<Item> cart) {
 		this.cart = cart;
 	}
 

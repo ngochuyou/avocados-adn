@@ -5,9 +5,11 @@ package adn.model.entities;
 
 import static adn.application.Common.SHARED_TABLE_GENERATOR;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.persistence.Column;
@@ -41,7 +43,9 @@ import adn.model.entities.metadata._Provider;
  */
 @javax.persistence.Entity
 @Table(name = "items", indexes = @Index(columnList = _Item.indexName))
-public class Item extends PermanentEntity implements AuditableResource<BigInteger> {
+public class Item extends PermanentEntity implements AuditableResource<BigInteger>, Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.TABLE, generator = SHARED_TABLE_GENERATOR)
@@ -214,6 +218,27 @@ public class Item extends PermanentEntity implements AuditableResource<BigIntege
 
 	public void setCart(List<Customer> cart) {
 		this.cart = cart;
+	}
+
+	@Override
+	public int hashCode() {
+		return id.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		
+		if (obj == null)
+			return false;
+		
+		if (getClass() != obj.getClass())
+			return false;
+		
+		Item other = (Item) obj;
+		
+		return Objects.equals(id, other.id);
 	}
 
 }

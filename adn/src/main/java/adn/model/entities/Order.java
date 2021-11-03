@@ -8,7 +8,7 @@ import static adn.application.Common.SHARED_TABLE_GENERATOR;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -85,7 +85,7 @@ public class Order extends PermanentEntity {
 			name = _Order.jnOrderDetails,
 			joinColumns = @JoinColumn(name = _Order.jnOrderDetailsId, referencedColumnName = _Order.$id),
 			inverseJoinColumns = @JoinColumn(name = _Item.jnOrderDetailsId, referencedColumnName = _Item.$id))
-	private List<Item> items;
+	private Set<Item> items;
 	// @formatter:on
 	public BigInteger getId() {
 		return id;
@@ -143,11 +143,11 @@ public class Order extends PermanentEntity {
 		this.updatedTimestamp = updatedTimestamp;
 	}
 
-	public List<Item> getItems() {
+	public Set<Item> getItems() {
 		return items;
 	}
 
-	public void setItems(List<Item> items) {
+	public void setItems(Set<Item> items) {
 		this.items = items;
 	}
 

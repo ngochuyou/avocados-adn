@@ -45,7 +45,7 @@ public class OrderBuilder extends AbstractPermanentEntityBuilder<Order> {
 			target.setDeliveryFee(model.getDeliveryFee().setScale(4, RoundingMode.HALF_UP));
 		}
 
-		target.setItems(model.getItems().stream().filter(Objects::nonNull).collect(Collectors.toList()));
+		target.setItems(model.getItems().stream().filter(Objects::nonNull).collect(Collectors.toSet()));
 		target.setNote(StringHelper.normalizeString(model.getNote()));
 
 		return target;

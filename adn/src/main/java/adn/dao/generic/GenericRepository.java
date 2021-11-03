@@ -10,9 +10,11 @@ import java.util.Optional;
 
 import javax.persistence.LockModeType;
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
 
 import org.hibernate.Session;
 import org.hibernate.SharedSessionContract;
@@ -28,6 +30,12 @@ import adn.model.entities.Entity;
  *
  */
 public interface GenericRepository {
+
+	public interface Selector<T> {
+
+		List<Selection<?>> select(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder builder);
+
+	}
 
 	public interface UpdateQuerySetStatementBuilder<T> {
 

@@ -17,6 +17,7 @@ import NotFound from './pages/NotFound.jsx';
 import Favorites from './pages/Favorites.jsx';
 
 import ProductView from './components/product/ProductView';
+import CartView from './components/product/CartView';
 
 import { routes } from './config/default';
 
@@ -32,6 +33,7 @@ function App() {
 				{/*<UnauthenticatedComponent principal={principal}>
 					<Route path="/login" render={(props) => <LoginPage {...props}/> } />
 				</UnauthenticatedComponent>*/}
+				<Route path={`${routes.cart.mapping}`} render={props => <CartView />}/>
 				<Route path={`${routes.productView.mapping}`} render={props => <ProductView />}/>
 				<Route path={`${routes.favorites.mapping}`} render={props => <Favorites />} />
 				<Route path={`${routes.home.mapping}`} render={props => <HomePage />} />

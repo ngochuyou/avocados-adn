@@ -127,7 +127,7 @@ function AuthenticatedRightNavbar({
 			<li>
 				<Link
 					style={linkStyle}
-					to={routes.favorites.url}
+					to={routes.cart.url}
 				>Cart</Link>
 			</li>
 			<li><FavoriteProductsNav /></li>
