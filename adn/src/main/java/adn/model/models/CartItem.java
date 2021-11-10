@@ -5,6 +5,8 @@ package adn.model.models;
 
 import java.math.BigInteger;
 
+import org.springframework.lang.Nullable;
+
 import adn.model.entities.Product;
 import adn.model.entities.constants.NamedSize;
 
@@ -17,12 +19,15 @@ public class CartItem {
 	private static final String LOGGING_TEMPLATE = "Product ID %d with the color %s, size %s";
 	public static final String _quantity = "quantity";
 
+	@Nullable
 	private Product product;
 
 	private BigInteger productId;
 
+	@Nullable
 	private String color;
 
+	@Nullable
 	private NamedSize namedSize;
 
 	private Integer quantity;

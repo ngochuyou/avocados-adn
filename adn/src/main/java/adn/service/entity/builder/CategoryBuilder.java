@@ -8,11 +8,11 @@ import static adn.helpers.Base32.crockfords;
 import java.io.Serializable;
 import java.math.BigInteger;
 
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import adn.application.context.ContextProvider;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.Category;
@@ -37,8 +37,8 @@ public class CategoryBuilder extends AbstractPermanentEntityBuilder<Category> {
 	}
 
 	@Override
-	public <E extends Category> E buildPostValidationOnInsert(Serializable id, E model) {
-		ContextProvider.getCurrentSession().persist(model);
+	public <E extends Category> E buildPostValidationOnInsert(Serializable id, E model, Session session) {
+		session.persist(model);
 		id = model.getId();
 
 		if (logger.isDebugEnabled()) {

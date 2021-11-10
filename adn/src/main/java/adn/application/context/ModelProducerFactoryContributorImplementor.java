@@ -20,20 +20,27 @@ import adn.application.context.builders.DynamicMapModelProducerFactoryImpl.Model
 import adn.helpers.Utils;
 import adn.model.entities.Category;
 import adn.model.entities.Customer;
+import adn.model.entities.District;
 import adn.model.entities.Item;
 import adn.model.entities.Order;
+import adn.model.entities.OrderDetail;
 import adn.model.entities.Personnel;
 import adn.model.entities.Product;
 import adn.model.entities.ProductCost;
 import adn.model.entities.ProductPrice;
 import adn.model.entities.Provider;
+import adn.model.entities.Province;
 import adn.model.entities.User;
 import adn.model.entities.id.ProductCostId;
 import adn.model.entities.id.ProductPriceId;
 import adn.model.entities.metadata._Category;
 import adn.model.entities.metadata._Customer;
+import adn.model.entities.metadata._District;
+import adn.model.entities.metadata._Entity;
 import adn.model.entities.metadata._Item;
+import adn.model.entities.metadata._NamedResource;
 import adn.model.entities.metadata._Order;
+import adn.model.entities.metadata._OrderDetail;
 import adn.model.entities.metadata._Personnel;
 import adn.model.entities.metadata._Product;
 import adn.model.entities.metadata._ProductCost;
@@ -57,6 +64,17 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		category(builder);
 		product(builder);
 		order(builder);
+		adminDivision(builder);
+	}
+
+	private void adminDivision(ModelProducerFactoryBuilder builder) {
+		WithType<Province> province = builder.type(Province.class);
+
+		province.credentials(any()).fields(_Entity.id, _NamedResource.name).publish();
+
+		WithType<District> district = builder.type(District.class);
+
+		district.credentials(any()).fields(_Entity.id, _NamedResource.name, _District.province).publish();
 	}
 
 	private void user(ModelProducerFactoryBuilder builder) {
@@ -66,7 +84,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 			.credentials(authorized())
 				.fields(_User.id).use(_User._id).publish()
 				.fields(_User.firstName, _User.lastName, _User.photo,
-						_User.role, _User.gender, _User.active,
+						_User.role, _User.gender,
 						_User.email, _User.phone, _User.birthDate,
 						_User.locked).publish()
 				.anyFields().mask()
@@ -89,7 +107,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		// @formatter:off
 		provider
 			.credentials(SALE_CREDENTIAL, STOCK_CREDENTIAL, HEAD)
-				.fields(_Provider.id, _Provider.name, _Provider.active, _Provider.productCosts).publish()
+				.fields(_Provider.id, _Provider.name, _Provider.productCosts).publish()
 			.credentials(SALE_CREDENTIAL, HEAD)
 				.fields(_Provider.email, _Provider.phoneNumbers, _Provider.address,
 						_Provider.representatorName, _Provider.website)
@@ -135,8 +153,8 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 			.credentials(SALE_CREDENTIAL, HEAD)
 				.fields(_Product.createdBy, _Product.createdDate,
 						_Product.lastModifiedBy, _Product.lastModifiedDate,
-						_Product.active, _Product.approvedBy,
-						_Product.approvedTimestamp, _Product.locked)
+						_Product.approvedBy, _Product.approvedTimestamp,
+						_Product.locked)
 				.publish();
 		
 		WithType<ProductPrice> price = builder.type(ProductPrice.class);
@@ -147,7 +165,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 			.credentials(SALE_CREDENTIAL, HEAD)
 				.fields(_ProductPrice.productId, _ProductPrice.appliedTimestamp,
 						_ProductPrice.droppedTimestamp, _ProductPrice.approvedBy, _ProductPrice.approvedTimestamp,
-						_ProductPrice.product, _ProductPrice.active).publish()
+						_ProductPrice.product).publish()
 				.fields(_ProductPrice.id)
 					.useFunction((args, credential) -> {
 						ProductPriceId id = (ProductPriceId) args.getSource();
@@ -182,7 +200,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 						_Category.code)
 				.publish()
 			.credentials(SALE_CREDENTIAL, HEAD)
-				.fields(_Category.products, _Category.active)
+				.fields(_Category.products)
 				.publish();
 		// @formatter:on
 	}
@@ -191,11 +209,18 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 		WithType<Order> order = builder.type(Order.class);
 		// @formatter:off
 		order
-			.credentials(CUSTOMER, HEAD, CUSTOMER_SERVICE_CREDENTIAL)
+			.credentials(owner(), HEAD, CUSTOMER_SERVICE_CREDENTIAL)
 				.fields(_Order.id, _Order.code, _Order.status,
 						_Order.address, _Order.district, _Order.deliveryFee,
 						_Order.customer, _Order.updatedTimestamp,
-						_Order.note, _Order.items, _Order.createdTimestamp).publish();
+						_Order.note, _Order.details, _Order.createdTimestamp).publish();
+		// @formatter:on
+		WithType<OrderDetail> details = builder.type(OrderDetail.class);
+		// @formatter:off
+		details
+			.credentials(owner(), HEAD, CUSTOMER_SERVICE_CREDENTIAL)
+				.fields(_OrderDetail.itemId, _OrderDetail.orderId, _OrderDetail.rating,
+						_OrderDetail.price, _OrderDetail.order, _OrderDetail.item).publish();
 		// @formatter:on
 	}
 
@@ -212,7 +237,7 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 	}
 
 	private Credential[] any() {
-		return and(operator(), from(ANONYMOUS, CUSTOMER));
+		return and(operator(), from(ANONYMOUS, CUSTOMER, owner()));
 	}
 
 	private Credential[] operator() {
@@ -222,5 +247,5 @@ public class ModelProducerFactoryContributorImplementor implements ModelProducer
 	private Credential[] authorized() {
 		return and(operator(), from(owner()));
 	}
-	
+
 }

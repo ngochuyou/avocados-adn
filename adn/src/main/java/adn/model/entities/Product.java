@@ -66,14 +66,20 @@ public class Product extends FullyAuditedEntity<BigInteger> {
 	private Boolean locked;
 
 	@ManyToOne(optional = false, fetch = FetchType.LAZY)
-	@JoinColumn(name = "category_id", referencedColumnName = _Category.$id)
+	@JoinColumn(name = _Product.$category, referencedColumnName = _Category.$id)
 	private Category category;
 
-	@OneToMany(mappedBy = _ProductCost.product)
+	@OneToMany(fetch = FetchType.LAZY, mappedBy = _ProductCost.product)
 	private List<ProductCost> costs;
 
-	@OneToMany(mappedBy = _ProductPrice.product)
+	@OneToMany(fetch = FetchType.LAZY, mappedBy = _ProductPrice.product)
 	private List<ProductPrice> prices;
+
+	public Product() {}
+
+	public Product(BigInteger id) {
+		this.id = id;
+	}
 
 	@Override
 	public BigInteger getId() {

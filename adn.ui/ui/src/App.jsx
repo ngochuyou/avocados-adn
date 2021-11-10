@@ -18,6 +18,7 @@ import Favorites from './pages/Favorites.jsx';
 
 import ProductView from './components/product/ProductView';
 import CartView from './components/product/CartView';
+import OrderView from './components/account/OrderView';
 
 import { routes } from './config/default';
 
@@ -33,6 +34,7 @@ function App() {
 				{/*<UnauthenticatedComponent principal={principal}>
 					<Route path="/login" render={(props) => <LoginPage {...props}/> } />
 				</UnauthenticatedComponent>*/}
+				<Route path={`${routes.order.mapping}`} render={props => <OrderView />}/>
 				<Route path={`${routes.cart.mapping}`} render={props => <CartView />}/>
 				<Route path={`${routes.productView.mapping}`} render={props => <ProductView />}/>
 				<Route path={`${routes.favorites.mapping}`} render={props => <Favorites />} />

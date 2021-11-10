@@ -10,7 +10,6 @@ import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.Set;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -18,10 +17,10 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.TableGenerator;
 
@@ -31,15 +30,15 @@ import org.hibernate.annotations.UpdateTimestamp;
 import adn.application.Common;
 import adn.model.entities.constants.OrderStatus;
 import adn.model.entities.metadata._Customer;
-import adn.model.entities.metadata._Item;
 import adn.model.entities.metadata._Order;
+import adn.model.entities.metadata._OrderDetail;
 
 /**
  * @author Ngoc Huy
  *
  */
 @javax.persistence.Entity
-@Table(name = "orders")
+@Table(name = "orders", indexes = @Index(columnList = _Order.indexName))
 public class Order extends PermanentEntity {
 
 	@Id
@@ -59,7 +58,7 @@ public class Order extends PermanentEntity {
 	@Column(nullable = false)
 	private String address;
 
-	@ManyToOne(optional = false)
+	@ManyToOne(optional = false, fetch = FetchType.LAZY)
 	private District district;
 
 	@Column(columnDefinition = Common.MYSQL_CURRENCY_COLUMN_DEFINITION)
@@ -79,14 +78,16 @@ public class Order extends PermanentEntity {
 
 	@Column(length = _Order.MAXIMUM_NOTE_LENGTH)
 	private String note;
-	// @formatter:off
-	@ManyToMany(cascade = CascadeType.MERGE)
-	@JoinTable(
-			name = _Order.jnOrderDetails,
-			joinColumns = @JoinColumn(name = _Order.jnOrderDetailsId, referencedColumnName = _Order.$id),
-			inverseJoinColumns = @JoinColumn(name = _Item.jnOrderDetailsId, referencedColumnName = _Item.$id))
-	private Set<Item> items;
-	// @formatter:on
+
+	@OneToMany(fetch = FetchType.LAZY, mappedBy = _OrderDetail.order)
+	private Set<OrderDetail> details;
+
+	public Order() {}
+
+	public Order(BigInteger id) {
+		this.id = id;
+	}
+
 	public BigInteger getId() {
 		return id;
 	}
@@ -143,12 +144,12 @@ public class Order extends PermanentEntity {
 		this.updatedTimestamp = updatedTimestamp;
 	}
 
-	public Set<Item> getItems() {
-		return items;
+	public Set<OrderDetail> getDetails() {
+		return details;
 	}
 
-	public void setItems(Set<Item> items) {
-		this.items = items;
+	public void setDetails(Set<OrderDetail> details) {
+		this.details = details;
 	}
 
 	public String getAddress() {

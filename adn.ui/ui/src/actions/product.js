@@ -283,7 +283,7 @@ export function submitProductPrice(model) {
 	});
 }
 
-export function getItemsList({
+export function getItemsListByProduct({
 	productId = null,
 	columns = []
 }) {
@@ -295,5 +295,16 @@ export function getItemsList({
 		return [null, "Requested columns were empty"];
 	}
 
-	return fjson(`/rest/product/items?productId=${productId}&columns=${join(columns)}`);
+	return fjson(`/rest/product/items/${productId}?columns=${join(columns)}`);
+}
+
+export function getItemsList({
+	itemIds = [],
+	columns = []
+}) {
+	if (!hasLength(itemIds)) {
+		return [[], null];
+	}
+
+	return fjson(`/rest/product/items?ids=${itemIds}&columns=${columns}`);
 }

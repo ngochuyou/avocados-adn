@@ -5,15 +5,16 @@ package adn.service.services;
 
 import static adn.helpers.Base32.crockfords;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
 
@@ -34,16 +35,20 @@ import adn.application.Common;
 import adn.application.Result;
 import adn.application.context.ContextProvider;
 import adn.dao.generic.GenericRepository;
+import adn.dao.specific.UserRepository;
 import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
 import adn.helpers.Utils;
+import adn.model.entities.District;
 import adn.model.entities.Item;
 import adn.model.entities.Order;
+import adn.model.entities.OrderDetail;
 import adn.model.entities.constants.ItemStatus;
 import adn.model.entities.constants.OrderStatus;
 import adn.model.entities.metadata._Customer;
 import adn.model.entities.metadata._Item;
 import adn.model.entities.metadata._Order;
+import adn.model.models.DeliveryInstructions;
 import adn.service.entity.builder.AbstractEntityBuilder;
 import adn.service.internal.Service;
 
@@ -60,7 +65,7 @@ public class OrderService implements Service {
 	private final SessionFactoryImplementor sessionFactory;
 	private final GenericRepository genericRepository;
 	private final GenericCRUDServiceImpl genericCRUDService;
-//	private final AuthenticationService authService;
+	private final UserRepository userRepository;
 
 	private final TaskScheduler taskScheduler;
 
@@ -77,81 +82,91 @@ public class OrderService implements Service {
 			.format("Current status of the order is %s, not %s", "%s", OrderStatus.PENDING_PAYMENT);
 	private static final String UNABLE_TO_PROCESS_ITEMS = "Unable to process some of the items";
 	private static final String UNABLE_TO_UPDATE_ORDER_STATUS = "Unable to update order status";
+	private static final String EMPTY_CART = Common.notEmpty("Cart");
 
-	private volatile static Duration ORDER_EXPIRATION_TIME = Duration.ofSeconds(5);
+	private volatile static Duration ORDER_EXPIRATION_TIME = Duration.ofHours(24);
 
 	// @formatter:off
 	@Autowired
-	public OrderService(
-			GenericCRUDServiceImpl genericCRUDService,
+	public OrderService(GenericCRUDServiceImpl genericCRUDService,
 			@Qualifier(SCHEDULER_NAME) TaskScheduler taskScheduler,
 			SessionFactoryImplementor sessionFactory,
-			GenericRepository genericRepository/*,
-			AuthenticationService authService*/) {
+			GenericRepository genericRepository, UserRepository userRepository) {
 		super();
 		this.sessionFactory = sessionFactory;
 		this.genericCRUDService = genericCRUDService;
 		this.genericRepository = genericRepository;
+		this.userRepository = userRepository;
 		this.taskScheduler = taskScheduler;
-//		this.authService = authService;
 	}
 	// @formatter:on
-	public Result<Order> createOrder(Order order, boolean flushOnFinish) {
-		Session session = ContextProvider.getCurrentSession();
+	public Result<Order> createOrder(String customerId, DeliveryInstructions deliveryInstructions,
+			boolean flushOnFinish) {
+		Session session = HibernateHelper.useManualSession();
+		Optional<Object[]> pendingPayment = getPendingPayment(customerId, Arrays.asList(_Order.code));
 
-		HibernateHelper.useManualSession();
-
-		Optional<Object[]> pendingPaymentOrder = genericRepository.findOne(Order.class,
-				Arrays.asList(_Order.code, _Order.status),
-				(root, query, builder) -> builder.and(
-						builder.equal(root.get(_Order.customer).get(_Customer.id), ContextProvider.getPrincipalName()),
-						builder.equal(root.get(_Order.status), OrderStatus.PENDING_PAYMENT)));
-
-		if (pendingPaymentOrder.isPresent()) {
-			return Result.bad(String.format(PENDING_PAYMENT_EXISTS_TEMPLATE, pendingPaymentOrder.get()[0]));
+		if (pendingPayment.isPresent()) {
+			return Result.bad(String.format(PENDING_PAYMENT_EXISTS_TEMPLATE, pendingPayment.get()[0]));
 		}
 
-		Result<Order> firstPhaseResult = genericCRUDService.create(null, order, Order.class, false);
+		List<Object[]> cart = userRepository.findCustomerCartForPlacement(customerId);
 
-		if (!firstPhaseResult.isOk()) {
-			return firstPhaseResult;
+		if (cart.isEmpty()) {
+			return Result.bad(EMPTY_CART);
 		}
 
-		order = firstPhaseResult.getInstance();
-
-		List<BigInteger> unavailableItemIds = new ArrayList<>(order.getItems().size());
-		List<BigInteger> itemIds = order.getItems().stream().map(item -> item.getId()).collect(Collectors.toList());
-
-		genericRepository.findAll(Item.class, ORDER_ID_AND_STATUS,
-				(root, query, builder) -> builder.in(root.get(_Item.id)).value(itemIds), LockModeType.PESSIMISTIC_WRITE)
-				.stream().forEach(cols -> {
-					if (((ItemStatus) cols[1]) != ItemStatus.AVAILABLE) {
-						unavailableItemIds.add((BigInteger) cols[0]);
-					}
-				});
+		List<BigInteger> unavailableItemIds = cart.stream()
+				.filter(itemCols -> (ItemStatus) itemCols[1] != ItemStatus.AVAILABLE || itemCols[2] == null)
+				.map(itemCols -> (BigInteger) itemCols[0]).collect(Collectors.toList());
 
 		if (!unavailableItemIds.isEmpty()) {
 			return Result.bad(String.format(UNAVAILABLE_ITEMS_TEMPLATE, StringHelper.join(unavailableItemIds)));
 		}
 
+		Order newOrder = new Order();
+
+		newOrder.setDistrict(new District(deliveryInstructions.getDistrictId()));
+		newOrder.setAddress(deliveryInstructions.getAddress());
+		newOrder.setNote(deliveryInstructions.getNote());
+
+		Result<Order> firstPhaseResult = genericCRUDService.create(null, newOrder, Order.class, false);
+
+		if (!firstPhaseResult.isOk()) {
+			return firstPhaseResult;
+		}
+
+		newOrder = firstPhaseResult.getInstance();
+
+		Set<BigInteger> itemIds = cart.stream().map(itemCols -> (BigInteger) itemCols[0]).collect(Collectors.toSet());
 		Result<Integer> itemUpdates = updateItemsStatus(itemIds, ItemStatus.RESERVED, session);
 
 		if (!itemUpdates.isOk()) {
 			return Result.failed(itemUpdates.getMessagesAsString());
 		}
 
-		BigInteger orderId = order.getId();
+		BigInteger orderId = newOrder.getId();
 
 		if (logger.isDebugEnabled()) {
 			logger.debug(String.format(AbstractEntityBuilder.CODE_GENERATION_MESSAGE, orderId));
 		}
 
-		order.setCode(crockfords.format(orderId));
-		session.save(order);
+		newOrder.setCode(crockfords.format(orderId));
+
+		cart.stream().forEach(itemCols -> session
+				.save(new OrderDetail(orderId, (BigInteger) itemCols[0], (BigDecimal) itemCols[2], true)));
+
+		session.save(newOrder);
 
 		scheduleExpiration(orderId, ORDER_EXPIRATION_TIME);
 
-		return genericCRUDService.finish(Result.ok(order), flushOnFinish);
+		return genericCRUDService.finish(Result.ok(newOrder), flushOnFinish);
+	}
+
+	private Optional<Object[]> getPendingPayment(String customerId, Collection<String> columns) {
+		return genericRepository.findOne(Order.class, columns,
+				(root, query, builder) -> builder.and(
+						builder.equal(root.get(_Order.customer).get(_Customer.id), customerId),
+						builder.equal(root.get(_Order.status), OrderStatus.PENDING_PAYMENT)));
 	}
 
 	private Result<Integer> updateItemsStatus(Collection<BigInteger> itemIds, ItemStatus status) {

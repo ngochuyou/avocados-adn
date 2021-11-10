@@ -3,25 +3,47 @@
  */
 package adn.controller;
 
+import static adn.application.context.ContextProvider.getPrincipalCredential;
+import static adn.application.context.builders.CredentialFactory.owner;
+import static org.springframework.http.ResponseEntity.ok;
+
 import java.math.BigInteger;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
-import javax.transaction.Transactional;
-
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.Common;
 import adn.application.Result;
+import adn.application.context.ContextProvider;
+import adn.application.context.builders.CredentialFactory;
+import adn.helpers.StringHelper;
 import adn.model.entities.Order;
+import adn.model.entities.OrderDetail;
 import adn.model.entities.constants.OrderStatus;
+import adn.model.entities.metadata._Customer;
+import adn.model.entities.metadata._Order;
+import adn.model.entities.metadata._OrderDetail;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
+import adn.model.models.DeliveryInstructions;
 import adn.service.services.AuthenticationService;
 import adn.service.services.OrderService;
+import adn.service.services.UserService;
 
 /**
  * @author Ngoc Huy
@@ -32,6 +54,7 @@ import adn.service.services.OrderService;
 public class RestOrderController extends BaseController {
 
 	private final OrderService orderService;
+	private final UserService userService;
 	private final AuthenticationService authService;
 
 	private static final String SUCCESSFULLY_CONFIRM_PAYMENT = "Successfully confirmed payment";
@@ -39,17 +62,86 @@ public class RestOrderController extends BaseController {
 	private static final String ORDER_ID_TEMPLATE = "Order %s";
 	private static final String STATUS_NOT_ALLOWED = "Status %s is not allowed";
 
-	public RestOrderController(OrderService orderService, AuthenticationService authService) {
+	public RestOrderController(OrderService orderService, AuthenticationService authService, UserService userService) {
 		super();
 		this.orderService = orderService;
+		this.userService = userService;
 		this.authService = authService;
+	}
+
+	@GetMapping
+	@Transactional(readOnly = true)
+	@Secured(CUSTOMER)
+	public ResponseEntity<?> getOrdersList(
+			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
+			@PageableDefault(size = 5) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
+		return makeStaleWhileRevalidate(
+				crudService.readAll(Order.class, columns,
+						(root, query, builder) -> builder.equal(root.get(_Order.customer).get(_Customer.id),
+								ContextProvider.getPrincipalName()),
+						paging, CredentialFactory.owner()),
+				3, TimeUnit.SECONDS, 5, TimeUnit.SECONDS);
+	}
+
+	@GetMapping("/internal/all")
+	@Transactional(readOnly = true)
+	@Secured({ HEAD, PERSONNEL })
+	public ResponseEntity<?> getOrdersList(@RequestParam(name = "customer", required = false) String customerId,
+			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
+			@PageableDefault(size = 5) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
+		authService.assertCustomerServiceDepartment();
+
+		if (!StringHelper.hasLength(customerId)) {
+			return makeStaleWhileRevalidate(crudService.readAll(Order.class, columns, paging, getPrincipalCredential()),
+					3, TimeUnit.SECONDS, 5, TimeUnit.SECONDS);
+		}
+
+		return makeStaleWhileRevalidate(
+				crudService.readAll(Order.class, columns,
+						(root, query, builder) -> builder.equal(root.get(_Order.customer).get(_Customer.id),
+								customerId),
+						paging, getPrincipalCredential()),
+				3, TimeUnit.SECONDS, 5, TimeUnit.SECONDS);
 	}
 
 	@PostMapping
 	@Transactional
 	@Secured(CUSTOMER)
-	public ResponseEntity<?> createOrder(@RequestBody Order newOrder) throws Exception {
-		return sendAndProduce(orderService.createOrder(newOrder, true));
+	public ResponseEntity<?> createOrder(@RequestBody DeliveryInstructions deliveryInstructions) throws Exception {
+		Result<Order> phaseOne = orderService.createOrder(ContextProvider.getPrincipalName(), deliveryInstructions,
+				false);
+
+		if (!phaseOne.isOk()) {
+			return send(phaseOne);
+		}
+
+		return send(userService.emptyCart(true), produce(phaseOne.getInstance(), Order.class, owner()));
+	}
+
+	@GetMapping("/{orderCode}")
+	@Transactional(readOnly = true)
+	public ResponseEntity<?> obtainOrder(@PathVariable(name = "orderCode") String orderCode,
+			@RequestParam(name = "orderColumns", required = false, defaultValue = "") HashSet<String> orderColumns,
+			@RequestParam(name = "detailsColumns", required = false, defaultValue = "") List<String> detailsColumns)
+			throws Exception {
+		if (!orderColumns.contains(_Order.details)) {
+			return ok(crudService.read(Order.class, orderColumns,
+					(root, query, builder) -> builder.equal(root.get(_Order.code), orderCode), owner()));
+		}
+
+		orderColumns.remove(_Order.details);
+
+		Map<String, Object> order = crudService.read(Order.class, orderColumns,
+				(root, query, builder) -> builder.equal(root.get(_Order.code), orderCode), owner());
+		BigInteger orderId = (BigInteger) order.get(_Order.id);
+
+		order.put(_Order.details, crudService.readAll(OrderDetail.class, detailsColumns,
+				(root, query, builder) -> Optional.ofNullable(orderId)
+						.map(id -> builder.equal(root.get(_OrderDetail.id).get(_OrderDetail.orderId), id))
+						.orElse(builder.equal(root.join(_OrderDetail.order).get(_Order.code), orderCode)),
+				owner()));
+
+		return ok(order);
 	}
 
 	@PatchMapping("/confirm/{orderId}")
@@ -71,15 +163,7 @@ public class RestOrderController extends BaseController {
 	@Secured({ HEAD, PERSONNEL })
 	@Transactional
 	public ResponseEntity<?> updateOrderStatus(@PathVariable(name = "orderId") BigInteger orderId,
-			@PathVariable(name = "status") int statusCode) {
-		OrderStatus requestedStatus;
-
-		try {
-			requestedStatus = OrderStatus.of(statusCode);
-		} catch (IllegalArgumentException iae) {
-			return bad(Common.message(iae.getMessage()));
-		}
-
+			@PathVariable(name = "status") OrderStatus requestedStatus) {
 		if (requestedStatus != OrderStatus.DELIVERING && requestedStatus != OrderStatus.FINISHED) {
 			return bad(Common.message(String.format(STATUS_NOT_ALLOWED, requestedStatus)));
 		}

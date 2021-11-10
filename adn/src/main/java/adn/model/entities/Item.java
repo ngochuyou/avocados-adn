@@ -25,6 +25,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.TableGenerator;
 
@@ -34,6 +35,7 @@ import adn.model.entities.constants.NamedSize;
 import adn.model.entities.metadata._Customer;
 import adn.model.entities.metadata._Item;
 import adn.model.entities.metadata._Order;
+import adn.model.entities.metadata._OrderDetail;
 import adn.model.entities.metadata._Product;
 import adn.model.entities.metadata._Provider;
 
@@ -100,6 +102,9 @@ public class Item extends PermanentEntity implements AuditableResource<BigIntege
 			inverseJoinColumns = @JoinColumn(name = _Customer.jnCartId, referencedColumnName = _Customer.$id))
 	private List<Customer> cart;
 	// @formatter:on
+
+	@OneToMany(fetch = FetchType.LAZY, mappedBy = _OrderDetail.item)
+	private List<OrderDetail> orderDetails;
 
 	public Item(BigInteger id) {
 		super();
@@ -220,6 +225,14 @@ public class Item extends PermanentEntity implements AuditableResource<BigIntege
 		this.cart = cart;
 	}
 
+	public List<OrderDetail> getOrderDetails() {
+		return orderDetails;
+	}
+
+	public void setOrderDetails(List<OrderDetail> orderDetails) {
+		this.orderDetails = orderDetails;
+	}
+
 	@Override
 	public int hashCode() {
 		return id.hashCode();
@@ -229,16 +242,21 @@ public class Item extends PermanentEntity implements AuditableResource<BigIntege
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
-		
+
 		if (obj == null)
 			return false;
-		
+
 		if (getClass() != obj.getClass())
 			return false;
-		
+
 		Item other = (Item) obj;
-		
+
 		return Objects.equals(id, other.id);
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("Item=(color: %s, namedSize: %s)", color, namedSize);
 	}
 
 }

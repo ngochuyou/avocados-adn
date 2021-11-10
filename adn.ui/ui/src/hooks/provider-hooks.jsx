@@ -1,9 +1,9 @@
 import { createContext, useContext, useCallback } from 'react';
 import { useDispatch } from './hooks';
 
-import { PUSH_LIST, SET_AMOUNT, SET_LIST_ELEMENT } from '../actions/common';
+import { SET_LIST, PUSH_LIST, SET_AMOUNT, SET_LIST_ELEMENT } from '../actions/common';
 
-import { optional, hasLength, isNegative } from '../utils';
+import { atom, optional, hasLength, isNegative } from '../utils';
 
 const GlobalProviderContext = createContext();
 
@@ -28,6 +28,16 @@ export default function GlobalProviderContextProvider({ children }) {
 			payload: providers
 		});
 	}, [dispatch]);
+	const setProviders = useCallback((providers) => {
+		if (!Array.isArray(providers) || !hasLength(providers)) {
+			return;
+		}
+
+		dispatch({
+			type: SET_LIST,
+			payload: providers
+		});
+	}, [dispatch]);
 	const setTotal = useCallback(total => {
 		if (isNegative(total)) {
 			return;
@@ -41,7 +51,7 @@ export default function GlobalProviderContextProvider({ children }) {
 	
 	return (
 		<GlobalProviderContext.Provider value={{
-			store, push, setTotal
+			store, push, setTotal, setProviders
 		}}>
 			{ children }
 		</GlobalProviderContext.Provider>
@@ -49,6 +59,15 @@ export default function GlobalProviderContextProvider({ children }) {
 }
 
 const dispatchers = {
+	SET_LIST: (payload, oldState) => {
+		return {
+			...oldState,
+			elements: {
+				...oldState.elements,
+				map: atom(payload)
+			}
+		};
+	},
 	PUSH_LIST: (payload, oldState) => {
 		const { elements } = oldState;
 		const newElements = {...elements.map};

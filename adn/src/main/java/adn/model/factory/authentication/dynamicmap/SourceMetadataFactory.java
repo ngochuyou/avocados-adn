@@ -142,8 +142,8 @@ public class SourceMetadataFactory {
 				}
 
 				associationMetadatas.put(index,
-						associationType == AssociationType.ENTITY ? basic(associationClass, associationColumns)
-								: basicCollection(associationClass, associationColumns));
+						associationType == AssociationType.ENTITY ? unknown(associationClass, associationColumns)
+								: unknownCollection(associationClass, associationColumns));
 				return;
 			}
 		});

@@ -94,7 +94,7 @@ export function updateCart(items) {
 export function addCart({
 	productId = null,
 	color = null,
-	namedSize = null,
+	namedSize = "",
 	quantity = null
 }) {
 	if (isNaN(productId)) {
@@ -105,7 +105,7 @@ export function addCart({
 		return [null, "Invalid quantity"];
 	}
 
-	return fjson(`/rest/customer/cart/add?productId=${productId}&color=${encodeURIComponent(color)}&namedSize=${namedSize}&quantity=${quantity}`, {
+	return fjson(`/rest/customer/cart/add?productId=${productId}&color=${color == null ? "" : encodeURIComponent(color)}&namedSize=${namedSize}&quantity=${quantity}`, {
 		method: 'PUT',
 		encode: false
 	});
@@ -123,6 +123,10 @@ export function subtractCart(itemIds = []) {
 	return fjson(`/rest/customer/cart/remove?items=${join(itemIds)}`, {
 		method: 'PUT'
 	});
+}
+
+export function emptyCart() {
+	return fjson(`/rest/customer/cart/empty`, { method: 'PUT' });
 }
 
 export function getCart({

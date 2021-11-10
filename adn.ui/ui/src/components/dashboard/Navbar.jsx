@@ -41,6 +41,7 @@ export function ContextProvider({ children }) {
 
 	const setBackBtnState = useCallback((nextState = {}) => {
 		const { visible = false, callback = () => null } = nextState;
+		
 		if (typeof visible !== 'boolean' || typeof callback !== 'function') {
 			return;
 		}

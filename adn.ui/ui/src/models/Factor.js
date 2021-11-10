@@ -181,3 +181,13 @@ export class Provider extends Factor {
 		}
 	}
 }
+
+export class Order extends Factor {
+	static Status = {
+		PENDING_PAYMENT: "PENDING_PAYMENT",
+		PAID: "PAID",
+		EXPIRED: "EXPIRED",
+		DELIVERING: "DELIVERING",
+		FINISHED: "FINISHED"
+	}
+}

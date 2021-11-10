@@ -62,6 +62,7 @@ public class DomainEntityMetadataImpl<T extends DomainEntity> implements DomainE
 		Set<String> sensitiveFields = new HashSet<>();
 
 		sensitiveFields.add(_User.password);
+		sensitiveFields.add(_PermanentEntity.active);
 
 		SENSITIVE_FIELD_NAMES = Collections.unmodifiableSet(sensitiveFields);
 	}

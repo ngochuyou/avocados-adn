@@ -175,5 +175,10 @@ public class Common {
 
 	public static final int CROCKFORD_10A = 1034;
 	public static final int CROCKFORD_1A = 42;
+	
+	public static final String YEAR = "YEAR";
+	public static final String MONTH = "MONTH";
+	public static final String WEEK = "WEEK";
+	public static final String DAY = "DAY";
 
 }

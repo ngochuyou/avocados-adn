@@ -3,7 +3,11 @@
  */
 package adn.service.entity.builder;
 
+import static adn.application.context.ContextProvider.getCurrentSession;
+
 import java.io.Serializable;
+
+import org.hibernate.Session;
 
 import adn.model.entities.Entity;
 import adn.model.entities.User;
@@ -29,7 +33,11 @@ public interface EntityBuilder<T extends Entity> {
 	 * @param model
 	 * @return entity {@link Entity}
 	 */
-	<E extends T> E buildInsertion(Serializable id, E model);
+	default <E extends T> E buildInsertion(Serializable id, E model) {
+		return buildInsertion(id, model, getCurrentSession());
+	}
+
+	<E extends T> E buildInsertion(Serializable id, E model, Session session);
 
 	/**
 	 * Occurs only after the validation of an persist process {@link Entity}
@@ -38,7 +46,11 @@ public interface EntityBuilder<T extends Entity> {
 	 * @param model
 	 * @return entity {@link Entity}
 	 */
-	<E extends T> E buildPostValidationOnInsert(Serializable id, E model);
+	default <E extends T> E buildPostValidationOnInsert(Serializable id, E model) {
+		return buildPostValidationOnInsert(id, model, getCurrentSession());
+	}
+
+	<E extends T> E buildPostValidationOnInsert(Serializable id, E model, Session session);
 
 	/**
 	 * @see EntityBuilder#insertionBuild(Entity)
@@ -46,7 +58,11 @@ public interface EntityBuilder<T extends Entity> {
 	 * @param model
 	 * @return persisted {@link Entity}
 	 */
-	<E extends T> E buildUpdate(Serializable id, E model, E persistence);
+	default <E extends T> E buildUpdate(Serializable id, E model, E persistence) {
+		return buildUpdate(id, model, persistence, getCurrentSession());
+	}
+
+	<E extends T> E buildUpdate(Serializable id, E model, E persistence, Session session);
 
 	String getLoggableName();
 

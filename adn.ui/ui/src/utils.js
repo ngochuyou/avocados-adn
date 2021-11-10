@@ -146,13 +146,13 @@ const DAY_NAMES = [
 	"Saturday"
 ];
 
-const DATE_NAMES = [
-	'00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
+export const DATE_NAMES = [
+	'01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
 	'11', '12', '13', '14', '15', '16', '17', '18', '19', '20', 
 	'21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31'
 ];
 
-const MONTH_NAMES = [
+export const MONTH_NAMES = [
 	"Jan", "Feb", "Mar",
 	"Apr", "May", "Jun", "Jul",
 	"Aug", "Sep", "Oct",
@@ -311,3 +311,55 @@ export class ErrorTracker {
 		return this.hasError;
 	}
 }
+
+export const getItemSpecification = (item) => `${item.product.id}-${item.color}-${item.namedSize}`;
+export const groupCartItems = (items, consume = (current, existing) => ({})) => {
+	return items.reduce((groupedItems, current) => {
+		const specification = getItemSpecification(current);
+		const consumption = consume(current, groupedItems[specification]);
+
+		if (groupedItems[specification] == null) {
+			return {
+				...groupedItems,
+				[specification]: {
+					...current,
+					quantity: 1,
+					...consumption
+				}
+			};
+		}
+
+		return {
+			...groupedItems,
+			[specification]: {
+				...groupedItems[specification],
+				quantity: groupedItems[specification].quantity + 1,
+				...consumption
+			}
+		};
+	}, {});
+}
+
+export const chartColors = [
+	'#003f5c', '#2f4b7c', '#665191',
+	'#a05195', '#d45087', '#f95d6a',
+	'#ff7c43', '#ffa600'
+];
+
+export const merge = (left, right, mapper = (ele) => ele) => {
+	const hash = {};
+	const result = [];
+	const joined = [...left, ...right];
+	let key;
+
+	for (let ele of joined) {
+		key = mapper(ele);
+		
+		if (hash[key] == null) {
+			hash[key] = true;
+			result.push(ele);
+		}
+	}
+
+	return result;
+};

@@ -1,6 +1,6 @@
 import {
 	isString, /*hasLength*/ isEmpty, join, result,
-	formatServerDatetime
+	formatServerDatetime, hasLength
 } from '../utils';
 import { fjson } from '../fetch';
 
@@ -150,13 +150,13 @@ export function approveProductCost({
 	});
 }
 
-// export function getProvidersOfProduct({
-// 	productId = null, columns = [],
-// 	page = 0, size = 1000
-// }) {
-// 	if (!isString(productId) || !hasLength(productId)) {
-// 		return [null, result("Product code was empty")];
-// 	}
+export function getProvidersByProduct({
+	productId = null,
+	page = 0, size = 1000
+}) {
+	if (!hasLength(productId)) {
+		return [null, result("Product ID was empty")];
+	}
 
-// 	return fjson(`/rest/provider/current/${productId}?columns=${join(columns)}&page=${page}&size=${size}`);
-// }
+	return fjson(`/rest/provider/cost/providersbyproduct/${productId}?page=${page}&size=${size}`);
+}

@@ -38,6 +38,7 @@ import adn.application.Result;
 import adn.application.context.ContextProvider;
 import adn.dao.generic.GenericRepository;
 import adn.dao.specific.UserRepository;
+import adn.helpers.StringHelper;
 import adn.model.entities.Customer;
 import adn.model.entities.Head;
 import adn.model.entities.Item;
@@ -326,7 +327,7 @@ public class UserService implements Service, ObservableDomainEntityService<User>
 
 							return builder.and(
 									builder.equal(root.get(_Item.product).get(_Product.id), cartItem.getProductId()),
-									Optional.ofNullable(cartItem.getColor())
+									StringHelper.get(cartItem.getColor())
 										.map(color -> builder.equal(root.get(_Item.color), color))
 										.orElse(builder.conjunction()),
 									Optional.ofNullable(cartItem.getNamedSize())
@@ -367,6 +368,16 @@ public class UserService implements Service, ObservableDomainEntityService<User>
 			return Result.ok(null);
 		} catch (Exception e) {
 			return Result.failed(e.getMessage());
+		}
+	}
+
+	public Result<Void> emptyCart(boolean flushOnFinish) {
+		try {
+			useManualSession().load(Customer.class, getPrincipalName()).setCart(new HashSet<>());
+
+			return crudService.finish(Result.ok(null), flushOnFinish);
+		} catch (Exception e) {
+			return crudService.finish(Result.failed(e.getMessage()), flushOnFinish);
 		}
 	}
 }

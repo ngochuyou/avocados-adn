@@ -254,7 +254,7 @@ export function GlobalCartContextProvider({ children }) {
 			payload: items
 		});
 	}, [dispatch]);
-	console.log(store.items);
+	
 	return (
 		<GlobalCartContext.Provider value={{
 			store, setItems, addItem

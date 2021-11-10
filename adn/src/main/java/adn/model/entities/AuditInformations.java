@@ -39,6 +39,16 @@ public class AuditInformations implements DomainComponentType, Serializable {
 	@Column(name = _AuditableResource.$lastModifiedDate, nullable = false)
 	private LocalDateTime lastModifiedDate;
 
+	public AuditInformations() {}
+
+	public AuditInformations(Operator createdBy, Operator lastModifiedBy, LocalDateTime createdDate,
+			LocalDateTime lastModifiedDate) {
+		this.createdBy = createdBy;
+		this.lastModifiedBy = lastModifiedBy;
+		this.createdDate = createdDate;
+		this.lastModifiedDate = lastModifiedDate;
+	}
+
 	public Operator getCreatedBy() {
 		return createdBy;
 	}

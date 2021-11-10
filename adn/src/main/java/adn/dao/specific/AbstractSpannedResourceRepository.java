@@ -3,6 +3,8 @@
  */
 package adn.dao.specific;
 
+import static adn.application.context.ContextProvider.getCurrentSession;
+
 import java.time.LocalDateTime;
 import java.time.temporal.Temporal;
 import java.util.Collection;
@@ -27,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
 
-import adn.application.context.ContextProvider;
 import adn.dao.generic.GenericRepository;
 import adn.dao.generic.GenericRepositoryImpl;
 import adn.dao.generic.SpannedResourceRepository;
@@ -107,38 +108,70 @@ public abstract class AbstractSpannedResourceRepository<T extends Temporal, E ex
 	// @formatter:on
 	@Override
 	public Optional<E> findCurrent(Specification<E> specification) {
-		return genericRepository.findOne(entityType, specification.and(getCurrentSpecification()));
+		return findCurrent(specification, getCurrentSession());
+	}
+
+	@Override
+	public Optional<E> findCurrent(Specification<E> specification, Session session) {
+		return genericRepository.findOne(entityType, specification.and(getCurrentSpecification()), session);
 	}
 
 	@Override
 	public Optional<Object[]> findCurrent(Collection<String> columns, Specification<E> specification) {
-		return genericRepository.findOne(entityType, columns, specification.and(getCurrentSpecification()));
+		return findCurrent(columns, specification, getCurrentSession());
+	}
+
+	@Override
+	public Optional<Object[]> findCurrent(Collection<String> columns, Specification<E> specification, Session session) {
+		return genericRepository.findOne(entityType, columns, specification.and(getCurrentSpecification()), session);
 	}
 
 	@Override
 	public List<E> findAllCurrents(Specification<E> specification) {
-		return genericRepository.findAll(entityType, specification.and(getCurrentSpecification()));
+		return findAllCurrents(specification, getCurrentSession());
+	}
+
+	@Override
+	public List<E> findAllCurrents(Specification<E> specification, Session session) {
+		return genericRepository.findAll(entityType, specification.and(getCurrentSpecification()), session);
 	}
 
 	@Override
 	public List<Object[]> findAllCurrents(Collection<String> columns, Specification<E> specification) {
-		return genericRepository.findAll(entityType, columns, specification.and(getCurrentSpecification()));
+		return findAllCurrents(columns, specification, getCurrentSession());
 	}
 
-	@SuppressWarnings("unchecked")
+	@Override
+	public List<Object[]> findAllCurrents(Collection<String> columns, Specification<E> specification, Session session) {
+		return genericRepository.findAll(entityType, columns, specification.and(getCurrentSpecification()), session);
+	}
+
 	@Override
 	public List<E> findAllCurrents(String specification, Object... parameterValues) {
-		return (List<E>) doFindAllCurrents(null, specification, parameterValues);
+		return findAllCurrents(specification, getCurrentSession(), parameterValues);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public List<Object[]> findAllCurrents(Collection<String> columns, String specification, Object... parameterValues) {
-		return HibernateHelper.toRows((List<Tuple>) doFindAllCurrents(columns, specification, parameterValues));
+	public List<E> findAllCurrents(String specification, Session session, Object... parameterValues) {
+		return (List<E>) doFindAllCurrents(null, specification, session, parameterValues);
 	}
 
-	private List<?> doFindAllCurrents(Collection<String> columns, String specification, Object... parameterValues) {
-		Session session = ContextProvider.getCurrentSession();
+	@Override
+	public List<Object[]> findAllCurrents(Collection<String> columns, String specification, Object... parameterValues) {
+		return findAllCurrents(columns, specification, getCurrentSession(), parameterValues);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Object[]> findAllCurrents(Collection<String> columns, String specification, Session session,
+			Object... parameterValues) {
+		return HibernateHelper
+				.toRows((List<Tuple>) doFindAllCurrents(columns, specification, session, parameterValues));
+	}
+
+	private List<?> doFindAllCurrents(Collection<String> columns, String specification, Session session,
+			Object... parameterValues) {
 		Query<?> query = resolveQuery(session, columns, specification);
 
 		query.setParameter(CURRENT_TEMPORAL_PARAM_NAME, currentTemporalSupplier.get());
@@ -163,15 +196,27 @@ public abstract class AbstractSpannedResourceRepository<T extends Temporal, E ex
 
 	@Override
 	public Optional<E> findOverlapping(Specification<E> specification, T appliedTimestamp, T droppedTimestamp) {
+		return findOverlapping(specification, appliedTimestamp, droppedTimestamp, getCurrentSession());
+	}
+
+	@Override
+	public Optional<E> findOverlapping(Specification<E> specification, T appliedTimestamp, T droppedTimestamp,
+			Session session) {
 		return genericRepository.findOne(entityType,
-				specification.and(getSpecificationForOverlapping(appliedTimestamp, droppedTimestamp)));
+				specification.and(getSpecificationForOverlapping(appliedTimestamp, droppedTimestamp)), session);
 	}
 
 	@Override
 	public Optional<Object[]> findOverlapping(Collection<String> columns, Specification<E> specification,
 			T appliedTimestamp, T droppedTimestamp) {
+		return findOverlapping(columns, specification, appliedTimestamp, droppedTimestamp, getCurrentSession());
+	}
+
+	@Override
+	public Optional<Object[]> findOverlapping(Collection<String> columns, Specification<E> specification,
+			T appliedTimestamp, T droppedTimestamp, Session session) {
 		return genericRepository.findOne(entityType, columns,
-				specification.and(getSpecificationForOverlapping(appliedTimestamp, droppedTimestamp)));
+				specification.and(getSpecificationForOverlapping(appliedTimestamp, droppedTimestamp)), session);
 	}
 
 	@SuppressWarnings("unchecked")

@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -52,12 +53,12 @@ public class EntityBuilderProvider implements ContextBuilder {
 	private static final EntityBuilder<Entity> DEFAULT_BUILDER = new EntityBuilderContract<Entity>() {
 
 		@Override
-		public <E extends Entity> E buildUpdate(Serializable id, E entity, E persistence) {
+		public <E extends Entity> E buildUpdate(Serializable id, E entity, E persistence, Session session) {
 			return persistence;
 		}
 
 		@Override
-		public <E extends Entity> E buildInsertion(Serializable id, E entity) {
+		public <E extends Entity> E buildInsertion(Serializable id, E entity, Session session) {
 			return entity;
 		}
 
@@ -67,9 +68,8 @@ public class EntityBuilderProvider implements ContextBuilder {
 		}
 
 		@Override
-		public <E extends Entity> E buildPostValidationOnInsert(Serializable id, E model) {
-			// TODO Auto-generated method stub
-			return null;
+		public <E extends Entity> E buildPostValidationOnInsert(Serializable id, E model, Session session) {
+			return model;
 		}
 
 	};
@@ -190,17 +190,17 @@ public class EntityBuilderProvider implements ContextBuilder {
 		}
 
 		@Override
-		public Entity buildInsertion(Serializable id, Entity entity) {
+		public Entity buildInsertion(Serializable id, Entity entity, Session session) {
 			return build(entity, entity);
 		}
 
 		@Override
-		public Entity buildUpdate(Serializable id, Entity entity, Entity persistence) {
+		public Entity buildUpdate(Serializable id, Entity entity, Entity persistence, Session session) {
 			return build(persistence, entity);
 		}
 
 		@Override
-		public Entity buildPostValidationOnInsert(Serializable id, Entity model) {
+		public Entity buildPostValidationOnInsert(Serializable id, Entity model, Session session) {
 			return model;
 		}
 
@@ -217,7 +217,7 @@ public class EntityBuilderProvider implements ContextBuilder {
 		}
 
 		@Override
-		public Entity buildInsertion(Serializable id, Entity entity) {
+		public Entity buildInsertion(Serializable id, Entity entity, Session session) {
 			AuditableResource<?> resource = (AuditableResource<?>) entity;
 			Operator operator = authService.getOperator();
 
@@ -230,7 +230,7 @@ public class EntityBuilderProvider implements ContextBuilder {
 		}
 
 		@Override
-		public Entity buildUpdate(Serializable id, Entity entity, Entity persistence) {
+		public Entity buildUpdate(Serializable id, Entity entity, Entity persistence, Session session) {
 			AuditableResource<?> resource = (AuditableResource<?>) persistence;
 
 			resource.setLastModifiedBy(authService.getOperator());
@@ -240,7 +240,7 @@ public class EntityBuilderProvider implements ContextBuilder {
 		}
 
 		@Override
-		public Entity buildPostValidationOnInsert(Serializable id, Entity model) {
+		public Entity buildPostValidationOnInsert(Serializable id, Entity model, Session session) {
 			return model;
 		}
 
@@ -250,7 +250,7 @@ public class EntityBuilderProvider implements ContextBuilder {
 	private class ApprovableResourceBuilder extends EntityBuilderContract {
 
 		@Override
-		public Entity buildInsertion(Serializable id, Entity entity) {
+		public Entity buildInsertion(Serializable id, Entity entity, Session session) {
 			ApprovableResource resource = (ApprovableResource) entity;
 
 			resource.setApprovedBy(null);
@@ -260,13 +260,13 @@ public class EntityBuilderProvider implements ContextBuilder {
 		}
 
 		@Override
-		public Entity buildUpdate(Serializable id, Entity entity, Entity persistence) {
-			return persistence;
+		public Entity buildPostValidationOnInsert(Serializable id, Entity model, Session session) {
+			return model;
 		}
 
 		@Override
-		public Entity buildPostValidationOnInsert(Serializable id, Entity model) {
-			return model;
+		public Entity buildUpdate(Serializable id, Entity model, Entity persistence, Session session) {
+			return persistence;
 		}
 
 	}

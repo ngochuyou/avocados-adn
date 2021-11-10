@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.hibernate.Session;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -32,6 +33,8 @@ public interface GenericCRUDService extends Service {
 
 	<T extends Entity, E extends T> Result<E> create(Serializable id, E model, Class<E> type, boolean flushOnFinish);
 
+	<T extends Entity, E extends T> Result<E> create(Serializable id, E model, Class<E> type, Session session, boolean flushOnFinish);
+	
 	default <T extends Entity, E extends T> ResultBatch<E> createBatch(Collection<E> batch, Class<E> type) {
 		return createBatch(batch, type, false);
 	};

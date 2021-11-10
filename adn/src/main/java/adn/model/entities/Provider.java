@@ -34,7 +34,7 @@ public class Provider extends PermanentEntity implements NamedResource {
 	@GeneratedValue(generator = "uuid")
 	@GenericGenerator(name = "uuid", strategy = "uuid2")
 	@Column(columnDefinition = Common.MYSQL_UUID_COLUMN_DEFINITION)
-	protected UUID id;
+	private UUID id;
 
 	@Column(nullable = false, unique = true)
 	private String name;
@@ -58,6 +58,12 @@ public class Provider extends PermanentEntity implements NamedResource {
 	@JsonIgnore
 	@OneToMany(mappedBy = _ProductCost.provider)
 	private List<ProductCost> productCosts;
+
+	public Provider() {}
+
+	public Provider(UUID id) {
+		this.id = id;
+	}
 
 	public UUID getId() {
 		return id;

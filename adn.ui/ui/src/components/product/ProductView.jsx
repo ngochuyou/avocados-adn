@@ -6,7 +6,7 @@ import Account from '../../models/Account';
 import { useProduct, useCart } from '../../hooks/product-hooks';
 import { useAuth } from '../../hooks/authentication-hooks';
 
-import { getProductPrices, obtainProduct, getItemsList } from '../../actions/product';
+import { getProductPrices, obtainProduct, getItemsListByProduct } from '../../actions/product';
 import { addCart } from '../../actions/account';
 
 import Navbar from '../utils/Navbar';
@@ -45,7 +45,7 @@ export default function ProductView() {
 				return;
 			}
 
-			const [items, itemsFetchErr] = await getItemsList({
+			const [items, itemsFetchErr] = await getItemsListByProduct({
 				productId,
 				columns: ["color", "namedSize"]
 			});
@@ -180,7 +180,8 @@ export default function ProductView() {
 									</thead>
 									<tbody>
 									{
-										product.items.map((item, key) => (
+										asIf(hasLength(product.items))
+										.then(() => product.items.map((item, key) => (
 											<tr key={key}>
 												<td>
 													<div
@@ -199,7 +200,7 @@ export default function ProductView() {
 												<td>
 													<label className="uk-label backgroundf">{`${item.quantity} left`}</label>
 												</td>
-												<td uk-tooltip="Add to your cart">
+												<td>
 												{
 													asIf(principal != null && principal.role === Account.Role.CUSTOMER)
 													.then(() => (
@@ -207,12 +208,16 @@ export default function ProductView() {
 															onClick={() => addToCart(product, item.color, item.namedSize)}
 															uk-icon="icon: cart"
 															className="uk-icon-button"
+															uk-tooltip="Add to your cart"
 														></button>
 													)).else()
 												}
 												</td>
 											</tr>
-										))
+										)))
+										.else(() => <tr>
+											<td className="uk-text-muted" colSpan="3">Currently out of stock</td>
+										</tr>)
 									}
 									</tbody>
 								</table>

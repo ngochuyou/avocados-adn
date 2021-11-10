@@ -174,6 +174,11 @@ function RightDropDownNav() {
 				<div className="uk-navbar-dropdown">
 				<ul className="uk-nav uk-navbar-dropdown-nav noselect">
 					<li>
+						<Link
+							to={routes.order.url}
+						>Your orders</Link>
+					</li>
+					<li>
 						<NoFollow
 							onClick={signOut}
 						>Sign out</NoFollow>

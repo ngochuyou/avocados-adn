@@ -12,13 +12,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import org.hibernate.Session;
 import org.hibernate.internal.util.collections.CollectionHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import adn.application.context.ContextProvider;
 import adn.dao.generic.GenericRepository;
 import adn.model.Generic;
 import adn.model.entities.Category;
@@ -61,8 +61,8 @@ public class ProductBuilder extends AbstractPermanentEntityBuilder<Product> {
 	}
 
 	@Override
-	public <E extends Product> E buildInsertion(Serializable id, E model) {
-		model = super.buildInsertion(id, model);
+	public <E extends Product> E buildInsertion(Serializable id, E model, Session session) {
+		model = super.buildInsertion(id, model, session);
 
 		model.setLocked(Optional.ofNullable(model.isLocked()).orElse(Boolean.FALSE));
 
@@ -70,8 +70,8 @@ public class ProductBuilder extends AbstractPermanentEntityBuilder<Product> {
 	}
 
 	@Override
-	public <E extends Product> E buildPostValidationOnInsert(Serializable id, E model) {
-		ContextProvider.getCurrentSession().persist(model);
+	public <E extends Product> E buildPostValidationOnInsert(Serializable id, E model, Session session) {
+		session.persist(model);
 		id = model.getId();
 
 		if (logger.isDebugEnabled()) {

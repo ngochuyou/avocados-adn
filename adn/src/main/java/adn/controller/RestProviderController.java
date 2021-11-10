@@ -3,6 +3,7 @@
  */
 package adn.controller;
 
+import static adn.application.context.ContextProvider.getCurrentSession;
 import static adn.application.context.ContextProvider.getPrincipalCredential;
 import static org.springframework.http.ResponseEntity.ok;
 
@@ -17,7 +18,18 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import javax.persistence.Tuple;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.Root;
+
+import org.hibernate.Session;
+import org.hibernate.query.Query;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -41,6 +53,7 @@ import adn.application.context.builders.DepartmentScopeContext;
 import adn.controller.query.impl.ProviderQuery;
 import adn.dao.specific.ProductCostRepository;
 import adn.helpers.CollectionHelper;
+import adn.helpers.HibernateHelper;
 import adn.model.entities.ProductCost;
 import adn.model.entities.Provider;
 import adn.model.entities.id.ProductCostId;
@@ -59,6 +72,8 @@ import adn.service.services.ProviderService;
 @RestController
 @RequestMapping("/rest/provider")
 public class RestProviderController extends BaseController {
+
+	private static final Logger logger = LoggerFactory.getLogger(RestProviderController.class);
 
 	private static final int COMMON_CACHE_MAXAGE = 1;
 
@@ -180,8 +195,7 @@ public class RestProviderController extends BaseController {
 	@PostMapping(path = "/cost")
 	@Secured({ HEAD, PERSONNEL })
 	@Transactional
-	public ResponseEntity<?> createProductCost(@RequestBody ProductCostModel model)
-			throws Exception {
+	public ResponseEntity<?> createProductCost(@RequestBody ProductCostModel model) throws Exception {
 		authService.assertSaleDepartment();
 
 		ProductCost newCost = extract(ProductCost.class, model, new ProductCost());
@@ -265,6 +279,37 @@ public class RestProviderController extends BaseController {
 								productId),
 						paging, getPrincipalCredential()),
 				5, TimeUnit.SECONDS, 7, TimeUnit.SECONDS);
+	}
+
+	@GetMapping(path = "/cost/providersbyproduct/{productId}")
+	@Secured({ HEAD, PERSONNEL })
+	@Transactional(readOnly = true)
+	public ResponseEntity<?> getProvidersByProduct(@PathVariable(name = "productId", required = true) String productId,
+			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
+		authService.assertSaleDepartment();
+
+		Session session = getCurrentSession();
+		CriteriaBuilder builder = session.getCriteriaBuilder();
+		CriteriaQuery<Tuple> cq = builder.createTupleQuery();
+		Root<ProductCost> root = cq.from(ProductCost.class);
+		Join<Object, Object> providerJoin = root.join(_ProductCost.provider);
+
+		cq.distinct(true).multiselect(providerJoin.get(_Provider.id), providerJoin.get(_Provider.name)).where(
+				builder.and(builder.equal(root.get(_ProductCost.id).get(_ProductCost.productId), productId)),
+				builder.equal(root.get(_ProductCost.active), true));
+
+		Query<Tuple> hql = session.createQuery(cq);
+
+		hql.setMaxResults(paging.getPageSize());
+		hql.setFirstResult(paging.getPageNumber() * paging.getPageSize());
+		
+		if (logger.isDebugEnabled()) {
+			logger.debug(hql.getQueryString());
+		}
+
+		return makeStaleWhileRevalidate(HibernateHelper.toRows(hql.list()).stream()
+				.map(cols -> Map.of("id", cols[0], "name", cols[1])).collect(Collectors.toList()), 30, TimeUnit.DAYS, 7,
+				TimeUnit.DAYS);
 	}
 
 	@PatchMapping(path = "/cost/approve")

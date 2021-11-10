@@ -12,7 +12,10 @@ const AuthenticationContext = createContext({});
 export const useAuth = () => useContext(AuthenticationContext);
 
 const doFetchPrincipal = async (setPrincipal = () => null) => {
-	let [principal, err] = await fetchPrincipal([ "username", "role", "firstName", "lastName", "photo" ]);
+	let [principal, err] = await fetchPrincipal([
+		"username", "role", "firstName",
+		"lastName", "photo", "phone"
+	]);
 
 	if (err) {
 		console.error(err);
@@ -33,7 +36,7 @@ const doFetchPrincipal = async (setPrincipal = () => null) => {
 		});
 	}
 
-	setPrincipal(principal);
+	setPrincipal(new Account(principal));
 };
 
 export default function AuthenticationContextProvider({ children }) {

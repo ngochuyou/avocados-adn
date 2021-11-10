@@ -373,9 +373,9 @@ public class RestProductController extends ProductController {
 
 	private static final String QUANTITY = "quantity";
 
-	@GetMapping(value = "/items")
+	@GetMapping(value = "/items/{productId}")
 	@Transactional(readOnly = true)
-	public ResponseEntity<?> getItemsList(@RequestParam(name = "productId") BigInteger productId,
+	public ResponseEntity<?> getItemsListByProduct(@PathVariable(name = "productId") BigInteger productId,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns)
 			throws NoSuchFieldException, UnauthorizedCredential {
 		int countColumnsIndex = columns.size();
@@ -388,6 +388,15 @@ public class RestProductController extends ProductController {
 				.forEach(index -> items.get(index).put(QUANTITY, rows.get(index)[countColumnsIndex]));
 
 		return makeStaleWhileRevalidate(items, 5, TimeUnit.SECONDS, 7, TimeUnit.SECONDS);
+	}
+
+	@GetMapping(value = "/items")
+	@Transactional(readOnly = true)
+	public ResponseEntity<?> getItemsList(@RequestParam(name = "ids") List<BigInteger> itemIds,
+			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		return ok(crudService.readAll(Item.class, columns,
+				(root, query, builder) -> builder.in(root.get(_Item.id)).value(itemIds), getPrincipalCredential()));
 	}
 
 }

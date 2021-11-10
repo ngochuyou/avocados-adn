@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
 
-import { getAllCategories } from '../actions/product';
-import { getProductListByCategory, getProductPrices } from '../actions/product';
+import { addCart } from '../actions/account';
+import { getAllCategories, getProductListByCategory, getProductPrices } from '../actions/product';
 
 import { SourcedImage } from '../components/utils/Gallery'
 import ProductList from '../components/product/ProductList'
@@ -273,11 +273,26 @@ function ProductListView() {
 	const { push } = useHistory();
 	const { productView: { url: productViewUrl } } = routes;
 
+	const onCartClick = async (p) => {
+		const [res, err] = await addCart({
+			productId: p.id,
+			quantity: 1
+		});
+
+		if (err) {
+			console.error(err);
+			return;
+		}
+
+		console.log(res);
+	};
+
 	return (
 		<div className="uk-padding-small">
 			<ProductList
 				onItemClick={(p) => push(`${productViewUrl}/${p.id}`)}
 				list={Object.values(products)}
+				onCartClick={onCartClick}
 			/>
 		</div>
 	);

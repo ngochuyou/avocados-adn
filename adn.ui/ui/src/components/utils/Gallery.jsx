@@ -210,8 +210,12 @@ export function SourcedImage({ src = null, name = "udef", fit = "cover" }) {
 	/>;
 }
 
-export function DomainImage({ url = "", name = "", className = "", fit = "cover" }) {
+export function DomainImage({
+	url = "", name = "", className = "", fit = "cover",
+	onClick = () => null
+}) {
 	return <img
+		onClick={onClick}
 		className={`uk-width-1-1 uk-height-1-1 ${className}`}
 		src={`${server.url}${url}`}
 		alt={name}
@@ -225,12 +229,16 @@ export function DomainImage({ url = "", name = "", className = "", fit = "cover"
 
 export const DomainProductImage = memo(_DomainProductImage, (o, n) => o.name === n.name);
 
-function _DomainProductImage({ name = "", className = "", fit = "cover" }) {
+function _DomainProductImage({
+	name = "", className = "", fit = "cover",
+	onClick = () => console.log("click")
+}) {
 	if (!hasLength(name)) {
 		return <div>No preview</div>;
 	}
 
 	return <DomainImage
+		onClick={onClick}
 		url={`${server.images.product}/${name}`}
 		className={className}
 		fit={fit}

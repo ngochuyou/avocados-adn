@@ -40,6 +40,7 @@ import org.hibernate.FlushMode;
 import org.hibernate.QueryException;
 import org.hibernate.Session;
 import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.internal.util.collections.CollectionHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -131,12 +132,15 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 	@Override
 	public <T extends Entity, E extends T> Result<E> create(Serializable id, E entity, Class<E> type,
 			boolean flushOnFinish) {
+		return create(id, entity, type, getCurrentSession(), flushOnFinish);
+	}
+
+	@Override
+	public <T extends Entity, E extends T> Result<E> create(Serializable id, E entity, Class<E> type, Session session,
+			boolean flushOnFinish) {
 		try {
 			id = resolveId(id, entity);
-
-			Session ss = getCurrentSession();
-
-			ss.setHibernateFlushMode(FlushMode.MANUAL);
+			HibernateHelper.useManualSession(session);
 
 			EntityBuilder<E> entityBuilder = entityBuilderProvider.getBuilder(type);
 
@@ -144,18 +148,18 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 				logger.debug(String.format("Building entity for creation [%s#%s]", type.getName(), id));
 			}
 
-			entity = entityBuilder.buildInsertion(id, entity);
+			entity = entityBuilder.buildInsertion(id, entity, session);
 
-			Result<E> validation = repository.validate(type, id, entity, ss);
+			Result<E> validation = repository.validate(type, id, entity, session);
 
 			if (!validation.isOk()) {
 				return validation;
 			}
 
-			entity = entityBuilder.buildPostValidationOnInsert(id, entity);
-			ss.save(entity);
+			entity = entityBuilder.buildPostValidationOnInsert(id, entity, session);
+			session.save(entity);
 
-			return finish(ss, Result.ok(entity), flushOnFinish);
+			return finish(session, Result.ok(entity), flushOnFinish);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return Result.failed(e.getMessage());
@@ -641,7 +645,7 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 			SourceMetadata<T> sourceMetadata) throws NoSuchFieldException, UnauthorizedCredential {
 		List<String> columns = sourceMetadata.getColumns();
 
-		if (columns.isEmpty()) {
+		if (CollectionHelper.isEmpty(columns)) {
 			DomainEntityMetadata<T> metadata = modelContext.getMetadata(type);
 
 			sourceMetadata.setColumns(metadata.getNonLazyPropertyNames());

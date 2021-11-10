@@ -83,7 +83,10 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 		"/rest/product\\GET",
 		"/rest/product/price\\GET",
 		"/rest/product/{productId:^[0-9]+$}\\GET",
-		"/rest/product/items\\GET"
+		"/rest/product/items\\GET",
+		"/rest/product/items/{productId}\\GET",
+		"/rest/admindivision/province\\GET",
+		"/rest/admindivision/district/{provinceId}\\GET"
 	};
 	// @formatter:on
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());

@@ -11,11 +11,11 @@ import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.Optional;
 
+import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import adn.application.context.ContextProvider;
 import adn.model.Generic;
 import adn.model.entities.Item;
 import adn.model.entities.constants.ItemStatus;
@@ -44,8 +44,8 @@ public class ItemBuilder extends AbstractPermanentEntityBuilder<Item> {
 	}
 
 	@Override
-	public <E extends Item> E buildInsertion(Serializable id, E model) {
-		model = super.buildInsertion(id, model);
+	public <E extends Item> E buildInsertion(Serializable id, E model, Session session) {
+		model = super.buildInsertion(id, model, session);
 
 		if (model.getCost() != null) {
 			model.setCost(model.getCost().setScale(4, RoundingMode.HALF_UP));
@@ -55,8 +55,8 @@ public class ItemBuilder extends AbstractPermanentEntityBuilder<Item> {
 	}
 
 	@Override
-	public <E extends Item> E buildPostValidationOnInsert(Serializable id, E model) {
-		ContextProvider.getCurrentSession().persist(model);
+	public <E extends Item> E buildPostValidationOnInsert(Serializable id, E model, Session session) {
+		session.persist(model);
 		id = model.getId();
 
 		if (logger.isDebugEnabled()) {

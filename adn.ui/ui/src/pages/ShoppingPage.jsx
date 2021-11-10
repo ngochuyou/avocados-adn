@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useParams, useHistory } from 'react-router-dom';
+import { useParams, useHistory  } from 'react-router-dom';
 // aaldredkq
 // atidman64
 import { getProductListByCategory } from '../actions/product';

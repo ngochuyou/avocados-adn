@@ -31,6 +31,13 @@ public class ApprovalInformations implements DomainComponentType, Serializable {
 	@Column(name = _ApprovableResource.$approvedTimestamp)
 	private LocalDateTime approvedTimestamp;
 
+	public ApprovalInformations() {}
+
+	public ApprovalInformations(Head approvedBy, LocalDateTime approvedTimestamp) {
+		this.approvedBy = approvedBy;
+		this.approvedTimestamp = approvedTimestamp;
+	}
+
 	public Head getApprovedBy() {
 		return approvedBy;
 	}

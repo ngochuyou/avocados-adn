@@ -49,6 +49,7 @@ public class RestCustomerController extends BaseController {
 
 	private static final String ADD_ACTION = "add";
 	private static final String REMOVE_ACTION = "remove";
+	private static final String EMPTY_ACTION = "empty";
 
 	@GetMapping("/cart")
 	@Secured(CUSTOMER)
@@ -73,6 +74,10 @@ public class RestCustomerController extends BaseController {
 			}
 			case REMOVE_ACTION: {
 				return doRemoveFromCart(itemIds);
+			}
+			case EMPTY_ACTION: {
+				// auto-flush here
+				return send(userService.emptyCart(true), CART_UPDATED_SUCCESSFULLY);
 			}
 			default:
 				return bad(UNKNOWN_ACTION);

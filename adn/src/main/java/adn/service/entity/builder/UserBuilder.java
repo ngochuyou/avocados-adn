@@ -10,6 +10,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -51,8 +52,8 @@ public class UserBuilder<T extends User> extends AbstractPermanentEntityBuilder<
 	}
 
 	@Override
-	public <E extends T> E buildInsertion(Serializable id, E model) {
-		model = super.buildInsertion(id, model);
+	public <E extends T> E buildInsertion(Serializable id, E model, Session session) {
+		model = super.buildInsertion(id, model, session);
 
 		if (model.getPassword() == null || model.getPassword().length() < _User.MINIMUM_PASSWORD_LENGTH) {
 			model.setPassword(EMPTY_PASSWORD);
@@ -70,8 +71,8 @@ public class UserBuilder<T extends User> extends AbstractPermanentEntityBuilder<
 	}
 
 	@Override
-	public <E extends T> E buildUpdate(Serializable id, E model, E persistence) {
-		persistence = super.buildUpdate(id, model, persistence);
+	public <E extends T> E buildUpdate(Serializable id, E model, E persistence, Session session) {
+		persistence = super.buildUpdate(id, model, persistence, session);
 		// leave out model's password if there's no need of password editing
 		if (StringHelper.hasLength(model.getPassword())) {
 			persistence.setPassword(passwordEncoder.encode(model.getPassword()));

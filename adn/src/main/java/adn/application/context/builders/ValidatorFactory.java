@@ -6,6 +6,7 @@ package adn.application.context.builders;
 import static adn.application.Common.notEmpty;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -15,8 +16,12 @@ import java.time.temporal.Temporal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Pattern;
+
+import javax.persistence.Column;
 
 import org.hibernate.Session;
 import org.slf4j.Logger;
@@ -40,6 +45,7 @@ import adn.helpers.TypeHelper;
 import adn.model.Generic;
 import adn.model.entities.Entity;
 import adn.model.entities.NamedResource;
+import adn.model.entities.NamedResource.DuplicatedNames;
 import adn.model.entities.SpannedResource;
 import adn.model.entities.metadata._NamedResource;
 import adn.model.entities.metadata._SpannedResource;
@@ -106,9 +112,9 @@ public class ValidatorFactory implements ContextBuilder {
 			SpringApplication.exit(ContextProvider.getApplicationContext());
 		}
 
-		final Map<Class, Validator> fixedValidators = Map.of(
-				NamedResource.class, new NamedResourceValidator(ContextProvider.getBean(GenericRepository.class)),
-				SpannedResource.class, new SpannedResourceValidator());
+		final Map<Class, Function<Class, Validator>> fixedValidators = Map.of(
+				NamedResource.class, type -> new NamedResourceValidator(ContextProvider.getBean(GenericRepository.class), type),
+				SpannedResource.class, type -> new SpannedResourceValidator());
 		
 		modelManager.getEntityTree()
 			.forEach(branch -> {
@@ -135,11 +141,11 @@ public class ValidatorFactory implements ContextBuilder {
 				for (Class<?> interfaceType: ClassUtils.getAllInterfacesForClassAsSet(type)) {
 					if (fixedValidators.containsKey(interfaceType)) {
 						if (!validator.equals(DEFAULT_VALIDATOR)) {
-							validatorMap.put(type, fixedValidators.get(interfaceType).and(validator));
+							validatorMap.put(type, fixedValidators.get(interfaceType).apply(type).and(validator));
 							return;
 						}
 						
-						validatorMap.put(type, fixedValidators.get(interfaceType));
+						validatorMap.put(type, fixedValidators.get(interfaceType).apply(type));
 					}
 				}
 			});
@@ -173,10 +179,26 @@ public class ValidatorFactory implements ContextBuilder {
 		private static final String TAKEN_NAME = "Name was taken";
 
 		private final GenericRepository genericRepository;
+		private final boolean isNameDuplicated;
 
-		private NamedResourceValidator(GenericRepository genericRepository) {
+		@SuppressWarnings("unchecked")
+		private NamedResourceValidator(GenericRepository genericRepository, Class type) {
 			super();
 			this.genericRepository = genericRepository;
+
+			boolean isNameDuplicated;
+
+			try {
+				Field nameField = type.getDeclaredField(_NamedResource.name);
+
+				isNameDuplicated = Optional.ofNullable(nameField.getDeclaredAnnotation(Column.class))
+						.map(anno -> anno.unique()).orElse(false);
+			} catch (NoSuchFieldException | SecurityException e) {
+				LoggerFactory.getLogger(this.getClass()).warn(e.getMessage());
+				isNameDuplicated = type.isAnnotationPresent(DuplicatedNames.class);
+			}
+
+			this.isNameDuplicated = isNameDuplicated;
 		}
 
 		@Override
@@ -185,6 +207,10 @@ public class ValidatorFactory implements ContextBuilder {
 
 			if (!NAME_PATTERN.matcher(resource.getName()).matches()) {
 				return Result.bad(Map.of(_NamedResource.name, INVALID_NAME));
+			}
+
+			if (isNameDuplicated) {
+				return Result.ok(instance);
 			}
 
 			Class<Entity> persistentClass = HibernateHelper.getPersistentClass(instance);

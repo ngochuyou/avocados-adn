@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.persistence.Tuple;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.Expression;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
@@ -26,6 +28,7 @@ import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
 import org.hibernate.query.criteria.internal.compile.RenderingContext;
 import org.hibernate.query.criteria.internal.expression.function.BasicFunctionExpression;
 
+import adn.application.Common;
 import adn.application.context.ContextProvider;
 import adn.model.entities.Entity;
 
@@ -91,12 +94,14 @@ public class HibernateHelper {
 		return tuples.stream().map(Tuple::toArray).collect(Collectors.toList());
 	}
 
-	public static void useManualSession() {
-		useManualSession(ContextProvider.getCurrentSession());
+	public static Session useManualSession() {
+		return useManualSession(ContextProvider.getCurrentSession());
 	}
 
-	public static void useManualSession(Session session) {
+	public static Session useManualSession(Session session) {
 		session.setHibernateFlushMode(FlushMode.MANUAL);
+		
+		return session;
 	}
 
 	// @formatter:off
@@ -145,6 +150,22 @@ public class HibernateHelper {
 
 		}
 
+	}
+	
+	public static Expression<Integer> year(CriteriaBuilder builder, Expression<?> expression) {
+		return builder.function(Common.YEAR, Integer.class, expression);
+	}
+	
+	public static Expression<Integer> month(CriteriaBuilder builder, Expression<?> expression) {
+		return builder.function(Common.MONTH, Integer.class, expression);
+	}
+	
+	public static Expression<Integer> week(CriteriaBuilder builder, Expression<?> expression) {
+		return builder.function(Common.WEEK, Integer.class, expression);
+	}
+	
+	public static Expression<Integer> day(CriteriaBuilder builder, Expression<?> expression) {
+		return builder.function(Common.DAY, Integer.class, expression);
 	}
 
 }

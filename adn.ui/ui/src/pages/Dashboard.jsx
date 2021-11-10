@@ -10,11 +10,17 @@ import Account from '../models/Account';
 
 import AccessDenied from './AccessDenied';
 
-import { StockScope, SaleScope, PersonnelScope } from '../components/security/DepartmentScope';
-import DepartmentBoard from '../components/dashboard/DepartmentBoard.jsx';
+import { NoFollow } from '../components/utils/Link';
+import {
+	StockScope, SaleScope, PersonnelScope,
+	CustomerServiceScope, HeadScope
+} from '../components/security/DepartmentScope';
+// import DepartmentBoard from '../components/dashboard/DepartmentBoard.jsx';
 import ProviderBoard from '../components/dashboard/ProviderBoard.jsx';
 import ProductBoard from '../components/dashboard/ProductBoard';
 import StockBoard from '../components/dashboard/StockBoard';
+import OrderBoard from '../components/dashboard/OrderBoard';
+import StatisticBoard from '../components/dashboard/StatisticBoard';
 
 const SidebarContext = createContext();
 export const useSidebarContext = () => useContext(SidebarContext);
@@ -36,7 +42,9 @@ export default function Dashboard() {
 	const {
 		dashboard: {
 			provider: { mapping: providerMapping },
-			product: { mapping: productMapping }
+			product: { mapping: productMapping },
+			order: { mapping: orderMapping },
+			stats: { mapping: statsMapping }
 		}
 	} = routes;
 
@@ -80,14 +88,34 @@ export default function Dashboard() {
 								</SaleScope>
 								<PersonnelScope>
 									<Route
-										path="/dashboard/department"
+										path={`${orderMapping}`}
 										render={props => (
-											<DepartmentBoard
+											<OrderBoard
 												{ ...props }
 											/>
 										)}
 									/>
 								</PersonnelScope>
+								<CustomerServiceScope>
+									<Route
+										path="/dashboard/department"
+										render={props => (
+											<OrderBoard
+												{ ...props }
+											/>
+										)}
+									/>
+								</CustomerServiceScope>
+								<HeadScope>
+									<Route
+										path={statsMapping}
+										render={props => (
+											<StatisticBoard
+												{ ...props }
+											/>
+										)}
+									/>
+								</HeadScope>
 							</div>
 						</div>
 					</div>
@@ -111,6 +139,13 @@ function Sidebar() {
 				mapping: productBoardMapping,
 				prices: { url: productPricesUrl },
 				creation: { url: productCreationUrl }
+			},
+			order: {
+				list: { url: orderListUrl }
+			},
+			stats: {
+				cost: { url: statsCostUrl },
+				product: { url: statsProductUrl }
 			}
 		}
 	} = routes;
@@ -165,6 +200,21 @@ function Sidebar() {
 						</ul>
 					</li>
 				</SaleScope>
+				<CustomerServiceScope>
+					<li className="uk-parent">
+						<NoFollow
+							className="uk-link-reset uk-parent"
+						>Order</NoFollow>
+						<ul className="uk-nav-sub">
+							<li>
+								<Link
+									to={orderListUrl}
+									className="uk-link-reset uk-parent"
+								>Orders</Link>
+							</li>
+						</ul>
+					</li>
+				</CustomerServiceScope>
 				<PersonnelScope>
 					<li>
 						<Link
@@ -173,6 +223,27 @@ function Sidebar() {
 						>Department</Link>
 					</li>
 				</PersonnelScope>
+				<HeadScope>
+					<li className="uk-parent">
+						<NoFollow
+							className="uk-link-reset uk-parent"
+						>Statistic</NoFollow>
+						<ul className="uk-nav-sub">
+							<li>
+								<Link
+									to={statsProductUrl}
+									className="uk-link-reset uk-parent"
+								>Products</Link>
+							</li>
+							<li>
+								<Link
+									to={statsCostUrl}
+									className="uk-link-reset"
+								>Product Costs</Link>
+							</li>
+						</ul>
+					</li>
+				</HeadScope>
 			</ul>
 		{
 			overlay != null ? (

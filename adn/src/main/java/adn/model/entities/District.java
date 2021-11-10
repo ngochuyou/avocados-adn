@@ -23,11 +23,17 @@ public class District extends PermanentEntity implements NamedResource {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
 
-	@Column(nullable = false, unique = true)
+	@Column(nullable = false)
 	private String name;
 
 	@ManyToOne(optional = false)
 	private Province province;
+
+	public District() {}
+
+	public District(Integer id) {
+		this.id = id;
+	}
 
 	public Integer getId() {
 		return id;

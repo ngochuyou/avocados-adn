@@ -26,9 +26,10 @@ const activeHeartStyle = {
 
 export default function ProductList({
 	list = [],
+	header = null,
 	messageIfEmpty = "Nothing found in this list",
-	onItemClick = (p) => console.log(p),
-	header = null
+	onItemClick = (p) => console.log(`${p.id} image clicked`),
+	onCartClick = (p) => console.log(`${p.id} cart clicked`)
 } = {}) {
 	const {
 		store: { bookmarks },
@@ -65,15 +66,15 @@ export default function ProductList({
 						key={model.id}
 						className=""
 					>
-						<div
-							className="uk-card uk-card-default pointer"
-							onClick={() => onItemClick(model)}
-						>
+						<div className="uk-card uk-card-default pointer">
 							<div className="uk-card-media-top uk-height-medium uk-position-relative">
 							{
 								model.images == null || model.images.length === 0 ?
 								<span className="uk-position-center">No preview</span> :
-								<DomainProductImage name={model.images[0]} />
+								<DomainProductImage
+									name={model.images[0]}
+									onClick={() => onItemClick(model)}
+								/>
 							}
 								<span
 									className="uk-position-top-right uk-icon-button heart"
@@ -104,7 +105,11 @@ export default function ProductList({
 												<span>{formatVND(model.price)}</span>
 											</p>
 										</div>
-										<div className="uk-width-1-5 uk-position-relative uk-text-center">
+										<div
+											className="uk-width-1-5 uk-position-relative uk-text-center"
+											onClick={() => onCartClick(model)}
+											uk-tooltip="Quick add-to-cart"
+										>
 											<div uk-icon="icon: cart; ratio: 1.5"></div>
 										</div>
 									</div>

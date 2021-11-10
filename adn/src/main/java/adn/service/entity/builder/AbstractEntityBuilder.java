@@ -5,6 +5,7 @@ package adn.service.entity.builder;
 
 import java.io.Serializable;
 
+import org.hibernate.Session;
 import org.hibernate.persister.entity.EntityPersister;
 
 import adn.helpers.HibernateHelper;
@@ -23,7 +24,7 @@ public abstract class AbstractEntityBuilder<T extends Entity> extends EntityBuil
 	}
 
 	@Override
-	public <E extends T> E buildInsertion(Serializable id, E model) {
+	public <E extends T> E buildInsertion(Serializable id, E model, Session session) {
 		Class<? extends Entity> type = model.getClass();
 		// to avoid unique column constraint violation when callers
 		// explicitly set an existing id into the model.
@@ -42,12 +43,12 @@ public abstract class AbstractEntityBuilder<T extends Entity> extends EntityBuil
 	}
 
 	@Override
-	public <E extends T> E buildUpdate(Serializable id, E model, E persistence) {
+	public <E extends T> E buildUpdate(Serializable id, E model, E persistence, Session session) {
 		return mandatoryBuild(persistence, model);
 	}
 
 	@Override
-	public <E extends T> E buildPostValidationOnInsert(Serializable id, E model) {
+	public <E extends T> E buildPostValidationOnInsert(Serializable id, E model, Session session) {
 		return model;
 	}
 

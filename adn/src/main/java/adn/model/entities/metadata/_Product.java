@@ -28,7 +28,8 @@ public class _Product extends _FullyAuditedEntity {
 	public static final String locked = "locked";
 
 	public static final String category = "category";
-
+	public static final String $category = "category_id";
+	
 	public static final String costs = "costs";
 	
 	public static final String prices = "prices";

@@ -5,10 +5,8 @@ package adn.service.entity.builder;
 
 import java.io.Serializable;
 import java.math.RoundingMode;
-import java.time.LocalDateTime;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
+import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -44,18 +42,17 @@ public class OrderBuilder extends AbstractPermanentEntityBuilder<Order> {
 		if (model.getDeliveryFee() != null) {
 			target.setDeliveryFee(model.getDeliveryFee().setScale(4, RoundingMode.HALF_UP));
 		}
-
-		target.setItems(model.getItems().stream().filter(Objects::nonNull).collect(Collectors.toSet()));
+		// we handle this internally
+//		target.setItems(model.getItems().stream().filter(Objects::nonNull).collect(Collectors.toSet()));
 		target.setNote(StringHelper.normalizeString(model.getNote()));
 
 		return target;
 	}
 
 	@Override
-	public <E extends Order> E buildInsertion(Serializable id, E model) {
-		model = super.buildInsertion(id, model);
+	public <E extends Order> E buildInsertion(Serializable id, E model, Session session) {
+		model = super.buildInsertion(id, model, session);
 
-		model.setCreatedTimestamp(LocalDateTime.now());
 		model.setStatus(OrderStatus.PENDING_PAYMENT);
 
 		Customer customer = authService.getCustomer();

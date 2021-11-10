@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import adn.helpers.CollectionHelper;
+import adn.helpers.StringHelper;
 import adn.model.DomainEntity;
 import adn.model.entities.metadata.DomainEntityMetadata;
 import adn.model.factory.authentication.SourceMetadata;
@@ -166,7 +167,7 @@ public class SourceMetadataImpl<T extends DomainEntity> implements SourceMetadat
 	public void setColumns(List<String> columns) {
 		if (logger.isDebugEnabled()) {
 			logger.debug(String.format("%s{%s} Setting columns [%s]", entityType.getSimpleName(), sourceType,
-					columns.stream().collect(Collectors.joining(", "))));
+					columns.stream().collect(Collectors.joining(StringHelper.COMMON_JOINER))));
 		}
 
 		this.columns = columns;
