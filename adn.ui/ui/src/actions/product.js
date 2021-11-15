@@ -174,14 +174,23 @@ export function getProductListByCategory({
 }
 
 export function getProductList({
-	ids = [], columns = [], page = 0, size = 18,
-	internal = false
+	ids = [], columns = [],
+	internal = false,
+	page = 0, size = 18,
+	name = "",
+	sort = ""
 }) {
+	page = page == null ? "" : page;
+	size = size == null ? "" : size;
+	sort = sort == null ? "" : sort;
+
+	const commonQuery = `columns=${join(columns)}&page=${page}&size=${size}&sort=${sort}&${hasLength(name) ? `name.like=${name}` : ""}`;
+
 	if (internal) {
-		return fjson(`/rest/product/internal?columns=${join(columns)}&page=${page}&size=${size}`);
+		return fjson(`/rest/product/internal?${commonQuery}`);
 	}
 
-	return fjson(`/rest/product?ids=${join(ids)}&columns=${join(columns)}&page=${page}&size=${size}`);
+	return fjson(`/rest/product?ids=${join(ids)}&${commonQuery}`);
 }
 
 export function searchProduct({
@@ -234,13 +243,24 @@ export function getProductPrices(ids = []) {
 }
 
 export function getProductPrice({
-	productId = null, columns = []
+	productId = null, columns = [],
+	from = null, to = null,
+	sort = "appliedTimestamp,asc",
+	page = 0, size = 10
 }) {
 	if (isNaN(productId)) {
 		return [null, "Invalid Product ID"];
 	}
+	console.log(from, to);
+	sort = sort == null ? "" : sort;
+	from = formatServerDatetime(from, null);
+	to = formatServerDatetime(to, null);
+	page = page == null ? 0 : page;
+	size = size == null ? 10 : size;
 
-	return fjson(`/rest/product/price/${productId}?columns=${join(columns)}`);
+	return fjson(`/rest/product/price/${productId}?columns=${join(columns)}&from=${from || ""}&to=${to || ""}&sort=${sort || ""}&page=${page || 0}&size=${size || 10}`, {
+		encode: false
+	}, false);
 }
 
 export function approveProductPrice({

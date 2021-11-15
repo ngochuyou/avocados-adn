@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -22,6 +23,7 @@ import java.util.stream.IntStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -115,17 +117,22 @@ public class RestProductController extends ProductController {
 	public ResponseEntity<?> getProducts(
 			@RequestParam(name = "ids", required = false, defaultValue = "") List<BigInteger> productIds,
 			@RequestParam(name = "category", required = false) Serializable categoryIdentifier,
-			@RequestParam(name = "by", required = false) String categoryIdentifierName,
-			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
-			@PageableDefault(size = 10) Pageable paging) throws Exception {
+			@RequestParam(name = "by", required = false) String categoryIdentifierName, ProductQuery restQuery,
+			@PageableDefault(size = 10, sort = _Product.createdDate, direction = Direction.DESC) Pageable paging)
+			throws Exception {
+		Set<String> requestedColumns = restQuery.getColumns();
+
 		if (!CollectionHelper.isEmpty(productIds)) {
-			return ok(crudService.readAll(Product.class, columns,
+			return ok(crudService.readAll(Product.class, requestedColumns,
 					(root, query, builder) -> builder.in(root.get(_Product.id)).value(productIds), paging,
 					getPrincipalCredential()));
 		}
 
-		return ok(productService.readOnSaleProducts(categoryIdentifier, categoryIdentifierName, columns, paging,
-				getPrincipalCredential()));
+		Specification<Product> spec = (root, query, builder) -> Optional.ofNullable(restQuery.getName())
+				.map(like -> builder.like(root.get(_Product.name), like.getLike())).orElse(builder.conjunction());
+
+		return ok(productService.readOnSaleProducts(categoryIdentifier, categoryIdentifierName, requestedColumns, spec,
+				paging, getPrincipalCredential()));
 	}
 
 	@GetMapping("/internal")
@@ -133,10 +140,13 @@ public class RestProductController extends ProductController {
 	@Secured({ HEAD, PERSONNEL })
 	public ResponseEntity<?> getInternalProducts(
 			@RequestParam(name = "category", required = false) Serializable categoryIdentifier,
-			@RequestParam(name = "by", required = false) String categoryIdentifierName,
+			@RequestParam(name = "by", required = false) String categoryIdentifierName, ProductQuery restQuery,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
 			@PageableDefault(size = 10) Pageable paging) throws Exception {
-		return ok(productService.readAllProducts(categoryIdentifier, categoryIdentifierName, columns, paging,
+		Specification<Product> spec = (root, query, builder) -> Optional.ofNullable(restQuery.getName())
+				.map(like -> builder.like(root.get(_Product.name), like.getLike())).orElse(builder.conjunction());
+
+		return ok(productService.readAllProducts(categoryIdentifier, categoryIdentifierName, columns, spec, paging,
 				getPrincipalCredential()));
 	}
 
@@ -227,14 +237,29 @@ public class RestProductController extends ProductController {
 	@GetMapping("/price/{productId}")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> getProductPrice(@PathVariable(name = "productId") BigInteger productId,
+			@RequestParam(name = "from", required = false) @DateTimeFormat(pattern = Common.COMMON_LDT_FORMAT) LocalDateTime from,
+			@RequestParam(name = "to", required = false) @DateTimeFormat(pattern = Common.COMMON_LDT_FORMAT) LocalDateTime to,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
-			@PageableDefault Pageable paging) throws Exception {
-		return makeStaleWhileRevalidate(
-				crudService.readAll(ProductPrice.class, columns,
-						(root, query, builder) -> builder.equal(root.get(_ProductPrice.id).get(_ProductPrice.productId),
-								productId),
-						paging, getPrincipalCredential()),
-				5, TimeUnit.SECONDS, 7, TimeUnit.SECONDS);
+			@PageableDefault(direction = Direction.ASC, sort = _ProductPrice.appliedTimestamp) Pageable paging)
+			throws Exception {
+		return makeStaleWhileRevalidate(crudService.readAll(ProductPrice.class, columns,
+				resolveProductPriceTimestamp(from, to).and((root, query, builder) -> builder
+						.equal(root.get(_ProductPrice.id).get(_ProductPrice.productId), productId)),
+				paging, getPrincipalCredential()), 5, TimeUnit.SECONDS, 7, TimeUnit.SECONDS);
+	}
+
+	private Specification<ProductPrice> resolveProductPriceTimestamp(LocalDateTime from, LocalDateTime to) {
+		boolean isRanged = from != null && to != null;
+
+		if (isRanged) {
+			return (root, query, builder) -> builder
+					.between(root.get(_ProductPrice.id).get(_ProductPrice.appliedTimestamp), from, to);
+		}
+
+		return (root, query, builder) -> Optional.ofNullable(from)
+				.map(startTimestamp -> builder.greaterThanOrEqualTo(
+						root.get(_ProductPrice.id).get(_ProductPrice.appliedTimestamp), startTimestamp))
+				.orElse(builder.conjunction());
 	}
 
 	@PostMapping("/price")

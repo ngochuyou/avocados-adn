@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useParams, useHistory } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, useHistory, useLocation } from 'react-router-dom';
 
 import Account from '../../models/Account';
 import { Order } from '../../models/Factor';
@@ -14,10 +14,11 @@ import { routes } from '../../config/default';
 import Navbar from '../utils/Navbar';
 import AccessDenied from '../../pages/AccessDenied';
 import { DomainProductImage } from '../utils/Gallery';
+import PagedComponent from '../utils/PagedComponent';
 
 import {
 	atom, hasLength, asIf, formatDatetime, formatVND,
-	groupCartItems
+	groupCartItems, updateURLQuery
 } from '../../utils';
 
 export default function OrderView() {
@@ -45,11 +46,15 @@ export default function OrderView() {
 function OrderListView() {
 	const [orders, setOrders] = useState([]);
 	const { push } = useHistory();
+	const { search: query } = useLocation();
+	const urlParams = useMemo(() => new URLSearchParams(query), [query]);
 
 	useEffect(() => {
 		const doFetch = async () => {
 			const [ordersList, err] = await getOrdersList({
-				columns: ["id", "code", "createdTimestamp", "status"]
+				columns: ["id", "code", "createdTimestamp", "status"],
+				page: urlParams.get('page'),
+				size: urlParams.get('size')
 			});
 
 			if (err) {
@@ -61,7 +66,7 @@ function OrderListView() {
 		};
 
 		doFetch();
-	}, []);
+	}, [urlParams]);
 
 	return (
 		<main className="uk-padding uk-padding-remove-top">
@@ -69,10 +74,17 @@ function OrderListView() {
 				<span>Your orders</span>
 			</h3>
 			<div>
-				<OrderList
-					list={orders}
-					onRowSelect={(order) => push(`${routes.order.url}/${order.code}`)}
-				/>
+				<PagedComponent
+					pageCount={orders.length}
+					onNextPageRequest={() => push(`${routes.order.url}?${updateURLQuery(urlParams, "page", p => (+p || 0) + 1)}`)}
+					onPreviousPageRequest={() => push(`${routes.order.url}?${updateURLQuery(urlParams, "page", p => +p - 1)}`)}
+					currentPage={urlParams.get('page')}
+				>
+					<OrderList
+						list={orders}
+						onRowSelect={(order) => push(`${routes.order.url}/${order.code}`)}
+					/>
+				</PagedComponent>
 			</div>
 		</main>
 	);
@@ -117,7 +129,7 @@ export function OrderList({
 					<td><p className="uk-text-lead colors">{order.code}</p></td>
 					<td><p>{STATUS_ELEMENT_RESOLVERS[order.status]()}</p></td>
 					<td><p>{formatDatetime(order.createdTimestamp)}</p></td>
-					<td><p>{order.status === Order.Status.EXPIRED ? calculateExpiredTimestamp(order.createdTimestamp) : null}</p></td>
+					<td><p>{order.status === Order.Status.PENDING_PAYMENT ? calculateExpiredTimestamp(order.createdTimestamp) : null}</p></td>
 					{ extras.map(extra => extra.row(order)) }
 				</tr>
 			))

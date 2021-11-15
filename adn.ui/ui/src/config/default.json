@@ -1,6 +1,6 @@
 {
 	"server": {
-		"url": "http://172.16.4.132:8080",
+		"url": "http://192.168.100.6:8080",
 		"auth" : {
 			"token_url": "/auth/token"
 		},
@@ -25,7 +25,7 @@
 				"mapping": "/dashboard/provider/:view?",
 				"url": "/dashboard/provider",
 				"list": {
-					"mapping": "/dashboard/provider/list",
+					"mapping": "/dashboard/provider/list/:providerId?",
 					"url": "/dashboard/provider/list"
 				},
 				"creation": {
@@ -39,9 +39,17 @@
 			},
 			"product": {
 				"mapping": "/dashboard/product/:view?",
+				"list": {
+					"mapping": "/dashboard/product/list",
+					"url": "/dashboard/product/list"
+				},
 				"creation": {
 					"mapping": "/dashboard/product/creation",
 					"url": "/dashboard/product/creation"
+				},
+				"edit": {
+					"mapping": "/dashboard/product/edit/:productId",
+					"url": "/dashboard/product/edit"
 				},
 				"prices": {
 					"mapping": "/dashboard/product/prices/:productId?",
@@ -64,6 +72,10 @@
 				"product": {
 					"mapping": "/dashboard/stats/product",
 					"url": "/dashboard/stats/product"
+				},
+				"sales": {
+					"mapping": "/dashboard/stats/sales",
+					"url": "/dashboard/stats/sales"
 				}
 			}
 		},

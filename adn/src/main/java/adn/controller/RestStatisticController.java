@@ -97,7 +97,7 @@ public class RestStatisticController extends BaseController {
 				builder.countDistinct(costRoot.get(_ProductCost.id).get(_ProductCost.providerId))) // providers count
 			.where(builder.in(categoryIdPath).value(categoryIds))
 			.groupBy(categoryIdPath);
-		// @formatter:on		
+		// @formatter:on
 		Query<Tuple> hql = session.createQuery(cq);
 
 		if (logger.isDebugEnabled()) {
@@ -180,38 +180,48 @@ public class RestStatisticController extends BaseController {
 		return makeStaleWhileRevalidate(stats, 30, TimeUnit.DAYS, 31, TimeUnit.DAYS);
 	}
 
+	private static final String COUNT = "COUNT";
+//	private static final String SUM = "SUM";
+
 	@GetMapping("/product/total")
 	@Transactional(readOnly = true)
 	@Secured(HEAD)
-	public ResponseEntity<?> getTotalProductsSold(
+	public ResponseEntity<?> takeActionOnProductsSold(
 			@RequestParam(name = "categories", required = false, defaultValue = "") List<Long> categoryIds,
 			@RequestParam(name = "products", required = false, defaultValue = "") List<BigInteger> productIds,
 			@RequestParam(name = "overall", required = false, defaultValue = "true") Boolean overall,
 			@RequestParam(name = "year", required = false) Integer year,
 			@RequestParam(name = "month", required = false) Integer month,
-			@RequestParam(name = "sort", required = false, defaultValue = "ASC") Direction direction) {
+			@RequestParam(name = "sort", required = false, defaultValue = "ASC") Direction direction,
+			@RequestParam(name = "action", required = false, defaultValue = COUNT) String action) {
 		Session session = getCurrentSession();
 		CriteriaBuilder builder = session.getCriteriaBuilder();
+		Function<Root<OrderDetail>, Expression<?>> actionProducer = action.equals(COUNT)
+				? root -> builder.count(builder.literal(1))
+				: root -> builder.sum(root.get(_OrderDetail.price));
 
 		if (overall) {
-			return getAllTimeTotalProductsSold(session, builder, categoryIds, productIds);
+			return takeActionOnAllTimeTotalProductsSold(session, builder, categoryIds, productIds, actionProducer);
 		}
 
-		return getTotalProductsSoldPerTemporal(session, builder, year, month, direction, categoryIds, productIds);
+		return takeActionOnTotalProductsSoldPerTemporal(session, builder, year, month, direction, categoryIds,
+				productIds, actionProducer);
 	}
 
-	private ResponseEntity<?> getAllTimeTotalProductsSold(Session session, CriteriaBuilder builder,
-			List<Long> categoryIds, List<BigInteger> productIds) {
+	private ResponseEntity<?> takeActionOnAllTimeTotalProductsSold(Session session, CriteriaBuilder builder,
+			List<Long> categoryIds, List<BigInteger> productIds,
+			Function<Root<OrderDetail>, Expression<?>> actionProducer) {
 		CriteriaQuery<Tuple> cq = builder.createTupleQuery();
 		Root<OrderDetail> root = cq.from(OrderDetail.class);
 
 		Predicate commonPredicate = builder.and(builder.equal(root.get(_OrderDetail.active), true),
-				builder.equal(root.join(_OrderDetail.order).get(_Order.status), OrderStatus.FINISHED));
+				builder.notEqual(root.join(_OrderDetail.order).get(_Order.status), OrderStatus.PENDING_PAYMENT));
 		boolean byCategories = !CollectionHelper.isEmpty(categoryIds);
 		boolean byProducts = !CollectionHelper.isEmpty(productIds);
+		Expression<?> action = actionProducer.apply(root);
 
 		if (!byProducts && !byCategories) {
-			cq.multiselect(builder.count(root)).where(commonPredicate);
+			cq.multiselect(action).where(commonPredicate);
 
 			return makeStaleWhileRevalidate(Map.of(KEY_TOTAL, makeQuery(session, cq).getSingleResult().get(0)), 12,
 					TimeUnit.HOURS, 24, TimeUnit.HOURS);
@@ -221,7 +231,7 @@ public class RestStatisticController extends BaseController {
 		Join<OrderDetail, ?> join = byCategories ? productJoin.join(_Product.category) : productJoin;
 		Path<Object> joinIdPath = join.get(_Entity.id);
 
-		cq.multiselect(joinIdPath, join.get(_NamedResource.name), builder.count(builder.literal(1))).where(
+		cq.multiselect(joinIdPath, join.get(_NamedResource.name), action).where(
 				builder.and(commonPredicate, builder.in(joinIdPath).value(byCategories ? categoryIds : productIds)))
 				.groupBy(joinIdPath);
 
@@ -253,13 +263,14 @@ public class RestStatisticController extends BaseController {
 		return hql;
 	}
 
-	private ResponseEntity<?> getTotalProductsSoldPerTemporal(Session session, CriteriaBuilder builder, Integer year,
-			Integer month, Direction direction, List<Long> categoryIds, List<BigInteger> productIds) {
+	private ResponseEntity<?> takeActionOnTotalProductsSoldPerTemporal(Session session, CriteriaBuilder builder,
+			Integer year, Integer month, Direction direction, List<Long> categoryIds, List<BigInteger> productIds,
+			Function<Root<OrderDetail>, Expression<?>> actionProducer) {
 		CriteriaQuery<Tuple> cq = builder.createTupleQuery();
 		Root<OrderDetail> root = cq.from(OrderDetail.class);
 		Join<OrderDetail, Order> orderJoin = root.join(_OrderDetail.order);
 		Expression<?>[] temporalExpressions = (Expression<?>[]) Array.newInstance(Expression.class, 3);
-		
+
 		temporalExpressions[0] = HibernateHelper.year(builder, orderJoin.get(_Order.createdTimestamp));
 		temporalExpressions[1] = HibernateHelper.month(builder, orderJoin.get(_Order.createdTimestamp));
 		temporalExpressions[2] = HibernateHelper.day(builder, orderJoin.get(_Order.createdTimestamp));
@@ -276,10 +287,10 @@ public class RestStatisticController extends BaseController {
 			associationJoin = byCategories ? productJoin.join(_Product.category) : productJoin;
 		}
 		// @formatter:off
-		cq.multiselect(PRODUCTS_SOLD_PER_TEMPORAL_SELECTIONS_RESOLVERS.get(temporalKey).get(temporalExpressions, builder, associationJoin))
+		cq.multiselect(PRODUCTS_SOLD_PER_TEMPORAL_SELECTIONS_RESOLVERS.get(temporalKey).get(temporalExpressions, actionProducer.apply(root), associationJoin))
 			.where(builder.and(
 					builder.equal(root.get(_OrderDetail.active), true)),
-					builder.equal(orderJoin.get(_Order.status), OrderStatus.FINISHED),
+					builder.notEqual(orderJoin.get(_Order.status), OrderStatus.PENDING_PAYMENT),
 					PRODUCTS_SOLD_PER_TEMPORAL_PREDICATE_RESOLVERS
 						.get(temporalKey).get(temporalExpressions, year, month, builder),
 					associationJoin == null ? 
@@ -314,9 +325,9 @@ public class RestStatisticController extends BaseController {
 	// @formatter:off
 	private static final Map<Integer, ProductSoldPerTemporalSelectionsResolver> PRODUCTS_SOLD_PER_TEMPORAL_SELECTIONS_RESOLVERS = Map
 			.of(
-					0, (temporalExpressions, builder, assoJoin) -> Optional.ofNullable(assoJoin).map(join -> Arrays.asList((Selection<?>) join.get(_Entity.id), join.get(_NamedResource.name), temporalExpressions[0], builder.count(builder.literal(1)))).orElse(Arrays.asList(temporalExpressions[0], builder.count(builder.literal(1)))),
-					1, (temporalExpressions, builder, assoJoin) -> Optional.ofNullable(assoJoin).map(join -> Arrays.asList((Selection<?>) join.get(_Entity.id), join.get(_NamedResource.name), temporalExpressions[1], builder.count(builder.literal(1)))).orElse(Arrays.asList(temporalExpressions[1], builder.count(builder.literal(1)))),
-					2, (temporalExpressions, builder, assoJoin) -> Optional.ofNullable(assoJoin).map(join -> Arrays.asList((Selection<?>) join.get(_Entity.id), join.get(_NamedResource.name), temporalExpressions[2], builder.count(builder.literal(1)))).orElse(Arrays.asList(temporalExpressions[2], builder.count(builder.literal(1)))));
+					0, (temporalExpressions, action, assoJoin) -> Optional.ofNullable(assoJoin).map(join -> Arrays.asList((Selection<?>) join.get(_Entity.id), join.get(_NamedResource.name), temporalExpressions[0], action)).orElse(Arrays.asList(temporalExpressions[0], action)),
+					1, (temporalExpressions, action, assoJoin) -> Optional.ofNullable(assoJoin).map(join -> Arrays.asList((Selection<?>) join.get(_Entity.id), join.get(_NamedResource.name), temporalExpressions[1], action)).orElse(Arrays.asList(temporalExpressions[1], action)),
+					2, (temporalExpressions, action, assoJoin) -> Optional.ofNullable(assoJoin).map(join -> Arrays.asList((Selection<?>) join.get(_Entity.id), join.get(_NamedResource.name), temporalExpressions[2], action)).orElse(Arrays.asList(temporalExpressions[2], action)));
 	
 	private static final Map<Integer, ProductSoldPerTemporalGroupResolver> PRODUCTS_SOLD_PER_TEMPORAL_GROUPS_RESOLVERS = Map
 			.of(
@@ -386,7 +397,7 @@ public class RestStatisticController extends BaseController {
 	// @formatter:on
 	private interface ProductSoldPerTemporalSelectionsResolver {
 
-		List<Selection<?>> get(Expression<?>[] temporalExpressions, CriteriaBuilder builder,
+		List<Selection<?>> get(Expression<?>[] temporalExpressions, Expression<?> actionExpression,
 				Join<OrderDetail, ?> assoJoin);
 
 	}

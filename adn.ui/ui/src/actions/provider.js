@@ -4,8 +4,12 @@ import {
 } from '../utils';
 import { fjson } from '../fetch';
 
-export function fetchProviderList({ page = 0, size = 10, columns = [] }) {
-	return fjson(`/rest/provider?page=${page}&size=${size}&columns=${join(columns)}`);
+export function fetchProviderList({
+	page = 0, size = 10,
+	columns = [], name = "",
+	sort = ""
+}) {
+	return fjson(`/rest/provider?page=${page || 0}&size=${size || 10}&columns=${join(columns)}${hasLength(name) ? `&name.like=${name}` : ""}${hasLength(sort) ? `&sort=${sort}` : ""}`);
 }
 
 export function fetchProviderCount() {
@@ -77,13 +81,15 @@ export function updateProvider(model) {
 export function getProductCostsByProduct({
 	productId = null,
 	columns = [],
-	page = 0, size = 20
+	page = 0, size = 10,
+	providerName = null,
+	sort = null
 }) {
 	if (productId == null) {
 		return [null, "Product ID was null"];
 	}
 
-	return fjson(`/rest/provider/cost/${productId}?columns=${join(columns)}`);
+	return fjson(`/rest/provider/cost/${productId}?columns=${join(columns)}&provider=${providerName || ""}&sort=${sort || ""}&page=${page || 0}&size=${size || 10}`, {}, false);
 }
 
 // export function getProductDetailList({ columns = "", page = 0, size = 10 }) {

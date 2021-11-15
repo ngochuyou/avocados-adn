@@ -28,6 +28,7 @@ import org.hibernate.LockMode;
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.multipart.MultipartFile;
 
 import adn.application.Common;
@@ -198,12 +199,19 @@ public class ProductService implements Service {
 
 	public List<Map<String, Object>> readAllProducts(Serializable categoryIdentifier, String categoryIdentifierName,
 			Collection<String> columns, Pageable paging, Credential credential) throws Exception {
+		return readAllProducts(categoryIdentifier, categoryIdentifierName, columns,
+				(root, query, builder) -> builder.conjunction(), paging, credential);
+	}
+
+	public List<Map<String, Object>> readAllProducts(Serializable categoryIdentifier, String categoryIdentifierName,
+			Collection<String> columns, Specification<Product> spec, Pageable paging, Credential credential)
+			throws Exception {
 		if (categoryIdentifierName == null) {
-			return crudService.readAll(Product.class, columns, paging, credential);
+			return crudService.readAll(Product.class, columns, spec, paging, credential);
 		}
 
 		return crudService.readAllByAssociation(Product.class, Category.class, _Product.category,
-				categoryIdentifierName, categoryIdentifier, columns, paging, credential);
+				categoryIdentifierName, categoryIdentifier, columns, spec, paging, credential);
 	}
 
 	// @formatter:off
@@ -220,10 +228,20 @@ public class ProductService implements Service {
 			Collection<String> columns,
 			Pageable paging,
 			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
+		return readOnSaleProducts(categoryIdentifier, categoryIdentifierName, columns, (root, query, builder) -> builder.conjunction(), paging, credential);
+	}
+	
+	public List<Map<String, Object>> readOnSaleProducts(
+			Serializable categoryIdentifier,
+			String categoryIdentifierName,
+			Collection<String> columns,
+			Specification<Product> spec,
+			Pageable paging,
+			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
 		SourceMetadata<Product> metadata = crudService.optionallyValidate(Product.class, credential, SourceMetadataFactory.unknownArrayCollection(Product.class, CollectionHelper.list(columns)));
 		List<Object[]> rows = categoryIdentifierName == null ?
-				productRepository.findOnSaleProducts(metadata.getColumns(), paging) :
-					productRepository.findOnSaleProducts(metadata.getColumns(), paging, (root, query, builder) -> builder.equal(root.get(_Product.category).get(categoryIdentifierName), categoryIdentifier));
+				productRepository.findOnSaleProducts(metadata.getColumns(), paging, spec) :
+					productRepository.findOnSaleProducts(metadata.getColumns(), paging, spec.and((root, query, builder) -> builder.equal(root.get(_Product.category).get(categoryIdentifierName), categoryIdentifier)));
 
 		if (rows.isEmpty()) {
 			return new ArrayList<>();

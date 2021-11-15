@@ -29,17 +29,18 @@ public class ProviderBuilder extends AbstractPermanentEntityBuilder<Provider> {
 
 		target.setAddress(normalizeString(model.getAddress()));
 		target.setEmail(model.getEmail());
-		
+
 		List<String> phoneNumbers = model.getPhoneNumbers();
 		// @formatter:off
 		target.setPhoneNumbers(
-				CollectionHelper.isEmpty(phoneNumbers) ?
+				!CollectionHelper.isEmpty(phoneNumbers) ?
 						phoneNumbers
 							.stream().filter(StringHelper::hasLength)
 							.map(String::trim)
 							.collect(Collectors.toList()) :
 					null);
 		// @formatter:on
+		target.setWebsite(model.getWebsite());
 		target.setRepresentatorName(normalizeString(model.getRepresentatorName()));
 
 		return target;

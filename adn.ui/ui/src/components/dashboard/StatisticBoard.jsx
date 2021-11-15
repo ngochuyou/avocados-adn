@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 
-import { useTemporal } from '../../hooks/hooks';
 import { useProduct } from '../../hooks/product-hooks';
 import { useProvider } from '../../hooks/provider-hooks';
 
@@ -9,7 +8,7 @@ import { getAllCategories, searchProduct } from '../../actions/product';
 import { getProvidersByProduct } from '../../actions/provider';
 import {
 	getProvidersCountByCategories, getAvgProductCostsByProviders,
-	getSoldProductAmount, getSoldProductAmountPerCategory
+	consumeSoldProduct, consumeSoldProductByAssociation
 } from '../../actions/stats';
 
 import { routes } from '../../config/default';
@@ -18,9 +17,13 @@ import { Route } from 'react-router-dom';
 import Navbar from './Navbar';
 import { SearchInput } from '../utils/Input';
 import { DomainProductImage } from '../utils/Gallery';
+import { TemporalPicker } from '../utils/Temporal';
 // import { NoFollow } from '../utils/Link';
 
-import { merge, atom, chartColors, hasLength, asIf, MONTH_NAMES, DATE_NAMES } from '../../utils';
+import {
+	merge, atom, chartColors, hasLength, asIf,
+	MONTH_NAMES, DATE_NAMES, formatVND
+} from '../../utils';
 
 export default function StatisticBoard() {
 	const {
@@ -28,6 +31,7 @@ export default function StatisticBoard() {
 			stats: {
 				cost: { mapping: statsCostMapping },
 				product: { mapping: statsProductMapping },
+				sales: { mapping: statsSalesMapping },
 			}
 		}
 	} = routes;
@@ -44,18 +48,80 @@ export default function StatisticBoard() {
 					path={statsProductMapping}
 					render={(props) => <ProductBoard {...props}/>}
 				/>
+				<Route
+					path={statsSalesMapping}
+					render={(props) => <SalesBoard {...props}/>}
+				/>
 			</div>
 		</div>
+	);
+}
+
+const COUNT = "COUNT";
+const SUM = "SUM";
+
+function SalesBoard() {
+	return (
+		<main>
+			<SoldProductCount
+				heading={
+					<h3 className="uk-heading-line colors">
+						<span>
+							Sales as per period
+							<span className="uk-text-italic uk-margin-left">STAT-REV-01</span>
+						</span>
+					</h3>
+				}
+				action={SUM}
+			/>
+			<SoldProductCountPerAssociation
+				heading={
+					<h3 className="uk-heading-line colors">
+						<span>
+							Sales as per period and Category
+							<span className="uk-text-italic uk-margin-left">STAT-REV-02</span>
+						</span>
+					</h3>
+				}
+				action={SUM}
+			/>
+		</main>
 	);
 }
 
 function ProductBoard() {
 	return (
 		<main>
-			<SoldProductCount />
-			<SoldProductCountPerAssociation />
+			<SoldProductCount
+				heading={
+					<h3 className="uk-heading-line colors">
+						<span>
+							Numbers of Products sold as per period
+							<span className="uk-text-italic uk-margin-left">STAT-PD-01</span>
+						</span>
+					</h3>
+				}
+			/>
+			<SoldProductCountPerAssociation
+				heading={
+					<h3 className="uk-heading-line colors">
+						<span>
+							Numbers of Products sold as per Period and Category
+							<span className="uk-text-italic uk-margin-left">STAT-PD-02</span>
+						</span>
+					</h3>
+				}
+			/>
 			<SoldProductCountPerAssociation
 				association={KEY_PRODUCT}
+				heading={
+					<h3 className="uk-heading-line colors">
+						<span>
+							Numbers of Products sold as per Period and Product
+							<span className="uk-text-italic uk-margin-left">STAT-PD-03</span>
+						</span>
+					</h3>
+				}
 			/>
 		</main>
 	);
@@ -65,9 +131,11 @@ const KEY_CATEGORY = "CATEGORY";
 const KEY_PRODUCT = "PRODUCT";
 
 function SoldProductCountPerAssociation({
-	association = KEY_CATEGORY
+	association = KEY_CATEGORY,
+	action = COUNT,
+	heading = <div></div>
 }) {
-	const [allTimeSold, setAllTimeSold] = useState(0);
+	const [allTime, setAllTime] = useState(0);
 	const [selectedYear, setSelectedYear] = useState(-1);
 	const [selectedMonth, setSelectedMonth] = useState(-1);
 	const [chartData, setChartData] = useState(null);
@@ -76,18 +144,18 @@ function SoldProductCountPerAssociation({
 
 	useEffect(() => {
 		const doFetch = async () => {
-			const [res, err] = await getSoldProductAmount();
+			const [res, err] = await consumeSoldProduct({ action });
 
 			if (err) {
 				console.error(err);
 				return;
 			}
 
-			setAllTimeSold(res.total);
+			setAllTime(res.total);
 		};
 
 		doFetch();
-	}, []);
+	}, [action]);
 
 	useEffect(() => {
 		if (!hasLength(selectedAssociations)) {
@@ -98,9 +166,10 @@ function SoldProductCountPerAssociation({
 			const commonParams = {
 				overall: false,
 				year: selectedYear === -1 ? null : selectedYear,
-				month: selectedMonth === -1 ? null : selectedMonth
+				month: selectedMonth === -1 ? null : selectedMonth,
+				action
 			};
-			const [dataSet, err] = await getSoldProductAmountPerCategory(association === KEY_CATEGORY ? {
+			const [dataSet, err] = await consumeSoldProductByAssociation(association === KEY_CATEGORY ? {
 				...commonParams,
 				categoryIds: selectedAssociations
 			}: {
@@ -163,7 +232,7 @@ function SoldProductCountPerAssociation({
 		};
 
 		doFetch();
-	}, [selectedYear, selectedMonth, selectedAssociations, association]);
+	}, [action, selectedYear, selectedMonth, selectedAssociations, association]);
 
 	const onCategoryChange = (event) => {
 		const { target: { value, checked } } =  event;
@@ -193,21 +262,9 @@ function SoldProductCountPerAssociation({
 
 	return (
 		<section style={{minHeight: "300px"}}>
-			<h3 className="uk-heading-line colors">
-			{
-				asIf(association === KEY_CATEGORY)
-				.then(() => <span>
-					Numbers of Products sold as per Period and Category
-					<span className="uk-text-italic uk-margin-left">STAT-PD-03</span>
-				</span>)
-				.else(() => <span>
-					Numbers of Products sold as per Period and Product
-					<span className="uk-text-italic uk-margin-left">STAT-PD-04</span>
-				</span>)
-			}
-			</h3>
+			{ heading }
 			<div className="uk-text-medium">
-				{`All time products sold: ${allTimeSold} products`}
+				{`Overall: ${action === SUM ? formatVND(allTime) : allTime}`}
 			</div>
 			<div className="uk-margin">
 				<TemporalPicker
@@ -259,34 +316,38 @@ function SoldProductCountPerAssociation({
 	);
 }
 
-function SoldProductCount() {
+function SoldProductCount({
+	action = COUNT,
+	heading = <div></div>
+}) {
 	const current = new Date();
-	const [allTimeSold, setAllTimeSold] = useState(0);
+	const [allTime, setAllTime] = useState(0);
 	const [selectedYear, setSelectedYear] = useState(current.getFullYear());
 	const [selectedMonth, setSelectedMonth] = useState(current.getMonth() + 1);
 	const [chartData, setChartData] = useState(null);
 
 	useEffect(() => {
 		const doFetch = async () => {
-			const [res, err] = await getSoldProductAmount();
+			const [res, err] = await consumeSoldProduct({ action });
 
 			if (err) {
 				console.error(err);
 				return;
 			}
 
-			setAllTimeSold(res.total);
+			setAllTime(res.total);
 		};
 
 		doFetch();
-	}, []);
+	}, [action]);
 
 	useEffect(() => {
 		const doFetch = async () => {
-			const [dataSet, err] = await getSoldProductAmount({
+			const [dataSet, err] = await consumeSoldProduct({
 				overall: false,
 				year: selectedYear === -1 ? null : selectedYear,
-				month: selectedMonth === -1 ? null : selectedMonth
+				month: selectedMonth === -1 ? null : selectedMonth,
+				action
 			});
 
 			if (err) {
@@ -307,25 +368,20 @@ function SoldProductCount() {
 				})()),
 				datasets: [{
 					data: dataSet.map(data => data.total),
-					label: "Total products sold",
+					label: "Total",
 					backgroundColor: chartColors
 				}]
 			});
 		};
 
 		doFetch();
-	}, [selectedYear, selectedMonth]);
+	}, [selectedYear, selectedMonth, action]);
 
 	return (
 		<section style={{minHeight: "300px"}}>
-			<h3 className="uk-heading-line colors">
-				<span>
-					Numbers of Products sold as per period
-					<span className="uk-text-italic uk-margin-left">STAT-PD-01/STAT-PD-02</span>
-				</span>
-			</h3>
+			{ heading }
 			<div className="uk-text-medium">
-				{`All time products sold: ${allTimeSold} products`}
+				{`Overall: ${action === SUM ? formatVND(allTime) : allTime}`}
 			</div>
 			<div className="uk-margin">
 				<TemporalPicker
@@ -377,108 +433,6 @@ function CostComparisonByProduct() {
 				product={selectedProduct}
 			/>
 		</section>
-	);
-}
-
-function TemporalPicker({
-	onYearPicked = (year) => console.log(`the year ${year} picked`),
-	onMonthPicked = (month) => console.log(`the month ${month} picked`),
-	onDayPicked = (day) => console.log(`the day ${day} picked`),
-	selectedYear = -1,
-	selectedMonth = -1,
-	selectedDay = -1,
-	displayYear = true,
-	displayMonth = true,
-	displayDay = false,
-	allowAllTime = true,
-	allowWholeYear = true,
-	allowWholeMonth = false
-}) {
-	const [
-		years, /*setYear*/,
-		/*selectedYear*/, setSelectedYear,
-		months, /*setMonths*/,
-		/*selectedMonth*/, setSelectedMonth,
-		days
-	] = useTemporal();
-
-	const onMonthChanged = (event) => {
-		const month = parseInt(event.target.value);
-
-		onMonthPicked(month);
-		setSelectedMonth(month);
-	};
-
-	const onYearChanged = (event) => {
-		const year = parseInt(event.target.value);
-
-		onYearPicked(year);
-		setSelectedYear(year);
-	}
-
-	return (
-		<div className="uk-margin uk-flex uk-flex-center">
-			{
-				asIf(displayYear === true)
-				.then(() => (<div className="uk-width-small">
-					<select
-						className="uk-select"
-						value={selectedYear}
-						onChange={onYearChanged}
-					>
-					{
-						asIf(allowAllTime)
-						.then(() => (
-							<option key={"emptyYear"} value={-1}>All time</option>
-						)).else()
-					}
-					{
-						years.map(year => <option key={year} value={year}>{year}</option>)
-					}
-					</select>
-				</div>)).else()
-			}
-			{
-				asIf(displayMonth === true)
-				.then(() => (<div className="uk-width-small uk-margin-left">
-					<select
-						className="uk-select"
-						value={selectedMonth}
-						onChange={onMonthChanged}
-					>
-					{
-						asIf(allowWholeYear)
-						.then(() => (
-							<option key={"emptyMonth"} value={-1}>Whole year</option>
-						)).else()
-					}
-					{
-						months.map(month => <option key={month.value} value={month.value}>{month.name}</option>)
-					}
-					</select>
-				</div>)).else()
-			}
-			{
-				asIf(displayDay === true)
-				.then(() => (<div className="uk-width-small uk-margin-left">
-					<select
-						className="uk-select"
-						value={selectedDay}
-						onChange={(event) => onDayPicked(parseInt(event.target.value))}
-					>
-					{
-						asIf(allowWholeMonth)
-						.then(() => (
-							<option key={"emptyDay"} value={-1}>Whole month</option>
-						)).else()
-					}
-					{
-						days.map(day => <option key={day.value} value={day.value}>{day.name}</option>)
-					}
-					</select>
-				</div>)).else()
-			}
-		</div>
 	);
 }
 

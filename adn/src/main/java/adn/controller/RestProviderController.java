@@ -54,6 +54,7 @@ import adn.controller.query.impl.ProviderQuery;
 import adn.dao.specific.ProductCostRepository;
 import adn.helpers.CollectionHelper;
 import adn.helpers.HibernateHelper;
+import adn.helpers.StringHelper;
 import adn.model.entities.ProductCost;
 import adn.model.entities.Provider;
 import adn.model.entities.id.ProductCostId;
@@ -92,15 +93,18 @@ public class RestProviderController extends BaseController {
 	@GetMapping
 	@Secured({ HEAD, PERSONNEL })
 	@Transactional(readOnly = true)
-	public ResponseEntity<?> getAllProviders(@PageableDefault(size = 10) Pageable paging,
-			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns)
-			throws NoSuchFieldException, UnauthorizedCredential {
+	public ResponseEntity<?> getProviders(@PageableDefault(size = 10) Pageable paging,
+			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
+			ProviderQuery restQuery) throws NoSuchFieldException, UnauthorizedCredential {
 		authService.assertSaleDepartment();
 
-		List<Map<String, Object>> rows = crudService.readAll(Provider.class, columns, paging,
-				ContextProvider.getPrincipalCredential());
+		if (restQuery.getName() == null || !StringHelper.hasLength(restQuery.getName().getLike())) {
+			return ok(crudService.readAll(Provider.class, columns, paging, ContextProvider.getPrincipalCredential()));
+		}
 
-		return ok(rows);
+		return ok(crudService.readAll(Provider.class, columns,
+				(root, query, builder) -> builder.like(root.get(_Provider.name), restQuery.getName().getLike()), paging,
+				getPrincipalCredential()));
 	}
 
 	@GetMapping("/{providerId}")
@@ -267,16 +271,19 @@ public class RestProviderController extends BaseController {
 	@GetMapping(path = "/cost/{productId}")
 	@Secured({ HEAD, PERSONNEL })
 	@Transactional(readOnly = true)
-	public ResponseEntity<?> getCostsByProduct(@PathVariable(name = "productId", required = true) String productId,
-			@PageableDefault(size = 10) Pageable paging,
-			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns)
-			throws NoSuchFieldException, UnauthorizedCredential {
+	public ResponseEntity<?> getCostsByProduct(@PathVariable(name = "productId", required = true) BigInteger productId,
+			@RequestParam(name = "provider", required = false) String providerName,
+			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
+			@PageableDefault(size = 10) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
 		authService.assertSaleDepartment();
 
 		return makeStaleWhileRevalidate(
 				crudService.readAll(ProductCost.class, columns,
-						(root, query, builder) -> builder.equal(root.get(_ProductCost.id).get(_ProductCost.productId),
-								productId),
+						(root, query, builder) -> builder.and(
+								builder.equal(root.get(_ProductCost.id).get(_ProductCost.productId), productId),
+								StringHelper.hasLength(providerName) ? builder.like(
+										root.join(_ProductCost.provider).get(_Provider.name), Common.like(providerName))
+										: builder.conjunction()),
 						paging, getPrincipalCredential()),
 				5, TimeUnit.SECONDS, 7, TimeUnit.SECONDS);
 	}
@@ -302,7 +309,7 @@ public class RestProviderController extends BaseController {
 
 		hql.setMaxResults(paging.getPageSize());
 		hql.setFirstResult(paging.getPageNumber() * paging.getPageSize());
-		
+
 		if (logger.isDebugEnabled()) {
 			logger.debug(hql.getQueryString());
 		}

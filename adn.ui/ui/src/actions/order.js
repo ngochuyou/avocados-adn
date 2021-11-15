@@ -42,17 +42,18 @@ export function obtainOrder({
 
 export function getOrdersList({
 	internal = false,
-	customerId = "",
+	customer = "",
 	columns = [],
-	page = 0, size = 10
+	page = 0, size = 10,
+	status = ""
 }) {
-	const params = `columns=${join(columns)}&size=${size}&page=${page}`;
+	const params = `${hasLength(customer) ? `customer=${customer}` : ""}${hasLength(status) ? `&status=${status}` : ""}&columns=${join(columns)}&size=${size || 10}&page=${page || 0}`;
 
 	if (!internal) {
 		return fjson(`/rest/order?${params}`);
 	}
 
-	return fjson(`/rest/order/internal/all?customer=${customerId}&columns=${join(columns)}&size=${size}&page=${page}`);
+	return fjson(`/rest/order/internal?${params}`);
 }
 
 export function confirmPayment(orderId = "") {

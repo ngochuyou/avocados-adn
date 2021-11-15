@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
-import { Route, useParams, useHistory } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { Route, useParams, useHistory, useLocation, Link } from 'react-router-dom';
 
 import {
 	getProductList, getProductPrices, getProductPrice,
-	approveProductPrice, submitProductPrice, createProduct
+	approveProductPrice, submitProductPrice, createProduct,
+	obtainProduct, updateProduct
 } from '../../actions/product';
 
 import Account from '../../models/Account';
@@ -20,10 +21,12 @@ import { ProductTable } from '../product/ProductList';
 import ProductForm from '../product/ProductForm';
 import Navbar from './Navbar';
 import { ConfirmModal } from '../utils/ConfirmModal';
+import PagedComponent from '../utils/PagedComponent';
+import OrderSelector from '../utils/Sort';
 
 import {
 	asIf, formatVND, formatDatetime, now, datetimeLocalString,
-	ErrorTracker
+	ErrorTracker, hasLength, updateURLQuery, isString
 } from '../../utils';
 
 const FETCHED_PRODUCT_COLUMNS = ["id", "code", "name", "images"];
@@ -32,8 +35,10 @@ export default function ProductBoard() {
 	const {
 		dashboard: {
 			product: {
+				list: { mapping: productListMapping },
 				prices: { mapping: productPriceMapping },
-				creation: { mapping: productCreationMapping }
+				creation: { mapping: productCreationMapping },
+				edit: { mapping: productEditMapping }
 			}
 		}
 	} = routes;
@@ -49,15 +54,149 @@ export default function ProductBoard() {
 				path={productCreationMapping}
 				render={props => <ProductCreator { ...props } />}
 			/>
+			<Route
+				path={productListMapping}
+				render={props => <ProductList { ...props } />}
+			/>
+			<Route
+				path={productEditMapping}
+				render={props => <ProductEditor { ...props } />}
+			/>
 		</div>
+	);
+}
+
+function ProductEditor() {
+	const { productId } = useParams();
+	const [model, setModel] = useState(null);
+	const [errors, setErrors] = useState({});
+
+	useEffect(() => {
+		const doFetch = async () => {
+			const [res, err] = await obtainProduct({
+				id: productId,
+				columns: ["id", "code", "name", "material", "locked", "images", "category", "description"]
+			});
+
+			if (err) {
+				return console.error(err);
+			}
+
+			setModel(res);
+		};
+
+		doFetch();
+	}, [productId]);
+
+	const onSuccess = async (model) => {
+		const [res, err] = await updateProduct({
+			...model,
+			images: model.images.map(image => isString(image) ? image : image.file )
+		});
+
+		if (err) {
+			setErrors(err);
+			return console.error(err);
+		}
+
+		setErrors({});
+
+		return setModel(res);
+	};
+
+	return (
+		<main className="uk-padding-small">
+			<h3 className="uk-heading-line">
+				<span>Edit Product {model && model.name}</span>
+			</h3>
+			<ProductForm
+				initModel={model}
+				onSuccess={onSuccess}
+				errors={errors}
+			/>
+		</main>
+	);
+}
+
+function ProductList() {
+	const {
+		dashboard: {
+			product: {
+				 list: { url: productListUrl },
+				 edit: { url: productEditUrl }
+			}
+		}
+	} = routes;
+	const { push } = useHistory();
+	const { search: query } = useLocation();
+	const urlParams = useMemo(() => new URLSearchParams(query), [query]);
+	const { setOnEntered } = useNavbar();
+	const {
+		store: { product: { elements: productsMap } },
+		setProducts
+	} = useProduct();
+
+	useEffect(() => {
+		const doFetch = async () => {
+			let [res, err] = await getProductList({
+				internal: true,
+				columns: FETCHED_PRODUCT_COLUMNS,
+				name: urlParams.get("name"),
+				page: urlParams.get("page"),
+				size: urlParams.get("size"),
+				sort: urlParams.get("sort")
+			});
+
+			if (err) {
+				console.error(err);
+				return;
+			}
+
+			setProducts(res);
+		};
+
+		doFetch();
+	}, [urlParams, setProducts]);
+
+	useEffect(() => {
+		setOnEntered((key) => push(`${productListUrl}?${updateURLQuery(urlParams, "name", name => key.toLowerCase())}`));
+	}, [urlParams, push, setOnEntered, productListUrl]);
+
+	const products = Object.values(productsMap);
+
+	return (
+		<main className="uk-padding-small">
+			<h3 className="uk-heading-line">
+				<span>Product List</span>
+			</h3>
+			<div className="uk-margin uk-text-right">
+				<Link to={productListUrl}>Reset filter</Link>
+			</div>
+			<PagedComponent
+				pageCount={products.length}
+				onNextPageRequest={() => push(`${productListUrl}?${updateURLQuery(urlParams, "page", page => !hasLength(page) ? 1 : +page + 1)}`)}
+				onPreviousPageRequest={() => push(`${productListUrl}?${updateURLQuery(urlParams, "page", page => +page - 1)}`)}
+				currentPage={urlParams.get("page")}
+			>
+				<ProductTable
+					list={products}
+					onRowSelect={(p) => push(`${productEditUrl}/${p.id}`)}
+					columns={[ "images", "code", "name" ]}
+				/>
+			</PagedComponent>
+		</main>
 	);
 }
 
 function ProductCreator() {
 	const [errors, setErrors] = useState({});
+	const {
+		dashboard: { product: { list: { url: productListUrl } } }
+	} = routes;
+	const { push } = useHistory();
 
 	const onSuccess = async (model) => {
-		const [res, err] = await createProduct({
+		const [, err] = await createProduct({
 			...model,
 			images: model.images.map(image => image.file)
 		});
@@ -69,7 +208,7 @@ function ProductCreator() {
 		}
 
 		setErrors({});
-		console.log(res);
+		push(productListUrl);
 	};
 
 	return (
@@ -168,6 +307,8 @@ function IndividualPrice() {
 	const { principal } = useAuth();
 	const [priceList, setPriceList] = useState([]);
 	const [confirmModal, setConfirmModal] = useState(null);
+	const { search: query } = useLocation();
+	const urlParams = useMemo(() => new URLSearchParams(query), [query]);
 
 	useEffect(() => {
 		setBackBtnState({
@@ -185,7 +326,12 @@ function IndividualPrice() {
 				columns: [
 					"appliedTimestamp", "droppedTimestamp",
 					"price", "approvedTimestamp"
-				]
+				],
+				page: urlParams.get("page"),
+				size: urlParams.get("size"),
+				sort: urlParams.get("sort"),
+				from: urlParams.get("from"),
+				to: urlParams.get("to")
 			});
 
 			if (err) {
@@ -203,7 +349,7 @@ function IndividualPrice() {
 		};
 
 		doFetch();
-	}, [productId]);
+	}, [productId, urlParams]);
 
 	const onApprove = (index) => {
 		const ele = priceList[index];
@@ -238,7 +384,7 @@ function IndividualPrice() {
 			approvedBy: principal
 		})).else(() => p)));
 		setConfirmModal(null);
-	}
+	};
 
 	return (
 		<div>
@@ -249,50 +395,86 @@ function IndividualPrice() {
 					<span className="uk-text-bold colors">{productId}</span>
 				</span>
 			</h5>
-			<table className="uk-table uk-table-divider">
-				<thead>
-					<tr>
-						<th>Applied timestamp</th>
-						<th>Dropped timestamp</th>
-						<th>Price</th>
-						<th>Approved timestamp</th>
-						<th></th>
-					</tr>
-				</thead>
-				<tbody>
-				{
-					priceList.map((ele, index) => (
-						<tr key={index}>
-							<td>{ele.formattedAppliedTimestamp}</td>
-							<td>{ele.formattedDroppedTimestamp}</td>
-							<td>
-								<span className="colors">{ele.price}</span>
-							</td>
-							<td>
-							{
-								asIf(ele.approvedTimestamp != null)
-								.then(() => <span className="uk-text-primary">
-									{ele.formattedApprovedTimestamp}
-								</span>)
-								.else(() => <span className="uk-text-muted">Not yet approved</span>)
-							}
-							</td>
-							<td>
-							{
-								asIf(ele.approvedTimestamp == null && principal.role === Account.Role.HEAD)
-								.then(() => (
-									<button
-										className="uk-button uk-button-danger"
-										onClick={() => onApprove(index)}
-									>Approve</button>
-								)).else()
-							}
-							</td>
+			<PagedComponent
+				pageCount={priceList.length}
+				onNextPageRequest={() => push(`${productPriceUrl}/${productId}?${updateURLQuery(urlParams, "page", p => hasLength(p) ? +p + 1 : 1)}`)}
+				onPreviousPageRequest={() => push(`${productPriceUrl}/${productId}?${updateURLQuery(urlParams, "page", p => +p - 1)}`)}
+				currentPage={urlParams.get("page")}
+			>
+				<div className="uk-margin">
+					<label className="uk-label backgroundf">Sort</label>
+					<div>
+						<OrderSelector
+							className="uk-width-auto uk-margin-right"
+							onAscRequested={() => push(`${productPriceUrl}/${productId}?${updateURLQuery(urlParams, "sort", sort => `appliedTimestamp,asc`)}`)}
+							onDesRequested={() => push(`${productPriceUrl}/${productId}?${updateURLQuery(urlParams, "sort", sort => `appliedTimestamp,desc`)}`)}
+							labels={["Applied timestamp ascending", "Applied timestamp descending"]}
+						/>
+					</div>
+				</div>
+				<div className="uk-margin uk-grid uk-child-width-1-2" uk-grid="">
+					<div>
+						<label className="uk-label backgroundf">From</label>
+						<input
+							className="uk-input uk-text-large"
+							type="date"
+							onChange={(event) => push(`${productPriceUrl}/${productId}?${updateURLQuery(urlParams, "from", () => event.target.value)}`)}
+						/>
+					</div>
+					<div>
+						<label className="uk-label backgroundf">To</label>
+						<input
+							className="uk-input uk-text-large"
+							type="date"
+							onChange={(event) => push(`${productPriceUrl}/${productId}?${updateURLQuery(urlParams, "to", () => event.target.value)}`)}
+						/>
+					</div>
+				</div>
+				<table className="uk-table uk-table-divider">
+					<thead>
+						<tr>
+							<th>Applied timestamp</th>
+							<th>Dropped timestamp</th>
+							<th>Price</th>
+							<th>Approved timestamp</th>
+							<th></th>
 						</tr>
-					))
-				}
-				</tbody>
-			</table>
+					</thead>
+					<tbody>
+					{
+						priceList.map((ele, index) => (
+							<tr key={index}>
+								<td>{ele.formattedAppliedTimestamp}</td>
+								<td>{ele.formattedDroppedTimestamp}</td>
+								<td>
+									<span className="colors">{ele.price}</span>
+								</td>
+								<td>
+								{
+									asIf(ele.approvedTimestamp != null)
+									.then(() => <span className="uk-text-primary">
+										{ele.formattedApprovedTimestamp}
+									</span>)
+									.else(() => <span className="uk-text-muted">Not yet approved</span>)
+								}
+								</td>
+								<td>
+								{
+									asIf(ele.approvedTimestamp == null && principal.role === Account.Role.HEAD)
+									.then(() => (
+										<button
+											className="uk-button uk-button-danger"
+											onClick={() => onApprove(index)}
+										>Approve</button>
+									)).else()
+								}
+								</td>
+							</tr>
+						))
+					}
+					</tbody>
+				</table>
+			</PagedComponent>
 			<IndividualPriceCreator
 				onSuccess={(newPrice) => setPriceList([
 					...priceList,

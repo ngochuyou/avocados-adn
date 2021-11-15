@@ -184,14 +184,18 @@ const MINUTE_AND_SECOND_NAMES = [
 	'51', '52', '53', '54', '55', '56', '57', '58', '59'
 ];
 
-export const formatServerDatetime = (datetime) => {
-	if (!(datetime instanceof Date) && !isString(datetime)) {
-		return null;
+export const formatServerDatetime = (datetime, fallbackVal) => {
+	if (datetime == null || (!(datetime instanceof Date) && !isString(datetime))) {
+		return fallbackVal;
 	}
 
 	const instant = datetime instanceof Date ? datetime : new Date(datetime);
 
-	return `${instant.getFullYear()}-${NUMERIC_MONTH_NAMES[instant.getMonth()]}-${DATE_NAMES[instant.getDate()]} ${HOURS_NAMES[instant.getHours()]}:${MINUTE_AND_SECOND_NAMES[instant.getMinutes()]}:${MINUTE_AND_SECOND_NAMES[instant.getSeconds()]}`;
+	if (instant.toString() === 'Invalid Date') {
+		return fallbackVal;
+	}
+
+	return `${instant.getFullYear()}-${NUMERIC_MONTH_NAMES[instant.getMonth()]}-${DATE_NAMES[instant.getDate() - 1]} ${HOURS_NAMES[instant.getHours()]}:${MINUTE_AND_SECOND_NAMES[instant.getMinutes()]}:${MINUTE_AND_SECOND_NAMES[instant.getSeconds()]}`;
 }
 
 export const formatDatetime = (datetime) => {
@@ -201,7 +205,7 @@ export const formatDatetime = (datetime) => {
 
 	const instant = datetime instanceof Date ? datetime : new Date(datetime);
 
-	return `${DAY_NAMES[instant.getDay()]} ${DATE_NAMES[instant.getDate()]} ${MONTH_NAMES[instant.getMonth()]} ${instant.getFullYear()} at ${HOURS_NAMES[instant.getHours()]}:${MINUTE_AND_SECOND_NAMES[instant.getMinutes()]}:${MINUTE_AND_SECOND_NAMES[instant.getSeconds()]}`;
+	return `${DAY_NAMES[instant.getDay()]} ${DATE_NAMES[instant.getDate() - 1]} ${MONTH_NAMES[instant.getMonth()]} ${instant.getFullYear()} at ${HOURS_NAMES[instant.getHours()]}:${MINUTE_AND_SECOND_NAMES[instant.getMinutes()]}:${MINUTE_AND_SECOND_NAMES[instant.getSeconds()]}`;
 }
 
 export const formatDate = (date) => {
@@ -363,3 +367,9 @@ export const merge = (left, right, mapper = (ele) => ele) => {
 
 	return result;
 };
+
+export const updateURLQuery = (query, key, valMapper, modifier = "set") => {
+	query[modifier](key, valMapper(query.get(key)));
+
+	return query.toString();
+}; 

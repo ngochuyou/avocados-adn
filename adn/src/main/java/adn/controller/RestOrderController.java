@@ -14,7 +14,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import javax.persistence.criteria.Join;
+
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
@@ -32,7 +36,7 @@ import adn.application.Common;
 import adn.application.Result;
 import adn.application.context.ContextProvider;
 import adn.application.context.builders.CredentialFactory;
-import adn.helpers.StringHelper;
+import adn.model.entities.Customer;
 import adn.model.entities.Order;
 import adn.model.entities.OrderDetail;
 import adn.model.entities.constants.OrderStatus;
@@ -74,7 +78,9 @@ public class RestOrderController extends BaseController {
 	@Secured(CUSTOMER)
 	public ResponseEntity<?> getOrdersList(
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
-			@PageableDefault(size = 5) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
+			@PageableDefault(size = 5, sort = _Order.createdTimestamp, direction = Direction.DESC) Pageable paging)
+			throws NoSuchFieldException, UnauthorizedCredential {
+
 		return makeStaleWhileRevalidate(
 				crudService.readAll(Order.class, columns,
 						(root, query, builder) -> builder.equal(root.get(_Order.customer).get(_Customer.id),
@@ -83,25 +89,32 @@ public class RestOrderController extends BaseController {
 				3, TimeUnit.SECONDS, 5, TimeUnit.SECONDS);
 	}
 
-	@GetMapping("/internal/all")
+	@GetMapping("/internal")
 	@Transactional(readOnly = true)
 	@Secured({ HEAD, PERSONNEL })
-	public ResponseEntity<?> getOrdersList(@RequestParam(name = "customer", required = false) String customerId,
+	public ResponseEntity<?> getOrdersList(@RequestParam(name = "customer", required = false) String customerName,
+			@RequestParam(name = "status", required = false) OrderStatus orderStatus,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
 			@PageableDefault(size = 5) Pageable paging) throws NoSuchFieldException, UnauthorizedCredential {
 		authService.assertCustomerServiceDepartment();
-
-		if (!StringHelper.hasLength(customerId)) {
-			return makeStaleWhileRevalidate(crudService.readAll(Order.class, columns, paging, getPrincipalCredential()),
-					3, TimeUnit.SECONDS, 5, TimeUnit.SECONDS);
-		}
-
+		// @formatter:off
+		Specification<Order> spec = (root, query, builder) -> {
+			return builder.and(
+				Optional.ofNullable(customerName)
+					.map(name -> {
+						Join<Order, Customer> customerJoin = root.join(_Order.customer);
+						String nameExpression = Common.like(customerName);
+						return builder.or(
+								builder.like(customerJoin.get(_Customer.firstName), nameExpression),
+								builder.like(customerJoin.get(_Customer.lastName), nameExpression));
+					}).orElse(builder.conjunction()),
+				Optional.ofNullable(orderStatus)
+					.map(status -> builder.equal(root.get(_Order.status), status)).orElse(builder.conjunction()));
+		};
+		// @formatter:on
 		return makeStaleWhileRevalidate(
-				crudService.readAll(Order.class, columns,
-						(root, query, builder) -> builder.equal(root.get(_Order.customer).get(_Customer.id),
-								customerId),
-						paging, getPrincipalCredential()),
-				3, TimeUnit.SECONDS, 5, TimeUnit.SECONDS);
+				crudService.readAll(Order.class, columns, spec, paging, getPrincipalCredential()), 3, TimeUnit.SECONDS,
+				5, TimeUnit.SECONDS);
 	}
 
 	@PostMapping

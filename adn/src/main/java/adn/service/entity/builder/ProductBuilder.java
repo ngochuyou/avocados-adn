@@ -70,9 +70,23 @@ public class ProductBuilder extends AbstractPermanentEntityBuilder<Product> {
 	}
 
 	@Override
+	public <E extends Product> E buildUpdate(Serializable id, E model, E persistence, Session session) {
+		persistence = super.buildUpdate(id, model, persistence, session);
+
+		persistence.setCategory(model.getCategory());
+
+		return generateCode(persistence);
+	}
+
+	@Override
 	public <E extends Product> E buildPostValidationOnInsert(Serializable id, E model, Session session) {
 		session.persist(model);
-		id = model.getId();
+
+		return generateCode(model);
+	}
+
+	private <E extends Product> E generateCode(E model) {
+		BigInteger id = model.getId();
 
 		if (logger.isDebugEnabled()) {
 			logger.debug(String.format(CODE_GENERATION_MESSAGE, id));

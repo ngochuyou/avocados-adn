@@ -29,7 +29,7 @@ export default function GlobalProviderContextProvider({ children }) {
 		});
 	}, [dispatch]);
 	const setProviders = useCallback((providers) => {
-		if (!Array.isArray(providers) || !hasLength(providers)) {
+		if (!Array.isArray(providers)) {
 			return;
 		}
 

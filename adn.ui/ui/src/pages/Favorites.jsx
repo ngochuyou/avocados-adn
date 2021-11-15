@@ -1,9 +1,12 @@
 import { useEffect } from 'react';
+import { useHistory } from 'react-router-dom';
 
 import { getProductList, getProductPrices } from '../actions/product';
 
 import Navbar from '../components/utils/Navbar';
 import ProductList from '../components/product/ProductList';
+
+import { routes } from '../config/default';
 
 import { useProduct } from '../hooks/product-hooks';
 
@@ -18,6 +21,8 @@ export default function Favorites() {
 		},
 		setProducts, mergePrices
 	} = useProduct();
+	const { productView: { url: productViewUrl } } = routes;
+	const { push } = useHistory();
 
 	useEffect(() => {
 		const doFetch = async () => {
@@ -69,6 +74,7 @@ export default function Favorites() {
 					<div className="uk-width-4-6">
 						<ProductList
 							list={Object.values(products)}
+							onItemClick={(p) => push(`${productViewUrl}/${p.id}`)}
 						/>
 					</div>
 				</div>

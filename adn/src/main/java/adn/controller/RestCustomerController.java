@@ -67,7 +67,8 @@ public class RestCustomerController extends BaseController {
 	@Secured(CUSTOMER)
 	@Transactional
 	public ResponseEntity<?> patchCart(@PathVariable(name = "action") String action, CartItem cartItem,
-			@RequestParam(name = "items", required = false) List<BigInteger> itemIds) throws UnauthorizedCredential {
+			@RequestParam(name = "items", required = false) List<BigInteger> itemIds,
+			@RequestParam(name = "color", required = false) String color) throws UnauthorizedCredential {
 		switch (action) {
 			case ADD_ACTION: {
 				return doAddToCart(cartItem);

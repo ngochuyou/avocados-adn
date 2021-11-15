@@ -133,19 +133,23 @@ function Sidebar() {
 		dashboard: {
 			provider: {
 				mapping: providerBoardMapping,
-				costs: { url: productCostsUrl }
+				costs: { url: productCostsUrl },
+				creation: { url: providerCreationMapping },
+				list: { url: providerListMapping },
 			},
 			product: {
 				mapping: productBoardMapping,
 				prices: { url: productPricesUrl },
-				creation: { url: productCreationUrl }
+				creation: { url: productCreationUrl },
+				list: { url: productListUrl }
 			},
 			order: {
 				list: { url: orderListUrl }
 			},
 			stats: {
 				cost: { url: statsCostUrl },
-				product: { url: statsProductUrl }
+				product: { url: statsProductUrl },
+				sales: { url: statsSalesUrl }
 			}
 		}
 	} = routes;
@@ -173,6 +177,12 @@ function Sidebar() {
 						<ul className="uk-nav-sub">
 							<li>
 								<Link
+									to={productListUrl}
+									className="uk-link-reset uk-parent"
+								>Product List</Link>
+							</li>
+							<li>
+								<Link
 									to={productCreationUrl}
 									className="uk-link-reset uk-parent"
 								>Create Product</Link>
@@ -191,6 +201,18 @@ function Sidebar() {
 							className="uk-link-reset uk-parent"
 						>Provider</Link>
 						<ul className="uk-nav-sub">
+							<li>
+								<Link
+									to={providerListMapping}
+									className="uk-link-reset uk-parent"
+								>Provider List</Link>
+							</li>
+							<li>
+								<Link
+									to={providerCreationMapping}
+									className="uk-link-reset uk-parent"
+								>Create Provider</Link>
+							</li>
 							<li>
 								<Link
 									to={productCostsUrl}
@@ -215,14 +237,7 @@ function Sidebar() {
 						</ul>
 					</li>
 				</CustomerServiceScope>
-				<PersonnelScope>
-					<li>
-						<Link
-							to="/dashboard/department"
-							className="uk-link-reset"
-						>Department</Link>
-					</li>
-				</PersonnelScope>
+				{/*<PersonnelScope></PersonnelScope>*/}
 				<HeadScope>
 					<li className="uk-parent">
 						<NoFollow
@@ -240,6 +255,12 @@ function Sidebar() {
 									to={statsCostUrl}
 									className="uk-link-reset"
 								>Product Costs</Link>
+							</li>
+							<li>
+								<Link
+									to={statsSalesUrl}
+									className="uk-link-reset"
+								>Sales</Link>
 							</li>
 						</ul>
 					</li>

@@ -22,6 +22,7 @@ import adn.application.Common;
 import adn.application.Result;
 import adn.controller.query.impl.ProviderQuery;
 import adn.dao.specific.ProductCostRepository;
+import adn.helpers.CollectionHelper;
 import adn.model.entities.ProductCost;
 import adn.model.entities.Provider;
 import adn.model.entities.id.ProductCostId;
@@ -151,7 +152,7 @@ public class ProviderService {
 				? productCostRepository.findAllCurrentByProduct((String) identifier, columns, pageable)
 				: productCostRepository.findAllCurrentByProvider((UUID) identifier, columns, pageable);
 
-		if (rows.isEmpty()) {
+		if (CollectionHelper.isEmpty(rows)) {
 			return new ArrayList<>();
 		}
 

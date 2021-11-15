@@ -11,8 +11,6 @@ const Context = createContext();
 
 export const useNavbar = () => useContext(Context);
 
-const SET_BACK_BTN_STATE = "SET_BACK_BTN_STATE";
-
 const STORE = {
 	className: "",
 	backButtonVisible: false,
@@ -24,6 +22,9 @@ const STORE = {
 	outerRightElement: null
 };
 
+const SET_BACK_BTN_STATE = "SET_BACK_BTN_STATE";
+const SET_ON_ENTERED = "SET_ON_ENTERED";
+
 const dispatchers = {
 	SET_BACK_BTN_STATE: (payload, oldState) => {
 		const { visible, callback } = payload;
@@ -32,6 +33,12 @@ const dispatchers = {
 			...oldState,
 			backButtonVisible: visible,
 			backButtonClick: callback
+		};
+	},
+	SET_ON_ENTERED: (payload, oldState) => {
+		return {
+			...oldState,
+			searchInputEntered: payload
 		};
 	}
 };
@@ -51,10 +58,21 @@ export function ContextProvider({ children }) {
 			payload: nextState
 		});
 	}, [dispatch]);
+	const setOnEntered = useCallback((callback = () => null) => {
+		if (typeof callback !== 'function') {
+			return;
+		}
+
+		dispatch({
+			type: SET_ON_ENTERED,
+			payload: callback
+		});
+	}, [dispatch]);
 
 	return (
 		<Context.Provider value={{
-			store, setBackBtnState
+			store, setBackBtnState,
+			setOnEntered
 		}}>
 			{ children }
 		</Context.Provider>

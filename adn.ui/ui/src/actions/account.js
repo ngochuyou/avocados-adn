@@ -108,7 +108,7 @@ export function addCart({
 	return fjson(`/rest/customer/cart/add?productId=${productId}&color=${color == null ? "" : encodeURIComponent(color)}&namedSize=${namedSize}&quantity=${quantity}`, {
 		method: 'PUT',
 		encode: false
-	});
+	}, false);
 }
 
 export function subtractCart(itemIds = []) {

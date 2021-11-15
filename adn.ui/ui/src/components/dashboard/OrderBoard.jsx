@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Route, useParams, useHistory } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { Route, useParams, useHistory, useLocation } from 'react-router-dom';
 
 import Account from '../../models/Account';
 import { Order } from '../../models/Factor';
@@ -10,10 +10,14 @@ import { getItemsList } from '../../actions/product';
 import Navbar, { useNavbar } from './Navbar';
 import { OrderList, IndividualOrder, calculateExpiredTimestamp } from '../account/OrderView';
 import { ConfirmModal } from '../utils/ConfirmModal';
+import PagedComponent from '../utils/PagedComponent';
 
 import { routes } from '../../config/default';
 
-import { formatVND, groupCartItems, asIf, hasLength, atom, formatDatetime } from '../../utils';
+import {
+	formatVND, groupCartItems, asIf, hasLength, atom, formatDatetime,
+	updateURLQuery
+} from '../../utils';
 
 export default function OrderBoard() {
 	const {
@@ -49,7 +53,13 @@ function OrderListView() {
 	} = routes;
 	const { push } = useHistory();
 	const [orders, setOrders] = useState([]);
-	const { setBackBtnState } = useNavbar();
+	const { setBackBtnState, setOnEntered } = useNavbar();
+	const { search: query } = useLocation();
+	const urlParams = useMemo(() => new URLSearchParams(query), [query]);
+
+	useEffect(() => {
+		setOnEntered(key => push(`${listUrl}?${updateURLQuery(urlParams, "customer", () => key)}`));
+	}, [setOnEntered, listUrl, push, urlParams]);
 
 	useEffect(() => {
 		const doFetch = async () => {
@@ -58,7 +68,11 @@ function OrderListView() {
 				columns: [
 					"id", "code", "createdTimestamp",
 					"status", "customer"
-				]
+				],
+				page: urlParams.get('page'),
+				size: urlParams.get('size'),
+				customer: urlParams.get('customer'),
+				status: isNaN(urlParams.get('status')) ? urlParams.get('status') : null
 			});
 
 			if (err) {
@@ -70,35 +84,81 @@ function OrderListView() {
 		};
 
 		doFetch();
-	}, []);
+	}, [urlParams]);
 
 	return (
 		<div className="uk-padding-small">
 			<h3>Customers Orders</h3>
+			<div className="uk-flex uk-flex-right">
+				<div>
+					<select
+						className="uk-select uk-width-auto"
+						value={urlParams.get('status') || -1}
+						onChange={(event) => push(`${listUrl}?${updateURLQuery(urlParams, "status", () => event.target.value)}`)}
+					>
+						<option
+							value={-1}
+						>All status</option>
+						<option
+							value={Order.Status.PENDING_PAYMENT}
+							className="colors"
+						>Pending payment</option>
+						<option
+							value={Order.Status.PAID}
+							className="uk-text-primary"
+						>Paid</option>
+						<option
+							value={Order.Status.EXPIRED}
+							className="uk-text-muted"
+						>Expired</option>
+						<option
+							value={Order.Status.DELIVERING}
+							className="uk-text-warning"
+						>On the way</option>
+						<option
+							value={Order.Status.FINISHED}
+							className="uk-text-success"
+						>Finished</option>
+					</select>
+				</div>
+				<div className="uk-margin-left">
+					<button
+						className="uk-button uk-button-default"
+						onClick={() => push(listUrl)}
+					>Clear filter</button>
+				</div>
+			</div>
 			<div className="uk-position-relative" uk-height-viewport="offset-top: true">
-				<OrderList
-					list={orders}
-					extras={[
-						{
-							header: <th key="customer">Customer</th>,
-							row: (order) => {
-								const { customer } = order;
+				<PagedComponent
+					pageCount={orders.length}
+					onNextPageRequest={() => push(`${listUrl}?${updateURLQuery(urlParams, "page", p => (+p || 0) + 1)}`)}
+					onPreviousPageRequest={() => push(`${listUrl}?${updateURLQuery(urlParams, "page", p => +p - 1)}`)}
+					currentPage={urlParams.get('page')}
+				>
+					<OrderList
+						list={orders}
+						extras={[
+							{
+								header: <th key="customer">Customer</th>,
+								row: (order) => {
+									const { customer } = order;
 
-								return <td key="customer">{`${customer.firstName} ${customer.lastName}`}</td>;
+									return <td key="customer">{`${customer.firstName} ${customer.lastName}`}</td>;
+								}
 							}
-						}
-					]}
-					onRowSelect={(order) => {
-						push(`${listUrl}/${order.code}`);
-						setBackBtnState({
-							visible: true,
-							callback: () => {
-								setBackBtnState();
-								push(listUrl);
-							}
-						});
-					}}
-				/>
+						]}
+						onRowSelect={(order) => {
+							push(`${listUrl}/${order.code}`);
+							setBackBtnState({
+								visible: true,
+								callback: () => {
+									setBackBtnState();
+									push(listUrl);
+								}
+							});
+						}}
+					/>
+				</PagedComponent>
 			</div>
 		</div>
 	);

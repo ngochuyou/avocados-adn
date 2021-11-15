@@ -77,9 +77,9 @@ public interface GenericCRUDService extends Service {
 			String associationProperty,
 			Serializable associationValue,
 			Collection<String> columns,
+			Specification<T> spec,
 			Pageable pageable,
-			Credential credential,
-			Specification<T> spec)
+			Credential credential)
 			throws NoSuchFieldException, Exception;
 
 	<T extends Entity> List<Map<String, Object>> readAllByAssociation(
@@ -88,10 +88,10 @@ public interface GenericCRUDService extends Service {
 			String associatingAttribute,
 			String associationProperty,
 			Serializable associationValue,
+			Specification<T> spec,
 			Pageable pageable,
 			Credential credential,
-			SourceMetadata<T> sourceMetadata,
-			Specification<T> spec) throws NoSuchFieldException, Exception;
+			SourceMetadata<T> sourceMetadata) throws NoSuchFieldException, Exception;
 	// @formatter:on
 	<T extends Entity> List<Map<String, Object>> readAll(Class<T> type, Collection<String> requestedColumns,
 			Specification<T> spec, Sort sort, Credential credential)

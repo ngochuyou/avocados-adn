@@ -17,11 +17,72 @@ const MODEL = {
 const MAX_IMAGES_AMOUNT = 20;
 
 export default function ProductForm({
+	initModel = null,
+	setModelState = (nextState) => console.log(nextState),
 	onSuccess = (model) => console.log(model),
 	errors = {}
 }) {
+	if (initModel == null) {
+		return (
+			<LocalStateForm
+				onSuccess={onSuccess}
+				errors={errors}
+			/>
+		);
+	}
+
+	return (
+		<ProvidedStateForm
+			initModel={initModel}
+			onSuccess={onSuccess}
+			errors={errors}
+		/>
+	);
+}
+
+function ProvidedStateForm({
+	initModel,
+	onSuccess = () => console.log("success"),
+	errors = {}
+}) {
+	const [model, setModelState] = useReducer((oldState, nextState) => ({...oldState, ...nextState}), {...initModel});
+	console.log(model);
+	return (
+		<FormTemplate
+			model={model}
+			setModelState={setModelState}
+			onSuccess={onSuccess}
+			errors={errors}
+		/>
+	); 
+}
+
+function LocalStateForm({
+	onSuccess = () => console.log("submitted"),
+	errors = {}
+}) {
 	const [model, setModelState] = useReducer((oldState, nextState) => ({...oldState, ...nextState}), {...MODEL});
+
+	return (
+		<FormTemplate
+			model={model} setModelState={setModelState}
+			onSuccess={onSuccess}
+			errors={errors}
+		/>
+	);
+}
+
+function FormTemplate({
+	model = null,
+	setModelState = (nextState) => console.log(nextState),
+	onSuccess = () => console.log("success"),
+	errors = {}
+}) {
 	const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
+
+	if (model == null) {
+		return null;
+	}
 
 	const onInputChange = (event) => setModelState({ [event.target.name]: event.target.value });
 
@@ -37,7 +98,7 @@ export default function ProductForm({
 				src: URL.createObjectURL(file)
 			}))]
 		});
-	}
+	};
 
 	const onGalleryImageRemove = (index) => {
 		setModelState({
@@ -125,8 +186,8 @@ export default function ProductForm({
 								<span className="uk-text-muted">
 								{
 									asIf(!hasLength(model.description))
-									.then(() => "3000 character(s) left")
-									.else(() => `${3000 - model.description.length} character(s) left`)
+									.then(() => "65535 character(s) left")
+									.else(() => `${65535 - model.description.length} character(s) left`)
 								}
 								</span>
 							</div>
@@ -136,7 +197,7 @@ export default function ProductForm({
 							name="description"
 							placeholder="Description"
 							rows="5"
-							maxLength="3000"
+							maxLength="65535"
 							value={model.description}
 							onChange={onInputChange}
 						>

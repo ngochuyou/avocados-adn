@@ -567,7 +567,7 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 			Serializable associationIdentifier, Collection<String> columns, Pageable pageable, Credential credential)
 			throws NoSuchFieldException, Exception {
 		return readAllByAssociation(type, associatingType, associatingAttribute, associationProperty,
-				associationIdentifier, columns, pageable, credential, null);
+				associationIdentifier, columns, null, pageable, credential);
 	}
 
 	@Override
@@ -576,7 +576,7 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 			Serializable associationIdentifier, Pageable pageable, Credential credential,
 			SourceMetadata<T> sourceMetadata) throws NoSuchFieldException, Exception {
 		return readAllByAssociation(type, associatingType, associatingAttribute, associationProperty,
-				associationIdentifier, pageable, credential, sourceMetadata, null);
+				associationIdentifier, null, pageable, credential, sourceMetadata);
 	}
 
 	// @formatter:off
@@ -588,11 +588,11 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 			String associationProperty,
 			Serializable associationIdentifier,
 			Collection<String> columns,
+			Specification<T> spec,
 			Pageable pageable,
-			Credential credential,
-			Specification<T> spec) throws NoSuchFieldException, UnauthorizedCredential {
+			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
 		return readAllByAssociation(type, associatingType, associatingAttribute, associationProperty,
-				associationIdentifier, pageable, credential, unknownArrayCollection(type, list(columns)), spec);
+				associationIdentifier, spec, pageable, credential, unknownArrayCollection(type, list(columns)));
 	}
 	
 	@Override
@@ -603,10 +603,10 @@ public final class GenericCRUDServiceImpl implements GenericCRUDService {
 			String associatingAttribute,
 			String associationProperty,
 			Serializable associationIdentifier,
+			Specification<T> spec,
 			Pageable pageable,
 			Credential credential,
-			SourceMetadata<T> sourceMetadata,
-			Specification<T> spec)
+			SourceMetadata<T> sourceMetadata)
 			throws NoSuchFieldException, UnauthorizedCredential {
 		sourceMetadata = optionallyValidate(type, credential, sourceMetadata);
 

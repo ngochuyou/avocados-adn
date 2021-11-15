@@ -28,30 +28,34 @@ export function getAvgProductCostsByProviders({
 	return fjson(`/rest/stats/cost/perprovider/${productId}?providers=${join(providerIds)}&year=${year}&month=${month}`);
 }
 
-export function getSoldProductAmount({
+export function consumeSoldProduct({
 	overall = true,
 	year = null, month = null,
-	sort = "ASC"
+	sort = "ASC",
+	action = ""
 } = {}) {
+	action = action == null ? "" : action;
+
 	if (overall === true) {
-		return fjson(`/rest/stats/product/total?overall=true`);
+		return fjson(`/rest/stats/product/total?overall=true&action=${action}`);
 	}
 
-	return fjson(`/rest/stats/product/total?overall=false&year=${year || ""}&month=${month || ""}&sort=${sort}`);
+	return fjson(`/rest/stats/product/total?overall=false&year=${year || ""}&month=${month || ""}&sort=${sort}&action=${action}`);
 }
 
-export function getSoldProductAmountPerCategory({
+export function consumeSoldProductByAssociation({
 	overall = true,
 	categoryIds = [],
 	productIds = [],
 	year = null, month = null,
-	sort = "ASC"
+	sort = "ASC",
+	action = ""
 } = {}) {
 	if (!Array.isArray(categoryIds) || !Array.isArray(productIds)) {
 		return [[], null];
 	}
 
-	const commonQuery = `categories=${join(categoryIds)}&products=${join(productIds)}`;
+	const commonQuery = `categories=${join(categoryIds)}&products=${join(productIds)}&action=${action == null ? "" : action}`;
 
 	if (overall === true) {
 		return fjson(`/rest/stats/product/total?overall=true&${commonQuery}`);

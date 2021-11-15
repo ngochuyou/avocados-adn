@@ -153,7 +153,12 @@ public class Common {
 			);
 	// @formatter:on
 	private static final String STRING_JOINER = ", ";
-
+	private static final String LIKE_TEMPLATE = "%%%s%%";
+	
+	public static final String like(Object val) {
+		return String.format(LIKE_TEMPLATE, val);
+	}
+	
 	public static final String symbolNamesOf(Character... characters) {
 		return Stream.of(characters).map(SYMBOL_NAMES::get).filter(Objects::nonNull)
 				.collect(Collectors.joining(STRING_JOINER));

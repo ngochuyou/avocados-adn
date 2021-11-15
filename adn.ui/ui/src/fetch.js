@@ -2,7 +2,7 @@ import { server } from "./config/default.json";
 
 const url = server.url;
 
-export async function $fetch(endpoint = null, options = {}, credentials = true) {
+export async function $fetch(endpoint = null, options = {}, credentials = true, encode = true) {
 	if (endpoint == null) {
 		return [null, "Endpoint was null"];
 	}
@@ -32,7 +32,8 @@ export async function fjson(endpoint = null, options = {}, encode = true) {
 			'Accept': 'application/json'
 		} : {
 			'Accept': 'application/json'
-		}
+		},
+		encode
 	});
 
 	if (err) {

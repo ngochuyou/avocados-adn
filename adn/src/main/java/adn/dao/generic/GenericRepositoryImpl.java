@@ -221,9 +221,9 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		return columns.stream().map(column -> selectors.get(column).apply(column, root)).collect(Collectors.toList());
 	}
 
-	private <T extends Entity, E> Query<E> resolveFetchQuery(SharedSessionContract session, CriteriaQuery<E> query,
-			Root<T> root, CriteriaBuilder builder, Pageable paging) {
-		return resolvePagedQuery(session, query.orderBy(resolveSort(root, builder, paging.getSort())), paging);
+	private <T extends Entity, E> Query<E> resolveFetchQuery(Class<T> type, SharedSessionContract session,
+			CriteriaQuery<E> query, Root<T> root, CriteriaBuilder builder, Pageable paging) {
+		return resolvePagedQuery(session, query.orderBy(resolveSort(type, root, builder, paging.getSort())), paging);
 	}
 
 	public <E> Query<E> resolvePagedQuery(SharedSessionContract session, CriteriaQuery<E> criteriaQuery,
@@ -236,9 +236,15 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		return query;
 	}
 
-	private <E> List<Order> resolveSort(Root<E> root, CriteriaBuilder builder, Sort sort) {
-		return sort.stream().map(order -> order.isAscending() ? builder.asc(root.get(order.getProperty()))
-				: builder.desc(root.get(order.getProperty()))).collect(Collectors.toList());
+	@SuppressWarnings("unchecked")
+	private <E> List<Order> resolveSort(Class<E> type, Root<E> root, CriteriaBuilder builder, Sort sort) {
+		return sort.stream()
+				.map(order -> Optional
+						.ofNullable(selectorMap.get(type).get(order.getProperty()).apply(order.getProperty(),
+								(Root<? extends Entity>) root))
+						.map(expression -> order.isAscending() ? builder.asc(expression) : builder.desc(expression))
+						.orElseThrow())
+				.collect(Collectors.toList());
 	}
 
 	public <E extends Entity, R> Predicate resolvePredicate(Class<E> entityType, Root<E> root,
@@ -425,7 +431,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 
 		cq.where(resolvePredicate(type, root, cq, builder, null));
 
-		Query<T> hql = resolveFetchQuery(session, cq, root, builder, paging);
+		Query<T> hql = resolveFetchQuery(type, session, cq, root, builder, paging);
 
 		hql.setLockMode(lockMode);
 
@@ -451,7 +457,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 
 		cq.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, cq, builder, null));
 
-		Query<Tuple> hql = resolveFetchQuery(session, cq, root, builder, paging);
+		Query<Tuple> hql = resolveFetchQuery(type, session, cq, root, builder, paging);
 
 		hql.setLockMode(lockMode);
 
@@ -566,7 +572,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 
 		query.where(resolvePredicate(type, root, query, builder, spec));
 
-		Query<E> hql = resolvePagedQuery(session, query, pageable);
+		Query<E> hql = resolveFetchQuery(type, session, query, root, builder, pageable);
 
 		hql.setLockMode(lockMode);
 
@@ -590,7 +596,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		CriteriaQuery<E> query = builder.createQuery(type);
 		Root<E> root = query.from(type);
 
-		query.where(resolvePredicate(type, root, query, builder, spec)).orderBy(resolveSort(root, builder, sort));
+		query.where(resolvePredicate(type, root, query, builder, spec)).orderBy(resolveSort(type, root, builder, sort));
 
 		Query<E> hql = session.createQuery(query);
 
@@ -687,7 +693,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 
 		query.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, query, builder, spec));
 
-		Query<Tuple> hql = resolvePagedQuery(session, query, pageable);
+		Query<Tuple> hql = resolveFetchQuery(type, session, query, root, builder, pageable);
 
 		hql.setLockMode(lockMode);
 
@@ -712,7 +718,7 @@ public class GenericRepositoryImpl implements GenericRepository, ContextBuilder 
 		Root<E> root = query.from(type);
 
 		query.multiselect(resolveSelect(type, root, columns)).where(resolvePredicate(type, root, query, builder, spec))
-				.orderBy(resolveSort(root, builder, sort));
+				.orderBy(resolveSort(type, root, builder, sort));
 
 		Query<Tuple> hql = session.createQuery(query);
 
