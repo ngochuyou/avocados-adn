@@ -1,6 +1,6 @@
 {
 	"server": {
-		"url": "http://192.168.100.6:8080",
+		"url": "http://172.16.3.114:8080",
 		"auth" : {
 			"token_url": "/auth/token"
 		},
@@ -21,6 +21,14 @@
 		"dashboard": {
 			"mapping": "/dashboard",
 			"url": "/dashboard",
+			"stock": {
+				"mapping": "/dashboard/stock",
+				"url": "/dashboard/stock",
+				"list": {
+					"mapping": "/dashboard/stock/items",
+					"url": "/dashboard/stock/items"
+				}
+			},
 			"provider": {
 				"mapping": "/dashboard/provider/:view?",
 				"url": "/dashboard/provider",

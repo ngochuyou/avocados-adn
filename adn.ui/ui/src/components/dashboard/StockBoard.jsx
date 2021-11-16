@@ -1,28 +1,166 @@
 import {
 	createContext, useContext,
 	useReducer, Fragment, useRef,
-	useState, useEffect
+	useState, useEffect, useMemo
 } from 'react';
+import { Route, useLocation, useHistory } from 'react-router-dom';
 
-import { server } from '../../config/default';
+import { routes, server } from '../../config/default';
 
 import {
 	SET_VIEW, PUSH_LIST, MODIFY_MODEL, POP_LIST, TOGGLE_MODAL_VISION,
 	CLEAR_LIST, SET_LIST
 } from '../../actions/common';
-import { searchProduct, submitItemsBatch } from '../../actions/product';
+import { searchProduct, submitItemsBatch, getInternalItemsList } from '../../actions/product';
 import { fetchProviderList, searchProvider } from '../../actions/provider';
 
 import { DomainImage } from '../utils/Gallery';
 import { FixedAddButton } from '../utils/Button';
 import { ColorInput } from '../utils/Input';
 import { ConfirmModal } from '../utils/ConfirmModal';
+import Navbar, { useNavbar } from './Navbar';
+import PagedComponent from '../utils/PagedComponent';
 
-import { spread, asIf } from '../../utils';
+import { spread, asIf, updateURLQuery } from '../../utils';
 
 import StockDetail from '../../models/StockDetail';
 
 import { useSidebarContext } from '../../pages/Dashboard';
+
+function ItemList() {
+	const { search: query } = useLocation();
+	const urlParams = useMemo(() => new URLSearchParams(query), [query]);
+	const [items, setItems] = useState([]);
+	const { push } = useHistory();
+	const {
+		dashboard: {
+			stock: { list: { url: itemListUrl } }
+		}
+	} = routes;
+	const { setOnEntered } = useNavbar();
+
+	useEffect(() => {
+		setOnEntered(key => push(`${itemListUrl}?${updateURLQuery(urlParams, "product", () => key)}`));
+	}, [setOnEntered, itemListUrl, push, urlParams]);
+
+	useEffect(() => {
+		const doFetch = async () => {
+			const [res, err] = await getInternalItemsList({
+				columns: ["id", "code", "status", "product", "color", "namedSize"],
+				page: urlParams.get('page'),
+				size: urlParams.get('size'),
+				sort: urlParams.get('sort'),
+				product: urlParams.get('product'),
+				status: urlParams.get('status') || "AVAILABLE",
+				namedSize: urlParams.get('namedSize')
+			});
+
+			if (err) {
+				return console.error(err);
+			}
+
+			setItems(res);
+		};
+
+		doFetch()
+	}, [urlParams]);
+
+	return (
+		<>
+			<Navbar />
+			<main className="uk-padding-small">
+				<h3 className="uk-heading-line">
+					<span>Items list</span>
+				</h3>
+				<div className="uk-margin uk-flex uk-flex-right" uk-margin="">
+					<div uk-tooltip="Item status">
+						<select
+							className="uk-select"
+							onChange={(event) => push(`${itemListUrl}?${updateURLQuery(urlParams, "status", () => event.target.value)}`)}
+							value={urlParams.get('status') || "AVAILABLE"}
+						>
+							<option value="AVAILABLE">AVAILABLE</option>
+							<option value="UNAVAILABLE">UNAVAILABLE</option>
+							<option value="SOLD">SOLD</option>
+						</select>
+					</div>
+					<div uk-tooltip="Item size" className='uk-margin-small-left'>
+						<select
+							className="uk-select"
+							onChange={(event) => push(`${itemListUrl}?${updateURLQuery(urlParams, "namedSize", () => event.target.value)}`)}
+							value={urlParams.get('namedSize') || StockDetail.NamedSize[0]}
+						>
+						{
+							StockDetail.NamedSize.map(ele => (
+								<option key={ele} value={ele}>{ele}</option>
+							))
+						}
+						</select>
+					</div>
+					<div className='uk-margin-small-left'>
+						<button
+							className="uk-button uk-button-default"
+							onClick={() => push(itemListUrl)}
+						>Clear filter</button>
+					</div>
+				</div>
+				<PagedComponent
+					pageCount={items.length}
+					onNextPageRequest={() => push(`${itemListUrl}?${updateURLQuery(urlParams, "page", p => (+p || 0) + 1)}`)}
+					onPreviousPageRequest={() => push(`${itemListUrl}?${updateURLQuery(urlParams, "page", p => +p - 1)}`)}
+					currentPage={urlParams.get('page')}
+				>
+					<table className="uk-table uk-table-divider uk-table-middle">
+						<thead>
+							<tr>
+								<th>Item Code</th>
+								<th>Product Name</th>
+								<th>Product Code</th>
+								<th>Color</th>
+								<th className="uk-text-center">Size</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+						{
+							items.map(item => (
+								<tr key={item.id}>
+									<td><div className="uk-text-lead colors">{item.code}</div></td>
+									<td>{item.product.name}</td>
+									<td>{item.product.code}</td>
+									<td>
+										<div
+											style={{height: "40px", width: "40px"}}
+											className="uk-box-shadow-large uk-border-circle uk-overflow-hidden"
+										>
+											<div
+												style={{backgroundColor: item.color}}
+												className="uk-height-1-1"
+											></div>
+										</div>
+									</td>
+									<td className="uk-text-center">
+										<label className="uk-label backgroundf">{item.namedSize}</label>
+									</td>
+									<td>
+									{
+										asIf(item.status !== "AVAILABLE")
+										.then(() => asIf(item.status === "SOLD")
+											.then(() => <label className="uk-label backgrounds">SOLD</label>)
+											.else(() => <label className="uk-label uk-label-danger">UNAVAILABLE</label>))
+										.else(() => <label className="uk-label uk-label-success">AVAILABLE</label>)
+									}
+									</td>
+								</tr>
+							))
+						}
+						</tbody>
+					</table>
+				</PagedComponent>
+			</main>
+		</>
+	);
+}
 
 const Context = createContext();
 const useGlobalContext = () => useContext(Context);
@@ -41,7 +179,7 @@ const IMPORT_STORE = {
 			color: "#000000",
 			provider: null,
 			status: StockDetail.Status[0],
-			cost: 1000,
+			cost: "",
 			note: "",
 			quantity: 1
 		},
@@ -110,7 +248,7 @@ const importDispatchers = {
 		const { form, form: { elements, elementsAmount } } = oldState;
 		const newElements = [...elements].map((model, i) => i !== index ? model : {
 			...model,
-			[name]: isNaN(value) ? value : Number(value), // no negative
+			[name]: isNaN(value) || value === "" ? value : Number(value), // no negative
 			provider: asIf(name === 'product').then(() => null).else(() => name !== 'provider' ? model.provider : value)
 		});
 
@@ -269,9 +407,21 @@ const importDispatchers = {
 };
 
 export default function StockBoard() {
+	const {
+		dashboard: {
+			stock: {
+				mapping: rootMapping,
+				list: {
+					mapping: itemListMapping
+				}
+			}
+		}
+	} = routes;
+
 	return (
 		<ContextProvider>
-			<Body />
+			<Route path={rootMapping} render={props => <Body {...props}/>} exact/>
+			<Route path={itemListMapping} render={props => <ItemList {...props}/>} />
 		</ContextProvider>
 	);
 }
@@ -415,11 +565,26 @@ function ImportBoard() {
 
 		if (err) {
 			console.error(err);
-			return;
+			return submitNoti(err.message);
 		}
 
 		setConfirmModalVision(false);
-		submitNoti("Batch created successfully");
+		return submitNoti("Batch created successfully");
+	};
+	const onUseCostChange = (index, event) => {
+		const { target: { checked } } = event;
+
+		if (checked) {
+			return dispatchImportStore({
+				type: MODIFY_MODEL,
+				payload: { index, name: "cost", value: "" }
+			});
+		}
+
+		return dispatchImportStore({
+			type: MODIFY_MODEL,
+			payload: { index, name: "cost", value: 100000 }
+		});
 	};
 
 	return (
@@ -592,13 +757,25 @@ function ImportBoard() {
 											<div>
 												<input
 													className="uk-input"
-													type="number" step="0.0001"
+													type="number"
+													step="0.0001"
 													placeholder="Cost"
 													name="cost"
 													onChange={(event) => onModelChange(index, event)}
 													uk-tooltip="Cost"
 													value={model.cost}
+													disabled={model.cost === "" ? "disabled" : ""}
 												/>
+												<label
+													uk-tooltip="Use the scheduled cost for this/these item(s)"
+												>
+													<input
+														type="checkbox" className="uk-checkbox uk-margin-small-right"
+														checked={model.cost === "" ? "checked" : ""}
+														onChange={(event) => onUseCostChange(index, event)}
+													/>
+													Use scheduled cost
+												</label>
 											</div>
 											<div>
 												<select

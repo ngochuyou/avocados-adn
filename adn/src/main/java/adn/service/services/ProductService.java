@@ -325,7 +325,7 @@ public class ProductService implements Service {
 				Set<Utils.Entry<BigInteger, UUID>> fetchedCosts = costs.stream()
 						.map(row -> uncheckedEntry((BigInteger) row[0], (UUID) row[1])).collect(Collectors.toSet());
 
-				return ResultBatch.failed(String.format(COSTS_NOT_FOUND_TEMPLATE, toBeFetchedCosts.stream()
+				return ResultBatch.bad(String.format(COSTS_NOT_FOUND_TEMPLATE, toBeFetchedCosts.stream()
 						.filter(entry -> !fetchedCosts.contains(entry))
 						.map(entry -> entry.map(
 								(productId, providerId) -> String.format(MISSING_COST_TEMPLATE, productId, providerId)))

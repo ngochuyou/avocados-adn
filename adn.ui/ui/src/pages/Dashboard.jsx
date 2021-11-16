@@ -131,6 +131,10 @@ function Sidebar() {
 	const { overlay, setOverlay } = useSidebarContext();
 	const {
 		dashboard: {
+			stock: {
+				url: stockBoardUrl,
+				list: { url: stockItemListMapping },
+			},
 			provider: {
 				mapping: providerBoardMapping,
 				costs: { url: productCostsUrl },
@@ -161,11 +165,24 @@ function Sidebar() {
 			</h3>
 			<ul className="uk-nav-default uk-nav-parent-icon" uk-nav="">
 				<StockScope>
-					<li>
-						<Link
-							to="/dashboard/stock"
-							className="uk-link-reset"
-						>Stock</Link>
+					<li className="uk-parent">
+						<NoFollow
+							className="uk-link-reset uk-parent"
+						>Stock</NoFollow>
+						<ul className="uk-nav-sub">
+							<li>
+								<Link
+									to={stockItemListMapping}
+									className="uk-link-reset uk-parent"
+								>Items</Link>
+							</li>
+							<li>
+								<Link
+									to={stockBoardUrl}
+									className="uk-link-reset uk-parent"
+								>Import Items</Link>
+							</li>
+						</ul>
 					</li>
 				</StockScope>
 				<SaleScope>

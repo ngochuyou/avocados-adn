@@ -65,6 +65,7 @@ public class ProductBuilder extends AbstractPermanentEntityBuilder<Product> {
 		model = super.buildInsertion(id, model, session);
 
 		model.setLocked(Optional.ofNullable(model.isLocked()).orElse(Boolean.FALSE));
+		model.setRating(null);
 
 		return model;
 	}

@@ -150,7 +150,10 @@ export default function ProductView() {
 							<div
 								className="uk-text-large colors uk-width-4-5"
 							>{ product.name }</div>
-							<div className="uk-width-1-5 uk-height-match">
+							<div
+								className="uk-width-1-5 uk-height-match"
+								uk-tooltip="Rating"
+							>
 								<Rating value={product.rating} />
 							</div>
 						</div>

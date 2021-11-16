@@ -39,16 +39,17 @@ import adn.model.entities.metadata._ProductCost;
 @Repository
 public class ProductCostRepository extends AbstractLocalDateTimeSpannedResourceRepository<ProductCost> {
 
-	private static final String IN_TEMPLATE;
+	private static final String SPECIFICATION_TEMPLATE;
 	private static final String ID_PAIR_PARAMETER = "(?%d, ?%d)";
 
 	static {
 		// @formatter:off
-		IN_TEMPLATE = String.format(
-				"(%s, %s) IN (%s)",
+		SPECIFICATION_TEMPLATE = String.format(
+				"(%s, %s) IN (%s) AND %s <> NULL",
 				StringHelper.join(Common.DOT, _ProductCost.id, _ProductCost.productId),
 				StringHelper.join(Common.DOT, _ProductCost.id, _ProductCost.providerId),
-				"%s");
+				"%s",
+				StringHelper.join(Common.DOT, _ProductCost.approvalInformations, _ProductCost.approvedTimestamp));
 		// @formatter:on
 	}
 
@@ -79,7 +80,7 @@ public class ProductCostRepository extends AbstractLocalDateTimeSpannedResourceR
 		return findAllCurrents(
 				columns,
 				String.format(
-						IN_TEMPLATE,
+						SPECIFICATION_TEMPLATE,
 						inClauseParametersBuilder.deleteCharAt(inClauseParametersBuilder.length() - 1)),
 				parameters);
 		// @formatter:on
@@ -130,7 +131,7 @@ public class ProductCostRepository extends AbstractLocalDateTimeSpannedResourceR
 			Pageable paging) {
 		return null;
 	}
-	
+
 	public List<Object[]> findAllCurrentByProvider(UUID providerId, Collection<String> columns, Pageable paging) {
 //		return genericRepository.findAll(ProductCost.class, columns,
 //				(root, query, builder) -> builder.and(hasId(root, builder, 1, providerId), isCurrent(root, builder)),

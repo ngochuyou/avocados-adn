@@ -91,7 +91,10 @@ export default function ProductList({
 										<div className="uk-width-4-5">
 											<p className="uk-card-title">{model.name}</p>
 										</div>
-										<div className="uk-width-1-5 uk-position-relative">
+										<div
+											className="uk-width-1-5 uk-position-relative"
+											uk-tooltip="Rating"
+										>
 											<Rating value={model.rating} />
 										</div>
 									</div>

@@ -17,8 +17,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.Predicate;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -48,11 +52,13 @@ import adn.dao.generic.ResultBatch;
 import adn.dao.specific.ProductPriceRepository;
 import adn.dao.specific.ProductRepository;
 import adn.helpers.CollectionHelper;
+import adn.helpers.StringHelper;
 import adn.model.entities.Category;
 import adn.model.entities.Item;
 import adn.model.entities.Product;
 import adn.model.entities.ProductPrice;
 import adn.model.entities.constants.ItemStatus;
+import adn.model.entities.constants.NamedSize;
 import adn.model.entities.id.ProductPriceId;
 import adn.model.entities.metadata._Category;
 import adn.model.entities.metadata._Item;
@@ -390,7 +396,7 @@ public class RestProductController extends ProductController {
 				return bad(results.stream().map(Result::getMessages).collect(Collectors.toList()));
 			}
 
-			return bad(resultBatch.getMessage());
+			return bad(Common.message(resultBatch.getMessage()));
 		}
 
 		return fails(Common.error(resultBatch.getMessage()));
@@ -422,6 +428,53 @@ public class RestProductController extends ProductController {
 			throws NoSuchFieldException, UnauthorizedCredential {
 		return ok(crudService.readAll(Item.class, columns,
 				(root, query, builder) -> builder.in(root.get(_Item.id)).value(itemIds), getPrincipalCredential()));
+	}
+
+	@GetMapping(value = "/items/internal")
+	@Transactional(readOnly = true)
+	public ResponseEntity<?> getInternalItemsList(
+	// @formatter:off
+			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
+			@RequestParam(name = "product", required = false) String productCodeOrName,
+			@RequestParam(name = "status", required = false) ItemStatus status,
+			@RequestParam(name = "namedSize", required = false) NamedSize namedSize,
+			@RequestParam(name = "code", required = false) String itemCode,
+			@PageableDefault(size = 10, page = 0, sort = _Item.createdDate, direction = Direction.DESC) Pageable paging)
+			throws NoSuchFieldException, UnauthorizedCredential {
+		// @formatter:on
+		if (StringHelper.hasLength(itemCode)) {
+			return ok(crudService.read(Item.class, columns,
+					(root, query, builder) -> builder.equal(root.get(_Item.code), itemCode), getPrincipalCredential()));
+		}
+
+		return ok(
+		// @formatter:off
+				crudService.readAll(Item.class, columns,
+						(root, query, builder) -> builder.and(
+								Optional.ofNullable(namedSize)
+									.map(s -> builder.equal(root.get(_Item.namedSize), namedSize))
+									.orElse(builder.conjunction()),
+								Optional.ofNullable(status)
+									.map(s -> builder.equal(root.get(_Item.status), status))
+									.orElse(builder.conjunction()),
+								new Supplier<Predicate>() {
+
+									@Override
+									public Predicate get() {
+										if (StringHelper.hasLength(productCodeOrName)) {
+											Join<Item, Product> productJoin = root.join(_Item.product);
+											String likeExpression = Common.like(productCodeOrName);
+
+											return builder.or(
+													builder.like(productJoin.get(_Product.name), likeExpression),
+													builder.like(productJoin.get(_Product.code), likeExpression));
+										}
+
+										return builder.conjunction();
+									}
+								}.get()),
+						paging, getPrincipalCredential()));
+		// @formatter:on
 	}
 
 }

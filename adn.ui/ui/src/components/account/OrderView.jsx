@@ -6,7 +6,7 @@ import { Order } from '../../models/Factor';
 
 import { useAuth } from '../../hooks/authentication-hooks';
 
-import { obtainOrder, getOrdersList } from '../../actions/order';
+import { obtainOrder, getOrdersList, rate } from '../../actions/order';
 import { getItemsList } from '../../actions/product';
 
 import { routes } from '../../config/default';
@@ -199,7 +199,8 @@ function IndividualOrderView() {
 
 					return {
 						price: formatVND(price),
-						total: existing == null ? formatVND(price) : formatVND(price * (existing.quantity + 1))
+						total: existing == null ? formatVND(price) : formatVND(price * (existing.quantity + 1)),
+						refs: existing == null ? [current.id] : [...existing.refs, current.id]
 					}
 				}))
 			});
@@ -221,12 +222,39 @@ function IndividualOrderView() {
 export function IndividualOrder({
 	order = null
 }) {
+	const [noti, setNoti] = useState();
+
 	if (order == null) {
 		return null;
 	}
 
+	const rateProduct = async (item, rating) => {
+		const [, err] = await rate({
+			orderId: order.id,
+			itemIds: item.refs,
+			rating
+		});
+
+		if (err) {
+			return console.error(err);
+		}
+
+		setNoti("Thanks for rating");
+		return setTimeout(() => setNoti(null), 1000);
+	};
+
 	return (
 		<div>
+			{
+				noti != null ? (
+					<div
+						className="uk-alert-primary uk-position-fixed uk-position-top-center uk-width-2xlarge" uk-alert=""
+						style={{zIndex: "999"}}
+					>
+						<p>{noti}</p>
+					</div>
+				) : null
+			}
 			<div className="uk-margin-top uk-box-shadow-medium uk-border-rounded uk-overflow-hidden">
 				<table className="uk-table">
 					<thead></thead>
@@ -331,11 +359,16 @@ export function IndividualOrder({
 							<th className="uk-table-expand uk-text-center">Price</th>
 							<th className="uk-table-expand uk-text-center">Quantity</th>
 							<th className="uk-table-expand uk-text-center">Total</th>
+							{
+								asIf(order.status === Order.Status.FINISHED)
+								.then(() => <th className="uk-text-center">Rating</th>)
+								.else()
+							}
 						</tr>
 					</thead>
 					<tbody>
 					{
-						order.items.map(item => {
+						order.items.map((item, index) => {
 							const { product } = item;
 
 							return <tr key={item.id} className="uk-box-shadow-hover-medium">
@@ -369,6 +402,36 @@ export function IndividualOrder({
 								</td>
 								<td>
 									<p className="colors">{item.total}</p>
+								</td>
+								<td>
+								{
+									asIf(order.status === Order.Status.FINISHED)
+									.then(() => (
+										<div className="uk-flex uk-flex-center">
+											<div
+												uk-tooltip="1 star"
+												onClick={() => rateProduct(item, 1)}
+												uk-icon="icon: star" className="pointer"></div>
+											<div
+												uk-tooltip="2 stars"
+												onClick={() => rateProduct(item, 2)}
+												uk-icon="icon: star" className="pointer"></div>
+											<div
+												uk-tooltip="3 stars"
+												onClick={() => rateProduct(item, 3)}
+												uk-icon="icon: star" className="pointer"></div>
+											<div
+												uk-tooltip="4 stars"
+												onClick={() => rateProduct(item, 4)}
+												uk-icon="icon: star" className="pointer"></div>
+											<div
+												uk-tooltip="5 stars"
+												onClick={() => rateProduct(item, 5)}
+												uk-icon="icon: star" className="pointer"></div>
+										</div>
+									))
+									.else()
+								}
 								</td>
 							</tr>;
 						})

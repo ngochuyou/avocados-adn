@@ -251,7 +251,7 @@ export function getProductPrice({
 	if (isNaN(productId)) {
 		return [null, "Invalid Product ID"];
 	}
-	console.log(from, to);
+
 	sort = sort == null ? "" : sort;
 	from = formatServerDatetime(from, null);
 	to = formatServerDatetime(to, null);
@@ -327,4 +327,14 @@ export function getItemsList({
 	}
 
 	return fjson(`/rest/product/items?ids=${itemIds}&columns=${columns}`);
+}
+
+export function getInternalItemsList({
+	columns = [],
+	page = 0, size = 10,
+	sort = "createdDate,desc",
+	product = "", status = "",
+	namedSize = ""
+}) {
+	return fjson(`/rest/product/items/internal?page=${page || 0}&size=${size || 10}&sort=${sort || "createdDate,desc"}&columns=${join(columns)}${hasLength(product) ? `&product=${product}` : ""}${hasLength(status) ? `&status=${status}` : ""}${hasLength(namedSize) ? `&namedSize=${namedSize}` : ""}`);
 }

@@ -8,14 +8,23 @@ import static adn.application.context.builders.CredentialFactory.owner;
 import static org.springframework.http.ResponseEntity.ok;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import javax.persistence.LockModeType;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;
+import javax.persistence.criteria.Root;
 
+import org.hibernate.Session;
+import org.hibernate.query.Query;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.jpa.domain.Specification;
@@ -36,13 +45,18 @@ import adn.application.Common;
 import adn.application.Result;
 import adn.application.context.ContextProvider;
 import adn.application.context.builders.CredentialFactory;
+import adn.helpers.CollectionHelper;
 import adn.model.entities.Customer;
+import adn.model.entities.Item;
 import adn.model.entities.Order;
 import adn.model.entities.OrderDetail;
+import adn.model.entities.Product;
 import adn.model.entities.constants.OrderStatus;
 import adn.model.entities.metadata._Customer;
+import adn.model.entities.metadata._Item;
 import adn.model.entities.metadata._Order;
 import adn.model.entities.metadata._OrderDetail;
+import adn.model.entities.metadata._Product;
 import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.model.models.DeliveryInstructions;
 import adn.service.services.AuthenticationService;
@@ -56,6 +70,8 @@ import adn.service.services.UserService;
 @RestController
 @RequestMapping("/rest/order")
 public class RestOrderController extends BaseController {
+
+	private static final Logger logger = LoggerFactory.getLogger(RestOrderController.class);
 
 	private final OrderService orderService;
 	private final UserService userService;
@@ -188,6 +204,69 @@ public class RestOrderController extends BaseController {
 		Result<Integer> result = orderService.updateStatus(orderId, requestedStatus, true);
 
 		return send(result.isOk() ? Result.ok(Common.message(SUCCESSFULLY_UPDATE_STATUS)) : result);
+	}
+
+	@PatchMapping("/rating/{orderId}")
+	@Secured(CUSTOMER)
+	@Transactional
+	public ResponseEntity<?> rateItem(@PathVariable(name = "orderId") BigInteger orderId,
+			@RequestParam(name = "itemIds") List<BigInteger> itemIds, @RequestParam(name = "rating") Float rating) {
+		if (CollectionHelper.isEmpty(itemIds)) {
+			return bad("Item batch was empty");
+		}
+
+		Optional<Object[]> optionalOrder = genericRepository.findById(Order.class, orderId,
+				Arrays.asList(_Order.status));
+
+		if (optionalOrder.isEmpty()) {
+			return bad(Common.message(Common.notfound(String.format(ORDER_ID_TEMPLATE, orderId))));
+		}
+
+		if (!optionalOrder.get()[0].equals(OrderStatus.FINISHED)) {
+			return bad(Common.message("Order has not finished yet"));
+		}
+
+		List<Object[]> orderDetails = genericRepository.findAll(OrderDetail.class, Arrays.asList(_OrderDetail.rating),
+				(root, query, builder) -> builder.in(root.get(_OrderDetail.id).get(_OrderDetail.itemId)).value(itemIds),
+				LockModeType.PESSIMISTIC_WRITE);
+
+		if (orderDetails.size() != itemIds.size()) {
+			return bad(Common.message("Invalid items"));
+		}
+
+		Result<Integer> phase = genericRepository.update(OrderDetail.class,
+				(root, query, builder) -> query.set(root.get(_OrderDetail.rating), rating),
+				(root, query, builder) -> builder.and(
+						builder.equal(root.get(_OrderDetail.id).get(_OrderDetail.orderId), orderId),
+						builder.in(root.get(_OrderDetail.id).get(_OrderDetail.itemId)).value(itemIds)));
+
+		if (!phase.isOk() || !phase.getInstance().equals(itemIds.size())) {
+			return send(phase);
+		}
+
+		Optional<Object[]> optionalProductId = genericRepository.findById(Item.class, itemIds.get(0),
+				Arrays.asList(_Item.product));
+		BigInteger productId = Product.class.cast(optionalProductId.get()[0]).getId();
+		Session session = ContextProvider.getCurrentSession();
+		CriteriaBuilder builder = session.getCriteriaBuilder();
+		CriteriaQuery<Double> cq = builder.createQuery(Double.class);
+		Root<OrderDetail> root = cq.from(OrderDetail.class);
+
+		cq.select(builder.avg(root.get(_OrderDetail.rating)))
+				.where(builder.and(
+						builder.equal(root.join(_OrderDetail.order).get(_Order.status), OrderStatus.FINISHED),
+						builder.equal(root.join(_OrderDetail.item).join(_Item.product).get(_Product.id), productId)));
+
+		Query<Double> hql = session.createQuery(cq);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug(hql.getQueryString());
+		}
+
+		return send(genericRepository.update(Product.class,
+				(updateRoot, query, updateBuilder) -> query.set(updateRoot.get(_Product.rating),
+						Math.round(hql.getSingleResult())),
+				(updateRoot, query, updateBuilder) -> updateBuilder.equal(updateRoot.get(_Product.id), productId)));
 	}
 
 }

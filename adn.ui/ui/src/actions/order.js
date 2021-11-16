@@ -79,3 +79,16 @@ export function changeOrderStatus(orderId = "", status = "") {
 		method: 'PATCH'
 	});
 }
+
+export function rate({
+	orderId = "", itemIds = [],
+	rating = ""
+}) {
+	if (!hasLength(orderId) || !hasLength(itemIds) || !hasLength(rating)) {
+		return [null, "Invalid params"];
+	}
+
+	return fjson(`/rest/order/rating/${orderId}?itemIds=${join(itemIds)}&rating=${rating}`, {
+		method: 'PATCH'
+	});
+}

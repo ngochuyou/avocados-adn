@@ -59,8 +59,8 @@ public class Product extends FullyAuditedEntity<BigInteger> {
 	@Column(columnDefinition = "TEXT")
 	private String description;
 
-	@Column
-	private Float rating;
+	@Column(columnDefinition = "TINYINT")
+	private Integer rating;
 
 	@Column(nullable = false)
 	private Boolean locked;
@@ -122,11 +122,11 @@ public class Product extends FullyAuditedEntity<BigInteger> {
 		this.description = description;
 	}
 
-	public Float getRating() {
+	public Integer getRating() {
 		return rating;
 	}
 
-	public void setRating(Float rating) {
+	public void setRating(Integer rating) {
 		this.rating = rating;
 	}
 
