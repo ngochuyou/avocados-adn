@@ -33,5 +33,15 @@ public interface SingularValueFilter<T> {
 	 * @return is not value
 	 */
 	T getIsNot();
+	
+	/**
+	 * @return from value
+	 */
+	T getFrom();
+	
+	/**
+	 * @return to value
+	 */
+	T getTo();
 
 }

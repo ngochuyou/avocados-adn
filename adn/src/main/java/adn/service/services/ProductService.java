@@ -35,6 +35,7 @@ import adn.application.Common;
 import adn.application.Result;
 import adn.application.context.builders.EntityBuilderProvider;
 import adn.application.context.builders.ValidatorFactory;
+import adn.controller.query.impl.ProductQuery;
 import adn.dao.generic.ResultBatch;
 import adn.dao.specific.ProductCostRepository;
 import adn.dao.specific.ProductPriceRepository;
@@ -218,8 +219,9 @@ public class ProductService implements Service {
 	public List<Map<String, Object>> readOnSaleProducts(
 			Collection<String> columns,
 			Pageable paging,
-			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		return readOnSaleProducts(null, null, columns, paging, credential);
+			Credential credential,
+			ProductQuery restQuery) throws NoSuchFieldException, UnauthorizedCredential {
+		return readOnSaleProducts(null, null, columns, paging, credential, restQuery);
 	}
 
 	public List<Map<String, Object>> readOnSaleProducts(
@@ -227,8 +229,9 @@ public class ProductService implements Service {
 			String categoryIdentifierName,
 			Collection<String> columns,
 			Pageable paging,
-			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
-		return readOnSaleProducts(categoryIdentifier, categoryIdentifierName, columns, (root, query, builder) -> builder.conjunction(), paging, credential);
+			Credential credential,
+			ProductQuery restQuery) throws NoSuchFieldException, UnauthorizedCredential {
+		return readOnSaleProducts(categoryIdentifier, categoryIdentifierName, columns, (root, query, builder) -> builder.conjunction(), paging, credential, restQuery);
 	}
 	
 	public List<Map<String, Object>> readOnSaleProducts(
@@ -237,11 +240,12 @@ public class ProductService implements Service {
 			Collection<String> columns,
 			Specification<Product> spec,
 			Pageable paging,
-			Credential credential) throws NoSuchFieldException, UnauthorizedCredential {
+			Credential credential,
+			ProductQuery restQuery) throws NoSuchFieldException, UnauthorizedCredential {
 		SourceMetadata<Product> metadata = crudService.optionallyValidate(Product.class, credential, SourceMetadataFactory.unknownArrayCollection(Product.class, CollectionHelper.list(columns)));
 		List<Object[]> rows = categoryIdentifierName == null ?
-				productRepository.findOnSaleProducts(metadata.getColumns(), paging, spec) :
-					productRepository.findOnSaleProducts(metadata.getColumns(), paging, spec.and((root, query, builder) -> builder.equal(root.get(_Product.category).get(categoryIdentifierName), categoryIdentifier)));
+				productRepository.findOnSaleProducts(metadata.getColumns(), paging, spec, restQuery) :
+					productRepository.findOnSaleProducts(metadata.getColumns(), paging, spec.and((root, query, builder) -> builder.equal(root.join(_Product.category).get(categoryIdentifierName), categoryIdentifier)), restQuery);
 
 		if (rows.isEmpty()) {
 			return new ArrayList<>();

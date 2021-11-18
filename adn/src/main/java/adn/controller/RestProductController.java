@@ -134,11 +134,8 @@ public class RestProductController extends ProductController {
 					getPrincipalCredential()));
 		}
 
-		Specification<Product> spec = (root, query, builder) -> Optional.ofNullable(restQuery.getName())
-				.map(like -> builder.like(root.get(_Product.name), like.getLike())).orElse(builder.conjunction());
-
-		return ok(productService.readOnSaleProducts(categoryIdentifier, categoryIdentifierName, requestedColumns, spec,
-				paging, getPrincipalCredential()));
+		return ok(productService.readOnSaleProducts(categoryIdentifier, categoryIdentifierName, requestedColumns,
+				paging, getPrincipalCredential(), restQuery));
 	}
 
 	@GetMapping("/internal")
@@ -148,7 +145,8 @@ public class RestProductController extends ProductController {
 			@RequestParam(name = "category", required = false) Serializable categoryIdentifier,
 			@RequestParam(name = "by", required = false) String categoryIdentifierName, ProductQuery restQuery,
 			@RequestParam(name = "columns", required = false, defaultValue = "") List<String> columns,
-			@PageableDefault(size = 10) Pageable paging) throws Exception {
+			@PageableDefault(size = 10, sort = _Product.createdDate, direction = Direction.DESC) Pageable paging)
+			throws Exception {
 		Specification<Product> spec = (root, query, builder) -> Optional.ofNullable(restQuery.getName())
 				.map(like -> builder.like(root.get(_Product.name), like.getLike())).orElse(builder.conjunction());
 

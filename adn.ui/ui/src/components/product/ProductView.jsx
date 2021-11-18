@@ -36,7 +36,7 @@ export default function ProductView() {
 				id: productId,
 				columns: [
 					"name", "description", "rating",
-					"images"
+					"images", "material"
 				]
 			});
 
@@ -157,6 +157,7 @@ export default function ProductView() {
 								<Rating value={product.rating} />
 							</div>
 						</div>
+						<p>Material: {product.material}</p>
 						<p className="colors uk-text-bold">
 							<span uk-icon="tag" className="uk-margin-small-right"></span>
 							<span>{formatVND(product.price)}</span>

@@ -47,7 +47,7 @@ export function SearchInput({
 	disabled = false,
 	disableAll = false
 }) {
-	const [keyword, setKeyWord] = useState(value);
+	const [keyword, setKeyWord] = useState(value || "");
 	const onKeywordChange = (event) => {
 		const { value } = event.target;
 

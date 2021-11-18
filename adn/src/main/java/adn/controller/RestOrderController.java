@@ -4,6 +4,7 @@
 package adn.controller;
 
 import static adn.application.context.ContextProvider.getPrincipalCredential;
+import static adn.application.context.ContextProvider.getPrincipalName;
 import static adn.application.context.builders.CredentialFactory.owner;
 import static org.springframework.http.ResponseEntity.ok;
 
@@ -30,6 +31,9 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.MailException;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,10 +46,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.Common;
+import adn.application.Constants;
 import adn.application.Result;
 import adn.application.context.ContextProvider;
 import adn.application.context.builders.CredentialFactory;
 import adn.helpers.CollectionHelper;
+import adn.helpers.StringHelper;
 import adn.model.entities.Customer;
 import adn.model.entities.Item;
 import adn.model.entities.Order;
@@ -76,17 +82,20 @@ public class RestOrderController extends BaseController {
 	private final OrderService orderService;
 	private final UserService userService;
 	private final AuthenticationService authService;
+	private final JavaMailSender mailSender;
 
 	private static final String SUCCESSFULLY_CONFIRM_PAYMENT = "Successfully confirmed payment";
 	private static final String SUCCESSFULLY_UPDATE_STATUS = "Successfully updated order status";
 	private static final String ORDER_ID_TEMPLATE = "Order %s";
 	private static final String STATUS_NOT_ALLOWED = "Status %s is not allowed";
 
-	public RestOrderController(OrderService orderService, AuthenticationService authService, UserService userService) {
+	public RestOrderController(OrderService orderService, AuthenticationService authService, UserService userService,
+			JavaMailSender mailSender) {
 		super();
 		this.orderService = orderService;
 		this.userService = userService;
 		this.authService = authService;
+		this.mailSender = mailSender;
 	}
 
 	@GetMapping
@@ -137,11 +146,33 @@ public class RestOrderController extends BaseController {
 	@Transactional
 	@Secured(CUSTOMER)
 	public ResponseEntity<?> createOrder(@RequestBody DeliveryInstructions deliveryInstructions) throws Exception {
-		Result<Order> phaseOne = orderService.createOrder(ContextProvider.getPrincipalName(), deliveryInstructions,
-				false);
+		Result<Order> phaseOne = orderService.createOrder(getPrincipalName(), deliveryInstructions, false);
 
 		if (!phaseOne.isOk()) {
 			return send(phaseOne);
+		}
+
+		String customerEmail = (String) genericRepository
+				.findById(Customer.class, getPrincipalName(), Arrays.asList(_Customer.email)).get()[0];
+
+		if (StringHelper.hasLength(customerEmail)) {
+			Order newOrder = phaseOne.getInstance();
+
+			try {
+				SimpleMailMessage mail = new SimpleMailMessage();
+
+				mail.setFrom(Constants.PILOT_MAIL);
+				mail.setTo(customerEmail);
+				mail.setText(String.format(
+						"Thank you for placing your order. Please kindly make your payment via bank transfer. Payment amount: %s",
+						newOrder.getDetails().stream().map(OrderDetail::getPrice)
+								.reduce((left, right) -> left.add(right)).get()));
+				mail.setSubject("[Avocados] - Order confirmation");
+
+				mailSender.send(mail);
+			} catch (MailException e) {
+				logger.warn(e.getMessage());
+			}
 		}
 
 		return send(userService.emptyCart(true), produce(phaseOne.getInstance(), Order.class, owner()));
@@ -185,7 +216,29 @@ public class RestOrderController extends BaseController {
 
 		Result<Integer> result = orderService.confirmPayment(orderId, true);
 
-		return send(result.isOk() ? Result.ok(Common.message(SUCCESSFULLY_CONFIRM_PAYMENT)) : result);
+		if (!result.isOk()) {
+			return send(result);
+		}
+
+		Order order = ContextProvider.getCurrentSession().load(Order.class, orderId);
+
+		if (StringHelper.hasLength(order.getCustomer().getEmail())) {
+			try {
+				SimpleMailMessage mail = new SimpleMailMessage();
+
+				mail.setFrom(Constants.PILOT_MAIL);
+				mail.setTo(order.getCustomer().getEmail());
+				mail.setText(
+						"This email is for the confirmation of your payment. Thank you so much for shopping at our store.");
+				mail.setSubject("[Avocados] - Payment confirmation");
+
+				mailSender.send(mail);
+			} catch (MailException e) {
+				logger.warn(e.getMessage());
+			}
+		}
+
+		return ok(Common.message(SUCCESSFULLY_CONFIRM_PAYMENT));
 	}
 
 	@PatchMapping("/status/{orderId}/{status}")

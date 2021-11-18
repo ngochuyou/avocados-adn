@@ -9,21 +9,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.File;
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.persistence.Tuple;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.Root;
-import javax.transaction.Transactional;
-
-import org.hibernate.Session;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.query.Query;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -34,6 +23,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor;
@@ -48,10 +39,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
-import adn.model.entities.Item;
-import adn.model.entities.Order;
-import adn.model.entities.metadata._Item;
-import adn.model.entities.metadata._Order;
 import adn.security.SecurityConfiguration;
 import adn.service.resource.model.models.UserPhoto;
 
@@ -129,29 +116,18 @@ public class ApplicationIntegrationTest {
 	}
 
 	@Autowired
-	private SessionFactoryImplementor sfi;
-	
+	private JavaMailSender mailSender;
+
 	@Test
-	@Transactional
 	public void test() {
-		Session session = sfi.getCurrentSession();
-		CriteriaBuilder builder = sfi.getCriteriaBuilder();
-		CriteriaQuery<Tuple> cq = builder.createTupleQuery();
-		Root<Item> root = cq.from(Item.class);
-		Join<Item, Order> join = root.join(_Item.orders);
-		
-		cq.multiselect(root.get(_Item.id))
-			.where(builder.equal(join.get(_Order.id), new BigInteger("61")));
-		
-		Query<Tuple> query = session.createQuery(cq);
-		
-		System.out.println(query.getQueryString());
-		
-		for (Tuple tuple: query.getResultList()) {
-			Object[] cols = tuple.toArray();
-			
-			System.out.println(cols[0]);
-		}
+		SimpleMailMessage mail = new SimpleMailMessage();
+
+		mail.setFrom("pi.sup.lot@gmail.com");
+		mail.setTo("ngochuy.ou@gmail.com");
+		mail.setText("Hi! i'm your Support Pilot");
+		mail.setSubject("[Avocados] - Welcoming email");
+
+		mailSender.send(mail);
 	}
 
 }

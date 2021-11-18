@@ -12,12 +12,10 @@ import java.io.Serializable;
 import java.util.function.Function;
 
 import org.hibernate.Session;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import adn.application.Common;
 import adn.application.Result;
-import adn.dao.generic.GenericRepository;
 import adn.helpers.StringHelper;
 import adn.model.Generic;
 import adn.model.entities.User;
@@ -36,7 +34,7 @@ public class UserValidator<T extends User> extends AbstractPermanentEntityValida
 			symbolNamesOf('.', '-', '_', '@', '#', '$', '\'', '!', '*', '&'),
 			hasLength(null, _User.MINIMUM_USERNAME_LENGTH, _User.MAXIMUM_USERNAME_LENGTH));
 	private static final String INVALID_EMAIL = invalid("email");
-	private static final String TAKEN_EMAIL = "Email was taken";
+//	private static final String TAKEN_EMAIL = "Email was taken";
 	private static final String INVALID_FIRSTNAME;
 	private static final String INVALID_LASTNAME;
 	private static final String INVALID_PASSWORD = hasLength("Password", _User.MINIMUM_USERNAME_LENGTH, null);
@@ -54,13 +52,13 @@ public class UserValidator<T extends User> extends AbstractPermanentEntityValida
 		INVALID_LASTNAME = nameMessageGetter.apply("Lastname");
 	}
 	// @formatter:on
-	private final GenericRepository genericRepository;
+//	private final GenericRepository genericRepository;
 
-	@Autowired
-	public UserValidator(GenericRepository genericRepository) {
-		super();
-		this.genericRepository = genericRepository;
-	}
+//	@Autowired
+//	public UserValidator(GenericRepository genericRepository) {
+//		super();
+//		this.genericRepository = genericRepository;
+//	}
 
 	@Override
 	public Result<T> isSatisfiedBy(Session session, Serializable id, T instance) {
@@ -75,7 +73,8 @@ public class UserValidator<T extends User> extends AbstractPermanentEntityValida
 		if (StringHelper.hasLength(email)) {
 			if (!StringHelper.isEmail(email)) {
 				result.bad(_User.email, INVALID_EMAIL);
-			} else {
+			}
+			/*else {
 				// @formatter:off
 				if (genericRepository.count(User.class,
 						(root, query, builder) -> builder.and(
@@ -84,7 +83,7 @@ public class UserValidator<T extends User> extends AbstractPermanentEntityValida
 					result.bad(_User.email, TAKEN_EMAIL);
 				}
 				// @formatter:on
-			}
+			}*/
 		}
 
 		if (!NAME_PATTERN.matcher(instance.getFirstName()).matches()) {

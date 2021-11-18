@@ -151,9 +151,13 @@ public class OrderService implements Service {
 		}
 
 		newOrder.setCode(crockfords.format(orderId));
+		newOrder.setDetails(cart.stream().map(itemCols -> {
+			OrderDetail detail = new OrderDetail(orderId, (BigInteger) itemCols[0], (BigDecimal) itemCols[2], true);
 
-		cart.stream().forEach(itemCols -> session
-				.save(new OrderDetail(orderId, (BigInteger) itemCols[0], (BigDecimal) itemCols[2], true)));
+			session.save(detail);
+
+			return detail;
+		}).collect(Collectors.toSet()));
 
 		session.save(newOrder);
 

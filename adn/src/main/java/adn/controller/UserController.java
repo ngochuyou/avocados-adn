@@ -8,9 +8,14 @@ import java.util.Optional;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.MailException;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import adn.application.Common;
+import adn.application.Constants;
 import adn.application.Result;
 import adn.application.context.ContextProvider;
 import adn.application.context.builders.CredentialFactory;
@@ -40,11 +46,13 @@ import adn.service.services.UserService;
 @Controller
 @RequestMapping("/user")
 public class UserController extends BaseController {
-
+	
+	private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+	
 	protected final UserService accountService;
 	protected final ResourceService resourceService;
 	protected final AuthenticationService authService;
-
+	private final JavaMailSender mailSender;
 	protected final UserRoleExtractor roleExtractor;
 
 	protected final static String MISSING_ROLE = "USER ROLE IS MISSING";
@@ -54,9 +62,10 @@ public class UserController extends BaseController {
 	public UserController(
 			final UserService accountService,
 			final UserRoleExtractor roleExtractor,
-			final ResourceService resourceService, AuthenticationService authService) {
+			final ResourceService resourceService, AuthenticationService authService, JavaMailSender mailSender) {
 		this.accountService = accountService;
 		this.authService = authService;
+		this.mailSender = mailSender;
 		this.roleExtractor = roleExtractor;
 		this.resourceService = resourceService;
 	}
@@ -99,12 +108,29 @@ public class UserController extends BaseController {
 				true);
 
 		if (insertResult.isOk()) {
+			User user = insertResult.getInstance();
+			
 			if (modelRole == Role.CUSTOMER) {
+				if (StringHelper.hasLength(user.getEmail())) {
+					try {
+						SimpleMailMessage mail = new SimpleMailMessage();
+
+						mail.setFrom(Constants.PILOT_MAIL);
+						mail.setTo(user.getEmail());
+						mail.setText("Welcome to our store");
+						mail.setSubject("[Avocados] - Welcoming email");
+
+						mailSender.send(mail);
+					} catch (MailException e) {
+						logger.warn(e.getMessage());
+					}
+				}
+				
 				return ResponseEntity
-						.ok(produce(insertResult.getInstance(), (Class<User>) accountClass, CredentialFactory.owner()));
+						.ok(produce(user, (Class<User>) accountClass, CredentialFactory.owner()));
 			}
 
-			return ok(produce(insertResult.getInstance(), (Class<User>) accountClass, principalRole));
+			return ok(produce(user, (Class<User>) accountClass, principalRole));
 		}
 
 		return bad(insertResult.getMessages());

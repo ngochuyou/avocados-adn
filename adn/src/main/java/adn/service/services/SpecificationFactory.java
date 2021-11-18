@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 import org.springframework.data.jpa.domain.Specification;
 
-import adn.controller.query.impl.AbstractFactorQuery;
+import adn.controller.query.impl.AbstractFullyAuditedEntityQuery;
 import adn.helpers.HibernateHelper;
 import adn.helpers.StringHelper;
 import adn.model.entities.Entity;
@@ -22,7 +22,7 @@ public class SpecificationFactory {
 
 	private SpecificationFactory() {}
 
-	public static <T extends FullyAuditedEntity<?>> Specification<T> hasNameLike(AbstractFactorQuery<T> restQuery) {
+	public static <T extends FullyAuditedEntity<?>> Specification<T> hasNameLike(AbstractFullyAuditedEntityQuery<T> restQuery) {
 		return (root, query, builder) -> {
 			if (restQuery.getName() == null || !StringHelper.hasLength(restQuery.getName().getLike())) {
 				return null;

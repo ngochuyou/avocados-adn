@@ -16,6 +16,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,8 +53,9 @@ public class RestUserController extends UserController {
 			final UserService accountService,
 			final AuthenticationService authService,
 			final UserRoleExtractor roleExtractor,
-			final ResourceService resourceService) {
-		super(accountService, roleExtractor, resourceService, authService);
+			final ResourceService resourceService,
+			final JavaMailSender mailSender) {
+		super(accountService, roleExtractor, resourceService, authService, mailSender);
 	}
 	// @formatter:on
 	@GetMapping

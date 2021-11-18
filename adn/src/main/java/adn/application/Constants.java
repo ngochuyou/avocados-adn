@@ -25,4 +25,6 @@ public class Constants {
 
 	public static final String ENTITY_BUILDER_PACKAGE = ROOT_PACKAGE + ".service.entity.builder";
 
+	public static final String PILOT_MAIL = "pi.sup.lot@gmail.com";
+	
 }

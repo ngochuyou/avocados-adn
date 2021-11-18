@@ -19,6 +19,10 @@ public abstract class AbstractSingularValueFilter<T> implements SingularValueFil
 
 	private T isNot;
 
+	private T from;
+
+	private T to;
+
 	@Override
 	public T getEquals() {
 		return equals;
@@ -44,6 +48,16 @@ public abstract class AbstractSingularValueFilter<T> implements SingularValueFil
 		return isNot;
 	}
 
+	@Override
+	public T getFrom() {
+		return from;
+	}
+
+	@Override
+	public T getTo() {
+		return to;
+	}
+
 	public void setEquals(T equals) {
 		this.equals = equals;
 	}
@@ -62,6 +76,14 @@ public abstract class AbstractSingularValueFilter<T> implements SingularValueFil
 
 	public void setIsNot(T isNot) {
 		this.isNot = isNot;
+	}
+
+	public void setFrom(T from) {
+		this.from = from;
+	}
+
+	public void setTo(T to) {
+		this.to = to;
 	}
 
 }

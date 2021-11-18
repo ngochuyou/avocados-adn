@@ -70,6 +70,7 @@ function ProductEditor() {
 	const { productId } = useParams();
 	const [model, setModel] = useState(null);
 	const [errors, setErrors] = useState({});
+	const [noti, setNoti] = useState();
 
 	useEffect(() => {
 		const doFetch = async () => {
@@ -89,7 +90,7 @@ function ProductEditor() {
 	}, [productId]);
 
 	const onSuccess = async (model) => {
-		const [res, err] = await updateProduct({
+		const [, err] = await updateProduct({
 			...model,
 			images: model.images.map(image => isString(image) ? image : image.file )
 		});
@@ -100,12 +101,23 @@ function ProductEditor() {
 		}
 
 		setErrors({});
-
-		return setModel(res);
+		setNoti("Successfully updated Product");
+		
+		return setTimeout(() => setNoti(null), 1000);
 	};
 
 	return (
 		<main className="uk-padding-small">
+			{
+				noti != null ? (
+					<div
+						className="uk-alert-primary uk-position-fixed uk-position-top-center uk-width-2xlarge" uk-alert=""
+						style={{zIndex: "999"}}
+					>
+						<p>{noti}</p>
+					</div>
+				) : null
+			}
 			<h3 className="uk-heading-line">
 				<span>Edit Product {model && model.name}</span>
 			</h3>

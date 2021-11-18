@@ -13,11 +13,11 @@ export default function RegisterForm({
 	elementsPrefix = "alt",
 	onSuccess = () => null
 }) {
-	const [usernameProps, ] = useInput("9th-o-april");
-	const [phoneProps, ] = useInput("(0974)-032 706");
-	const [emailProps, ] = useInput("9th@april.com");
-	const [passwordProps, ] = useInput("password");
-	const [rePasswordProps, ] = useInput("password");
+	const [usernameProps, ] = useInput("");
+	const [phoneProps, ] = useInput("");
+	const [emailProps, ] = useInput("");
+	const [passwordProps, ] = useInput("");
+	const [rePasswordProps, ] = useInput("");
 	const [usernameErr, setUsernameErr] = useState(null);
 	const [phoneErr, setPhoneErr] = useState(null);
 	const [emailErr, setEmailErr] = useState(null);
@@ -46,7 +46,11 @@ export default function RegisterForm({
 				null));
 
 		if (error) {
-			return;
+			setUsernameErr(error.username);
+			setPhoneErr(error.phone);
+			setEmailErr(error.email);
+			setPasswordErr(error.password);
+			return ;
 		}
 
 		const [res, err] = await createUser({

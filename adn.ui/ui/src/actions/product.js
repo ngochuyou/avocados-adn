@@ -160,17 +160,20 @@ export async function updateProduct(model = null) {
 
 export function getProductListByCategory({
 	columns = [], identifier = null, identifierName = "",
-	page = 0, size = 18, internal = false
+	page = 0, size = 18, internal = false,
+	from = "", to = "", name = "", sort = ""
 }) {
 	if (identifier == null || identifier.length === 0) {
 		return [null, "Category identifier was empty"];
 	}
 
+	const commonQuery = `category=${identifier}&by=${identifierName}&columns=${join(columns)}${hasLength(from) ? `&price.from=${from}` : ""}${hasLength(to) ? `&price.to=${to}` : ""}${hasLength(name) ? `&name.like=${name}` : ""}${hasLength(sort) ? `&sort=${sort}` : ""}${hasLength(page) ? `&page=${page}` : ""}${hasLength(size) ? `&size=${size}` : ""}`;
+
 	if (internal) {
-		return fjson(`/rest/product/internal?category=${identifier}&by=${identifierName}&columns=${join(columns)}`);	
+		return fjson(`/rest/product/internal?${commonQuery}`);
 	}
 
-	return fjson(`/rest/product?category=${identifier}&by=${identifierName}&columns=${join(columns)}`);
+	return fjson(`/rest/product?${commonQuery}`);
 }
 
 export function getProductList({

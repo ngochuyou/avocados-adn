@@ -12,7 +12,7 @@ export default function PagedComponent({
 	return (
 		<>
 			{ children }
-			<div className="uk-text-center noselect">
+			<div className="uk-text-center noselect uk-margin-small">
 			{
 				asIf(currentPage > 0)
 				.then(() => (

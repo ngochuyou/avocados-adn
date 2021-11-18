@@ -9,8 +9,7 @@ import java.math.BigInteger;
  * @author Ngoc Huy
  *
  */
-public class BigIntFilter extends AbstractSingularValueFilter<BigInteger>
-		implements SingularValueFilter<BigInteger>, PluralValueFilter<BigInteger> {
+public class BigIntFilter extends AbstractSingularValueFilter<BigInteger> implements PluralValueFilter<BigInteger> {
 
 	@Override
 	public BigInteger[] getIn() {

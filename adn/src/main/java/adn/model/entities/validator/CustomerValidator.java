@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 
 import adn.application.Common;
 import adn.application.Result;
-import adn.dao.generic.GenericRepository;
 import adn.model.Generic;
 import adn.model.entities.Customer;
 import adn.model.entities.metadata._Customer;
@@ -25,9 +24,9 @@ public class CustomerValidator extends UserValidator<Customer> {
 
 	private static final String MISSING_SUBSCRIPTION = Common.notEmpty("Subscription information");
 
-	public CustomerValidator(GenericRepository genericRepository) {
-		super(genericRepository);
-	}
+//	public CustomerValidator(GenericRepository genericRepository) {
+//		super(genericRepository);
+//	}
 
 	@Override
 	public Result<Customer> isSatisfiedBy(Session session, Serializable id, Customer instance) {

@@ -67,6 +67,8 @@ public class UserBuilder<T extends User> extends AbstractPermanentEntityBuilder<
 			model.setLocked(false);
 		}
 
+		model.setUpdatedDate(LocalDateTime.now());
+
 		return model;
 	}
 

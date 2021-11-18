@@ -50,7 +50,7 @@ export default function ProductList({
 	
 	return (
 		<Fragment>
-			<h5 className="uk-heading-line">
+			<h5 className="uk-heading-line uk-margin-small-top">
 				<span>
 					{header}
 					<label className="uk-margin-small-left uk-label backgrounds">{`${list.length} item(s)`}</label>
