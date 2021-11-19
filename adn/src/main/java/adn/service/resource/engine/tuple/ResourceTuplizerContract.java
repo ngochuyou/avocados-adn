@@ -303,7 +303,7 @@ public abstract class ResourceTuplizerContract implements ResourceTuplizer {
 		path = ((File) argumentValues[pathIndex]).getAbsolutePath();
 
 		Assert.isTrue(path.startsWith(templateDirectory),
-				String.format("Invalid path [%s]. Template [%s] requires leading [%s]... in resource path", path,
+				String.format("Invalid path [%s]. Template [%s] requires leading [%s] in resource path", path,
 						template.getTemplateName(), templateDirectory));
 	}
 

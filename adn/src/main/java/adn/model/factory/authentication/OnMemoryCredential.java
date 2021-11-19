@@ -10,10 +10,10 @@ import java.lang.annotation.Target;
 import java.util.Collection;
 
 /**
- * Credentials that are usually initialised/hardcoded such as static field
+ * Credentials that are usually initialised/hardcoded, such as static field
  * fetched from the database.
  * 
- * Implementations of this interface has to have a public static
+ * Implementations of this interface have to have a public static
  * {@link Collection} of type {@link Credential} including every Credential
  * instances of its type, annotated with {@link OnMemoryCredential.Credentials}
  * 
@@ -22,6 +22,12 @@ import java.util.Collection;
  */
 public interface OnMemoryCredential extends Credential {
 
+	/**
+	 * Marker for {@link OnMemoryCredential} instances
+	 * 
+	 * @author Ngoc Huy
+	 *
+	 */
 	@Target(ElementType.FIELD)
 	@Retention(RetentionPolicy.RUNTIME)
 	public @interface Credentials {

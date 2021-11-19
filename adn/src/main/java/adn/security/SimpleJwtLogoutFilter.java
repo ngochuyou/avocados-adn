@@ -69,7 +69,8 @@ public class SimpleJwtLogoutFilter extends GenericFilterBean {
 		c.setHttpOnly(true);
 		c.setSecure(false);
 		c.setPath("/");
-		c.setValue("foot_trace");
+		c.setMaxAge(0);
+		c.setValue(null);
 		response.addCookie(c);
 		response.getWriter().print(HttpStatus.OK.name());
 		response.getWriter().flush();

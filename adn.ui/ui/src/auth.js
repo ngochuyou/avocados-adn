@@ -2,7 +2,7 @@ import { $fetch } from './fetch.js';
 import { server } from './config/default.json';
 
 export async function fetchPrincipal(...columns) {
-	const [res, err] = await $fetch(`/rest/account?columns=${columns.join(',')}`, {
+	const [res, err] = await $fetch(`/rest/user?columns=${columns.join(',')}`, {
 		method: 'GET',
 		headers: {
 			'Accept' : 'application/json',
@@ -11,14 +11,15 @@ export async function fetchPrincipal(...columns) {
 	});
 
 	if (err) {
-		return null;
+		console.error(err);
+		return [null, err];
 	}
 
 	if (res.ok) {
-		return await res.json();
+		return [await res.json(), null];
 	}
 
-	return null;
+	return [null, await res.json()];
 }
 
 export async function fetchToken({ username, password}) {
@@ -33,8 +34,13 @@ export async function fetchToken({ username, password}) {
 	});
 
 	if (err) {
-		return null;
+		console.error(err);
+		return [null, err];
 	}
 
-	return res;
+	if (res.ok) {
+		return [await res.text(), null];
+	}
+
+	return [null, await res.text()];
 }

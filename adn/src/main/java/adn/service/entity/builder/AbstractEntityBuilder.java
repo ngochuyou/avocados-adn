@@ -5,27 +5,26 @@ package adn.service.entity.builder;
 
 import java.io.Serializable;
 
+import org.hibernate.Session;
 import org.hibernate.persister.entity.EntityPersister;
-import org.springframework.stereotype.Component;
 
 import adn.helpers.HibernateHelper;
-import adn.model.Generic;
 import adn.model.entities.Entity;
 
 /**
  * @author Ngoc Huy
  *
  */
-@Component
-@Generic(entityGene = Entity.class)
-public abstract class AbstractEntityBuilder<T extends Entity> implements EntityBuilder<T> {
+public abstract class AbstractEntityBuilder<T extends Entity> extends EntityBuilderContract<T> {
+
+	public static final String CODE_GENERATION_MESSAGE = "Generating encrypted code for an entity with id: [%s]";
 
 	protected <E extends T> E mandatoryBuild(E target, E model) {
 		return target;
 	}
 
 	@Override
-	public <E extends T> E buildInsertion(Serializable id, E model) {
+	public <E extends T> E buildInsertion(Serializable id, E model, Session session) {
 		Class<? extends Entity> type = model.getClass();
 		// to avoid unique column constraint violation when callers
 		// explicitly set an existing id into the model.
@@ -44,8 +43,13 @@ public abstract class AbstractEntityBuilder<T extends Entity> implements EntityB
 	}
 
 	@Override
-	public <E extends T> E buildUpdate(Serializable id, E model, E persistence) {
+	public <E extends T> E buildUpdate(Serializable id, E model, E persistence, Session session) {
 		return mandatoryBuild(persistence, model);
+	}
+
+	@Override
+	public <E extends T> E buildPostValidationOnInsert(Serializable id, E model, Session session) {
+		return model;
 	}
 
 }

@@ -10,7 +10,7 @@ package adn.controller.query.filter;
 public interface PluralValueFilter<T> {
 
 	T[] getIn();
-	
+
 	T[] getNotIn();
-	
+
 }

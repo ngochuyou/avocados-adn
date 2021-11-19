@@ -1,563 +1,769 @@
-import { useReducer, useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { Route, useParams, useHistory, useLocation } from 'react-router-dom';
 
+import Account from '../../models/Account';
+
+import { getProductList } from '../../actions/product';
 import {
-	fetchProviderList, fetchProviderCount,
-	obtainProvider
+	getProductCostsByProduct, createProductCost,
+	approveProductCost, createProvider, fetchProviderList,
+	obtainProvider, updateProvider
 } from '../../actions/provider';
-import { TOGGLE_MODAL_VISION, SET_MODEL } from '../../actions/common';
 
-import { spread, toMap, isBool, isString } from '../../utils';
+import ProductCost from '../../models/ProductCost';
 
-import Paging from '../utils/Paging.jsx';
-import Navbar from './Navbar.jsx';
+import { routes } from '../../config/default';
 
-const STORE = {
-	providers: {},
-	providerCount: 0,
-	fetchStatus: {},
-	pagination: {
-		page: 0,
-		totalPages: 0,
-		size: 10,
-		fetchStatus: [],
-		pageMap: {}
-	},
-	view: {
-		visible: false,
-		model: null
-	}
-};
+import { useAuth } from '../../hooks/authentication-hooks';
+import { useNavbar } from './Navbar';
+import { useProduct } from '../../hooks/product-hooks';
+import { useProvider } from '../../hooks/provider-hooks';
+import { useInputSet, useStateWithMessage } from '../../hooks/hooks';
 
-const SEARCH_STORE = {
-	totalResults: 0,
-	list: [],
-	isSearching: false
-};
+import { ProductTable } from '../product/ProductList';
+import Navbar from './Navbar';
+import { ConfirmModal } from '../utils/ConfirmModal';
+import ProviderPicker from '../product/ProviderPicker';
+import PagedComponent from '../utils/PagedComponent';
+import OrderSelector from '../utils/Sort';
+import { PluralValueInput } from '../utils/Input';
+import {
+	asIf, formatVND, formatDatetime,
+	datetimeLocalString, now, ErrorTracker, hasLength,
+	updateURLQuery
+} from '../../utils';
 
-const SET_SEARCH_RESULTS_AND_SEARCHING_STATE = "SET_SEARCH_RESULTS_AND_SEARCHING_STATE";
+const FETCHED_PRODUCT_COLUMNS = ["id", "code", "name", "images"];
 
-const NAVBAR_STORE = {
-	searchInput: {
-		disabled: false
-	},
-	backButton: {
-		visible: false,
-		callback: () => null
-	}
-};
+export default function ProviderBoard() {
+	const {
+		dashboard: {
+			provider: {
+				costs: { mapping: productCostsMapping },
+				creation: { mapping: providerCreationMapping },
+				list: { mapping: providerListMapping }
+			}
+		}
+	} = routes;
 
-const TOGGLE_NAVBAR_SEARCHINPUT_DISABILITY = "TOGGLE_NAVBAR_SEARCHINPUT_DISABILITY";
-const SET_NAVBAR_BACKBUTTON_CALLBACK_AND_VISIBILITY = "SET_NAVBAR_BACKBUTTON_CALLBACK_AND_VISIBILITY";
-
-const FETCHED_COLUMNS = [
-	"id", "name", "email",
-	"phoneNumbers", "representatorName"
-];
-const OBTAINED_COLUMNS = [
-	"website", "address",
-	"productDetails"
-]
-
-const SET_PROVIDER_LIST = "SET_PROVIDER_LIST";
-const SET_PROVIDER_COUNT = "SET_PROVIDER_COUNT";
-const FULFILL_PAGE_REQUEST = "FULFILL_PAGE_REQUEST";
-const SWITCH_PAGE = "SWITCH_PAGE";
-
-const fetchStore = async (dispatch) => {
-	const [providerList, fetchProviderListErr] = await fetchProviderList({
-		columns: FETCHED_COLUMNS
-	});
-
-	if (fetchProviderListErr) {
-		console.error(fetchProviderListErr);
-		return;
-	}
-
-	dispatch({
-		type: SET_PROVIDER_LIST,
-		payload: providerList
-	});
-
-	const [providerCount, fetchProviderCountErr] = await fetchProviderCount();
-
-	if (fetchProviderCountErr) {
-		console.error(fetchProviderCountErr);
-		return;
-	}
-
-	dispatch({
-		type: SET_PROVIDER_COUNT,
-		payload: providerCount
-	});
+	return (
+		<div>
+			<Navbar />
+			<Route
+				path={productCostsMapping}
+				render={props => <CostManagement { ...props } />}
+			/>
+			<Route
+				path={providerCreationMapping}
+				render={props => <ProviderCreator { ...props } />}
+			/>
+			<Route
+				path={providerListMapping}
+				render={props => <ProviderList { ...props } />}
+			/>
+		</div>
+	);
 }
 
-export default function ProviderBoard({
-	registerNavbarSearchInputCallback = () => null,	
-	dispatchBackButton = () => null
-}) {
-	const [ store, dispatchStore ] = useReducer(
-		(oldState, { type = null, payload = null } = {}) => {
-			switch(type) {
-				case FULFILL_PAGE_REQUEST: {
-					const { page , list } = payload;
+function ProviderList() {
+	const {
+		store: { elements: { map: providersMap } },
+		setProviders
+	} = useProvider();
+	const {
+		dashboard: { provider: { list: { url: providerListUrl } } }
+	} = routes;
+	const { providerId } = useParams();
+	const { search: query } = useLocation();
+	const urlParams = useMemo(() => new URLSearchParams(query), [query]);
+	const { push } = useHistory();
+	const { setOnEntered } = useNavbar();
 
-					if (typeof page !== 'number' || !Array.isArray(list)) {
-						return oldState;
-					}
+	useEffect(() => {
+		setOnEntered(key => push(`${providerListUrl}?${updateURLQuery(urlParams, "name", p => key)}`));
+	}, [setOnEntered, push, providerListUrl, urlParams]);
 
-					const { providers, pagination, pagination: { pageMap, fetchStatus } } = oldState;
-
-					return {
-						...oldState,
-						providers: toMap({
-							array: list,
-							map: { ...providers },
-							key: "id"
-						}),
-						pagination: {
-							...pagination,
-							page,
-							pageMap: {
-								...pageMap,
-								[page]: list
-							},
-							fetchStatus: fetchStatus.map((ele, index) => index !== page ? ele : true)
-						}
-					}
-				}
-				case SWITCH_PAGE: {
-					if (typeof payload !== 'number') {
-						return oldState;
-					}
-
-					const { pagination } = oldState;
-
-					return {
-						...oldState,
-						pagination: { ...pagination, page: payload }
-					};
-				}
-				case SET_PROVIDER_LIST: {
-					if (!Array.isArray(payload)) {
-						return oldState;
-					}
-
-					const pageMap = { 0: payload };
-					const { pagination } = oldState;
-
-					return {
-						...oldState,
-						providers: toMap({
-							array: payload,
-							map: {},
-							key: "id"
-						}),
-						pagination: { ...pagination, pageMap },
-						fetchStatus: toMap({
-							array: payload,
-							map: {},
-							key: "id",
-							value: false
-						})
-					};
-				}
-				case SET_MODEL: {
-					if (!isString(payload)) {
-						return oldState;
-					}
-
-					const { view } = oldState;
-
-					return {
-						...oldState,
-						view: { ...view, model: payload }
-					};
-				}
-				case TOGGLE_MODAL_VISION: {
-					if (!isBool(payload)) {
-						return oldState;
-					}
-
-					const { view } = oldState;
-
-					return {
-						...oldState,
-						view: { ...view, visible: payload }
-					};
-				}
-				case SET_PROVIDER_COUNT: {
-					if (typeof payload !== 'number') {
-						return oldState;
-					}
-
-					const { pagination, pagination: { size } } = oldState;
-					const totalPages = Math.ceil(payload / size);
-					let fetchStatus = spread(totalPages, false);
-
-					fetchStatus[0] = true;
-
-					return {
-						...oldState,
-						providerCount: payload,
-						pagination: { ...pagination, fetchStatus, totalPages }
-					};
-				}
-				default: return oldState;
-			}
-		}, { ...STORE }
-	);
-	const [ navbarState, dispatchNavbarState ] = useReducer(
-		(oldState, { type = null, payload = null } = {}) => {
-			switch(type) {
-				case SET_NAVBAR_BACKBUTTON_CALLBACK_AND_VISIBILITY: {
-					const { callback, visible } = payload;
-
-					if (typeof callback !== 'function' || typeof visible !== 'boolean') {
-						return oldState;
-					}
-
-					const { backButton } = oldState;
-
-					return {
-						...oldState,
-						backButton: { ...backButton, callback, visible }
-					};
-				}
-				case TOGGLE_NAVBAR_SEARCHINPUT_DISABILITY: {
-					const { searchInput } = oldState;
-
-					return {
-						...oldState,
-						searchInput: {
-							...searchInput,
-							disabled: !searchInput.disabled
-						}
-					}
-				}
-				default: return oldState;
-			}
-		}, { ...NAVBAR_STORE }
-	);
-	const [ searchState, dispatchSearchState] = useReducer(
-		(oldState, { type = null, payload = null } = {}) => {
-			switch(type) {
-				case SET_SEARCH_RESULTS_AND_SEARCHING_STATE: {
-					const { list, isSearching } = payload;
-
-					if (!Array.isArray(list) || typeof isSearching !== 'boolean') {
-						return oldState;
-					}
-
-					return {
-						...oldState,
-						totalResults: list.length,
-						list: list,
-						isSearching: isSearching
-					};
-				}
-				default: return oldState;
-			}
-		}, { ...SEARCH_STORE }
-	);
-	const searchProvidersByName = (providerName) => {
-		dispatchNavbarState({ type: TOGGLE_NAVBAR_SEARCHINPUT_DISABILITY });
-		
-		if (providerName.length === 0) {
-			clearSearchResults();
-			dispatchNavbarState({ type: TOGGLE_NAVBAR_SEARCHINPUT_DISABILITY });
-			return;
-		} 
-
-		let list = Object.values(store.providers).filter(provider => provider.name.toLowerCase().includes(providerName.toLowerCase()));
-
-		dispatchSearchState({
-			type: SET_SEARCH_RESULTS_AND_SEARCHING_STATE,
-			payload: { list, isSearching: true }
-		});
-		dispatchNavbarState({
-			type: SET_NAVBAR_BACKBUTTON_CALLBACK_AND_VISIBILITY,
-			payload: {
-				visible: true,
-				callback: () => clearSearchResults()
-			}
-		});
-		dispatchNavbarState({ type: TOGGLE_NAVBAR_SEARCHINPUT_DISABILITY });
-	};
-	const clearSearchResults = () => {
-		dispatchSearchState({
-			type: SET_SEARCH_RESULTS_AND_SEARCHING_STATE,
-			payload: { list: [], isSearching: false }
-		});
-		dispatchNavbarState({
-			type: SET_NAVBAR_BACKBUTTON_CALLBACK_AND_VISIBILITY,
-			payload: {
-				visible: false,
-				callback: () => null
-			}
-		});
-	}
-
-	useEffect(() => fetchStore(dispatchStore), []);
-
-	const requestProviderListPage = async (pageNumber) => {
-		const { pagination: { fetchStatus, size } } = store;
-		const page = pageNumber - 1;
-
-		if (fetchStatus[page] === true) {
-			dispatchStore({
-				type: SWITCH_PAGE,
-				payload: page
+	useEffect(() => {
+		const doFetch = async () => {
+			const [res, err] = await fetchProviderList({
+				columns: ["id", "name", "email", "representatorName"],
+				page: urlParams.get('page'),
+				size: 12,
+				name: urlParams.get('name')
 			});
 
-			return;
-		}
+			if (err) {
+				return console.error(err);
+			}
 
-		const [providerList, err] = await fetchProviderList({ page, size, columns: FETCHED_COLUMNS });
+			return setProviders(res);
+		};
 
-		if (err) {
-			console.error(err);
-			return;
-		}
+		doFetch();
+	}, [urlParams, setProviders]);
 
-		dispatchStore({
-			type: FULFILL_PAGE_REQUEST,
-			payload: { page, list: providerList }
-		});
-	};
-	const toggleView = (id, visible) => {
-		dispatchStore({
-			type: SET_MODEL,
-			payload: id
-		});
-		dispatchStore({
-			type: TOGGLE_MODAL_VISION,
-			payload: visible
-		});
-	}
-	const selectProvider = async (id) => {
-		if (fetchStatus[id] == true) {
-			toggleView(id, true);
-			return;
-		}
-
-		const [provider, err] = await obtainProvider({ providerId: id, columns: OBTAINED_COLUMNS });
-
-		if (err) {
-			console.error(err);
-			return;
-		}
-
-		console.log(provider);
-		toggleView(id, true);
-	};
-	const {
-		providers,
-		providerCount,
-		pagination: { page, pageMap, totalPages },
-		fetchStatus,
-		view: {
-			visible: isViewVisible,
-			model: viewedModelId
-		}
-	} = store;
-	const {
-		searchInput: {
-			disabled: navbarSearchInputDisabled
-		},
-		backButton: {
-			visible: navbarBackButtonVisible,
-			callback: navbarBackButtonCallback
-		}
-	} = navbarState;
-	const { isSearching, list: searchResults, totalResults } = searchState;
+	const onSelect = (provider) => push(`${providerListUrl}/${provider.id}`);
+	const providers = Object.values(providersMap);
 
 	return (
-		<div>
-			<Navbar
-				backButtonVisible={navbarBackButtonVisible}
-				backButtonClick={navbarBackButtonCallback}
-				searchInputEmptied={clearSearchResults}
-				searchInputEntered={searchProvidersByName}
-				isSearchInputDisabled={navbarSearchInputDisabled}
-			/>
-			<div className="uk-padding uk-padding-remove-top">
-			{
-				!isViewVisible ?
-					!isSearching ? 
-						<ProviderList
-							list={pageMap[page]}
-							totalAmount={providerCount}
-							currentPage={page + 1}
-							requestPage={requestProviderListPage}
-							totalPages={totalPages}
-							onSelect={selectProvider}
-						/> :
-						<ProviderList
-							list={searchResults}
-							totalAmount={totalResults}
-							currentPage={1}
-							totalPages={1}
-							onSelect={selectProvider}
-						/> :
-					<ProviderView
-						providers={providers}
-						providerId={viewedModelId}
-						close={() => dispatchStore({
-							type: TOGGLE_MODAL_VISION,
-							payload: false
-						})}
-					/>
-			}	
-			</div>
-		</div>
-	);
-}
-
-function ProviderList({
-	list = [], totalAmount = 0,
-	currentPage = 0, requestPage = () => null,
-	totalPages = 0, onSelect = () => null
-}) {
-	return (
-		<div>
-			<table className="uk-table uk-table-justify uk-table-divider">
-				<thead>
-					<tr>
-						<th className="uk-width-small">Name</th>
-						<th>Email</th>
-						<th>Phone</th>
-						<th>Representator</th>
-						<th></th>
-					</tr>
-				</thead>
-				<tbody>
-				{
-					list.map((provider, index) => (
-						<tr key={provider.id}>
-							<td>
-								<span className="uk-text-bold colors">
-									{ provider.name }
-								</span>
-							</td>
-							<td>
-							{ provider.email }
-							</td>
-							<td>
-								<ul className="uk-list">
-								{
-									(provider.phoneNumbers && provider.phoneNumbers.map((phone, index) => (
-										<li key={index}>{phone}</li>
-									)))
-								}
-								</ul>
-							</td>
-							<td>
-							{ provider.representatorName }
-							</td>
-							<td>
-								<div
-									className="pointer uk-icon-button"
-									uk-icon="info"
-									onClick={() => onSelect(provider.id)}
-								></div>
-							</td>
-						</tr>
-					))
-				}
-				</tbody>
-			</table>
-			<div
-				className="uk-grid-collapse"
-				uk-grid=""
-			>
-				<div className="uk-width-expand">
-					<Paging
-						amount={totalPages}
-						amountPerChunk={5}
-						selected={currentPage}
-						onPageSelect={requestPage}
-					/>
-				</div>
-				<div className="uk-width-auto">
-					<div
-						className="uk-position-relative uk-height-1-1"
-						style={{ minWidth: "150px" }}
-					>
-						<label
-							className="uk-position-center backgroundf uk-label"
-						>{`${list.length}/${totalAmount} result(s)`}</label>	
+		<main className="uk-padding-small">
+		{
+			asIf(providerId == null)
+			.then(() => (
+				<>
+					<h3 className="uk-heading-line">
+						<span>Provider list</span>
+					</h3>
+					<div>
+						<div
+							className="uk-text-primary pointer noselect"
+							onClick={() => push(`${providerListUrl}`)}
+						>Clear filter</div>
+						<PagedComponent
+							pageCount={providers.length}
+							onNextPageRequest={() => push(`${providerListUrl}?${updateURLQuery(urlParams, "page", p => (+p || 0) + 1)}`)}
+							onPreviousPageRequest={() => push(`${providerListUrl}?${updateURLQuery(urlParams, "page", p => +p - 1)}`)}
+							currentPage={urlParams.get('page')}
+						>
+							<div className="uk-margin uk-grid-small uk-child-width-1-4 uk-grid-match" uk-grid="">
+							{
+								providers.map(provider => (
+									<div
+										key={provider.id}
+										onClick={() => onSelect(provider)}
+									>
+										<div className="uk-card uk-card-default uk-card-body uk-card-hover uk-padding-small pointer">
+											<div className="uk-text-lead">{provider.name}</div>
+											<div
+												style={{wordBreak: "break-all"}}
+											>{provider.email}</div>
+											<div>{provider.representatorName}</div>
+										</div>
+									</div>
+								))
+							}
+							</div>
+						</PagedComponent>
 					</div>
-				</div>
-			</div>
-		</div>
+				</>
+			)).else(() => <ProviderEditor />)
+		}
+		</main>
 	);
 }
 
-function ProviderView({
-	providers = [], providerId = null,
-	close = () => null
-}) {
-	const [containerClassName, setContainerClassName] = useState('fade-in');
-	const model = providers[providerId];
+function ProviderEditor() {
+	const { setBackBtnState } = useNavbar();
+	const [model, setModel] = useState(null);
+	const [errors, setErrors] = useState({});
+	const { providerId } = useParams();
+	const {
+		dashboard: { provider: { list: { url: providerListUrl } } }
+	} = routes;
+	const { push } = useHistory();
+	
+	useEffect(() => {
+		setBackBtnState({
+			visible: true,
+			callback: () => {
+				push(providerListUrl);
+				setBackBtnState({
+					visible: false,
+					callback: () => null
+				});
+			}
+		});
+	}, [push, setBackBtnState, providerListUrl]);
+	
+	useEffect(() => {
+		const doFetch = async () => {
+			const [res, err] = await obtainProvider({
+				id: providerId,
+				columns: ["id", "name", "email", "representatorName", "address", "website", "phoneNumbers"]
+			});
+
+			if (err) {
+				return console.error(err);
+			}
+
+			setModel(res);
+		};
+
+		doFetch();
+	}, [providerId]);
 
 	if (model == null) {
 		return null;
 	}
 
-	const onClose = () => {
-		setContainerClassName('fade-out uk-modal');
-		setTimeout(() => close(), 180);
-	}
+	const onModelChange = (name, value) => setModel({
+		...model,
+		[name]: value
+	});
+	const onSuccess = async (model) => {
+		const [res, err] = await updateProvider(model);
+
+		if (err) {
+			console.error(err);
+			return setErrors(err);
+		}
+
+		return setModel(res);
+	};
 
 	return (
-		<div className={`uk-modal-full uk-open uk-display-block ${containerClassName}`} uk-modal="">
-			<div className="uk-modal-dialog uk-height-1-1 uk-padding">
+		<div className="uk-grid-small" uk-grid="">
+			<div className="uk-width-2-3">
+				<ProviderFormLayout
+					onModelChange={onModelChange}
+					model={model}
+					onSuccess={onSuccess}
+					errors={errors}
+				/>
+			</div>
+			<div></div>
+		</div>
+	);
+}
+
+function ProviderCreator() {
+	const [errors, setErrors] = useState({});
+
+	const onSuccess = async (model) => {
+		const [res, err] = await createProvider(model);
+
+		if (err) {
+			console.error(err);
+			return setErrors(err);
+		}
+
+		setErrors({});
+
+		return console.log(res);
+	};
+
+	return (
+		<main className="uk-padding-small">
+			<h3 className="uk-heading-line">
+				<span>Create a Provider</span>
+			</h3>
+			<div className="uk-grid-small" uk-grid="">
+				<div className="uk-width-2-3">
+					<InternalStateProviderForm
+						onSuccess={onSuccess}
+						errors={errors}
+					/>
+				</div>
+				<div></div>
+			</div>
+		</main>
+	);
+}
+
+function InternalStateProviderForm({
+	onSuccess = () => console.log("on success"),
+	errors = {}
+}) {
+	const [model, setModelState] = useState({
+		name: "",
+		email: "",
+		phoneNumbers: [],
+		address: "",
+		website: "",
+		representatorName: ""
+	});
+
+	const onModelChange = (name, value) => setModelState({
+		...model,
+		[name]: value
+	});
+
+	return (
+		<ProviderFormLayout
+			onModelChange={onModelChange}
+			model={model}
+			onSuccess={onSuccess}
+			errors={errors}
+		/>
+	);
+}
+
+function ProviderFormLayout({
+	model = {},
+	onModelChange = (name, val) => console.log(name, val),
+	onSuccess = () => console.log("on success"),
+	errors = {}
+}) {
+	const onInputChange = (event) => {
+		const { target: {name, value } } = event;
+
+		return onModelChange(name, value);
+	};
+	const onAddPhoneNumber = (newPhonenumber) => {
+		if (model.phoneNumbers.includes(newPhonenumber)) {
+			return;
+		}
+
+		return onModelChange("phoneNumbers", [
+			...model.phoneNumbers, newPhonenumber
+		]);
+	};
+	const onRemovePhoneNumber = (index, phonenumber) => onModelChange("phoneNumbers", model.phoneNumbers.filter(number => number !== phonenumber));
+	const onSubmit = (event) => {
+		event.preventDefault();
+		event.stopPropagation();
+
+		return onSuccess(model);
+	};
+
+	return (
+		<form onSubmit={onSubmit}>
+			<div className="uk-margin">
+ 				<label className="uk-label backgroundf">Provider Name</label>
+ 				<input
+					className="uk-input"
+					placeholder="Provider Name"
+					name="name"
+					value={model.name}
+					onChange={onInputChange}
+				/>
+				<label className="uk-text-danger">{errors.name}</label>
+			</div>
+			<div className="uk-margin">
+				<label className="uk-label backgroundf">Email</label>
+				<input
+					className="uk-input"
+					placeholder="Email"
+					name="email"
+					value={model.email}
+					onChange={onInputChange}
+					type="email"
+				/>
+				<label className="uk-text-danger">{errors.email}</label>
+			</div>
+			<div className="uk-margin">
+				<label className="uk-label backgroundf">Phone Numbers</label>
+				<PluralValueInput
+					values={model.phoneNumbers}
+					add={onAddPhoneNumber}
+					remove={onRemovePhoneNumber}
+					placeholder="New phone number"
+					type="tel"
+				/>
+				<label className="uk-text-danger">{errors.phoneNumbers}</label>
+			</div>
+			<div className="uk-margin">
+				<label className="uk-label backgroundf">Address</label>
+				<input
+					className="uk-input"
+					placeholder="Address"
+					name="address"
+					value={model.address}
+					onChange={onInputChange}
+				/>
+				<label className="uk-text-danger">{errors.address}</label>
+			</div>
+			<div className="uk-margin">
+				<label className="uk-label backgroundf">Website</label>
+				<input
+					className="uk-input"
+					placeholder="Website"
+					name="website"
+					value={model.website}
+					onChange={onInputChange}
+				/>
+				<label className="uk-text-danger">{errors.website}</label>
+			</div>
+			<div className="uk-margin">
+				<label className="uk-label backgroundf">Representator Name</label>
+				<input
+					className="uk-input"
+					placeholder="Representator Name"
+					name="representatorName"
+					value={model.representatorName}
+					onChange={onInputChange}
+				/>
+				<label className="uk-text-danger">{errors.representatorName}</label>
+			</div>
+			<div className="uk-margin">
 				<button
-					className="uk-position-top-right uk-close-large"
-					type="button" uk-close="" style={{top: "25px", right: "25px"}}
-					onClick={onClose}
-				></button>
-				<div className="uk-grid-small uk-height-1-1" uk-grid="">
-					<div className="uk-width-1-3">
-						<h1 className="uk-heading">{model.name}</h1>
-						<div className="uk-margin">
-							<label
-								className="uk-label backgroundf"
-							>Representator Name</label>
-							<div
-								className="uk-text-large uk-padding-small uk-padding-remove-top uk-padding-remove-right uk-padding-remove-bottom"
-							>{model.representatorName}</div>
-						</div>
-						<div className="uk-margin">
-							<label
-								className="uk-label backgroundf"
-							>Email</label>
-							<div
-								className="uk-text-large uk-padding-small uk-padding-remove-top uk-padding-remove-right uk-padding-remove-bottom"
-							>{model.email}</div>
-						</div>
-						<div className="uk-margin">
-							<label
-								className="uk-label backgroundf"
-							>Phone Numbers</label>
-							<div
-								className="uk-text-large uk-padding-small uk-padding-remove-top uk-padding-remove-right uk-padding-remove-bottom"
-							>
-								<ul class="uk-list uk-list-decimal uk-list-divider">
+					className="uk-button backgroundf"
+					type="submit"
+				>
+					Submit
+				</button>
+			</div>
+		</form>
+	);
+}
+
+function CostManagement() {
+	const {
+		store: {
+			product: { elements: productMap }
+		},
+		setProducts, mergeCosts
+	} = useProduct();
+	const {
+		dashboard: {
+			provider: { costs: { url: productCostsUrl } }
+		}
+	} = routes;
+	const products = Object.values(productMap);
+	const { productId } = useParams();
+	const { push } = useHistory();
+
+	useEffect(() => {
+		const doFetch = async () => {
+			let [res, err] = await getProductList({
+				internal: true,
+		 		FETCHED_PRODUCT_COLUMNS
+			});
+
+			if (err) {
+				console.error(err);
+				return;
+			}
+
+			setProducts(res);
+		};
+
+		doFetch();
+	}, [setProducts, mergeCosts]);
+
+	return (
+		<div className="uk-padding-small">
+			<h4>Product Costs</h4>
+			{
+				asIf(productId == null)
+				.then(() => <ProductTable
+					list={Object.values(products)}
+					columns={["images", "code", "name"]}
+					onRowSelect={(p) => push(`${productCostsUrl}/${p.id}`)}
+				/>)
+				.else(() => <IndividualCost />)
+			}
+		</div>
+	);
+}
+
+function IndividualCost() {
+	const {
+		dashboard: {
+			provider: { costs: { url: productCostsUrl } }
+		}
+	} = routes;
+	const { setBackBtnState, setOnEntered } = useNavbar();
+	const { productId } = useParams();
+	const { push } = useHistory();
+	const { principal } = useAuth();
+	const [costList, setCostList] = useState([]);
+	const [confirmModal, setConfirmModal] = useState(null);
+	const { search: query } = useLocation();
+	const urlParams = useMemo(() => new URLSearchParams(query), [query]);
+
+	useEffect(() => {
+		setBackBtnState({
+			visible: true,
+			callback: () => push(productCostsUrl)
+		});
+		setOnEntered((key) => push(`${productCostsUrl}/${productId}?provider=${key}`));
+
+		return () => setBackBtnState();
+	}, [setBackBtnState, push, productCostsUrl, setOnEntered, productId]);
+
+	useEffect(() => {
+		const doFetch = async () => {
+			const [res, err] = await getProductCostsByProduct({
+				productId,
+				columns: [
+					"appliedTimestamp", "droppedTimestamp",
+					"cost", "approvedTimestamp", "provider"
+				],
+				providerName: urlParams.get("provider"),
+				page: urlParams.get("page"),
+				size: urlParams.get("size"),
+				sort: urlParams.get("sort")
+			});
+
+			if (err) {
+				console.error(err);
+				return;
+			}
+
+			setCostList(res.map(ele => ({
+				...ele,
+				formattedAppliedTimestamp: formatDatetime(ele.appliedTimestamp),
+				formattedDroppedTimestamp: formatDatetime(ele.droppedTimestamp),
+				formattedApprovedTimestamp: formatDatetime(ele.approvedTimestamp),
+				cost: formatVND(ele.cost)
+			})));
+		};
+
+		doFetch();			
+	}, [productId, urlParams]);
+
+	const onApprove = (index) => {
+		const ele = costList[index];
+
+		setConfirmModal(
+			<ConfirmModal
+				background="uk-background-muted"
+				message={`Are you sure you want to apply ${ele.cost} on ${ele.formattedAppliedTimestamp} and drop it on ${ele.formattedDroppedTimestamp}?`}
+				onNo={() => setConfirmModal(null)}
+				onYes={() => approve(ele, index)}
+			/>
+		);
+	};
+
+	const approve = async (ele, index) => {
+		const { appliedTimestamp, droppedTimestamp } = ele;
+		const [res, err] = await approveProductCost({
+			productId,
+			providerId: ele.provider.id,
+			appliedTimestamp,
+			droppedTimestamp
+		});
+
+		if (err) {
+			console.error(err);
+			return;
+		}
+
+		const { approvedTimestamp } = res;
+
+		setCostList(costList.map((p, i) => asIf(i === index).then(() => ({
+			...p,
+			approvedTimestamp,
+			formattedApprovedTimestamp: formatDatetime(approvedTimestamp),
+			approvedBy: principal
+		})).else(() => p)));
+		setConfirmModal(null);
+	};
+
+	return (
+		<div>
+			{ confirmModal }
+			<h5 className="uk-heading uk-heading-line colors uk-text-right">
+				<span>
+					{`Cost schedule for Product ID: `}
+					<span className="uk-text-bold colors">{productId}</span>
+				</span>
+			</h5>
+			<PagedComponent
+				pageCount={costList.length}
+				onNextPageRequest={() => push(`${productCostsUrl}/${productId}?${updateURLQuery(urlParams, "page", p => hasLength(p) ? +p + 1 : 1)}`)}
+				onPreviousPageRequest={() => push(`${productCostsUrl}/${productId}?${updateURLQuery(urlParams, "page", p => +p - 1)}`)}
+				currentPage={urlParams.get("page")}
+			>
+				<div className="uk-margin">
+					<OrderSelector
+						className="uk-width-auto"
+						onAscRequested={() => push(`${productCostsUrl}/${productId}?${updateURLQuery(urlParams, "sort", sort => `appliedTimestamp,asc`)}`)}
+						onDesRequested={() => push(`${productCostsUrl}/${productId}?${updateURLQuery(urlParams, "sort", sort => `appliedTimestamp,desc`)}`)}
+						labels={["Applied timestamp ascending", "Applied timestamp descending"]}
+					/>
+				</div>
+				<table className="uk-table uk-table-divider">
+					<thead>
+						<tr>
+							<th>Provider</th>
+							<th>Applied timestamp</th>
+							<th>Dropped timestamp</th>
+							<th>Cost</th>
+							<th>Approved timestamp</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+					{
+						costList.map((ele, index) => (
+							<tr key={index}>
+								<td>{ele.provider.name}</td>
+								<td>{ele.formattedAppliedTimestamp}</td>
+								<td>{ele.formattedDroppedTimestamp}</td>
+								<td>
+									<span className="colors">{ele.cost}</span>
+								</td>
+								<td>
 								{
-									model.phoneNumbers.map((phoneNumber, index) => (
-										<li key={index}>{phoneNumber}</li>
-									))
+									asIf(ele.approvedTimestamp != null)
+									.then(() => <span className="uk-text-primary">
+										{ele.formattedApprovedTimestamp}
+									</span>)
+									.else(() => <span className="uk-text-muted">Not yet approved</span>)
 								}
-								</ul>
-							</div>
+								</td>
+								<td>
+								{
+									asIf(ele.approvedTimestamp == null && principal.role === Account.Role.HEAD)
+									.then(() => (
+										<button
+											className="uk-button uk-button-danger"
+											onClick={() => onApprove(index)}
+										>Approve</button>
+									)).else()
+								}
+								</td>
+							</tr>
+						))
+					}
+					</tbody>
+				</table>
+			</PagedComponent>
+			<IndividualCostCreator
+				onSuccess={(newCost) => setCostList([
+					...costList,
+					{
+						...newCost,
+						formattedAppliedTimestamp: formatDatetime(newCost.appliedTimestamp),
+						formattedDroppedTimestamp: formatDatetime(newCost.droppedTimestamp),
+						cost: formatVND(newCost.cost)
+					}
+				])}
+			/>
+		</div>
+	);
+}
+
+function IndividualCostCreator({
+	onSuccess = (cost) => console.log(cost)
+}) {
+	const { productId } = useParams();
+	const [costProps, , costErr, setCostErr] = useInputSet(100000);
+	const [provider, setProvider, providerError, setProviderError] = useStateWithMessage(null);
+	const [appliedProps, , appliedError, setAppliedError] = useInputSet(datetimeLocalString(now()));
+	const [droppedProps, , droppedError, setDroppedError] = useInputSet(datetimeLocalString(now()));
+	const [providerPickerVisible, setProviderPickerVisible] = useState(false);
+
+	const onProviderPicked = (provider) => {
+		setProvider(provider);
+		setProviderPickerVisible(false);
+	};
+
+	const onSubmit = async (event) => {
+		event.preventDefault();
+		event.stopPropagation();
+
+		let tracker = new ErrorTracker();
+		const cost = costProps.value;
+		const appliedTimestamp = appliedProps.value;
+		const droppedTimestamp = droppedProps.value;
+
+		setCostErr(tracker.add(ProductCost.validators.cost(cost)));
+		setProviderError(tracker.add(ProductCost.validators.provider(provider)));
+		setAppliedError(tracker.add(ProductCost.validators.appliedTimestamp(appliedTimestamp)));
+		setDroppedError(tracker.add(ProductCost.validators.droppedTimestamp(droppedTimestamp)));
+
+		if (tracker.foundError()) {
+			return;
+		}
+
+		const [res, err] = await createProductCost({
+			productId,
+			providerId: provider.id,
+			cost,
+			appliedTimestamp, droppedTimestamp
+		});
+
+		if (err) {
+			console.error(err);
+			setAppliedError(err.appliedTimestamp);
+			setDroppedError(err.droppedTimestamp);
+			setCostErr(err.cost);
+			setProviderError(err.provider);
+			return;
+		}
+
+		onSuccess({ ...res, provider });
+	};
+
+	return (
+		<form onSubmit={onSubmit}>
+			<h5 className="uk-heading uk-heading-line colors uk-text-right">
+				<span>
+					{`Submit a new Cost for Product ID: `}
+					<span className="uk-text-bold colors">{productId}</span>
+				</span>
+			</h5>
+			<div className="uk-grid-small" uk-grid="">
+				<div className="uk-width-2-3">
+					<div
+						className="uk-margin pointer noselect"
+						onClick={() => setProviderPickerVisible(true)}
+					>
+						<label className="uk-label backgroundf">Provider</label>
+						<div className="uk-card uk-card-default uk-card-body">
+						{
+							asIf(provider == null)
+							.then(() => <div className="uk-text-center uk-text-muted">Pick a Provider</div>)
+							.else(() => (
+								<div className="uk-height-1-1 uk-position-relative">
+									<div className="uk-text-lead">{provider.name}</div>
+									<div>{provider.email}</div>
+									<div>{provider.representatorName}</div>
+								</div>
+							))
+						}
 						</div>
+						<div className="uk-text-danger">{providerError}</div>
 					</div>
-					<div className="uk-width-2-3 uk-height-1-1 uk-overflow-auto">
-						
+					<div className="uk-margin">
+						<label className="uk-label backgroundf">Cost</label>
+						<input
+							{...costProps}
+							className="uk-input"
+							placeholder="Cost"
+							type="number"
+							min="0"
+							step="0.0001"
+						/>
+						<div className="uk-text-danger">{costErr}</div>
+					</div>
+					<div className="uk-grid-small uk-child-width-1-2" uk-grid="">
+						<div>
+							<label
+								htmlFor="applied"
+								className="uk-label backgroundf"
+							>Applied timestamp</label>
+							<input
+								{...appliedProps}
+								className="uk-input uk-text-large"
+								type="datetime-local"
+								id="applied"
+								step="1"
+							/>
+							<p className="uk-text-danger">{appliedError}</p>
+						</div>
+						<div>
+							<label
+								htmlFor="dropped"
+								className="uk-label backgroundf"
+							>Dropped timestamp</label>
+							<input
+								{...droppedProps}
+								className="uk-input uk-text-large"
+								type="datetime-local"
+								id="dropped"
+								step="1"
+							/>
+							<p className="uk-text-danger">{droppedError}</p>
+						</div>
 					</div>
 				</div>
+				<div className="uk-width-1-3"></div>
 			</div>
-		</div>
+			{
+				asIf(providerPickerVisible)
+				.then(() => <ProviderPicker
+					close={() => setProviderPickerVisible(false)}
+					onPick={onProviderPicked}
+				/>)
+				.else()
+			}
+			<div className="uk-margin">
+				<button className="uk-button backgroundf">Submit</button>
+			</div>
+		</form>
 	);
 }

@@ -1,14 +1,22 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
+import { useParams, useHistory, useLocation } from 'react-router-dom';
 
-import { getAllCategories } from '../actions/product';
-import { SET_LIST } from '../actions/common';
+import { addCart } from '../actions/account';
+import { getAllCategories, getProductListByCategory, getProductPrices } from '../actions/product';
 
 import { SourcedImage } from '../components/utils/Gallery'
+import ProductList from '../components/product/ProductList'
+import Navbar from '../components/utils/Navbar';
+import { NoFollow } from '../components/utils/Link';
+import { SearchInput } from '../components/utils/Input';
+import PagedComponent from '../components/utils/PagedComponent';
 
-const CATEGORY_STORE = {
-	elements: []
-}
+import { useProduct } from '../hooks/product-hooks';
+import { useInput } from '../hooks/hooks';
+
+import { routes } from '../config/default';
+
+import { hasLength, updateURLQuery } from '../utils';
 
 const PRODUCT_STORE = {
 	elements: [
@@ -35,76 +43,24 @@ const PRODUCT_STORE = {
 	]
 }
 
-const Context = createContext();
-
-const useGlobalContext = () => useContext(Context);
-
-function ContextProvider({ children }) {
-	const [categoryStore, dispatchCategoryStore] = useReducer(
-		(oldState, { type = null, payload = null } = {}) => {
-			const dispatcher = cactegoryDispatchers[type];
-
-			return dispatcher == null ? oldState : dispatcher(payload, oldState);
-		}, { ...CATEGORY_STORE }
-	);
-	useEffect(() => {
-		const doFetch = async () => {
-			const [categories, fetchCategoriesErr] = await getAllCategories();
-
-			if (fetchCategoriesErr) {
-				console.error(fetchCategoriesErr);
-				return;
-			}
-
-			dispatchCategoryStore({
-				type: SET_LIST,
-				payload: categories
-			});
-		};
-
-		doFetch();
-	}, []);
-
-	return (
-		<Context.Provider value={{
-			categoryStore, dispatchCategoryStore
-		}}>
-			{ children }
-		</Context.Provider>
-	);
-}
-
-const cactegoryDispatchers = {
-	SET_LIST: (payload, oldState) => {
-		if (!Array.isArray(payload)) {
-			return oldState;
-		}
-
-		return {
-			...oldState,
-			elements: payload
-		};
-	}
-}
-
 export default function HomePage() {
 	return (
-		<ContextProvider>
-			<Main />
-		</ContextProvider>
+		<div>
+			<Navbar
+				className="uk-background-default"
+			/>
+			<Head />
+			<Body />
+		</div>
 	);
 }
 
-function Main() {
-	const {
-		categoryStore: { elements }
-	} = useGlobalContext();
-
+function Head() {
 	return (
-		<div>
+		<header>
 			{/*<div uk-slideshow="autoplay: false; autoplay-interval: 2000; pause-on-hover: false">*/}
-			<div uk-slideshow="animation: scale; autoplay: true; autoplay-interval: 2000; pause-on-hover: false">
-				<ul className="uk-slideshow-items" uk-height-viewport="min-height: 300">
+			<div uk-slideshow="animation: scale; autoplay: false; autoplay-interval: 2000; pause-on-hover: false">
+				<ul className="uk-slideshow-items" uk-height-viewport="offset-top: true; min-height: 300">
 				{
 					PRODUCT_STORE.elements.map(model => (
 						<li key={model.id}>
@@ -125,82 +81,271 @@ function Main() {
 					uk-slidenav-next="" uk-slideshow-item="next"
 				></button>
 			</div>
-			<div className="uk-position-top">
-				<nav className="uk-navbar-container uk-navbar-transparent" uk-navbar="">
-					<div className="uk-navbar-left">
-						<ul className="uk-navbar-nav">
-							<li className="uk-active uk-padding-small uk-margin-large-left pointer uk-text-center">
-								<div
-									style={{color: "white"}}
-									className="uk-width-small"
-									uk-toggle="target: #offcanvas-menu" uk-icon="icon: menu; ratio: 2"
-								></div>
-							</li>
-						</ul>
-					</div>
-					<div className="uk-navbar-right">
-						<ul className="uk-navbar-nav">
-							<li className="uk-active uk-padding-small uk-margin-large-right pointer uk-text-center">
-								<div
-									style={{color: "white"}}
-									className="uk-width-small"
-									uk-toggle="target: #offcanvas-dashboard" uk-icon="icon: grid; ratio: 2"
-								></div>
-							</li>
-						</ul>
-					</div>
-				</nav>
-			</div>
-			<div>
-				<div id="offcanvas-menu" uk-offcanvas="mode: reveal; overlay: true">
-					<div className="uk-offcanvas-bar uk-flex uk-flex-column">
-						<ul className="uk-nav uk-nav-primary uk-nav-center uk-margin-auto-vertical">
-							<li className="uk-nav-header">Categories</li>
-							{
-								elements.map(category => (
-									<li
-										key={category.id} className="uk-margin pointer noselect"
-									>
-										<div className="uk-transition-toggle">
-											<Link to={`/shop/${category.name}`} className="uk-link-reset">
-												<div
-													className="uk-transition-scale-up"
-													style={{ opacity: "1" }}
-												>{category.name}</div>
-											</Link>
-										</div>
-									</li>
-								))
-							}
-							<li className="uk-nav-divider"></li>
-						</ul>
+		</header>
+	);
+}
 
-					</div>
+function Body() {
+	return (
+		<main className="uk-position-relative">
+			<div
+				className="uk-grid-collapse uk-grid-match"
+				uk-grid=""
+			>
+				<div className="uk-width-1-4 uk-padding-small">
+					<SideNav />
+				</div>
+				<div className="uk-width-3-4 uk-position-relative" uk-height-viewport="" uk-overflow-auto="">
+					<ProductListView />
 				</div>
 			</div>
-			<div>
-				<div id="offcanvas-dashboard" uk-offcanvas="flip: true; mode: reveal; overlay: true">
-					<div className="uk-offcanvas-bar uk-flex uk-flex-column">
+		</main>
+	);
+};
 
-						<ul className="uk-nav uk-nav-primary uk-nav-center uk-margin-auto-vertical">
-							{/*<li className="uk-active"><a href="#">Active</a></li>
-							<li className="uk-parent">
-								<a href="#">Parent</a>
-								<ul className="uk-nav-sub">
-									<li><a href="#">Sub item</a></li>
-									<li><a href="#">Sub item</a></li>
-								</ul>
-							</li>
-							<li className="uk-nav-header">Header</li>
-							<li><a href="#"><span className="uk-margin-small-right" uk-icon="icon: table"></span> Item</a></li>
-							<li><a href="#"><span className="uk-margin-small-right" uk-icon="icon: thumbnails"></span> Item</a></li>
-							<li className="uk-nav-divider"></li>
-							<li><a href="#"><span className="uk-margin-small-right" uk-icon="icon: trash"></span> Item</a></li>*/}
-						</ul>
+export const FETCHED_PRODUCT_COLUMNS = ["id", "name", "rating", "images"]
 
+function SideNav() {
+	const {
+		store: {
+			category: { elements: categories }
+		},
+		setCategories, setProducts,
+		mergePrices
+	} = useProduct();
+	const { category } = useParams();
+	const { push } = useHistory();
+	const { search: query } = useLocation();
+	const urlParams = useMemo(() => new URLSearchParams(query), [query]);
+	const [startPriceProps, setStartPrice] = useInput(urlParams.get('from') || "");
+	const [endPriceProps, setEndPrice] = useInput(urlParams.get('to') || "");
+
+	useEffect(() => {
+		const doFetch = async () => {
+			const [res, err] = await getAllCategories();
+
+			if (err) {
+				console.error(err);
+				return;
+			}
+
+			setCategories(res);
+		};
+
+		doFetch();
+	}, [setCategories]);
+
+	useEffect(() => {
+		if (!hasLength(category)) {
+			if (!hasLength(categories)) {
+				return;
+			}
+
+			push(`${routes.home.url}/${categories[0].name}`);
+			return;
+		}
+
+		const doFetch = async () => {
+			let [res, err] = await getProductListByCategory({
+				identifierName: "name",
+				identifier: category,
+				columns: FETCHED_PRODUCT_COLUMNS,
+				from: urlParams.get("from"),
+				to: urlParams.get("to"),
+				name: urlParams.get("name"),
+				sort: urlParams.get("sort"),
+				page: urlParams.get("page"),
+				size: urlParams.get("size")
+			});
+
+			if (err) {
+				return console.error(err);
+			}
+
+			setProducts(res);
+
+			if (!hasLength(res)) {
+				return;
+			}
+
+			[res, err] = await getProductPrices(res.map(product => product.id));
+
+			if (err) {
+				console.error(err);
+				return;
+			}
+
+			mergePrices(res);
+		};
+
+		doFetch();
+	}, [category, categories, setProducts, mergePrices, push, urlParams]);
+
+	const onSelectCategory = (category) => push(`${routes.home.url}/${category.name}?${urlParams.toString()}`);
+	const onApply = () => push(`${routes.home.url}/${category}?${[{name: "from", value: startPriceProps.value}, {name: "to", value: endPriceProps.value}]
+		.reduce((params, current) => {
+			const { name, value } = current;
+
+			if (!hasLength(value)) {
+				return params;
+			}
+
+			return new URLSearchParams(updateURLQuery(params, name, () => value));
+		}, urlParams)}`);
+	const onClear = () => {
+		setStartPrice("");
+		setEndPrice("");
+		push(`${routes.home.url}/${category}`);
+	};
+	const onPriceSortChange = (event) => {
+		const { target: { value } } = event;
+
+		push(`${routes.home.url}/${category}?${updateURLQuery(urlParams, "sort", () => `price,${value === "-1" ? "" : value}`)}`);
+	};
+
+	return (
+		<div>
+			<ul className="uk-nav uk-nav-center uk-nav-primary uk-margin-auto-vertical">
+				<li className="uk-nav-header uk-text-bold">Categories</li>
+				{
+					categories.map(category => (
+						<li
+							key={category.id} className="uk-margin pointer noselect"
+							onClick={() => onSelectCategory(category)}
+						>
+							<div className="uk-transition-toggle">
+								<div
+									className="uk-transition-scale-up"
+									style={{ opacity: "1" }}
+								>{category.name}</div>
+							</div>
+						</li>
+					))
+				}
+				<li className="uk-nav-divider"></li>
+				<li className="uk-nav-header uk-text-bold">Filter</li>
+				<li>
+					<div>
+						<div className="uk-flex uk-flex-center">
+							<div className="uk-margin-small-right">
+								<input
+									type="number" min="50000"
+									className="uk-input"
+									placeholder="Start price"
+									{...startPriceProps}
+								/>
+							</div>
+							<div>
+								<input
+									type="number" min="50000"
+									className="uk-input"
+									placeholder="End price"
+									{...endPriceProps}
+								/>
+							</div>
+						</div>
+						<div className="uk-flex uk-margin-small">
+							<select
+								className="uk-select"
+								onChange={onPriceSortChange}
+							>
+								<option value="-1">None</option>
+								<option value="asc">Ascending</option>
+								<option value="desc">Descending</option>
+							</select>
+						</div>
 					</div>
-				</div>
+					<div className="uk-margin uk-flex uk-flex-center">
+						<ul className="uk-subnav uk-subnav-pill" uk-margin="">
+							<li
+								onClick={onApply}
+							><NoFollow>Apply</NoFollow></li>
+							<li
+								onClick={onClear}
+							><NoFollow>Clear</NoFollow></li>
+						</ul>
+					</div>
+				</li>
+			</ul>
+		</div>
+	);
+}
+
+function ProductListView() {
+	const {
+		store: {
+			product: { elements: productsMap }
+		}
+	} = useProduct();
+	const { push } = useHistory();
+	const { category } = useParams();
+	const { productView: { url: productViewUrl } } = routes;
+	const { search: query } = useLocation();
+	const urlParams = useMemo(() => new URLSearchParams(query), [query]);
+
+	const onCartClick = async (p) => {
+		const [res, err] = await addCart({
+			productId: p.id,
+			quantity: 1
+		});
+
+		if (err) {
+			console.error(err);
+			return;
+		}
+
+		console.log(res);
+	};
+	const sort = urlParams.get("sort");
+	let products = Object.values(productsMap);
+	
+	if (!hasLength(products) || products[0].price == null) {
+		return (
+			<div className="uk-padding-small">
+				<SearchInput
+					value={urlParams.get("name")}
+					onEntered={(key) => push(`${routes.home.url}/${category}?${updateURLQuery(urlParams, "name", () => key)}`)}
+				/>
+				<PagedComponent
+					pageCount={0}
+					onNextPageRequest={() => push(`${routes.home.url}/${category}?${updateURLQuery(urlParams, "page", (p) => (+p || 0) + 1)}`)}
+					onPreviousPageRequest={() => push(`${routes.home.url}/${category}?${updateURLQuery(urlParams, "page", (p) => +p - 1)}`)}
+					currentPage={urlParams.get("page")}
+				>
+					<ProductList list={[]} />
+				</PagedComponent>
 			</div>
+		);
+	}
+	
+	if (hasLength(sort)) {
+		products = products.sort((left, right) => {
+			if (sort.includes("asc")) {
+				return left.price < right.price ? -1 : 1;
+			}
+
+			return left.price > right.price ? -1 : 1;
+		});
+	}
+
+	return (
+		<div className="uk-padding-small">
+			<SearchInput
+				value={urlParams.get("name")}
+				onEntered={(key) => push(`${routes.home.url}/${category}?${updateURLQuery(urlParams, "name", () => key)}`)}
+			/>
+			<PagedComponent
+				pageCount={products.length}
+				onNextPageRequest={() => push(`${routes.home.url}/${category}?${updateURLQuery(urlParams, "page", (p) => (+p || 0) + 1)}`)}
+				onPreviousPageRequest={() => push(`${routes.home.url}/${category}?${updateURLQuery(urlParams, "page", (p) => +p - 1)}`)}
+				currentPage={urlParams.get("page")}
+			>
+				<ProductList
+					onItemClick={(p) => push(`${productViewUrl}/${p.id}`)}
+					list={products}
+					onCartClick={onCartClick}
+				/>
+			</PagedComponent>
 		</div>
 	);
 }

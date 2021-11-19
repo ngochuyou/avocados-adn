@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import adn.application.context.ContextProvider;
 import adn.model.entities.Department;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
 import adn.service.services.DepartmentService;
 
 /**
@@ -45,9 +46,10 @@ public class RestDepartmentController extends BaseController {
 	@Transactional(readOnly = true)
 	@Secured("ROLE_PERSONNEL")
 	public ResponseEntity<?> getDepartments(@PageableDefault(size = 10) Pageable paging,
-			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws NoSuchFieldException {
+			@RequestParam(name = "columns", defaultValue = "") List<String> columns)
+			throws NoSuchFieldException, UnauthorizedCredential {
 		return makeStaleWhileRevalidate(
-				crudService.read(Department.class, columns, paging, departmentService.getPrincipalDepartment()), 4,
+				crudService.readAll(Department.class, columns, paging, ContextProvider.getPrincipalCredential()), 4,
 				TimeUnit.DAYS, 7, TimeUnit.DAYS);
 	}
 
@@ -55,7 +57,8 @@ public class RestDepartmentController extends BaseController {
 	@GetMapping("/chief/{departmentId}")
 	@Secured("ROLE_PERSONNEL")
 	public ResponseEntity<?> getDepartmentChief(@PathVariable(name = "id", required = true) UUID departmentId,
-			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws NoSuchFieldException {
+			@RequestParam(name = "columns", defaultValue = "") List<String> columns)
+			throws NoSuchFieldException, UnauthorizedCredential {
 		if (columns.isEmpty()) {
 			Map<String, Object> chief = departmentService.getDepartmentChief(departmentId,
 					ContextProvider.getPrincipalRole());
@@ -73,7 +76,8 @@ public class RestDepartmentController extends BaseController {
 	@GetMapping("/chiefs")
 	@Secured("ROLE_PERSONNEL")
 	public ResponseEntity<?> getDepartmentChiefs(@RequestParam(name = "ids", required = true) List<UUID> ids,
-			@RequestParam(name = "columns", required = true) List<String> columns) throws NoSuchFieldException {
+			@RequestParam(name = "columns", required = true) List<String> columns)
+			throws NoSuchFieldException, UnauthorizedCredential {
 		List<Map<String, Object>> chiefs = departmentService.getDepartmentChiefs(ids.toArray(new UUID[ids.size()]),
 				columns, ContextProvider.getPrincipalRole());
 
@@ -106,7 +110,8 @@ public class RestDepartmentController extends BaseController {
 	@Secured("ROLE_PERSONNEL")
 	public ResponseEntity<?> getPersonnelList(@PathVariable(name = "departmentId", required = true) UUID departmentId,
 			@PageableDefault(size = 5) Pageable paging,
-			@RequestParam(name = "columns", defaultValue = "") List<String> columns) throws NoSuchFieldException {
+			@RequestParam(name = "columns", defaultValue = "") List<String> columns)
+			throws NoSuchFieldException, UnauthorizedCredential {
 		List<Map<String, Object>> list = departmentService.getPersonnelListByDepartmentId(departmentId, columns, paging,
 				ContextProvider.getPrincipalRole());
 

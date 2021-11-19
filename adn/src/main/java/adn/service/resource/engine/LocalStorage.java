@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 import adn.engine.access.PropertyAccessStrategyFactory.PropertyAccessImplementor;
-import adn.service.resource.engine.persistence.PersistentResourceContext;
 import adn.service.resource.engine.query.Query;
 import adn.service.resource.engine.query.UpdateQuery;
 import adn.service.resource.engine.template.ResourceTemplate;

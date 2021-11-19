@@ -28,7 +28,7 @@ export default class StockDetail {
 	static Status = ["AVAILABLE", "UNAVAILABLE"];
 
 	static MAXIMUM_COLOR_LENGTH = 255;
-	static MAXIMUM_DESCRIPTION_LENGTH = 255;
+	static MAXIMUM_NOTES_LENGTH = 255;
 
 	static MAXIMUM_ITEM_QUANTITY = 1000;
 	static MAXIMUM_BATCH_SIZE = 1000;
@@ -36,7 +36,7 @@ export default class StockDetail {
 	static validator = {
 		product: (product) => [product != null, product != null ? null : "Product information is missing"],
 		provider: (provider) => [provider != null, provider != null ? null : "Provider information is missing"],
-		size: (size) => {
+		namedSize: (size) => {
 			const ok = size == null || StockDetail.NamedSize.includes(size);
 
 			return [ok, ok ? null : `Invalid size ${size}`];

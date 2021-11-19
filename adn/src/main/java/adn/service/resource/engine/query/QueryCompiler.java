@@ -5,6 +5,9 @@ package adn.service.resource.engine.query;
 
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,29 +24,35 @@ public final class QueryCompiler {
 
 		SAVE, FIND, UPDATE, DELETE, REGISTER_TEMPLATE, UNKNOWN;
 
-		public static QueryType determineType(String sqlString) throws SQLException {
-			String firstWord = StringHelper.getFirstWord(sqlString).toLowerCase();
+		private static final Map<String, QueryType> QUERY_TYPE_MAP;
+		private static final Map<String, String> QUERY_TYPE_MAP_KEY_MAP;
 
-			switch (firstWord) {
-				case "insert": {
-					return QueryType.SAVE;
-				}
-				case "select": {
-					return QueryType.FIND;
-				}
-				case "update": {
-					return QueryType.UPDATE;
-				}
-				case "delete": {
-					return QueryType.DELETE;
-				}
-				case "register_template": {
-					return QueryType.REGISTER_TEMPLATE;
-				}
-				default: {
-					return QueryType.UNKNOWN;
-				}
-			}
+		static {
+			Map<String, QueryType> typeMap = new HashMap<>();
+			Map<String, String> keyMap = new HashMap<>();
+
+			String insertKey = "insert", selectKey = "select", updateKey = "update", deleteKey = "delete",
+					registerTemplateKey = "register_template";
+
+			typeMap.put(insertKey, SAVE);
+			typeMap.put(selectKey, FIND);
+			typeMap.put(updateKey, UPDATE);
+			typeMap.put(deleteKey, DELETE);
+			typeMap.put(registerTemplateKey, REGISTER_TEMPLATE);
+			typeMap.put(null, UNKNOWN);
+
+			keyMap.put(insertKey, insertKey);
+			keyMap.put(selectKey, selectKey);
+			keyMap.put(updateKey, updateKey);
+			keyMap.put(deleteKey, deleteKey);
+			keyMap.put(registerTemplateKey, registerTemplateKey);
+
+			QUERY_TYPE_MAP_KEY_MAP = Collections.unmodifiableMap(keyMap);
+			QUERY_TYPE_MAP = Collections.unmodifiableMap(typeMap);
+		}
+
+		public static QueryType determineType(String sqlString) throws SQLException {
+			return QUERY_TYPE_MAP.get(QUERY_TYPE_MAP_KEY_MAP.get(StringHelper.getFirstWord(sqlString).toLowerCase()));
 		}
 
 	}
@@ -59,9 +68,9 @@ public final class QueryCompiler {
 	private static final Pattern UPDATE_PATTERN;
 	private static final Pattern SET_STATEMENT_PATTERN;
 	private static final Pattern WHERE_CONDITION_PATTERN;
-	
+
 	private static final Pattern DELETE_PATTERN;
-	
+
 	private static final String TABLENAME_GROUP_NAME = "tablename";
 	private static final String SET_STATEMENTS_GROUP_NAME = "statements";
 	private static final String WHERE_CONDITIONS_GROUP_NAME = "conditions";
@@ -176,14 +185,14 @@ public final class QueryCompiler {
 				throw new SQLException(String.format("Unable to compile query [%s], unknown query type", sql));
 		}
 	}
-	
+
 	private static Query compileDelete(QueryImpl query, String sql) throws SQLException {
 		Matcher matcher = DELETE_PATTERN.matcher(sql);
-		
+
 		if (!matcher.matches()) {
 			throw new SQLException(String.format("Invalid query [%s]", sql));
 		}
-		
+
 		try {
 			String templateName = matcher.group(TABLENAME_GROUP_NAME) + ResourceManagerFactory.DTYPE_SEPERATOR;
 			String conditions[] = matcher.group(WHERE_CONDITIONS_GROUP_NAME).split("\\s+(and|AND)\\s+");
@@ -205,7 +214,7 @@ public final class QueryCompiler {
 			}
 
 			return query.setTemplateName(templateName);
-		} catch (RuntimeException any) {			
+		} catch (RuntimeException any) {
 			throw new SQLException(any);
 		}
 	}
@@ -230,7 +239,8 @@ public final class QueryCompiler {
 
 			for (String statement : parts) {
 				if ((innerMatcher = SET_STATEMENT_PATTERN.matcher(statement)).matches()) {
-					if (innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME).equals(ResourceManagerFactory.DTYPE_COLUMNNAME)) {
+					if (innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME)
+							.equals(ResourceManagerFactory.DTYPE_COLUMNNAME)) {
 						continue;
 					}
 
@@ -250,7 +260,8 @@ public final class QueryCompiler {
 
 			for (String condition : parts) {
 				if ((innerMatcher = WHERE_CONDITION_PATTERN.matcher(condition)).matches()) {
-					if (innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME).equals(ResourceManagerFactory.DTYPE_COLUMNNAME)) {
+					if (innerMatcher.group(STATEMENT_COLUMNNAME_GROUP_NAME)
+							.equals(ResourceManagerFactory.DTYPE_COLUMNNAME)) {
 						templateName += innerMatcher.group(STATEMENT_VALUE_GROUP_NAME).replaceAll("'", "");
 						continue;
 					}

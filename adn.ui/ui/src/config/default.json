@@ -1,6 +1,6 @@
 {
 	"server": {
-		"url": "http://192.168.100.10:8080",
+		"url": "http://192.168.100.9:8080",
 		"auth" : {
 			"token_url": "/auth/token"
 		},
@@ -12,23 +12,108 @@
 		"mode": "PROD"
 	},
 	"departmentScope": {
-		"Stock": "89d8de6c-85e0-415d-a032-398ddcaca82f",
-		"Sale": "6c0c98fa-fb50-45b4-94f3-a850be53da63",
-		"Personnel": "f086e09a-0138-434f-89cb-4d96cae0366f",
-		"Finance": "f3499c7b-721d-4fba-b680-8ebb4519ec99"
+		"Stock": "61707eda-50f9-4181-be3d-b71b7681ca0c",
+		"Sale": "070cdfa1-51ac-45f6-b174-29e68264e8f0",
+		"Personnel": "38930eba-fea0-4353-a500-1d59a830681e",
+		"CustomerService": "7ce1a72d-95d5-4fbc-8528-5a4391b095d6"
 	},
 	"routes": {
+		"dashboard": {
+			"mapping": "/dashboard",
+			"url": "/dashboard",
+			"stock": {
+				"mapping": "/dashboard/stock",
+				"url": "/dashboard/stock",
+				"list": {
+					"mapping": "/dashboard/stock/items",
+					"url": "/dashboard/stock/items"
+				}
+			},
+			"provider": {
+				"mapping": "/dashboard/provider/:view?",
+				"url": "/dashboard/provider",
+				"list": {
+					"mapping": "/dashboard/provider/list/:providerId?",
+					"url": "/dashboard/provider/list"
+				},
+				"creation": {
+					"mapping": "/dashboard/provider/creation",
+					"url": "/dashboard/provider/creation"
+				},
+				"costs": {
+					"mapping": "/dashboard/provider/costs/:productId?",
+					"url": "/dashboard/provider/costs"
+				}
+			},
+			"product": {
+				"mapping": "/dashboard/product/:view?",
+				"list": {
+					"mapping": "/dashboard/product/list",
+					"url": "/dashboard/product/list"
+				},
+				"creation": {
+					"mapping": "/dashboard/product/creation",
+					"url": "/dashboard/product/creation"
+				},
+				"edit": {
+					"mapping": "/dashboard/product/edit/:productId",
+					"url": "/dashboard/product/edit"
+				},
+				"prices": {
+					"mapping": "/dashboard/product/prices/:productId?",
+					"url": "/dashboard/product/prices"
+				}
+			},
+			"order": {
+				"mapping": "/dashboard/order",
+				"list": {
+					"mapping": "/dashboard/order/list/:orderCode?",
+					"url": "/dashboard/order/list"
+				}
+			},
+			"stats": {
+				"mapping": "/dashboard/stats",
+				"cost": {
+					"mapping": "/dashboard/stats/cost",
+					"url": "/dashboard/stats/cost"
+				},
+				"product": {
+					"mapping": "/dashboard/stats/product",
+					"url": "/dashboard/stats/product"
+				},
+				"sales": {
+					"mapping": "/dashboard/stats/sales",
+					"url": "/dashboard/stats/sales"
+				}
+			}
+		},
 		"shopping": {
 			"mapping": "/shop/:categoryName?",
 			"url": "/shop"
 		},
+		"cart": {
+			"mapping": "/cart",
+			"url": "/cart"
+		},
+		"order": {
+			"mapping": "/order/:code?",
+			"url": "/order"
+		},
 		"productView": {
-			"mapping": "/product/:id",
-			"url": "/product"
+			"mapping": "/p/:productId",
+			"url": "/p"
 		},
 		"notfound": {
 			"mapping": "/notfound",
 			"url": "/notfound"
+		},
+		"home": {
+			"mapping": "/:category?",
+			"url": ""
+		},
+		"favorites": {
+			"mapping": "/favorites",
+			"url": "/favorites"
 		}
 	}
 }

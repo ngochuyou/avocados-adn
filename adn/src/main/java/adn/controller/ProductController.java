@@ -4,6 +4,7 @@
 package adn.controller;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,11 +22,11 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-import adn.dao.generic.Result;
+import adn.application.Result;
 import adn.helpers.CollectionHelper;
 import adn.model.entities.Product;
 import adn.service.internal.ResourceService;
-import adn.service.services.DepartmentService;
+import adn.service.services.AuthenticationService;
 import adn.service.services.ProductService;
 
 /**
@@ -38,14 +39,14 @@ public class ProductController extends BaseController {
 
 	protected final ProductService productService;
 	protected final ResourceService resourceService;
-	protected final DepartmentService departmentService;
-	
+	protected final AuthenticationService authService;
+
 	@Autowired
-	public ProductController(DepartmentService departmentService, ProductService productService,
+	public ProductController(AuthenticationService authService, ProductService productService,
 			ResourceService resourceService) {
 		this.productService = productService;
 		this.resourceService = resourceService;
-		this.departmentService = departmentService;
+		this.authService = authService;
 	}
 
 	@GetMapping(path = "/image/{filename:.+}")
@@ -60,34 +61,34 @@ public class ProductController extends BaseController {
 	}
 
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	@Secured("ROLE_PERSONNEL")
+	@Secured({ HEAD, PERSONNEL })
 	@Transactional
 	public @ResponseBody ResponseEntity<?> createProduct(@RequestPart(name = "model", required = true) Product model,
-			@RequestPart(name = "images", required = false) MultipartFile[] images) {
-		departmentService.assertSaleDepartment();
+			@RequestPart(name = "images", required = false) MultipartFile[] images) throws Exception {
+		authService.assertSaleDepartment();
 
 		Result<Product> result = productService.createProduct(model, images, true);
 
-		return send(result);
+		return sendAndProduce(result);
 	}
 
 	@PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	@Secured("ROLE_PERSONNEL")
+	@Secured({ HEAD, PERSONNEL })
 	@Transactional
 	public @ResponseBody ResponseEntity<?> updateProduct(@RequestPart(name = "model", required = true) Product model,
-			@RequestPart(name = "images", required = false) MultipartFile[] images) {
-		departmentService.assertSaleDepartment();
+			@RequestPart(name = "images", required = false) MultipartFile[] images) throws Exception {
+		authService.assertSaleDepartment();
 
-		Product persistence = baseRepository.findById(model.getId(), Product.class);
+		Optional<Product> persistence = genericRepository.findById(Product.class, model.getId());
 
-		if (persistence == null) {
-			return sendNotFound(String.format("Product %s not found", model.getId()));
+		if (persistence.isEmpty()) {
+			return notFound(String.format("Product %s not found", model.getId()));
 		}
 
-		Result<Product> result = productService.updateProduct(model,
-				CollectionHelper.from(images, MultipartFile.class), true);
+		Result<Product> result = productService.updateProduct(model, CollectionHelper.from(images, MultipartFile.class),
+				true);
 
-		return send(result);
+		return sendAndProduce(result);
 	}
 
 }

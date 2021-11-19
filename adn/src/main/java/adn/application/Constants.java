@@ -11,6 +11,8 @@ public class Constants {
 
 	private Constants() {}
 
+	public static final String CONFIG_PATH = "C:\\Users\\Ngoc Huy\\Documents\\workspace\\avocados-adn\\config\\";
+	
 	public static final String ROOT_PACKAGE = "adn";
 
 	public static final String ENTITY_PACKAGE = ROOT_PACKAGE + ".model.entities";
@@ -19,10 +21,10 @@ public class Constants {
 
 	public static final String RESOURCE_MODEL_PACKAGE = ROOT_PACKAGE + ".service.resource.models";
 
-	public static final String GENERIC_SPECIFICATION_PACKAGE = ROOT_PACKAGE + ".model.specification.generic";
+	public static final String VALIDATOR_PACKAGE = ROOT_PACKAGE + ".model.entities.validator";
 
-	public static final String GENERIC_FACTORY_PACKAGE = ROOT_PACKAGE + ".model.factory.generic";
+	public static final String ENTITY_BUILDER_PACKAGE = ROOT_PACKAGE + ".service.entity.builder";
 
-	public static final String ENTITY_BUILDER_PACKAGE = ROOT_PACKAGE + ".service.entity";
-
+	public static final String PILOT_MAIL = "pi.sup.lot@gmail.com";
+	
 }

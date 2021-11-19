@@ -14,7 +14,7 @@ import adn.service.internal.Role;
  * @author Ngoc Huy
  *
  */
-public class PersonnelDetails extends ApplicationUserDetails {
+public class PersonnelDetails extends UserDetailsImpl {
 
 	private static final long serialVersionUID = -5649563972208557322L;
 
@@ -22,7 +22,7 @@ public class PersonnelDetails extends ApplicationUserDetails {
 
 	public PersonnelDetails(String username, String password, boolean isLocked,
 			Collection<? extends GrantedAuthority> authorities, Role role, long version, UUID departmentId) {
-		super(username, password, isLocked, authorities, role, version);
+		super(username, password, isLocked, authorities, role, departmentId, version);
 		this.departmentId = departmentId;
 	}
 

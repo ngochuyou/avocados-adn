@@ -4,7 +4,6 @@
 package adn.model.entities;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import javax.persistence.Column;
@@ -18,8 +17,10 @@ import org.hibernate.annotations.GenericGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import adn.model.DepartmentScoped;
-import adn.model.entities.converters.StringSetConverter;
+import adn.application.Common;
+import adn.model.entities.converters.StringListConverter;
+import adn.model.entities.metadata._ProductCost;
+import adn.model.entities.metadata._Provider;
 
 /**
  * @author Ngoc Huy
@@ -27,36 +28,42 @@ import adn.model.entities.converters.StringSetConverter;
  */
 @javax.persistence.Entity
 @Table(name = "providers")
-public class Provider extends Factor implements DepartmentScoped {
+public class Provider extends PermanentEntity implements NamedResource {
 
-	public static transient final int WEBSITE_MAX_LENGTH = 2000;
-	public static transient final String PRODUCT_DETAILS_FIELD = "productDetails";
-	
 	@Id
 	@GeneratedValue(generator = "uuid")
 	@GenericGenerator(name = "uuid", strategy = "uuid2")
-	@Column(columnDefinition = "BINARY(16)")
-	protected UUID id;
+	@Column(columnDefinition = Common.MYSQL_UUID_COLUMN_DEFINITION)
+	private UUID id;
 
-	@Column(nullable = false)
-	private String email;
+	@Column(nullable = false, unique = true)
+	private String name;
 
 	@Column(nullable = false)
 	private String address;
 
+	@Column(length = _Provider.WEBSITE_MAX_LENGTH)
+	private String website;
+
+	@Column(nullable = false)
+	private String email;
+
 	@Column(nullable = false, name = "phone_numbers")
-	@Convert(converter = StringSetConverter.class)
-	private Set<String> phoneNumbers;
+	@Convert(converter = StringListConverter.class)
+	private List<String> phoneNumbers;
 
 	@Column(name = "representator_name")
 	private String representatorName;
 
-	@Column(length = WEBSITE_MAX_LENGTH)
-	private String website;
-
 	@JsonIgnore
-	@OneToMany(mappedBy = "provider")
-	private List<ProductProviderDetail> productDetails;
+	@OneToMany(mappedBy = _ProductCost.provider)
+	private List<ProductCost> productCosts;
+
+	public Provider() {}
+
+	public Provider(UUID id) {
+		this.id = id;
+	}
 
 	public UUID getId() {
 		return id;
@@ -64,6 +71,14 @@ public class Provider extends Factor implements DepartmentScoped {
 
 	public void setId(UUID id) {
 		this.id = id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public String getEmail() {
@@ -82,11 +97,11 @@ public class Provider extends Factor implements DepartmentScoped {
 		this.address = address;
 	}
 
-	public Set<String> getPhoneNumbers() {
+	public List<String> getPhoneNumbers() {
 		return phoneNumbers;
 	}
 
-	public void setPhoneNumbers(Set<String> phoneNumbers) {
+	public void setPhoneNumbers(List<String> phoneNumbers) {
 		this.phoneNumbers = phoneNumbers;
 	}
 
@@ -106,12 +121,12 @@ public class Provider extends Factor implements DepartmentScoped {
 		this.website = website;
 	}
 
-	public List<ProductProviderDetail> getProductDetails() {
-		return productDetails;
+	public List<ProductCost> getProductCosts() {
+		return productCosts;
 	}
 
-	public void setProductDetails(List<ProductProviderDetail> productDetails) {
-		this.productDetails = productDetails;
+	public void setProductCosts(List<ProductCost> productDetails) {
+		this.productCosts = productDetails;
 	}
 
 }

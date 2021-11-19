@@ -1,8 +1,8 @@
 import { $fetch, fjson, asBlob } from '../fetch';
-import { normalize } from '../utils';
+import { hasLength, normalize, join, formatServerDatetime } from '../utils';
 
 export function fetchCategoryList({ page = 0, size = 10, columns = [] }) {
-	return fjson(`/rest/product/category/list?page=${page}&size=${size}&columns=${columns.join(',')}`);
+	return fjson(`/rest/product/category/list?page=${page}&size=${size}&columns=${join(columns)}`);
 }
 
 export function fetchCategoryCount() {
@@ -160,43 +160,184 @@ export async function updateProduct(model = null) {
 
 export function getProductListByCategory({
 	columns = [], identifier = null, identifierName = "",
-	page = 0, size = 18
+	page = 0, size = 18, internal = false,
+	from = "", to = "", name = "", sort = ""
 }) {
 	if (identifier == null || identifier.length === 0) {
 		return [null, "Category identifier was empty"];
 	}
 
-	return fjson(`/rest/product?category=${identifier}&by=${identifierName}&columns=${columns.join(',')}`);
+	const commonQuery = `category=${identifier}&by=${identifierName}&columns=${join(columns)}${hasLength(from) ? `&price.from=${from}` : ""}${hasLength(to) ? `&price.to=${to}` : ""}${hasLength(name) ? `&name.like=${name}` : ""}${hasLength(sort) ? `&sort=${sort}` : ""}${hasLength(page) ? `&page=${page}` : ""}${hasLength(size) ? `&size=${size}` : ""}`;
+
+	if (internal) {
+		return fjson(`/rest/product/internal?${commonQuery}`);
+	}
+
+	return fjson(`/rest/product?${commonQuery}`);
 }
 
-export function searchProduct({ productId = "", productName = "", columns = [], size = 10 }) {
-	if (productId.length === 0 && productName.length === 0) {
+export function getProductList({
+	ids = [], columns = [],
+	internal = false,
+	page = 0, size = 18,
+	name = "",
+	sort = ""
+}) {
+	page = page == null ? "" : page;
+	size = size == null ? "" : size;
+	sort = sort == null ? "" : sort;
+
+	const commonQuery = `columns=${join(columns)}&page=${page}&size=${size}&sort=${sort}&${hasLength(name) ? `name.like=${name}` : ""}`;
+
+	if (internal) {
+		return fjson(`/rest/product/internal?${commonQuery}`);
+	}
+
+	return fjson(`/rest/product?ids=${join(ids)}&${commonQuery}`);
+}
+
+export function searchProduct({
+	productName = "", columns = [], size = 1000,
+	internal = false
+}) {
+	if (!hasLength(productName)) {
 		return [[], null];
 	}
 	
-	return fjson(`/rest/product/search?id.like=${normalize(productId)}&name.like=${normalize(productName)}&columns=${columns.join(',')}&size=${size}`);
+	const query = `name.like=${normalize(productName)}&columns=${join(columns)}&size=${size}`;
+
+	if (internal) {
+		return fjson(`/rest/product/search/internal?${query}`);
+	}
+
+	return fjson(`/rest/product/search?${query}`);
 }
 
-export function createStockDetails(batch = []) {
+export function submitItemsBatch(batch = []) {
 	if (!Array.isArray(batch) || batch.length === 0) {
 		return [null, "Invalid batch"];
 	}
 
-	return fjson(`/rest/product/stockdetail`, {
+	return fjson(`/rest/product/items`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify({
-			details: batch
+			items: batch
 		})
 	});
 }
 
 export function obtainProduct({ id = null, columns = [] }) {
-	if (id == null || id.length === 0) {
+	if (!hasLength(id)) {
 		return [null, "Product ID was null"];
 	}
 
-	return fjson(`/rest/product/${id}?columns=${columns.join(',')}`);
+	return fjson(`/rest/product/${id}?columns=${join(columns)}`);
+}
+
+export function getProductPrices(ids = []) {
+	if (!Array.isArray(ids)) {
+		return [null, "Invalid ids"];
+	}
+
+	return fjson(`/rest/product/price?ids=${join(ids)}`);
+}
+
+export function getProductPrice({
+	productId = null, columns = [],
+	from = null, to = null,
+	sort = "appliedTimestamp,asc",
+	page = 0, size = 10
+}) {
+	if (isNaN(productId)) {
+		return [null, "Invalid Product ID"];
+	}
+
+	sort = sort == null ? "" : sort;
+	from = formatServerDatetime(from, null);
+	to = formatServerDatetime(to, null);
+	page = page == null ? 0 : page;
+	size = size == null ? 10 : size;
+
+	return fjson(`/rest/product/price/${productId}?columns=${join(columns)}&from=${from || ""}&to=${to || ""}&sort=${sort || ""}&page=${page || 0}&size=${size || 10}`, {
+		encode: false
+	}, false);
+}
+
+export function approveProductPrice({
+	productId = null,
+	appliedTimestamp = null,
+	droppedTimestamp = null
+}) {
+	if (productId == null) {
+		return [null, "Product ID was empty"];
+	}
+
+	if (appliedTimestamp == null) {
+		return [null, "Applied timestamp was empty"];
+	}
+
+	if (droppedTimestamp == null) {
+		return [null, "Dropped timestamp was empty"];
+	}
+
+	return fjson(`/rest/product/price/approve?product=${productId}&applied=${appliedTimestamp}&dropped=${droppedTimestamp}`, {
+		method: 'PATCH'
+	});
+}
+
+export function submitProductPrice(model) {
+	if (model == null) {
+		return [null, "Model was null"];
+	}
+
+	return fjson(`/rest/product/price`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			...model,
+			appliedTimestamp: formatServerDatetime(model.appliedTimestamp),
+			droppedTimestamp: formatServerDatetime(model.droppedTimestamp)
+		})
+	});
+}
+
+export function getItemsListByProduct({
+	productId = null,
+	columns = []
+}) {
+	if (!hasLength(productId)) {
+		return [null, "Product ID was empty"];
+	}
+
+	if (!hasLength(columns)) {
+		return [null, "Requested columns were empty"];
+	}
+
+	return fjson(`/rest/product/items/${productId}?columns=${join(columns)}`);
+}
+
+export function getItemsList({
+	itemIds = [],
+	columns = []
+}) {
+	if (!hasLength(itemIds)) {
+		return [[], null];
+	}
+
+	return fjson(`/rest/product/items?ids=${itemIds}&columns=${columns}`);
+}
+
+export function getInternalItemsList({
+	columns = [],
+	page = 0, size = 10,
+	sort = "createdDate,desc",
+	product = "", status = "",
+	namedSize = ""
+}) {
+	return fjson(`/rest/product/items/internal?page=${page || 0}&size=${size || 10}&sort=${sort || "createdDate,desc"}&columns=${join(columns)}${hasLength(product) ? `&product=${product}` : ""}${hasLength(status) ? `&status=${status}` : ""}${hasLength(namedSize) ? `&namedSize=${namedSize}` : ""}`);
 }

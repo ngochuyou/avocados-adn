@@ -85,6 +85,8 @@ export const negateNegative = (event) => {
 	}
 }
 
+export const isNegative = (number) => !isNaN(number) && Number(number) < 0;
+
 export const isObj = (payload) => payload != null && typeof payload === 'object';
 
 export const isString = (payload) => typeof payload === 'string';
@@ -93,20 +95,281 @@ export const isBool = (payload) => typeof payload === 'boolean';
 
 export const hasLength = (payload = null) => payload != null && payload.length !== 0;
 
+const ACCEPTABLE_PHONE_NUMBER_PATTERN = /^[\w\d._()+\s-]{4,}$/g;
+
+export const isAcceptablePhoneNumber = (phoneNumber) => {
+	ACCEPTABLE_PHONE_NUMBER_PATTERN.lastIndex = 0;
+
+	return ACCEPTABLE_PHONE_NUMBER_PATTERN.test(phoneNumber);
+}
+
+export const isAcceptablePhoneNumberErr = "Phone number can only contain: spaces, characters, numbers, '.', '_', '(', ')', '+', '-'";
+// eslint-disable-next-line
+const EMAIL_PATTERN = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+
+export const isEmail = (email) => {
+	EMAIL_PATTERN.lastIndex = 0;
+
+	return EMAIL_PATTERN.test(email);
+}
+
 export const asIf = (predicate = false) => new AsIf(predicate);
+
+export const join = (elements) => elements.join(',');
 
 class AsIf {
 	#predicate;
+	#callbackWhenTrue;
 
-	constructor(predicate) {
+	constructor(predicate = false) {
 		this.predicate = predicate;
 	}
 
-	then(callback) {
-		if (this.predicate) {
-			callback(this.predicate);
-		}
-
+	then(callback = () => null) {
+		this.callbackWhenTrue = callback;
+		
 		return this;
 	}
+
+	else(callback = () => null) {
+		if (this.predicate) {
+			return this.callbackWhenTrue(this.predicate);
+		}
+
+		return callback(this.predicate);
+	}
 }
+
+const DAY_NAMES = [
+	"Sunday", "Monday", "Tuesday",
+	"Wednesday", "Thursday", "Friday",
+	"Saturday"
+];
+
+export const DATE_NAMES = [
+	'01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
+	'11', '12', '13', '14', '15', '16', '17', '18', '19', '20', 
+	'21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31'
+];
+
+export const MONTH_NAMES = [
+	"Jan", "Feb", "Mar",
+	"Apr", "May", "Jun", "Jul",
+	"Aug", "Sep", "Oct",
+	"Nov", "Dec"
+];
+
+const NUMERIC_MONTH_NAMES = [
+	"01", "02", "03",
+	"04", "05", "06", "07",
+	"08", "09", "10",
+	"11", "12"
+];
+
+const HOURS_NAMES = [
+	"00", "01", "02", "03", "04",
+	"05", "06", "07", "08",
+	"09", "10", "11", "12",
+	"13", "14", "15", "16",
+	"17", "18", "19", "20",
+	"21", "22", "23",
+];
+
+const MINUTE_AND_SECOND_NAMES = [
+	'00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
+	'11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
+	'21', '22', '23', '24', '25', '26', '27', '28', '29', '30',
+	'31', '32', '33', '34', '35', '36', '37', '38', '39', '40',
+	'41', '42', '43', '44', '45', '46', '47', '48', '49', '50',
+	'51', '52', '53', '54', '55', '56', '57', '58', '59'
+];
+
+export const formatServerDatetime = (datetime, fallbackVal) => {
+	if (datetime == null || (!(datetime instanceof Date) && !isString(datetime))) {
+		return fallbackVal;
+	}
+
+	const instant = datetime instanceof Date ? datetime : new Date(datetime);
+
+	if (instant.toString() === 'Invalid Date') {
+		return fallbackVal;
+	}
+
+	return `${instant.getFullYear()}-${NUMERIC_MONTH_NAMES[instant.getMonth()]}-${DATE_NAMES[instant.getDate() - 1]} ${HOURS_NAMES[instant.getHours()]}:${MINUTE_AND_SECOND_NAMES[instant.getMinutes()]}:${MINUTE_AND_SECOND_NAMES[instant.getSeconds()]}`;
+}
+
+export const formatDatetime = (datetime) => {
+	if (!(datetime instanceof Date) && !isString(datetime)) {
+		return null;
+	}
+
+	const instant = datetime instanceof Date ? datetime : new Date(datetime);
+
+	return `${DAY_NAMES[instant.getDay()]} ${DATE_NAMES[instant.getDate() - 1]} ${MONTH_NAMES[instant.getMonth()]} ${instant.getFullYear()} at ${HOURS_NAMES[instant.getHours()]}:${MINUTE_AND_SECOND_NAMES[instant.getMinutes()]}:${MINUTE_AND_SECOND_NAMES[instant.getSeconds()]}`;
+}
+
+export const formatDate = (date) => {
+	if (!(date instanceof Date) && !isString(date)) {
+		return null;
+	}
+
+	const instant = date instanceof Date ? date : new Date(date);
+
+	return `${DAY_NAMES[instant.getDay()]} ${DATE_NAMES[instant.getDate()]} ${MONTH_NAMES[instant.getMonth()]} ${instant.getFullYear()}`;
+}
+
+export const result = (message) => { return { result: message } };
+
+const VND_FORMATTER = new Intl.NumberFormat('de-DE', { style: 'decimal' });
+
+export const formatVND = (value) => isNaN(value) ? null : `${VND_FORMATTER.format(value)}\u20AB`;
+
+class Optional {
+	#optional;
+
+	constructor(optional = null) {
+		this.optional = optional;
+	}
+
+	else(orElse = null) {
+		if (this.optional == null) {
+			return orElse;
+		}
+
+		return this.optional;
+	}
+}
+
+export const optional = (opt) => new Optional(opt);
+
+export const atom = (array, identifier = "id") => Object.fromEntries(array.map(ele => [ele[identifier], ele]));
+
+export const mtokeys = (map) => Object.entries(map).map(ele => ele[0]);
+
+export const locateBookmarks = () => {
+	const bookmarks = JSON.parse(asIf(localStorage.bookmarks == null).then(() => "{}").else(() => localStorage.bookmarks));
+
+	mergeBookmarks(bookmarks);
+
+	return bookmarks;
+};
+
+export const mergeBookmarks = (newBookmarks) => {
+	try {
+		localStorage.bookmarks = JSON.stringify(asIf(newBookmarks == null).then(() => {}).else(() => newBookmarks));
+	} catch(err) {
+		console.error(err);
+		delete localStorage.bookmarks;
+	}
+};
+
+const isDate = (val) => Object.prototype.toString.call(val) === '[object Date]';
+
+export const now = () => new Date();
+
+export const datetimeLocalString = (date) => {
+	if (isDate(date)) {
+		let isoString = date.toISOString();
+
+		return isoString.substring(0, isoString.length - 5);
+	}
+
+	if (isString(date)) {
+		return date.substring(0, date.length - 5);
+	}
+
+	throw new Error();
+}
+
+export const isPast = timestamp => {
+	const current = now();
+
+	if (isDate(timestamp)) {
+		return timestamp < current;
+	}
+
+	if (isString(timestamp)) {
+		return new Date(timestamp) < current;
+	}
+
+	throw new Error("Invalid date");
+}
+
+export class ErrorTracker {
+	#hasError;
+
+	constructor() {
+		this.hasError = false;
+	}
+
+	add(next = null) {
+		if (this.hasError) {
+			return next;
+		}
+
+		this.hasError = next != null;
+		return next;
+	}
+
+	foundError() {
+		return this.hasError;
+	}
+}
+
+export const getItemSpecification = (item) => `${item.product.id}-${item.color}-${item.namedSize}`;
+export const groupCartItems = (items, consume = (current, existing) => ({})) => {
+	return items.reduce((groupedItems, current) => {
+		const specification = getItemSpecification(current);
+		const consumption = consume(current, groupedItems[specification]);
+
+		if (groupedItems[specification] == null) {
+			return {
+				...groupedItems,
+				[specification]: {
+					...current,
+					quantity: 1,
+					...consumption
+				}
+			};
+		}
+
+		return {
+			...groupedItems,
+			[specification]: {
+				...groupedItems[specification],
+				quantity: groupedItems[specification].quantity + 1,
+				...consumption
+			}
+		};
+	}, {});
+}
+
+export const chartColors = [
+	'#003f5c', '#2f4b7c', '#665191',
+	'#a05195', '#d45087', '#f95d6a',
+	'#ff7c43', '#ffa600'
+];
+
+export const merge = (left, right, mapper = (ele) => ele) => {
+	const hash = {};
+	const result = [];
+	const joined = [...left, ...right];
+	let key;
+
+	for (let ele of joined) {
+		key = mapper(ele);
+		
+		if (hash[key] == null) {
+			hash[key] = true;
+			result.push(ele);
+		}
+	}
+
+	return result;
+};
+
+export const updateURLQuery = (query, key, valMapper, modifier = "set") => {
+	query[modifier](key, valMapper(query.get(key)));
+
+	return query.toString();
+}; 

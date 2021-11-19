@@ -31,17 +31,16 @@ import adn.application.context.builders.AfterBuildMethodsInvoker;
 import adn.application.context.builders.ConfigurationContext;
 import adn.application.context.builders.CredentialFactory;
 import adn.application.context.builders.DatabaseInitializer;
-import adn.application.context.builders.DefaultAuthenticationBasedModelProducerFactory;
-import adn.application.context.builders.DefaultAuthenticationBasedModelPropertiesProducerFactory;
-import adn.application.context.builders.DefaultDepartmentBasedModelPropertiesFactory;
-import adn.application.context.builders.DefaultEntityExtractorProvider;
 import adn.application.context.builders.DepartmentScopeContext;
+import adn.application.context.builders.DynamicMapModelProducerFactoryImpl;
 import adn.application.context.builders.EntityBuilderProvider;
+import adn.application.context.builders.EntityExtractorProviderImpl;
 import adn.application.context.builders.ModelContextProvider;
 import adn.application.context.builders.ResourceManagerFactoryBuilder;
-import adn.application.context.builders.SpecificationFactory;
 import adn.application.context.builders.TestRunner;
+import adn.application.context.builders.ValidatorFactory;
 import adn.application.context.internal.ContextBuilder;
+import adn.dao.generic.GenericRepositoryImpl;
 
 /**
  * @author Ngoc Huy
@@ -67,19 +66,18 @@ public class BootEntry {
 		List<Class<? extends ContextBuilder>> orderedBuilderClasses = Arrays.asList(
 			ConfigurationContext.class,
 			ModelContextProvider.class,
+			GenericRepositoryImpl.class,
+			ValidatorFactory.class,
+			EntityBuilderProvider.class,
 			DatabaseInitializer.class,
 			DepartmentScopeContext.class,
 			CredentialFactory.class,
-			EntityBuilderProvider.class,
-			SpecificationFactory.class,
 			ResourceManagerFactoryBuilder.class,
-			DefaultEntityExtractorProvider.class,
-			DefaultAuthenticationBasedModelProducerFactory.class,
-			DefaultAuthenticationBasedModelPropertiesProducerFactory.class,
-			DefaultDepartmentBasedModelPropertiesFactory.class,
+			EntityExtractorProviderImpl.class,
+			DynamicMapModelProducerFactoryImpl.class,
 			AfterBuildMethodsInvoker.class,
 			TestRunner.class
-		); 
+		);
 		// @formatter:on
 		List<Class<? extends ContextBuilder>> scannedBuilderClasses = scanner
 				.findCandidateComponents(Constants.ROOT_PACKAGE).stream().map(beanDef -> {
@@ -126,7 +124,7 @@ public class BootEntry {
 			secondBatchBuilders.add(builderClass);
 		}
 
-		secondBatchBuilders.stream().forEach(builderClass -> scannedBuilderClasses.remove(builderClass));
+		secondBatchBuilders.stream().forEach(scannedBuilderClasses::remove);
 
 		Assert.isTrue(scannedBuilderClasses.isEmpty(), String.format(
 				"scannedBuilderClasses was supposed to be empty, %d builders remaining", scannedBuilderClasses.size()));

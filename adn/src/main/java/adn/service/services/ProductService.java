@@ -3,49 +3,63 @@
  */
 package adn.service.services;
 
-import static adn.dao.generic.Result.bad;
-import static adn.helpers.CollectionHelper.from;
-import static adn.helpers.HibernateHelper.toRows;
-import static adn.model.entities.Product.STOCKDETAIL_FIELD_NAME;
-import static adn.service.internal.Role.PERSONNEL;
+import static adn.application.Result.bad;
+import static adn.application.context.ContextProvider.getCurrentSession;
+import static adn.helpers.HibernateHelper.useManualSession;
+import static adn.helpers.Utils.localDateTime;
+import static adn.helpers.Utils.Entry.uncheckedEntry;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.persistence.Tuple;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-
-import org.hibernate.FlushMode;
+import org.hibernate.LockMode;
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.multipart.MultipartFile;
 
-import adn.application.context.internal.EffectivelyFinal;
-import adn.controller.query.specification.ProductQuery;
-import adn.dao.generic.Repository;
-import adn.dao.generic.Result;
-import adn.dao.specification.GenericFactorRepository;
-import adn.helpers.HibernateHelper;
+import adn.application.Common;
+import adn.application.Result;
+import adn.application.context.builders.EntityBuilderProvider;
+import adn.application.context.builders.ValidatorFactory;
+import adn.controller.query.impl.ProductQuery;
+import adn.dao.generic.ResultBatch;
+import adn.dao.specific.ProductCostRepository;
+import adn.dao.specific.ProductPriceRepository;
+import adn.dao.specific.ProductRepository;
+import adn.helpers.CollectionHelper;
 import adn.helpers.StringHelper;
+import adn.helpers.Utils;
+import adn.helpers.Utils.Entry;
+import adn.helpers.Utils.Wrapper;
 import adn.model.entities.Category;
+import adn.model.entities.Item;
 import adn.model.entities.Product;
-import adn.model.factory.AuthenticationBasedModelFactory;
-import adn.model.factory.AuthenticationBasedModelPropertiesFactory;
-import adn.model.factory.DepartmentBasedModelPropertiesFactory;
+import adn.model.entities.ProductPrice;
+import adn.model.entities.id.ProductPriceId;
+import adn.model.entities.metadata._Product;
+import adn.model.entities.metadata._ProductCost;
+import adn.model.entities.metadata._ProductPrice;
+import adn.model.entities.validator.Validator;
+import adn.model.factory.authentication.Credential;
+import adn.model.factory.authentication.SourceMetadata;
+import adn.model.factory.authentication.dynamicmap.SourceMetadataFactory;
+import adn.model.factory.authentication.dynamicmap.UnauthorizedCredential;
+import adn.service.entity.builder.EntityBuilder;
 import adn.service.internal.ResourceService;
-import adn.service.internal.Role;
 import adn.service.internal.Service;
 import adn.service.internal.ServiceResult;
 
@@ -53,74 +67,58 @@ import adn.service.internal.ServiceResult;
  * @author Ngoc Huy
  *
  */
-@SuppressWarnings("serial")
 @org.springframework.stereotype.Service
-public class ProductService extends AbstractFactorService<Product> implements Service, EffectivelyFinal {
+public class ProductService implements Service {
 
 	private final ResourceService resourceService;
-	private final StockDetailService stockDetailService;
+	private final GenericCRUDServiceImpl crudService;
+	private final ValidatorFactory validatorFactory;
+	private final EntityBuilderProvider entityBuilderProvider;
+	private final ProductPriceRepository productPriceRepository;
+	private final ProductCostRepository productCostRepository;
+	private final ProductRepository productRepository;
 
-	public static final int MAXIMUM_IMAGES_AMOUNT = 20;
-	protected static String PRODUCT_ENTITY_NAME;
+	private static final String MAXIMUM_IMAGES_AMOUNT_EXCEEDED = String.format("Cannot upload more than %d files",
+			_Product.MAXIMUM_IMAGES_AMOUNT);;
+	private static final String UNMODIFIED_LOCK_STATE_TEMPLATE = "Product was already %s";
+	private static final String OVERLAPPED_PRICE_TEMPLATE = "Price for product %s from %s to %s has already exsited";
+	private static final String COSTS_NOT_FOUND_TEMPLATE = "Some of the following product costs were not found: %s";
 
 	@Autowired
-	public ProductService(GenericCRUDService crudService, ResourceService resourceService, Repository repository,
-			DepartmentBasedModelPropertiesFactory departmentBasedModelFactory,
-			AuthenticationBasedModelFactory modelFactory,
-			AuthenticationBasedModelPropertiesFactory authenticationBasedPropertiesFactory,
-			StockDetailService stockDetailService, GenericFactorRepository genericFactorReopsitory) {
-		super(crudService, repository, genericFactorReopsitory);
+	public ProductService(ResourceService resourceService, GenericCRUDServiceImpl curdService,
+			ProductPriceRepository productPriceRepository, EntityBuilderProvider entityBuilderProvider,
+			ValidatorFactory validatorFactory, ProductCostRepository productCostRepository,
+			ProductRepository productRepository) {
+		super();
 		this.resourceService = resourceService;
-		this.stockDetailService = stockDetailService;
-	}
-
-	public List<Map<String, Object>> getProductsByCategory(String categoryIdentifier, String categoryIdentifierProperty,
-			Collection<String> requestedColumns, Pageable paging, Role role) throws NoSuchFieldException {
-		if (role == PERSONNEL) {
-			return crudService.readByAssociation(Product.class, Category.class, Product.CATEGORY_FIELD_NAME,
-					categoryIdentifierProperty, categoryIdentifier, requestedColumns, paging, role);
-		}
-
-		Collection<String> validatedColumns = crudService.getDefaultColumns(Product.class, role, requestedColumns);
-		List<Tuple> rows = genericFactorRepository.findAllActive(Product.class, requestedColumns, paging,
-				new Specification<Product>() {
-					@Override
-					public Predicate toPredicate(Root<Product> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
-						try {
-							return builder.equal(root.get(Product.CATEGORY_FIELD_NAME)
-									.get(!StringHelper.hasLength(categoryIdentifierProperty)
-											? Category.IDENTIFIER_FIELD_NAME
-											: categoryIdentifierProperty),
-									categoryIdentifier);
-						} catch (IllegalArgumentException e) {
-							return null;
-						}
-					}
-				});
-
-		return crudService.resolveReadResults(Product.class, toRows(rows), from(validatedColumns), role);
+		this.crudService = curdService;
+		this.validatorFactory = validatorFactory;
+		this.productPriceRepository = productPriceRepository;
+		this.productCostRepository = productCostRepository;
+		this.entityBuilderProvider = entityBuilderProvider;
+		this.productRepository = productRepository;
 	}
 
 	public Result<Product> createProduct(Product product, MultipartFile[] images, boolean flushOnFinish) {
-		Session session = crudService.getCurrentSession();
+		Session session = getCurrentSession();
 
-		session.setHibernateFlushMode(FlushMode.MANUAL);
+		useManualSession(session);
 
 		boolean isResourceSessionFlushed = false;
 
 		if (images != null && images.length != 0) {
-			if (images.length > MAXIMUM_IMAGES_AMOUNT) {
-				return bad(Map.of("images", String.format("Cannot upload more than %d files", MAXIMUM_IMAGES_AMOUNT)));
+			if (images.length > _Product.MAXIMUM_IMAGES_AMOUNT) {
+				return bad(Map.of(_Product.images, MAXIMUM_IMAGES_AMOUNT_EXCEEDED));
 			}
 
 			ServiceResult<String[]> uploadResult = resourceService.uploadProductImages(images);
 
 			if (!uploadResult.isOk()) {
-				return bad(Map.of("images", UPLOAD_FAILURE));
+				return bad(Map.of(_Product.images, Common.UPLOAD_FAILURE));
 			}
 
 			isResourceSessionFlushed = true;
-			product.setImages(Stream.of(uploadResult.getBody()).collect(Collectors.toSet()));
+			product.setImages(Stream.of(uploadResult.getBody()).collect(Collectors.toList()));
 		}
 
 		Result<Product> result = crudService.create(null, product, Product.class, false);
@@ -131,36 +129,36 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 	}
 
 	public Result<Product> updateProduct(Product model, MultipartFile[] savedImages, boolean flushOnFinish) {
-		Session session = crudService.getCurrentSession();
+		Session session = getCurrentSession();
 
-		session.setHibernateFlushMode(FlushMode.MANUAL);
+		useManualSession(session);
 
 		Product persistence = session.load(Product.class, model.getId());
 
 		boolean isResourceSessionFlushed = false;
-		Set<String> newImagesState = model.getImages();
-		Set<String> removedImages = persistence.getImages().stream()
-				.filter(filename -> !newImagesState.contains(filename)).collect(Collectors.toSet());
+		List<String> newImagesState = model.getImages();
+		List<String> removedImages = persistence.getImages().stream()
+				.filter(filename -> !newImagesState.contains(filename)).collect(Collectors.toList());
 
 		if (removedImages.size() != 0) {
 			ServiceResult<String> removeResult = resourceService.removeProductImages(removedImages);
 
 			if (!removeResult.isOk()) {
-				return bad(Map.of("images", removeResult.getBody()));
+				return bad(Map.of(_Product.images, removeResult.getBody()));
 			}
 
 			isResourceSessionFlushed = true;
 		}
 
 		if (savedImages.length != 0) {
-			if (newImagesState.size() + savedImages.length > MAXIMUM_IMAGES_AMOUNT) {
-				return bad(Map.of("images", String.format("Cannot upload more than %d files", MAXIMUM_IMAGES_AMOUNT)));
+			if (newImagesState.size() + savedImages.length > _Product.MAXIMUM_IMAGES_AMOUNT) {
+				return bad(Map.of(_Product.images, MAXIMUM_IMAGES_AMOUNT_EXCEEDED));
 			}
 
 			ServiceResult<String[]> uploadResult = resourceService.uploadProductImages(savedImages);
 
 			if (!uploadResult.isOk()) {
-				return bad(Map.of("images", UPLOAD_FAILURE));
+				return bad(Map.of(_Product.images, Common.UPLOAD_FAILURE));
 			}
 
 			isResourceSessionFlushed = true;
@@ -176,76 +174,201 @@ public class ProductService extends AbstractFactorService<Product> implements Se
 		return crudService.finish(session, result, flushOnFinish);
 	}
 
-	public List<Map<String, Object>> searchProduct(Collection<String> requestedColumns, Pageable pageable,
-			ProductQuery restQuery, Role role) throws NoSuchFieldException {
-		return crudService.read(Product.class, requestedColumns, hasNameLike(restQuery).or(hasIdLike(restQuery)),
-				pageable, role);
-	}
+	public Result<Product> changeLockState(BigInteger productId, boolean requestedLockState, boolean flushOnFinish) {
+		Session session = getCurrentSession();
 
-	@Override
-	public Map<String, Object> findWithActiveCheck(Serializable id, Class<Product> type,
-			Collection<String> requestedColumns, Role principalRole) throws NoSuchFieldException {
-		boolean stockDetailsRequired = false;
-		Set<String> columns = new HashSet<>(requestedColumns);
+		useManualSession(session);
 
-		if (stockDetailsRequired = requestedColumns.contains(STOCKDETAIL_FIELD_NAME)) {
-			columns.remove(STOCKDETAIL_FIELD_NAME);
+		Product product = session.load(Product.class, productId);
+
+		if (product.isLocked() == requestedLockState) {
+			return Result.bad(Map.of(Common.MESSAGE, String.format(UNMODIFIED_LOCK_STATE_TEMPLATE,
+					requestedLockState ? LockState.locked : LockState.unlocked)));
 		}
 
-		Map<String, Object> product = super.findWithActiveCheck(id, type, columns, principalRole);
+		session.lock(product, LockMode.PESSIMISTIC_WRITE);
+		product.setLocked(Boolean.valueOf(requestedLockState));
+		session.save(product);
 
-		if (!stockDetailsRequired || product == null) {
-			return product;
-		}
-
-		List<Map<String, Object>> stockDetails = stockDetailService.readActiveOnly(id, Collections.emptyList(),
-				principalRole);
-
-		product.put(STOCKDETAIL_FIELD_NAME, stockDetails);
-
-		return product;
+		return crudService.finish(Result.ok(product), flushOnFinish);
 	}
 
-	private static Specification<Product> hasNameLike(ProductQuery restQuery) {
-		return new Specification<Product>() {
-			@Override
-			public Predicate toPredicate(Root<Product> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
-				if (restQuery.getName() == null || !StringHelper.hasLength(restQuery.getName().getLike())) {
-					return null;
+	public List<Map<String, Object>> readAllProducts(Collection<String> columns, Pageable paging, Credential credential)
+			throws Exception {
+		return readAllProducts(null, null, columns, paging, credential);
+	}
+
+	public List<Map<String, Object>> readAllProducts(Serializable categoryIdentifier, String categoryIdentifierName,
+			Collection<String> columns, Pageable paging, Credential credential) throws Exception {
+		return readAllProducts(categoryIdentifier, categoryIdentifierName, columns,
+				(root, query, builder) -> builder.conjunction(), paging, credential);
+	}
+
+	public List<Map<String, Object>> readAllProducts(Serializable categoryIdentifier, String categoryIdentifierName,
+			Collection<String> columns, Specification<Product> spec, Pageable paging, Credential credential)
+			throws Exception {
+		if (categoryIdentifierName == null) {
+			return crudService.readAll(Product.class, columns, spec, paging, credential);
+		}
+
+		return crudService.readAllByAssociation(Product.class, Category.class, _Product.category,
+				categoryIdentifierName, categoryIdentifier, columns, spec, paging, credential);
+	}
+
+	// @formatter:off
+	public List<Map<String, Object>> readOnSaleProducts(
+			Collection<String> columns,
+			Pageable paging,
+			Credential credential,
+			ProductQuery restQuery) throws NoSuchFieldException, UnauthorizedCredential {
+		return readOnSaleProducts(null, null, columns, paging, credential, restQuery);
+	}
+
+	public List<Map<String, Object>> readOnSaleProducts(
+			Serializable categoryIdentifier,
+			String categoryIdentifierName,
+			Collection<String> columns,
+			Pageable paging,
+			Credential credential,
+			ProductQuery restQuery) throws NoSuchFieldException, UnauthorizedCredential {
+		return readOnSaleProducts(categoryIdentifier, categoryIdentifierName, columns, (root, query, builder) -> builder.conjunction(), paging, credential, restQuery);
+	}
+	
+	public List<Map<String, Object>> readOnSaleProducts(
+			Serializable categoryIdentifier,
+			String categoryIdentifierName,
+			Collection<String> columns,
+			Specification<Product> spec,
+			Pageable paging,
+			Credential credential,
+			ProductQuery restQuery) throws NoSuchFieldException, UnauthorizedCredential {
+		SourceMetadata<Product> metadata = crudService.optionallyValidate(Product.class, credential, SourceMetadataFactory.unknownArrayCollection(Product.class, CollectionHelper.list(columns)));
+		List<Object[]> rows = categoryIdentifierName == null ?
+				productRepository.findOnSaleProducts(metadata.getColumns(), paging, spec, restQuery) :
+					productRepository.findOnSaleProducts(metadata.getColumns(), paging, spec.and((root, query, builder) -> builder.equal(root.join(_Product.category).get(categoryIdentifierName), categoryIdentifier)), restQuery);
+
+		if (rows.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		return crudService.resolveReadResults(Product.class, rows, credential, metadata);
+	}
+	// @formatter:on
+
+	public Result<ProductPrice> createProductPrice(ProductPrice price, boolean flushOnFinish) {
+		useManualSession();
+
+		ProductPriceId newPriceId = price.getId();
+		ProductPriceId overlappedPrice = productPriceRepository
+				.findOverlapping(newPriceId.getProductId(), newPriceId.getAppliedTimestamp(),
+						newPriceId.getDroppedTimestamp(), Arrays.asList(_ProductPrice.id))
+				.map(cols -> (ProductPriceId) cols[0]).orElse(null);
+
+		if (overlappedPrice != null) {
+			return Result.bad(String.format(OVERLAPPED_PRICE_TEMPLATE, newPriceId.getProductId(),
+					localDateTime(newPriceId.getAppliedTimestamp()), localDateTime(newPriceId.getDroppedTimestamp())));
+		}
+
+		return crudService.create(newPriceId, price, ProductPrice.class, flushOnFinish);
+	}
+
+	// we provide full path since Repository use HQL directly
+	private static final List<String> FETCHED_COST_COLUMNS = Arrays.asList(
+			StringHelper.join(Common.DOT, _ProductCost.id, _ProductCost.productId),
+			StringHelper.join(Common.DOT, _ProductCost.id, _ProductCost.providerId), _ProductCost.cost);
+	private static final String MISSING_COST_TEMPLATE = "Product %d from Provider %s";
+
+	public ResultBatch<Item> createItemsBatch(Collection<Item> batch, boolean flushOnFinish) {
+		if (batch.size() > GenericCRUDServiceImpl.MAXIMUM_BATCH_SIZE) {
+			return ResultBatch.bad(GenericCRUDServiceImpl.MAXIMUM_BATCH_SIZE_EXCEEDED);
+		}
+
+		Session session = getCurrentSession();
+
+		useManualSession(session);
+
+		EntityBuilder<Item> builder = entityBuilderProvider.getBuilder(Item.class);
+		Validator<Item> validator = validatorFactory.getValidator(Item.class);
+		EnumSet<Status> statusSet = EnumSet.noneOf(Status.class);
+		Set<Utils.Entry<BigInteger, UUID>> toBeFetchedCosts = new HashSet<>(
+				GenericCRUDServiceImpl.MAXIMUM_BATCH_SIZE / 2);
+		Set<BigInteger> tobeFetchedPrices = new HashSet<>(GenericCRUDServiceImpl.MAXIMUM_BATCH_SIZE / 2);
+		List<Result<Item>> resultBatch = batch.stream().map(item -> {
+			Item newItem = builder.buildInsertion(null, item);
+			Result<Item> validation = validator.isSatisfiedBy(session, newItem.getId(), newItem);
+
+			statusSet.add(validation.getStatus());
+
+			if (!validation.isOk()) {
+				return validation;
+			}
+
+			BigInteger productId = newItem.getProduct().getId();
+
+			if (newItem.getCost() == null) {
+				toBeFetchedCosts.add(Entry.entry(productId, newItem.getProvider().getId()));
+			}
+
+			tobeFetchedPrices.add(productId);
+
+			return validation;
+		}).collect(Collectors.toList());
+
+		if (statusSet.contains(Status.BAD)) {
+			return ResultBatch.bad(resultBatch);
+		}
+		/* ========================Costs fetch======================== */
+		List<Object[]> costs = null;
+		// wrap for effectively final
+		Wrapper<Map<Utils.Entry<BigInteger, UUID>, BigDecimal>> costMapWrapper = new Wrapper<>(null);
+
+		if (!toBeFetchedCosts.isEmpty()) {
+			costs = productCostRepository.findAllCurrents(toBeFetchedCosts, FETCHED_COST_COLUMNS);
+
+			if (costs.size() != toBeFetchedCosts.size()) {
+				Set<Utils.Entry<BigInteger, UUID>> fetchedCosts = costs.stream()
+						.map(row -> uncheckedEntry((BigInteger) row[0], (UUID) row[1])).collect(Collectors.toSet());
+
+				return ResultBatch.bad(String.format(COSTS_NOT_FOUND_TEMPLATE, toBeFetchedCosts.stream()
+						.filter(entry -> !fetchedCosts.contains(entry))
+						.map(entry -> entry.map(
+								(productId, providerId) -> String.format(MISSING_COST_TEMPLATE, productId, providerId)))
+						.collect(Collectors.joining(StringHelper.COMMON_JOINER))));
+			}
+
+			costMapWrapper.setValue(costs.stream()
+					.map(row -> Map.entry(uncheckedEntry((BigInteger) row[0], (UUID) row[1]), (BigDecimal) row[2]))
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+		}
+		EnumSet<Status> finalStatusSet = EnumSet.noneOf(Status.class);
+		// unwrap
+		Map<Utils.Entry<BigInteger, UUID>, BigDecimal> costMap = costMapWrapper.getValue();
+
+		resultBatch = resultBatch.stream().map(result -> {
+			try {
+				Item item = result.getInstance();
+				BigInteger productId = item.getProduct().getId();
+
+				if (item.getCost() == null) {
+					item.setCost(costMap.get(uncheckedEntry(productId, item.getProvider().getId())));
 				}
 
-				return builder.like(root.get("name"), restQuery.getName().getLike());
+				item = builder.buildPostValidationOnInsert(null, item);
+				session.save(item);
+
+				return Result.ok(item);
+			} catch (Exception e) {
+				e.printStackTrace();
+				finalStatusSet.add(Status.FAILED);
+				return Result.<Item>failed(e.getMessage());
 			}
-		};
+		}).collect(Collectors.toList());
+
+		return crudService.finish(session, resultBatch, finalStatusSet, flushOnFinish);
 	}
 
-	private static Specification<Product> hasIdLike(ProductQuery restQuery) {
-		return new Specification<Product>() {
-			@Override
-			public Predicate toPredicate(Root<Product> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
-				if (restQuery.getId() == null || !StringHelper.hasLength(restQuery.getId().getLike())) {
-					return null;
-				}
-
-				return builder.like(root.get("id"), restQuery.getId().getLike());
-			}
-		};
-	}
-
-	private Access access = new Access() {
-		@Override
-		public void close() {
-			access = null;
-		}
-
-		public void execute() throws Exception {
-			PRODUCT_ENTITY_NAME = HibernateHelper.getEntityName(Product.class);
-		};
-	};
-
-	@Override
-	public Access getAccess() throws IllegalAccessException {
-		return access;
+	private enum LockState {
+		locked, unlocked
 	}
 
 }

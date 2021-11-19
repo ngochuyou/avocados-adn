@@ -5,6 +5,7 @@ package adn.dao.generic;
 
 import java.util.List;
 
+import adn.application.Result;
 import adn.service.internal.Service.Status;
 
 /**
@@ -68,9 +69,17 @@ public class ResultBatch<T> {
 	public static <T> ResultBatch<T> failed(List<Result<T>> results) {
 		return new ResultBatch<>(Status.FAILED, results);
 	}
+	
+	public static <T> ResultBatch<T> failed(String message) {
+		return new ResultBatch<>(Status.FAILED, null, message);
+	}
 
 	public static <T> ResultBatch<T> bad(List<Result<T>> results) {
 		return new ResultBatch<>(Status.BAD, results);
+	}
+	
+	public static <T> ResultBatch<T> bad(String message) {
+		return new ResultBatch<>(Status.BAD, null, message);
 	}
 
 }

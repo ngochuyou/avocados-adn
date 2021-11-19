@@ -171,7 +171,6 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 	// @formatter:on
 	@Override
 	public void buildAfterStartUp() throws Exception {
-		logger.info("Building " + this.getClass());
 		// @formatter:off
 		logger.info("\n\n"
 				+ "\t\t\t\t\t\t========================================================\n"
@@ -308,7 +307,7 @@ public class ResourceManagerFactoryBuilder implements ContextBuilder {
 				AvailableSettings.STATEMENT_BATCH_SIZE, (settingMap) -> {
 					traceSetting(AvailableSettings.STATEMENT_BATCH_SIZE, 0);
 					settingMap.put(AvailableSettings.STATEMENT_BATCH_SIZE, 0);
-				}				
+				}
 		);
 		// @formatter:on
 		cfgService.getSettings().entrySet().stream().forEach(e -> {

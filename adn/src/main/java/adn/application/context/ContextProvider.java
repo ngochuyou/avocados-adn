@@ -3,6 +3,7 @@
  */
 package adn.application.context;
 
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.SessionFactoryObserver;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -16,7 +17,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import adn.security.ApplicationUserDetails;
+import adn.model.factory.authentication.Credential;
+import adn.security.UserDetailsImpl;
 import adn.service.internal.Role;
 
 /**
@@ -37,9 +39,9 @@ public class ContextProvider implements ApplicationContextAware {
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
 		ContextProvider.applicationContext = applicationContext;
 	}
-
-	public static <T extends SessionFactory> T getSessionFactory(Class<T> wrapperType) {
-		return getApplicationContext().getBean(SessionFactory.class).unwrap(wrapperType);
+	
+	public static Session getCurrentSession() {
+		return getBean(SessionFactory.class).getCurrentSession();
 	}
 
 	public static <T> T getBean(Class<T> beanType) {
@@ -50,14 +52,14 @@ public class ContextProvider implements ApplicationContextAware {
 		return applicationContext;
 	}
 
-	public static ApplicationUserDetails getPrincipal() {
+	public static UserDetailsImpl getPrincipal() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
 		if (auth instanceof AnonymousAuthenticationToken) {
 			return null;
 		}
 
-		return (ApplicationUserDetails) auth.getPrincipal();
+		return (UserDetailsImpl) auth.getPrincipal();
 	}
 
 	public static Role getPrincipalRole() {
@@ -71,7 +73,17 @@ public class ContextProvider implements ApplicationContextAware {
 		// an instance of type org.springframework.security.core.userdetails.User
 		// rather than ApplicationUserDetails, which causes the following type-casting
 		// to fail
-		return ((ApplicationUserDetails) auth.getPrincipal()).getRole();
+		return ((UserDetailsImpl) auth.getPrincipal()).getRole();
+	}
+
+	public static Credential getPrincipalCredential() {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+		if (auth instanceof AnonymousAuthenticationToken) {
+			return Role.ANONYMOUS;
+		}
+
+		return ((UserDetailsImpl) auth.getPrincipal()).getCredential();
 	}
 
 	public static String getPrincipalName() {
@@ -120,7 +132,7 @@ public class ContextProvider implements ApplicationContextAware {
 
 	private static void closeAccess() {
 		LoggerFactory.getLogger(ContextProvider.class)
-				.trace(String.format("Closing access in [%s]", ContextProvider.class));
+				.trace(String.format("Closing access to [%s]", ContextProvider.class));
 		access = null;
 	}
 

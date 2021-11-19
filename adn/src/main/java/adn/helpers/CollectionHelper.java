@@ -4,8 +4,10 @@
 package adn.helpers;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -20,8 +22,20 @@ public class CollectionHelper {
 
 	public static final String[] EMPTY_STRING_ARRAY = new String[0];
 
-	public static final String[] from(Collection<String> elements) {
+	@SuppressWarnings("rawtypes")
+	private static final HashSet EMPTY_HASH_SET = new HashSet<>();
+
+	@SuppressWarnings("unchecked")
+	public static final <T> HashSet<T> emptyHashSet() {
+		return (HashSet<T>) EMPTY_HASH_SET;
+	}
+
+	public static String[] from(Collection<String> elements) {
 		return elements.toArray(String[]::new);
+	}
+
+	public static <E> List<E> list(Collection<E> collection) {
+		return collection instanceof List ? (List<E>) collection : new ArrayList<>(collection);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -36,6 +50,10 @@ public class CollectionHelper {
 
 	public static <T> ArrayBuilder<T> from(T[] elements) {
 		return elements == null ? FunctionHelper.doThrow("Cannot build Array from null") : new ArrayBuilder<>(elements);
+	}
+
+	public static boolean isEmpty(Collection<?> elements) {
+		return elements == null || elements.isEmpty();
 	}
 
 	/**

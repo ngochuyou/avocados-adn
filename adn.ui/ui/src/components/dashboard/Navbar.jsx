@@ -1,44 +1,111 @@
-import { useReducer } from 'react';
+import {
+	createContext, useContext,
+	useState, useCallback
+} from 'react';
 
-const SET_SEARCH_INPUT_VALUE = "SET_SEARCH_INPUT_VALUE";
+import { useDispatch } from '../../hooks/hooks';
 
-export default function Navbar({
-	backButtonVisible = false,
-	isSearchInputDisabled = false,
-	backButtonClick = () => null,
-	searchInputEntered = () => null,
-	searchInputEmptied = () => null,
-	centerElement = null,
-	outerRightElement = null
-}) {
-	const [searchInputState, dispatchSearchInputState] = useReducer(
-		(oldState, { type = null, payload = null} = {}) => {
-			switch(type) {
-				case SET_SEARCH_INPUT_VALUE: {
-					return { ...oldState, value: payload };
-				}
-				default: return oldState;
-			}
-		}, {
-			value: ""
+import { formatDate } from '../../utils';
+
+const Context = createContext();
+
+export const useNavbar = () => useContext(Context);
+
+const STORE = {
+	className: "",
+	backButtonVisible: false,
+	backButtonClick: () => null,
+	isSearchInputDisabled: false,
+	searchInputEntered: () => null,
+	searchInputEmptied: () => null,
+	centerElement: null,
+	outerRightElement: null
+};
+
+const SET_BACK_BTN_STATE = "SET_BACK_BTN_STATE";
+const SET_ON_ENTERED = "SET_ON_ENTERED";
+
+const dispatchers = {
+	SET_BACK_BTN_STATE: (payload, oldState) => {
+		const { visible, callback } = payload;
+		
+		return {
+			...oldState,
+			backButtonVisible: visible,
+			backButtonClick: callback
+		};
+	},
+	SET_ON_ENTERED: (payload, oldState) => {
+		return {
+			...oldState,
+			searchInputEntered: payload
+		};
+	}
+};
+
+export function ContextProvider({ children }) {
+	const [store, dispatch] = useDispatch(STORE, dispatchers);
+
+	const setBackBtnState = useCallback((nextState = {}) => {
+		const { visible = false, callback = () => null } = nextState;
+		
+		if (typeof visible !== 'boolean' || typeof callback !== 'function') {
+			return;
 		}
+
+		dispatch({
+			type: SET_BACK_BTN_STATE,
+			payload: nextState
+		});
+	}, [dispatch]);
+	const setOnEntered = useCallback((callback = () => null) => {
+		if (typeof callback !== 'function') {
+			return;
+		}
+
+		dispatch({
+			type: SET_ON_ENTERED,
+			payload: callback
+		});
+	}, [dispatch]);
+
+	return (
+		<Context.Provider value={{
+			store, setBackBtnState,
+			setOnEntered
+		}}>
+			{ children }
+		</Context.Provider>
 	);
+}
+
+export default function Navbar() {
+	const {
+		store: {
+			className,
+			backButtonVisible,
+			isSearchInputDisabled,
+			backButtonClick,
+			searchInputEntered,
+			searchInputEmptied,
+			centerElement,
+			outerRightElement
+		}
+	} = useNavbar();
+	const [searchInputVal, setSearchInputVal] = useState("");
 	const onSearchInputChanged = async (event) => {
 		if (isSearchInputDisabled) {
 			return;
 		}
 
-		dispatchSearchInputState({
-			type: SET_SEARCH_INPUT_VALUE,
-			payload: event.target.value
-		});
+		setSearchInputVal(event.target.value);
 
 		if (event.target.value.length === 0) {
 			searchInputEmptied();
 		}
 	};
 	const onSearchButtonClick = () => {
-		searchInputEntered(searchInputState.value);
+		searchInputEntered(searchInputVal);
 	};
 	const onSearchInputKeyUp = (event) => {
 		if (event.keyCode === 13) {
@@ -46,7 +113,7 @@ export default function Navbar({
 				return;
 			}
 
-			searchInputEntered(searchInputState.value);
+			searchInputEntered(searchInputVal);
 		}
 	};
 	const onBackButtonClick = () => {
@@ -56,10 +123,9 @@ export default function Navbar({
 			result();
 		}
 	};
-	const { value: searchInputValue } = searchInputState;
-	
+
 	return (
-		<nav className="uk-navbar-container" uk-nav="">
+		<nav className={`uk-navbar-container ${className}`} uk-nav="">
 			<div className="uk-grid-collapse" uk-grid="">
 				<div className="uk-width-auto">
 					<div
@@ -81,7 +147,7 @@ export default function Navbar({
 					<div className="uk-navbar-item">
 						<div className="uk-width-1-1">
 							<input
-								value={searchInputValue}
+								value={searchInputVal}
 								onKeyUp={onSearchInputKeyUp}
 								onChange={onSearchInputChanged}
 								className="uk-input uk-width-3-4"
@@ -100,7 +166,12 @@ export default function Navbar({
 				<div className="uk-width-auto">
 					{outerRightElement}
 				</div>
+				<div className="uk-width-auto">
+					<div className="uk-navbar-item">
+						{ formatDate(new Date()) }
+					</div>
+				</div>
 			</div>
 		</nav>
 	);
-}
+};

@@ -3,36 +3,35 @@
  */
 package adn.model.entities;
 
-import javax.persistence.Column;
+import java.util.Optional;
+
+import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+
+import adn.service.internal.Role;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Entity
-public class Personnel extends Account {
+@Table(name = "personnels")
+public class Personnel extends Operator implements AuditableResource<String> {
 
-	@Column(name = "created_by")
-	private String createdBy;
-
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	private Department department;
 
+	@Embedded
+	private AuditInformations auditInformations;
+
 	public Personnel() {}
-	
+
 	public Personnel(String id) {
 		setId(id);
-	}
-
-	public String getCreatedBy() {
-		return createdBy;
-	}
-
-	public void setCreatedBy(String createdBy) {
-		this.createdBy = createdBy;
+		setRole(Role.PERSONNEL);
 	}
 
 	public Department getDepartment() {
@@ -41,6 +40,19 @@ public class Personnel extends Account {
 
 	public void setDepartment(Department department) {
 		this.department = department;
+	}
+
+	@Override
+	public AuditInformations getAuditInformations() {
+		if (auditInformations == null) {
+			auditInformations = new AuditInformations();
+		}
+
+		return auditInformations;
+	}
+
+	public void setAuditInformations(AuditInformations auditInformations) {
+		this.auditInformations = Optional.ofNullable(auditInformations).orElse(new AuditInformations());
 	}
 
 }

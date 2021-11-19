@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useParams, useHistory } from 'react-router-dom';
+import { useParams, useHistory  } from 'react-router-dom';
 // aaldredkq
 // atidman64
 import { getProductListByCategory } from '../actions/product';
@@ -7,7 +7,7 @@ import {
 	SET_LIST, SET_INDIVIDUAL_VIEW_TARGET
 } from '../actions/common';
 
-import Navbar from '../components/product/Navbar';
+// import Navbar from '../components/product/Navbar';
 import ProductList from '../components/product/ProductList';
 import {
 	useShopping, FETCHED_PRODUCT_COLUMNS
@@ -36,7 +36,7 @@ function Main() {
 		dispatchProductStore, dispatchCategoryStore
 	} = useShopping();
 
-	useEffect(() => asIf(!wasInit).then(init), [wasInit, init]);
+	useEffect(() => asIf(!wasInit).then(init).else(), [wasInit, init]);
 	useEffect(() => {
 		const doFetch = async () => {
 			log(`category name: ${categoryName}`);
@@ -84,9 +84,9 @@ function Main() {
 
 	return (
 		<div className="uk-background-muted">
-			<Navbar
+			{/*<Navbar
 				background="uk-background-default"
-			/>
+			/>*/}
 			<Body />
 		</div>
 	);

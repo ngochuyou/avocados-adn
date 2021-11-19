@@ -1,11 +1,13 @@
 package adn.service.internal;
 
+import java.util.Map;
+
+import adn.application.Common;
 import adn.service.internal.Service.Status;
 
 public class ServiceResult<T> {
 
 	protected Status status;
-
 	protected T body;
 
 	public ServiceResult(Status status) {
@@ -40,6 +42,10 @@ public class ServiceResult<T> {
 
 	public boolean isOk() {
 		return this.status.equals(Status.OK);
+	}
+
+	public static Map<String, String> of(String result) {
+		return Map.of(Common.MESSAGE, result);
 	}
 
 	public static <T> ServiceResult<T> status(Status status) {

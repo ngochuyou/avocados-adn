@@ -16,9 +16,9 @@ import javax.persistence.Table;
 import org.hibernate.annotations.GenericGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
-import adn.model.DepartmentScoped;
+import adn.application.Common;
+import adn.model.entities.metadata._Personnel;
 
 /**
  * @author Ngoc Huy
@@ -26,22 +26,19 @@ import adn.model.DepartmentScoped;
  */
 @Entity
 @Table(name = "departments")
-public class Department extends adn.model.entities.Entity implements DepartmentScoped {
+public class Department extends PermanentEntity implements NamedResource {
 
 	@Id
 	@GeneratedValue(generator = "uuid")
 	@GenericGenerator(name = "uuid", strategy = "uuid2")
-	@Column(columnDefinition = "BINARY(16)")
+	@Column(columnDefinition = Common.MYSQL_UUID_COLUMN_DEFINITION)
 	protected UUID id;
 
 	@Column(nullable = false, unique = true)
 	protected String name;
 
-	@Column(nullable = false)
-	protected Boolean active;
-
 	@JsonIgnore
-	@OneToMany(mappedBy = "department")
+	@OneToMany(mappedBy = _Personnel.department)
 	private List<Personnel> personnels;
 
 	public UUID getId() {
@@ -52,21 +49,13 @@ public class Department extends adn.model.entities.Entity implements DepartmentS
 		this.id = id;
 	}
 
+	@Override
 	public String getName() {
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
-	}
-
-	@JsonProperty("active")
-	public Boolean isActive() {
-		return active;
-	}
-
-	public void setActive(Boolean active) {
-		this.active = active;
 	}
 
 	public List<Personnel> getPersonnels() {

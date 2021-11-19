@@ -3,30 +3,16 @@
  */
 package adn.test.application;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.File;
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-
-import org.hibernate.FlushMode;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.Status;
-import org.hibernate.event.internal.EntityState;
-import org.hibernate.internal.SessionImpl;
-import org.hibernate.tuple.entity.EntityMetamodel;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -35,11 +21,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor;
@@ -49,17 +34,11 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import adn.application.WebConfiguration;
 import adn.application.context.ContextProvider;
-import adn.application.context.builders.DatabaseInitializer;
-import adn.dao.generic.GenericRepository;
-import adn.dao.generic.Unpaged;
-import adn.model.entities.Account;
-import adn.model.entities.Provider;
 import adn.security.SecurityConfiguration;
 import adn.service.resource.model.models.UserPhoto;
 
@@ -123,13 +102,13 @@ public class ApplicationIntegrationTest {
 				ObjectMapper mapper = ContextProvider.getApplicationContext().getBean(ObjectMapper.class);
 				String[] statusSet = mapper.readValue(res.getContentAsString(), String[].class);
 				
-				assertThat(
+				assertTrue(
 					Stream
 						.of(statusSet)
 						.map(status -> { System.out.println(status); return status; })
 						.filter(status -> status.startsWith(HttpStatus.OK.toString()))
 						.count() == amount
-				).isTrue();
+				);
 				
 				logger.trace("Successfully retrieved " + statusSet.length + " files");
 			});
@@ -137,177 +116,18 @@ public class ApplicationIntegrationTest {
 	}
 
 	@Autowired
-	private SessionFactory sessionFactory;
-
-	@Autowired
-	private DatabaseInitializer dbInit;
+	private JavaMailSender mailSender;
 
 	@Test
-	@Transactional
-	private void entityEntryTest() {
-		SessionImpl session = (SessionImpl) sessionFactory.getCurrentSession();
+	public void test() {
+		SimpleMailMessage mail = new SimpleMailMessage();
 
-		session.setHibernateFlushMode(FlushMode.MANUAL);
+		mail.setFrom("pi.sup.lot@gmail.com");
+		mail.setTo("ngochuy.ou@gmail.com");
+		mail.setText("Hi! i'm your Support Pilot");
+		mail.setSubject("[Avocados] - Welcoming email");
 
-//		Account account = session.find(Account.class, "adn.personnel.manager.0");
-
-		Account account = dbInit.getAdmin();
-		session.persist(account);
-
-		EntityEntry entry = session.getPersistenceContext().getEntry(account);
-		EntityState state = EntityState.getEntityState(account, entry.getEntityName(), entry, session, null);
-
-		assertThat(state == EntityState.PERSISTENT);
-		logger.debug("Status: " + entry.getStatus().toString());
-		logger.debug("State: " + state.toString());
-		inspectState(entry);
-		logger.debug("Version: " + entry.getVersion());
-		logger.debug("Exists: " + entry.isExistsInDatabase());
-		session.delete(account);
-		state = EntityState.getEntityState(account, entry.getEntityName(), entry, session, null);
-
-		assertThat(entry.getStatus() == Status.DELETED && state == EntityState.DELETED);
-		logger.debug("Status: " + entry.getStatus().toString());
-		logger.debug("State: " + state.toString());
-//		inspectState(entry);
-		logger.debug("Version: " + entry.getVersion());
-		logger.debug("Exists: " + entry.isExistsInDatabase());
-
-		session.flush();
-
-		assertThat(entry.getStatus() == Status.GONE);
-		assertThat(state == EntityState.TRANSIENT);
-		logger.debug("Status: " + entry.getStatus().toString());
-		logger.debug("State: " + state.toString());
-//		inspectState(entry);
-		logger.debug("Version: " + entry.getVersion());
-		logger.debug("Exists: " + entry.isExistsInDatabase());
-	}
-
-	private void inspectState(EntityEntry entry) {
-		if (entry.getLoadedState() != null) {
-			logger.debug("Loaded state");
-
-			for (Object val : entry.getLoadedState()) {
-				if (val == null) {
-					logger.debug("NULL");
-					continue;
-				}
-
-				logger.debug(val.toString());
-			}
-		}
-
-		if (entry.getDeletedState() != null) {
-			logger.debug("Deleted state");
-
-			for (Object val : entry.getDeletedState()) {
-				if (val == null) {
-					logger.debug("NULL");
-					continue;
-				}
-
-				logger.debug(val.toString());
-			}
-		}
-	}
-
-	@Test
-	private void sessionLoadTest() throws Exception {
-		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders
-				.get(PREFIX + "/file/public/image/session-load");
-
-		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
-
-		assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-	}
-
-	@Test
-	private void transactionalTest() throws Exception {
-		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get(PREFIX + "/transaction");
-
-		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
-
-		assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-	}
-
-	@Test
-	@Transactional
-	private void testSpec() {
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder builder = session.getCriteriaBuilder();
-		CriteriaQuery<Long> query = builder.createQuery(Long.class);
-		Root<Provider> root = query.from(Provider.class);
-		String idPropertyName = "id";
-		Serializable id = null;
-		String name = "VinGroup$$$$$$$nbvvnv$$$0998798798797989";
-		query.select(builder.count(root))
-				.where(builder.and(builder.equal(root.get("name"), name),
-						id == null ? builder.isNotNull(root.get(idPropertyName))
-								: builder.notEqual(root.get(idPropertyName), id)));
-		System.out.println(session.createQuery(query).getResultStream().findFirst().orElseThrow());
-	}
-
-	@Autowired
-	private GenericRepository repo;
-
-	@Test
-	@Transactional
-	private void testPaging() {
-		repo.fetch(Account.class, Unpaged.INSTANCE).forEach(account -> {
-			System.out.println(account.getId());
-			System.out.println(account.getFirstName());
-			System.out.println(account.getLastName());
-		});
-	}
-
-	@Test
-	@Transactional
-	private void testPagingWithSort() {
-		repo.fetch(Account.class, PageRequest.of(0, 1000, Sort.by(Order.asc("createdDate")))).forEach(account -> {
-			System.out.println(account.getId());
-			System.out.println(account.getCreatedDate());
-		});
-	}
-
-	@Test
-	@Transactional
-	private void testPagingWithColumns() {
-		repo.fetch(Account.class, new String[] { "id", "firstName", "lastName" }, Unpaged.INSTANCE).forEach(columns -> {
-			System.out.println(columns[0]);
-			System.out.println(columns[1]);
-			System.out.println(columns[2]);
-		});
-	}
-
-	@Test
-	@Transactional
-	private void testPagingWithColumnsAndSort() {
-		repo.fetch(Account.class, new String[] { "id", "updatedDate" },
-				PageRequest.of(0, 1000, Sort.by(Order.asc("updatedDate")))).forEach(columns -> {
-					System.out.println(columns[0]);
-					System.out.println(columns[1]);
-				});
-	}
-
-	@Test
-	private void testPageableDefault() throws Exception {
-		MockHttpServletRequestBuilder reqBuilder = MockMvcRequestBuilders.get(PREFIX + "/list");
-		MockHttpServletResponse response = mock.perform(reqBuilder).andReturn().getResponse();
-
-		assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-	}
-
-	@Test
-	private void testEntityMetamodel() {
-		EntityMetamodel emm = sessionFactory.unwrap(SessionFactoryImplementor.class).getMetamodel()
-				.entityPersister(Account.class).getEntityMetamodel();
-
-		System.out.println(join(emm.getPropertyNames()));
-	}
-
-	private String join(String[] elements) {
-		return Stream.of(elements).collect(Collectors.joining(", "));
+		mailSender.send(mail);
 	}
 
 }

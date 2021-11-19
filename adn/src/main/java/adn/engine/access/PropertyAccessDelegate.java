@@ -99,7 +99,7 @@ public class PropertyAccessDelegate extends AbstractPropertyAccess {
 		// try setXXX();
 		try {
 			String setterMethodName = StringHelper.toCamel(String.format("%s %s", "set", propertyName),
-					StringHelper.ONE_OF_WHITESPACE_CHARS);
+					StringHelper.WHITESPACE_CHAR_CLASS);
 
 			setterMethod = bestGuessSetter(ownerType, null, setterMethodName, parameterType);
 

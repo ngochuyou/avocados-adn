@@ -1,28 +1,166 @@
 import {
 	createContext, useContext,
-	useReducer, Fragment,
-	useState, useEffect
+	useReducer, Fragment, useRef,
+	useState, useEffect, useMemo
 } from 'react';
+import { Route, useLocation, useHistory } from 'react-router-dom';
 
-import { server } from '../../config/default';
+import { routes, server } from '../../config/default';
 
 import {
 	SET_VIEW, PUSH_LIST, MODIFY_MODEL, POP_LIST, TOGGLE_MODAL_VISION,
 	CLEAR_LIST, SET_LIST
 } from '../../actions/common';
-import { searchProduct, createStockDetails } from '../../actions/product';
-import { searchProvider } from '../../actions/provider';
+import { searchProduct, submitItemsBatch, getInternalItemsList } from '../../actions/product';
+import { fetchProviderList, searchProvider } from '../../actions/provider';
 
 import { DomainImage } from '../utils/Gallery';
 import { FixedAddButton } from '../utils/Button';
 import { ColorInput } from '../utils/Input';
 import { ConfirmModal } from '../utils/ConfirmModal';
+import Navbar, { useNavbar } from './Navbar';
+import PagedComponent from '../utils/PagedComponent';
 
-import { spread } from '../../utils';
+import { spread, asIf, updateURLQuery } from '../../utils';
 
 import StockDetail from '../../models/StockDetail';
 
 import { useSidebarContext } from '../../pages/Dashboard';
+
+function ItemList() {
+	const { search: query } = useLocation();
+	const urlParams = useMemo(() => new URLSearchParams(query), [query]);
+	const [items, setItems] = useState([]);
+	const { push } = useHistory();
+	const {
+		dashboard: {
+			stock: { list: { url: itemListUrl } }
+		}
+	} = routes;
+	const { setOnEntered } = useNavbar();
+
+	useEffect(() => {
+		setOnEntered(key => push(`${itemListUrl}?${updateURLQuery(urlParams, "product", () => key)}`));
+	}, [setOnEntered, itemListUrl, push, urlParams]);
+
+	useEffect(() => {
+		const doFetch = async () => {
+			const [res, err] = await getInternalItemsList({
+				columns: ["id", "code", "status", "product", "color", "namedSize"],
+				page: urlParams.get('page'),
+				size: urlParams.get('size'),
+				sort: urlParams.get('sort'),
+				product: urlParams.get('product'),
+				status: urlParams.get('status') || "AVAILABLE",
+				namedSize: urlParams.get('namedSize')
+			});
+
+			if (err) {
+				return console.error(err);
+			}
+
+			setItems(res);
+		};
+
+		doFetch()
+	}, [urlParams]);
+
+	return (
+		<>
+			<Navbar />
+			<main className="uk-padding-small">
+				<h3 className="uk-heading-line">
+					<span>Items list</span>
+				</h3>
+				<div className="uk-margin uk-flex uk-flex-right" uk-margin="">
+					<div uk-tooltip="Item status">
+						<select
+							className="uk-select"
+							onChange={(event) => push(`${itemListUrl}?${updateURLQuery(urlParams, "status", () => event.target.value)}`)}
+							value={urlParams.get('status') || "AVAILABLE"}
+						>
+							<option value="AVAILABLE">AVAILABLE</option>
+							<option value="UNAVAILABLE">UNAVAILABLE</option>
+							<option value="SOLD">SOLD</option>
+						</select>
+					</div>
+					<div uk-tooltip="Item size" className='uk-margin-small-left'>
+						<select
+							className="uk-select"
+							onChange={(event) => push(`${itemListUrl}?${updateURLQuery(urlParams, "namedSize", () => event.target.value)}`)}
+							value={urlParams.get('namedSize') || StockDetail.NamedSize[0]}
+						>
+						{
+							StockDetail.NamedSize.map(ele => (
+								<option key={ele} value={ele}>{ele}</option>
+							))
+						}
+						</select>
+					</div>
+					<div className='uk-margin-small-left'>
+						<button
+							className="uk-button uk-button-default"
+							onClick={() => push(itemListUrl)}
+						>Clear filter</button>
+					</div>
+				</div>
+				<PagedComponent
+					pageCount={items.length}
+					onNextPageRequest={() => push(`${itemListUrl}?${updateURLQuery(urlParams, "page", p => (+p || 0) + 1)}`)}
+					onPreviousPageRequest={() => push(`${itemListUrl}?${updateURLQuery(urlParams, "page", p => +p - 1)}`)}
+					currentPage={urlParams.get('page')}
+				>
+					<table className="uk-table uk-table-divider uk-table-middle">
+						<thead>
+							<tr>
+								<th>Item Code</th>
+								<th>Product Name</th>
+								<th>Product Code</th>
+								<th>Color</th>
+								<th className="uk-text-center">Size</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+						{
+							items.map(item => (
+								<tr key={item.id}>
+									<td><div className="uk-text-lead colors">{item.code}</div></td>
+									<td>{item.product.name}</td>
+									<td>{item.product.code}</td>
+									<td>
+										<div
+											style={{height: "40px", width: "40px"}}
+											className="uk-box-shadow-large uk-border-circle uk-overflow-hidden"
+										>
+											<div
+												style={{backgroundColor: item.color}}
+												className="uk-height-1-1"
+											></div>
+										</div>
+									</td>
+									<td className="uk-text-center">
+										<label className="uk-label backgroundf">{item.namedSize}</label>
+									</td>
+									<td>
+									{
+										asIf(item.status !== "AVAILABLE")
+										.then(() => asIf(item.status === "SOLD")
+											.then(() => <label className="uk-label backgrounds">SOLD</label>)
+											.else(() => <label className="uk-label uk-label-danger">UNAVAILABLE</label>))
+										.else(() => <label className="uk-label uk-label-success">AVAILABLE</label>)
+									}
+									</td>
+								</tr>
+							))
+						}
+						</tbody>
+					</table>
+				</PagedComponent>
+			</main>
+		</>
+	);
+}
 
 const Context = createContext();
 const useGlobalContext = () => useContext(Context);
@@ -36,14 +174,13 @@ const IMPORT_STORE = {
 	form: {
 		model: {
 			product: null,
-			size: StockDetail.NamedSize[0],
+			namedSize: StockDetail.NamedSize[0],
 			numericSize: StockDetail.MINIMUM_NUMERIC_SIZE,
 			color: "#000000",
-			material: "",
 			provider: null,
 			status: StockDetail.Status[0],
-			active: true,
-			description: "",
+			cost: "",
+			note: "",
 			quantity: 1
 		},
 		elements: [],
@@ -104,14 +241,15 @@ const importDispatchers = {
 	MODIFY_MODEL: (payload, oldState) => {
 		const { index, name, value } = payload;
 
-		if (typeof index !== 'number' || typeof name !== 'string') {
+		if (isNaN(index) || typeof name !== 'string') {
 			return oldState;
 		}
 
 		const { form, form: { elements, elementsAmount } } = oldState;
 		const newElements = [...elements].map((model, i) => i !== index ? model : {
 			...model,
-			[name]: isNaN(value) ? value : Number(value) // no negative
+			[name]: isNaN(value) || value === "" ? value : Number(value), // no negative
+			provider: asIf(name === 'product').then(() => null).else(() => name !== 'provider' ? model.provider : value)
 		});
 
 		return {
@@ -130,18 +268,20 @@ const importDispatchers = {
 			...oldState,
 			form: {
 				...form,
-				elements: []
+				elements: [],
+				elementsAmount: 0
 			}
 		};
 	},
 	PUSH_LIST: (payload, oldState) => {
-		const { form, form: { elements } } = oldState;
+		const { form, form: { elements, elementsAmount } } = oldState;
 
 		return {
 			...oldState,
 			form: {
 				...form,
-				elements: [...elements, IMPORT_STORE.form.model]
+				elements: [...elements, IMPORT_STORE.form.model],
+				elementsAmount: elementsAmount + 1
 			}
 		};
 	},
@@ -151,17 +291,19 @@ const importDispatchers = {
 		}
 
 		const { form, form: { elements } } = oldState;
+		const newElements = [...elements].filter((model, index) => index !== payload);
 
 		return {
 			...oldState,
 			form: {
 				...form,
-				elements: [...elements].filter((model, index) => index !== payload)
+				elements: newElements,
+				elementsAmount: newElements.reduce((total, item) => !isNaN(item.quantity) ? total + parseInt(item.quantity) : total, 0)
 			}
 		};
 	},
 	TOGGLE_MODAL_VISION: (payload, oldState) => {
-		const { index, name, value } = payload;
+		const { index, name, value, productId } = payload;
 
 		if (typeof index !== 'number' || typeof name !== 'string' || typeof value !== 'boolean') {
 			return oldState;
@@ -180,7 +322,12 @@ const importDispatchers = {
 				...form,
 				pickers: {
 					...pickers,
-					[name]: { ...target, visible: value, index }
+					[name]: {
+						...target,
+						visible: value,
+						index,
+						productId
+					}
 				}
 			}
 		};
@@ -260,9 +407,21 @@ const importDispatchers = {
 };
 
 export default function StockBoard() {
+	const {
+		dashboard: {
+			stock: {
+				mapping: rootMapping,
+				list: {
+					mapping: itemListMapping
+				}
+			}
+		}
+	} = routes;
+
 	return (
 		<ContextProvider>
-			<Body />
+			<Route path={rootMapping} render={props => <Body {...props}/>} exact/>
+			<Route path={itemListMapping} render={props => <ItemList {...props}/>} />
 		</ContextProvider>
 	);
 }
@@ -270,7 +429,8 @@ export default function StockBoard() {
 function Body() {
 	const { layoutStore, dispatchImportStore } = useGlobalContext();
 	useEffect(() => {
-		const elements = JSON.parse(localStorage[FORM_ELEMENTS_STORAGE_NAME]);
+		const savedBatch = localStorage[FORM_ELEMENTS_STORAGE_NAME];
+		const elements = savedBatch == null ? [] : JSON.parse(savedBatch);
 
 		dispatchImportStore({
 			type: SET_LIST,
@@ -332,7 +492,12 @@ function ImportBoard() {
 	const openProviderPicker = (index) => {
 		dispatchImportStore({
 			type: TOGGLE_MODAL_VISION,
-			payload: { name: PROVIDER_PICKER, value: true, index }
+			payload: {
+				name: PROVIDER_PICKER,
+				value: true,
+				index,
+				productId: formElements[index].product.id
+			}
 		});
 	};
 	const clearBatch = () => {
@@ -395,15 +560,31 @@ function ImportBoard() {
 	};
 	const doSubmitBatch = async () => {
 		const elements = formElements.flatMap(element => spread(element.quantity, element));
-		const [, err] = await createStockDetails(elements);
+
+		const [, err] = await submitItemsBatch(elements);
 
 		if (err) {
 			console.error(err);
-			return;
+			return submitNoti(err.message);
 		}
 
 		setConfirmModalVision(false);
-		submitNoti("Batch created successfully");
+		return submitNoti("Batch created successfully");
+	};
+	const onUseCostChange = (index, event) => {
+		const { target: { checked } } = event;
+
+		if (checked) {
+			return dispatchImportStore({
+				type: MODIFY_MODEL,
+				payload: { index, name: "cost", value: "" }
+			});
+		}
+
+		return dispatchImportStore({
+			type: MODIFY_MODEL,
+			payload: { index, name: "cost", value: 100000 }
+		});
 	};
 
 	return (
@@ -495,22 +676,26 @@ function ImportBoard() {
 										)
 									}
 									</div>
-									<div
-										className="uk-position-relative pointer uk-text-right"
-										onClick={() => openProviderPicker(index)}
-										uk-tooltip="Choose a Provider"
-									>
-										<div>
-										{
-											model.provider != null ? (
-												<div className="uk-text-muted">
-													<span>{model.provider.email}</span>
-													<span className="colors uk-margin-small-left uk-text-large">{model.provider.name}</span>
+									{
+										model.product != null ? (
+											<div
+												className="uk-position-relative pointer uk-text-right"
+												onClick={() => openProviderPicker(index)}
+												uk-tooltip="Choose a Provider"
+											>
+												<div>
+												{
+													model.provider != null ? (
+														<div className="uk-text-muted">
+															<span>{model.provider.email}</span>
+															<span className="colors uk-margin-small-left uk-text-large">{model.provider.name}</span>
+														</div>
+													) : <span className="uk-text-primary uk-position-bottom-left">Pick a provider</span>
+												}
 												</div>
-											) : <span className="uk-text-primary uk-position-bottom-left">Pick a provider</span>
-										}
-										</div>
-									</div>
+											</div>	
+										) : null
+									}
 								</div>
 								<div className="uk-width-expand uk-margin-small uk-grid-small" uk-grid="">
 									<div className="uk-width-expand">
@@ -537,8 +722,8 @@ function ImportBoard() {
 											<div className="uk-grid-collapse uk-child-width-1-2" uk-grid="">
 												<div>
 													<select
-														className="uk-select" value={model.size}
-														uk-tooltip="Size" name="size"
+														className="uk-select" value={model.namedSize}
+														uk-tooltip="Size" name="namedSize"
 														onChange={(event) => onModelChange(index, event)}
 													>
 													{
@@ -562,22 +747,35 @@ function ImportBoard() {
 									<div className="uk-width-expand">
 										<div className="uk-margin-small">
 											<input
-												uk-tooltip="Description"
-												type="text" className="uk-input" placeholder="Description"
-												maxLength={StockDetail.MAXIMUM_DESCRIPTION_LENGTH}
-												name="description" onChange={(event) => onModelChange(index, event)}
+												uk-tooltip="Notes"
+												type="text" className="uk-input" placeholder="Notes"
+												maxLength={StockDetail.MAXIMUM_NOTES_LENGTH}
+												name="note" onChange={(event) => onModelChange(index, event)}
 											/>
 										</div>
 										<div className="uk-grid-collapse uk-child-width-1-2" uk-grid="">
 											<div>
-												<select
-													className="uk-select" value={model.active}
-													uk-tooltip="Active" name="active"
+												<input
+													className="uk-input"
+													type="number"
+													step="0.0001"
+													placeholder="Cost"
+													name="cost"
 													onChange={(event) => onModelChange(index, event)}
+													uk-tooltip="Cost"
+													value={model.cost}
+													disabled={model.cost === "" ? "disabled" : ""}
+												/>
+												<label
+													uk-tooltip="Use the scheduled cost for this/these item(s)"
 												>
-													<option key={true} value={true} className="uk-text-success">Active</option>
-													<option key={false} value={false} className="uk-text-muted">Inactive</option>
-												</select>
+													<input
+														type="checkbox" className="uk-checkbox uk-margin-small-right"
+														checked={model.cost === "" ? "checked" : ""}
+														onChange={(event) => onUseCostChange(index, event)}
+													/>
+													Use scheduled cost
+												</label>
 											</div>
 											<div>
 												<select
@@ -646,13 +844,12 @@ function ImportBoard() {
 	);
 }
 
-const SEARCHED_PRODUCT_COLUMNS = ["id", "name", "images", "active"];
+const SEARCHED_PRODUCT_COLUMNS = ["id", "name", "images", "locked"];
 const SEARCHED_PRODUCT_AMOUNT = 100;
-const SEARCHED_PROVIDER_COLUMNS = ["id", "name", "email", "representatorName", "active"];
-const SEARCHED_PROVIDER_AMOUNT = 500;
+const SEARCHED_PROVIDER_COLUMNS = ["id", "name", "email", "representatorName"];
 const SET_PICKER_VIEW = "SET_PICKER_VIEW";
 const PUSH_PICKER_ELEMENTS = "PUSH_PICKER_ELEMENTS";
-const VALIDATED_STOCKDETAIL_COLUMNS = ["product", "provider", "size", "status", "numericSize", "quantity"];
+const VALIDATED_STOCKDETAIL_COLUMNS = ["product", "provider", "namedSize", "status", "numericSize", "quantity"];
 const FORM_ELEMENTS_STORAGE_NAME = "importBatchElements";
 const STOCKDETAIL_ITEM_ANCHOR_PREFIX = "stockdetail-item-";
 
@@ -667,6 +864,12 @@ function ProductPicker() {
 	} = useGlobalContext();
 	const [containerClassName, setContainerClassName] = useState('fade-in');
 	const [isFetching, toggleFetching] = useReducer((isFetching) => !isFetching, false);
+	const searchInputRef = useRef(null);
+
+	useEffect(() => {
+		searchInputRef.current.focus();
+	}, []);
+
 	const closeProductPicker = () => {
 		setContainerClassName('fade-out uk-modal');
 		setTimeout(() => {
@@ -701,7 +904,7 @@ function ProductPicker() {
 			type: SET_PICKER_VIEW,
 			payload: {
 				name: PRODUCT_PICKER,
-				list: Object.values(elements).filter(product => product.name.toLowerCase().includes(value) || product.id.toLowerCase().includes(value))
+				list: Object.values(elements).filter(product => product.name.toLowerCase().includes(value))
 			}
 		});
 	};
@@ -715,9 +918,10 @@ function ProductPicker() {
 
 			const { target: { value } } = event;
 			const [res, err] = await searchProduct({
-				productId: value, productName: value,
+				productName: value,
 				columns: SEARCHED_PRODUCT_COLUMNS,
-				size: SEARCHED_PRODUCT_AMOUNT
+				size: SEARCHED_PRODUCT_AMOUNT,
+				internal: true
 			});
 
 			if (err) {
@@ -752,7 +956,11 @@ function ProductPicker() {
 	const onPick = (product) => {
 		dispatchImportStore({
 			type: MODIFY_MODEL,
-			payload: { name: "product", value: product, index }
+			payload: {
+				name: "product",
+				value: product,
+				index
+			}
 		});
 		closeProductPicker();
 	};
@@ -763,7 +971,11 @@ function ProductPicker() {
 			uk-modal="" style={{ maxHeight: "100vh", overflow: "hidden", zIndex: 2 }}
 			tabIndex={10} onKeyDown={onModalKeyDown}
 		>
-			<div className="uk-modal-dialog uk-width-2xlarge uk-padding-small">
+			<div
+				className="uk-modal-dialog uk-padding-small"
+				style={{width: "90vw", height: "90vh"}}
+				uk-overflow-auto=""
+			>
 				<button
 					className="uk-button uk-position-top-right uk-position-z-index"
 					type="button" uk-icon="icon: close; ratio: 1.25;"
@@ -775,50 +987,51 @@ function ProductPicker() {
 				<main>
 					<div className="uk-margin-small">
 						<input
+							ref={searchInputRef}
 							type="search" placeholder="Product code or Product name"
 							className="uk-input uk-border-pill" onChange={onSearchInputChange}
 							onKeyDown={onSearchInputKeyDown}
 						/>
 					</div>
 					<section
-						className="uk-height-max-medium uk-position-relative uk-grid-collapse uk-child-width-1-2 uk-overflow-auto"
+						className="uk-position-relative uk-grid-collapse uk-child-width-1-3"
 						uk-grid=""
 					>
 					{
 						view.length === 0 ?
-						<div className="uk-height-medium">
-							<span className="uk-text-muted uk-position-center">Nothing found</span>
-						</div> : 
-						view.map(product => (
-							<div
-								key={product.id}
-								className="uk-box-shadow-hover-small uk-padding-small pointer"
-								onClick={() => onPick(product)}
-							>
+							<div className="uk-height-medium">
+								<span className="uk-text-muted uk-position-center">Nothing found</span>
+							</div> : 
+							view.map(product => (
 								<div
-									uk-grid=""
-									className="uk-grid-small uk-padding-small"
+									key={product.id}
+									className="uk-box-shadow-hover-small uk-padding-small pointer"
+									onClick={() => onPick(product)}
 								>
-									<div className="uk-width-auto">
-										<div style={{width: "100px", height: "100px"}}>
-											<DomainImage
-												url={`${IMAGE_URL}/${product.images[0]}`} name={product.images[0]}
-												className="uk-border-circle"
-											/>
+									<div
+										uk-grid=""
+										className="uk-grid-small uk-padding-small"
+									>
+										<div className="uk-width-auto">
+											<div style={{width: "100px", height: "100px"}}>
+												<DomainImage
+													url={`${IMAGE_URL}/${product.images[0]}`} name={product.images[0]}
+													className="uk-border-circle"
+												/>
+											</div>
+										</div>
+										<div className="uk-width-expand">
+											<div className="uk-text-lead">{product.id}</div>
+											<div className="uk-text-muted">{product.name}</div>
+											{
+												product.locked ?
+												<div className="uk-text-muted">LOCKED</div> :
+												<div className="uk-text-success">ACTIVE</div>
+											}
 										</div>
 									</div>
-									<div className="uk-width-expand">
-										<div className="uk-text-lead">{product.id}</div>
-										<div className="uk-text-muted">{product.name}</div>
-										{
-											product.active ?
-											<div className="uk-text-success">ACTIVE</div> :
-											<div className="uk-text-muted">INACTIVE</div>
-										}
-									</div>
 								</div>
-							</div>
-						))
+							))
 					}
 					</section>
 				</main>
@@ -831,13 +1044,52 @@ function ProviderPicker() {
 	const {
 		importStore: {
 			form: {
-				pickers: { provider: { elements, view, index } }
+				pickers: { provider: {
+					elements, view, index,
+					productId
+				} }
 			}
 		},
 		dispatchImportStore
 	} = useGlobalContext();
 	const [containerClassName, setContainerClassName] = useState('fade-in');
+	const searchInputRef = useRef(null);
 	const [isFetching, toggleFetching] = useReducer((isFetching) => !isFetching, false);
+
+	useEffect(() => {
+		const doFetch = async () => {
+			const [res, err] = await fetchProviderList({
+				columns: SEARCHED_PROVIDER_COLUMNS,
+				size: 20
+			});
+
+			if (err) {
+				console.error(err);
+				return;
+			}
+
+			dispatchImportStore({
+				type: PUSH_PICKER_ELEMENTS,
+				payload: {
+					name: PROVIDER_PICKER,
+					list: res
+				}
+			});
+			dispatchImportStore({
+				type: SET_PICKER_VIEW,
+				payload: {
+					name: PROVIDER_PICKER,
+					list: res
+				}
+			});
+		};
+
+		doFetch();
+	}, [dispatchImportStore]);
+	useEffect(() => {
+		searchInputRef.current.focus();
+	}, []);
+
 	const closeProviderPicker = () => {
 		setContainerClassName('fade-out uk-modal');
 		setTimeout(() => {
@@ -850,7 +1102,7 @@ function ProviderPicker() {
 			});
 			dispatchImportStore({
 				type: TOGGLE_MODAL_VISION,
-				payload: { name: PROVIDER_PICKER, value: false, index }
+				payload: { name: PROVIDER_PICKER, value: false, index, productId }
 			});
 		}, 180);
 	};
@@ -886,9 +1138,9 @@ function ProviderPicker() {
 
 			const { target: { value } } = event;
 			const [res, err] = await searchProvider({
-				name: value,
+				name: value.toLowerCase(),
 				columns: SEARCHED_PROVIDER_COLUMNS,
-				size: SEARCHED_PROVIDER_AMOUNT
+				internal: true
 			});
 
 			if (err) {
@@ -934,7 +1186,11 @@ function ProviderPicker() {
 			uk-modal="" style={{ maxHeight: "100vh", overflow: "hidden", zIndex: 2 }}
 			tabIndex={10} onKeyDown={onModalKeyDown}
 		>
-			<div className="uk-modal-dialog uk-width-2xlarge uk-padding-small">
+			<div
+				className="uk-modal-dialog uk-padding-small"
+				style={{width: "90vw", height: "90vh"}}
+				uk-overflow-auto=""
+			>
 				<button
 					className="uk-button uk-position-top-right uk-position-z-index"
 					type="button" uk-icon="icon: close; ratio: 1.25;"
@@ -946,13 +1202,15 @@ function ProviderPicker() {
 				<main>
 					<div className="uk-margin-small">
 						<input
+							ref={searchInputRef}
 							type="search" placeholder="Provider name"
-							className="uk-input uk-border-pill" onChange={onSearchInputChange}
+							className="uk-input uk-border-pill"
+							onChange={onSearchInputChange}
 							onKeyDown={onSearchInputKeyDown}
 						/>
 					</div>
 					<section
-						className="uk-height-max-medium uk-position-relative uk-grid-collapse uk-child-width-1-2 uk-overflow-auto"
+						className="uk-height-max-medium uk-position-relative uk-grid-collapse uk-child-width-1-3"
 						uk-grid=""
 					>
 					{
@@ -966,19 +1224,7 @@ function ProviderPicker() {
 								className="uk-box-shadow-hover-small uk-padding-small pointer"
 								onClick={() => onPick(provider)}
 							>	
-								<div
-									uk-grid=""
-									className="uk-grid-small uk-child-width-1-2"
-								>
-									<div className="uk-text-lead colors">{provider.name}</div>
-									<div className="uk-text-small uk-position-relative">
-									{
-										provider.active ?
-										<div className="uk-text-success uk-position-center">ACTIVE</div> :
-										<div className="uk-text-muted uk-position-center">INACTIVE</div>
-									}
-									</div>
-								</div>
+								<div className="uk-text-lead colors">{provider.name}</div>
 								<div
 									className="uk-text-truncate uk-margin-small-top"
 									uk-tooltip={provider.email}
@@ -994,13 +1240,13 @@ function ProviderPicker() {
 	);
 }
 
-function ViewBoard() {
-	return (
-		<section>
-			view
-		</section>
-	);
-}
+// function ViewBoard() {
+// 	return (
+// 		<section>
+// 			view
+// 		</section>
+// 	);
+// }
 
 function Nav() {
 	const {
@@ -1011,16 +1257,6 @@ function Nav() {
 	return (
 		<div>
 			<ul className="uk-box-shadow-small uk-child-width-expand" id="nav" uk-tab="" uk-height-match="">
-				<li className={view.type === ViewBoard ? "uk-active" : ""}>
-					<a
-						href="#nav"
-						style={{height: "30px"}}
-						onClick={() => dispatchLayoutStore({
-							type: SET_VIEW,
-							payload: <ViewBoard />
-						})}
-					>VIEW</a>
-				</li>
 				<li className={view.type === ImportBoard ? "uk-active" : ""}>
 					<a
 						href="#nav"

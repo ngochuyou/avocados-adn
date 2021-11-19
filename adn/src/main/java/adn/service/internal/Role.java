@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import adn.application.context.builders.CredentialFactory;
+import adn.model.factory.authentication.Credential;
 import adn.model.factory.authentication.EnumeratedCredential;
 
 /**
@@ -15,7 +16,7 @@ import adn.model.factory.authentication.EnumeratedCredential;
  */
 public enum Role implements RoleDefinition, EnumeratedCredential {
 
-	ANONYMOUS, ADMIN, CUSTOMER, PERSONNEL;
+	ANONYMOUS, HEAD, CUSTOMER, PERSONNEL;
 
 	// @formatter:off
 	private static final Set<Role> EMPTY_ROLE_SET = Set.of();
@@ -23,7 +24,7 @@ public enum Role implements RoleDefinition, EnumeratedCredential {
 	private static final Map<Role, Set<Role>> MODIFICATION_ACCESS_MAP;
 	private static final Map<Role, Set<Role>> READ_ACCESS_MAP;
 	private static final Map<Role, Set<Role>> UPDATABLE_ROLE_MAP = Map.of(
-			Role.ADMIN, EMPTY_ROLE_SET,
+			Role.HEAD, EMPTY_ROLE_SET,
 			Role.PERSONNEL, EMPTY_ROLE_SET,
 			Role.CUSTOMER, EMPTY_ROLE_SET,
 			Role.ANONYMOUS, EMPTY_ROLE_SET
@@ -31,18 +32,18 @@ public enum Role implements RoleDefinition, EnumeratedCredential {
 	// @formatter:on
 
 	static {
-		Set<Role> all = Set.of(Role.ADMIN, Role.CUSTOMER, Role.PERSONNEL);
+		Set<Role> all = Set.of(Role.HEAD, Role.CUSTOMER, Role.PERSONNEL);
 		Set<Role> customerAndPersonnel = Set.of(Role.PERSONNEL, Role.CUSTOMER);
 		Set<Role> customer = Set.of(Role.CUSTOMER);
 		Set<Role> customerEmployeeManager = Set.of(Role.PERSONNEL, Role.CUSTOMER);
 		// @formatter:off
 		MODIFICATION_ACCESS_MAP = Map.of(
-				Role.ADMIN, all,
+				Role.HEAD, all,
 				Role.PERSONNEL, customerAndPersonnel,
 				Role.CUSTOMER, customer,
 				Role.ANONYMOUS, customer);
 		READ_ACCESS_MAP = Map.of(
-				Role.ADMIN, all,
+				Role.HEAD, all,
 				Role.PERSONNEL, customerAndPersonnel,
 				Role.CUSTOMER, customerEmployeeManager,
 				Role.ANONYMOUS, customerEmployeeManager);
@@ -77,6 +78,22 @@ public enum Role implements RoleDefinition, EnumeratedCredential {
 	@Override
 	public Class<? extends Enum<?>> getEnumtype() {
 		return Role.class;
+	}
+
+	@Override
+	public boolean contains(Credential credential) {
+		return equal(credential);
+	}
+
+	@Override
+	public boolean contains(String evaluation) {
+		try {
+			Role.valueOf(evaluation);
+
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
 }

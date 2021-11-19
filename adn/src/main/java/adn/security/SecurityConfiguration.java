@@ -3,12 +3,15 @@
  */
 package adn.security;
 
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.Arrays;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -32,7 +35,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import adn.application.Constants;
 import adn.helpers.StringHelper;
-import adn.model.entities.Product;
 import adn.security.context.OnMemoryUserContext;
 import adn.security.jwt.JwtRequestFilter;
 import adn.security.jwt.JwtUsernamePasswordAuthenticationFilter;
@@ -55,7 +57,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	private AuthenticationService authService;
 
 	@Autowired
-	@Qualifier(ApplicationUserDetailsService.NAME)
+	@Qualifier(UserDetailsServiceImpl.NAME)
 	private UserDetailsService userDetailsService;
 
 	@Autowired
@@ -67,14 +69,24 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	@Autowired
 	private OnMemoryUserContext onMemUserContext;
 
+	@Autowired
+	private AuthenticationFailureHandlerImpl authenticationFailureHandler;
+
+	private static final int CLIENT_PORT = 3000;
 	public static final String TESTUNIT_PREFIX = "/testunit";
 	// @formatter:off
 	private static final String[] PUBLIC_ENDPOINTS = {
-			"/account/photo\\GET",
-			"/product/image/**\\GET",
-			"/rest/product/category/all\\GET",
-			"/rest/product\\GET",
-			String.format("/rest/product/{productId:^[A-Z0-9-]{%d}$}\\GET", Product.ID_LENGTH)
+		"/user\\POST",
+		"/user/photo\\GET",
+		"/product/image/**\\GET",
+		"/rest/product/category/all\\GET",
+		"/rest/product\\GET",
+		"/rest/product/price\\GET",
+		"/rest/product/{productId:^[0-9]+$}\\GET",
+		"/rest/product/items\\GET",
+		"/rest/product/items/{productId}\\GET",
+		"/rest/admindivision/province\\GET",
+		"/rest/admindivision/district/{provinceId}\\GET"
 	};
 	// @formatter:on
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -136,7 +148,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 			.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
 			.addFilterAfter(jwtLogoutFilter, JwtRequestFilter.class)
 			.exceptionHandling()
-				.authenticationEntryPoint(new AuthenticationFailureHandler());
+				.authenticationEntryPoint(authenticationFailureHandler);
 		// @formatter:on
 	}
 
@@ -154,9 +166,19 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
+		String clientIP;
+
+		try (DatagramSocket socket = new DatagramSocket()) {
+			socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+			clientIP = String.format("http://%s:%s", socket.getLocalAddress().getHostAddress(), CLIENT_PORT);
+		} catch (Exception any) {
+			any.printStackTrace();
+			SpringApplication.exit(getApplicationContext());
+			return null;
+		}
 
 		configuration.setAllowCredentials(true);
-		configuration.setAllowedOrigins(Arrays.asList("http://192.168.100.10:3000"));
+		configuration.setAllowedOrigins(Arrays.asList(clientIP));
 		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(
 				Arrays.asList("authorization", "content-type", "x-auth-token", "Access-Control-Allow-Credentials"));
@@ -171,7 +193,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	@Bean
 	public AbstractAuthenticationProcessingFilter jwtUsernamePasswordAuthenticationFilter() throws Exception {
 		AbstractAuthenticationProcessingFilter jwtAuthFilter = new JwtUsernamePasswordAuthenticationFilter(authService,
-				onMemUserContext);
+				onMemUserContext, authenticationFailureHandler);
 
 		jwtAuthFilter.setAuthenticationManager(authenticationManager());
 

@@ -1,4 +1,7 @@
-import { createContext, useReducer, useContext, useEffect } from 'react';
+import {
+	createContext, useContext, useEffect,
+	useCallback, useState
+} from 'react';
 import { fetchPrincipal } from '../auth';
 import { getPersonnelDepartmentId } from '../actions/account';
 
@@ -8,38 +11,54 @@ const AuthenticationContext = createContext({});
 
 export const useAuth = () => useContext(AuthenticationContext);
 
+const doFetchPrincipal = async (setPrincipal = () => null) => {
+	let [principal, err] = await fetchPrincipal([
+		"username", "role", "firstName",
+		"lastName", "photo", "phone"
+	]);
+
+	if (err) {
+		console.error(err);
+		return;
+	}
+
+	if (principal.role === Account.Role.PERSONNEL && principal.departmentId == null) {
+		const [departmentId, err] = await getPersonnelDepartmentId({ username: principal.username });
+
+		if (err) {
+			console.error(err);
+			return;
+		}
+
+		principal = new Account({
+			...principal,
+			"departmentId": departmentId
+		});
+	}
+
+	setPrincipal(new Account(principal));
+};
+
 export default function AuthenticationContextProvider({ children }) {
-	const [principal, setPrincipal] = useReducer((principal, nextPrincipal) =>
-			principal === null ? nextPrincipal : { ...principal, ...nextPrincipal },
-			null);
+	const [principal, setPrincipal] = useState(null);
 
 	useEffect(() => {
-		const doFetchPrincipal = async () => {
-			let principal = await fetchPrincipal([ "username", "role" ]);
-
-			if (principal != null && principal.role === Account.Role.PERSONNEL && principal.departmentId == null) {
-				const [departmentId, err] = await getPersonnelDepartmentId({ username: principal.username });
-
-				if (err) {
-					console.error(err);
-					return;
-				}
-
-				principal = {
-					...principal,
-					"departmentId": departmentId
-				};
-			}
-
-			setPrincipal(principal);
-		};
-
-		doFetchPrincipal();
+		doFetchPrincipal(setPrincipal);
 
 		return () => setPrincipal(null);
 	}, []);
 
-	return <AuthenticationContext.Provider value={{ principal, setPrincipal }}>
+	const fetchPrincipal = useCallback(() => doFetchPrincipal(setPrincipal), []);
+	const evictPrincipal = useCallback(() => setPrincipal(null), []);
+	const modifyPrincipal = useCallback((nextState) => setPrincipal({
+		...principal,
+		...nextState
+	}), [principal]);
+
+	return <AuthenticationContext.Provider value={{
+		principal, evictPrincipal, fetchPrincipal,
+		modifyPrincipal, setPrincipal
+	}}>
 		{ children }
 	</AuthenticationContext.Provider>;
 }

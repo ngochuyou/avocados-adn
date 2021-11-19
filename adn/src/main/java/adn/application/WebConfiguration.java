@@ -18,6 +18,7 @@ import org.apache.catalina.Context;
 import org.apache.tomcat.util.http.LegacyCookieProcessor;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
+import org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy;
 import org.springframework.boot.web.embedded.tomcat.TomcatContextCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
@@ -32,7 +33,9 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.transaction.TransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.util.ResourceUtils;
@@ -41,9 +44,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
 
-import adn.application.context.internal.ContextBuilder;
 import adn.service.internal.Role;
-import adn.service.services.GenericCRUDService;
+import adn.service.services.GenericCRUDServiceImpl;
+import adn.service.services.OrderService;
 
 /**
  * @author Ngoc Huy
@@ -55,6 +58,7 @@ import adn.service.services.GenericCRUDService;
 @EnableTransactionManagement
 @EnableSpringDataWebSupport
 @EnableAsync
+@EnableScheduling
 public class WebConfiguration implements WebMvcConfigurer {
 
 	@Bean
@@ -74,23 +78,27 @@ public class WebConfiguration implements WebMvcConfigurer {
 
 		sessionFactory.setDataSource(dataSource);
 		sessionFactory.setPackagesToScan(new String[] { Constants.ENTITY_PACKAGE });
+		// snake_case for columns
+		sessionFactory.setPhysicalNamingStrategy(new SpringPhysicalNamingStrategy());
 
 		Properties properties = new Properties();
 
 		properties.put("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");
 		properties.put("hibernate.show_sql", true);
 		properties.put("hibernate.format_sql", true);
-		properties.put("hibernate.id.new_generator_mappings", "false");
+		properties.put("hibernate.id.new_generator_mappings", "true");
 //		properties.put("hibernate.hbm2ddl.auto", "create-drop");
 		properties.put("hibernate.hbm2ddl.auto", "update");
 		properties.put("hibernate.flush_mode", "MANUAL");
-		properties.put("hibernate.jdbc.batch_size", 500);
+		properties.put("hibernate.jdbc.batch_size", 50);
+		properties.put("hibernate.order_inserts", true);
+		properties.put("hibernate.order_updates", true);
 		sessionFactory.setHibernateProperties(properties);
 
 		return sessionFactory;
 	}
 
-	@Bean(name = GenericCRUDService.EXECUTOR_NAME)
+	@Bean(name = GenericCRUDServiceImpl.EXECUTOR_NAME)
 	public Executor crudServiceExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 
@@ -101,6 +109,16 @@ public class WebConfiguration implements WebMvcConfigurer {
 		executor.initialize();
 
 		return executor;
+	}
+
+	@Bean(name = OrderService.SCHEDULER_NAME)
+	public ThreadPoolTaskScheduler threadPoolTaskScheduler() {
+		ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
+
+		taskScheduler.setPoolSize(4);
+		taskScheduler.setThreadNamePrefix("order-expiration-scheduler-");
+
+		return taskScheduler;
 	}
 
 	@Bean
@@ -121,7 +139,7 @@ public class WebConfiguration implements WebMvcConfigurer {
 	public DataSource getDataSource() throws IOException, NoSuchFieldException {
 		DriverManagerDataSource dataSource = new DriverManagerDataSource();
 		File file = ResourceUtils.getFile(
-				ContextBuilder.CONFIG_PATH + "13450a773a68d2a21a88ca081962a2f71a59730fee3a6cab5647c5674626e5fe.txt");
+				Constants.CONFIG_PATH + "13450a773a68d2a21a88ca081962a2f71a59730fee3a6cab5647c5674626e5fe.txt");
 		List<String> $ = Files.readAllLines(file.toPath());
 
 		if ($.size() < 1) {

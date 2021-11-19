@@ -11,17 +11,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import adn.model.entities.Account;
-import adn.security.ApplicationUserDetails;
+import adn.model.entities.User;
+import adn.security.UserDetailsImpl;
 import adn.service.DomainEntityServiceObserver;
-import adn.service.services.AccountService;
+import adn.service.services.UserService;
 
 /**
  * @author Ngoc Huy
  *
  */
 @Component
-public class OnMemoryUserContext implements DomainEntityServiceObserver<Account> {
+public class OnMemoryUserContext implements DomainEntityServiceObserver<User> {
 
 	private static final Logger logger = LoggerFactory.getLogger(OnMemoryUserContext.class);
 	private static final String ID = UUID.randomUUID().toString();
@@ -29,11 +29,11 @@ public class OnMemoryUserContext implements DomainEntityServiceObserver<Account>
 	private final MutexMap context = new MutexMap();
 
 	@Autowired
-	public OnMemoryUserContext(AccountService service) {
+	public OnMemoryUserContext(UserService service) {
 		service.register(this);
 	}
 
-	public ApplicationUserDetails getUser(String username) {
+	public UserDetailsImpl getUser(String username) {
 		Mutex mutex;
 
 		if ((mutex = context.get(username)) == null) {
@@ -43,7 +43,7 @@ public class OnMemoryUserContext implements DomainEntityServiceObserver<Account>
 		return mutex.getUserInfo();
 	}
 
-	public void put(ApplicationUserDetails userInfo) {
+	public void put(UserDetailsImpl userInfo) {
 		Mutex mutex;
 
 		if ((mutex = context.get(userInfo.getUsername())) != null) {
@@ -83,7 +83,7 @@ public class OnMemoryUserContext implements DomainEntityServiceObserver<Account>
 	}
 
 	@Override
-	public void notifyUpdate(Account newState) {
+	public void notifyUpdate(User newState) {
 		if (logger.isTraceEnabled()) {
 			logger.trace(String.format("Removing user info on user update, user id: [%s]", newState.getId()));
 		}
@@ -92,7 +92,7 @@ public class OnMemoryUserContext implements DomainEntityServiceObserver<Account>
 	}
 
 	@Override
-	public void notifyCreation(Account newState) {}
+	public void notifyCreation(User newState) {}
 
 }
 

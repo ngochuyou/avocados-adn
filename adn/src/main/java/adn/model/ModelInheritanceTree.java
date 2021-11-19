@@ -24,7 +24,7 @@ public class ModelInheritanceTree<T extends DomainEntity> {
 		super();
 		this.parent = parent;
 		this.node = node;
-		this.childrens = childrens == null ? new HashSet<>() : childrens;
+		this.childrens = childrens == null ? new HashSet<>(0) : childrens;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -64,7 +64,7 @@ public class ModelInheritanceTree<T extends DomainEntity> {
 		return false;
 	}
 
-	public void forEach(Consumer<ModelInheritanceTree<?>> consumer) {
+	public void forEach(Consumer<ModelInheritanceTree<? extends DomainEntity>> consumer) {
 		consumer.accept(this);
 
 		this.childrens.forEach(tree -> tree.forEach(consumer));

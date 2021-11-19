@@ -3,35 +3,39 @@
  */
 package adn.model.entities.metadata;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.hibernate.property.access.spi.Getter;
+
+import adn.model.DomainEntity;
 
 /**
  * @author Ngoc Huy
  *
  */
-public interface DomainEntityMetadata {
+public interface DomainEntityMetadata<T> {
 
-	boolean hasProperty(String propertyName);
-	
-	boolean isEntityType(String propertyName);
-
-	Class<?> getPropertyType(String propertyName);
-	
-	Set<String> getPropertyNames();
-
-	Set<String> getNonLazyPropertyNames();
-
-	Set<String> getDeclaredPropertyNames();
-
-	int getNonLazyPropertiesSpan();
+	Class<T> getType();
 
 	int getPropertiesSpan();
 
-	String getDiscriminatorColumnName();
+	boolean hasProperty(String attributeName);
+	
+	Class<?> getPropertyType(String attributeName);
 
-	Set<Map.Entry<String, Getter>> getGetters();
+	List<String> getPropertyNames();
+
+	List<String> getNonLazyPropertyNames();
+
+	Map<String, Getter> getGetters();
+
+	boolean isAssociation(String attributeName);
+
+	boolean isAssociationOptional(String attributeName);
+	
+	AssociationType getAssociationType(String associationName);
+
+	Class<? extends DomainEntity> getAssociationClass(String associationName);
 
 }

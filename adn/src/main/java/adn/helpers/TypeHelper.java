@@ -4,25 +4,20 @@
 package adn.helpers;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.sql.Date;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import javax.persistence.Table;
 
 import org.springframework.stereotype.Component;
 
-import adn.model.DomainEntity;
 import adn.model.entities.Entity;
 
 /**
@@ -117,7 +112,7 @@ public class TypeHelper {
 
 		return stack;
 	}
-	
+
 	public static <T> Stack<Class<? super T>> getClassStack(Class<T> clazz, Class<? super T> expectedParent) {
 		Stack<Class<? super T>> stack = new Stack<>();
 		Class<? super T> superClass = clazz;
@@ -156,48 +151,18 @@ public class TypeHelper {
 		return false;
 	}
 
-	public static Type getGenericType(Class<?> clazz) {
-
-		return ((ParameterizedType) clazz.getGenericSuperclass()).getActualTypeArguments()[0];
-	}
-
-	public static <M extends DomainEntity> M newModelOrAbstract(Class<M> clazz)
-			throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException,
-			NoSuchMethodException, SecurityException {
-		return clazz.getConstructor().newInstance();
-	}
-
-	public static void consumeFields(Object o, BiConsumer<Field, Object> consumer, boolean isSuperClassIncluded) {
-		Stack<Class<?>> classStack = new Stack<>();
-
-		classStack.add(o.getClass());
-
-		if (isSuperClassIncluded) {
-			classStack.addAll(getClassStack(o.getClass().getSuperclass()));
-		}
-
-		while (!classStack.isEmpty()) {
-			for (Field f : classStack.pop().getDeclaredFields()) {
-				f.setAccessible(true);
-				consumer.accept(f, o);
+	public static Type getGenericType(Collection<?> collection) {
+		for (Object o : collection) {
+			if (o != null) {
+				return o.getClass();
 			}
 		}
+
+		return null;
 	}
 
-	@SuppressWarnings("unchecked")
-	public static <T, M extends T> M unwrap(T target) {
-		return (M) target;
-	}
-
-	public static <T> Field[] getAllFields(Class<T> type) {
-		List<Field> fields = new ArrayList<>();
-		Stack<Class<? super T>> classStack = getClassStack(type);
-
-		while (!classStack.isEmpty()) {
-			fields.addAll(Arrays.asList(classStack.pop().getDeclaredFields()));
-		}
-
-		return fields.toArray(new Field[fields.size()]);
+	public static Type getGenericType(Field field) {
+		return ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
 	}
 
 	public static boolean isParentOf(Class<?> possibleParent, Class<?> child) {
@@ -210,10 +175,6 @@ public class TypeHelper {
 		}
 
 		return false;
-	}
-
-	public static boolean hasSuperClass(Class<?> clz) {
-		return clz.getSuperclass() != null && clz.getSuperclass() != Object.class;
 	}
 
 }

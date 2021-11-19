@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import adn.application.context.ContextProvider;
 import adn.application.context.internal.ContextBuilder;
-import adn.controller.exception.UnauthorisedDepartmentException;
 
 /**
  * @author Ngoc Huy
@@ -91,18 +90,6 @@ public class DepartmentScopeContext implements ContextBuilder {
 
 	public static final UUID stock() {
 		return STOCK;
-	}
-
-	public static void assertDepartment(UUID assertedTarget, UUID... criterias) throws UnauthorisedDepartmentException {
-		if (assertedTarget != null) {
-			for (UUID criteria : criterias) {
-				if (criteria.equals(assertedTarget)) {
-					return;
-				}
-			}
-		}
-
-		throw new UnauthorisedDepartmentException(String.format("Department of id [%s] was denied", assertedTarget));
 	}
 
 }

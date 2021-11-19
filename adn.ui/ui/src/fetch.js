@@ -2,19 +2,19 @@ import { server } from "./config/default.json";
 
 const url = server.url;
 
-export async function $fetch(endpoint = null, options = {}) {
+export async function $fetch(endpoint = null, options = {}, credentials = true, encode = true) {
 	if (endpoint == null) {
 		return [null, "Endpoint was null"];
 	}
 	
 	try {
-		const res = await fetch(`${url}${encodeURI(endpoint)}`, {
+		const res = await fetch(`${url}${options.encode === true ? encodeURI(endpoint) : endpoint}`, {
 			...options,
 			headers: {
 				...options.headers,
 				'Authorization': 'JWTBearer',
 			},
-			credentials: 'include'
+			credentials: credentials ? 'include' : 'omit'
 		});
 
 		return [res, null];
@@ -23,7 +23,7 @@ export async function $fetch(endpoint = null, options = {}) {
 	}
 }
 
-export async function fjson(endpoint = null, options = {}) {
+export async function fjson(endpoint = null, options = {}, encode = true) {
 	const { headers } = options;
 	const [res, err] = await $fetch(endpoint, {
 		...options,
@@ -32,7 +32,8 @@ export async function fjson(endpoint = null, options = {}) {
 			'Accept': 'application/json'
 		} : {
 			'Accept': 'application/json'
-		}
+		},
+		encode
 	});
 
 	if (err) {
